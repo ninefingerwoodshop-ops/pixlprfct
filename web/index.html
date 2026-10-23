@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171b1d">
+  <meta name="description" content="PixlPrfct — a browser design workspace powered by Rust.">
+  <title>PixlPrfct — Design workspace</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="./" aria-label="PixlPrfct home"><span class="brand-icon">p<span>·</span></span>pixl<span>prfct</span><sup>PREVIEW</sup></a>
+    <div class="document-title"><span class="muted">Drafts</span><span class="slash">/</span><input id="document-name" aria-label="Document name" value="Untitled design" maxlength="256"><span class="save-dot" title="Local document"></span></div>
+    <div class="header-actions"><button id="open">Open</button><button id="save">Save file <span>↗</span></button><button id="export" class="primary">Export SVG <span>↗</span></button></div>
+  </header>
+  <main>
+    <aside class="left-panel">
+      <div class="panel-heading"><strong>Workspace</strong><span class="small-tag">01</span></div>
+      <div class="page-row"><span>▤</span> Page 1 <span class="page-dot">●</span></div>
+      <div class="section-label">LAYERS <span id="layer-count">0</span></div>
+      <div id="layers" aria-label="Layers"></div>
+      <div class="left-footer"><span class="engine-dot"></span><div><strong>Made for your next idea.</strong><small id="engine-status">Starting Rust engine…</small></div></div>
+    </aside>
+    <section id="workspace" aria-label="Design canvas workspace">
+      <div class="canvas-heading"><span class="eyebrow">YOUR CREATIVE SPACE</span><span id="canvas-label">Launch concept</span></div>
+      <canvas id="canvas" tabindex="0" aria-label="Design canvas. Use the toolbar to add shapes. Edit selected objects in the properties panel."></canvas>
+      <div class="toolbox" role="toolbar" aria-label="Drawing tools">
+        <button data-tool="select" class="active" title="Select (V)" aria-label="Select" aria-pressed="true">↖</button><button data-tool="hand" title="Hand (H)" aria-label="Pan" aria-pressed="false">✥</button><i></i><button data-tool="frame" title="Frame (F)" aria-label="Frame" aria-pressed="false">▦</button><button data-tool="rectangle" title="Rectangle (R)" aria-label="Rectangle" aria-pressed="false">□</button><button data-tool="ellipse" title="Ellipse (O)" aria-label="Ellipse" aria-pressed="false">○</button><button data-tool="text" title="Text (T)" aria-label="Text" aria-pressed="false">T</button><i></i><button id="undo" title="Undo (Ctrl/Cmd Z)" aria-label="Undo">↶</button><button id="redo" title="Redo (Ctrl/Cmd Shift Z)" aria-label="Redo">↷</button>
+      </div>
+      <div class="canvas-bottom"><span id="hint">Select an object to make it yours</span><div class="zoom-control"><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-fit" title="Fit document (1)">100%</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+      <div id="toast" role="status" aria-live="polite"></div>
+    </section>
+    <aside class="right-panel">
+      <div class="panel-heading"><strong>Design</strong><span class="muted">Properties</span></div>
+      <div id="empty-selection"><div class="empty-icon">↖</div><h2>A little space.<br>Infinite possibilities.</h2><p>Select a layer to edit its properties, or pick a tool and click the canvas to create.</p><div class="shortcut"><kbd>V</kbd> Select <kbd>R</kbd> Rectangle</div><div class="shortcut"><kbd>O</kbd> Ellipse <kbd>T</kbd> Text</div></div>
+      <div id="properties" hidden>
+        <section class="property-section"><label class="field-label" for="shape-name">LAYER</label><input id="shape-name" maxlength="256"><div class="kind-row"><span id="shape-kind"></span><label><input type="checkbox" id="visible"> Visible</label></div></section>
+        <section class="property-section"><h3>Position & size</h3><div class="property-grid"><label>X<input id="x" type="number" step="1"></label><label>Y<input id="y" type="number" step="1"></label><label>W<input id="width" type="number" min="1" max="1000000" step="1"></label><label>H<input id="height" type="number" min="1" max="1000000" step="1"></label></div></section>
+        <section class="property-section"><h3>Fill</h3><div class="fill-row"><input type="color" id="fill" aria-label="Fill color"><span id="fill-value"></span><span class="muted">100%</span></div></section>
+        <section id="text-section" class="property-section" hidden><label class="field-label" for="text">TEXT CONTENT</label><textarea id="text" rows="4" maxlength="10000"></textarea></section>
+        <section class="property-section"><h3>Arrange</h3><div class="arrange-row"><button id="backward">↓ Backward</button><button id="forward">↑ Forward</button></div><button id="duplicate" class="wide-button">Duplicate layer <kbd>⌘/Ctrl D</kbd></button><button id="delete" class="wide-button danger">Delete layer <kbd>Del</kbd></button></section>
+      </div>
+      <div class="right-footer"><span>PIXLPRFCT / EARLY ACCESS</span><p>Less friction. More creation.</p></div>
+    </aside>
+  </main>
+  <footer><span><i></i> <span id="save-status">Stored on this device</span></span><span>Space + drag to pan <b>·</b> Scroll to zoom <b>·</b> Shift to snap</span><span>RUST + WEBASSEMBLY</span></footer>
+  <input type="file" id="file" accept=".json,.pixl,application/json" hidden>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

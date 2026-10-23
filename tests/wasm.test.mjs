@@ -1,0 +1,26 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import init, { Editor } from '../web/pkg/pixlprfct_core.js';
+await init({ module_or_path: await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm', import.meta.url)) });
+test('browser WebAssembly bindings support a complete editing session', () => {
+  const editor = new Editor();
+  const id = editor.add('rectangle', 20, 30);
+  const shape = JSON.parse(editor.snapshot()).shapes[0];
+  editor.update(JSON.stringify({ ...shape, x: 100, width: 200 }));
+  assert.equal(editor.hit_test(150, 50), id);
+  const copy = editor.duplicate(id);
+  assert.notEqual(copy, id);
+  editor.remove(id);
+  editor.undo();
+  assert.equal(JSON.parse(editor.snapshot()).shapes.length, 2);
+  editor.redo();
+  assert.equal(JSON.parse(editor.snapshot()).shapes.length, 1);
+  const file = editor.snapshot();
+  const restored = new Editor(); restored.load(file);
+  assert.equal(restored.snapshot(), file);
+  const before = editor.snapshot();
+  assert.throws(() => editor.load('{bad json'));
+  assert.equal(editor.snapshot(), before);
+  editor.free(); restored.free();
+});

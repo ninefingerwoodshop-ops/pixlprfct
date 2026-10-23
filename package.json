@@ -1,0 +1,13 @@
+{
+  "name": "pixlprfct",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir web/pkg && node scripts/build.mjs",
+    "dev": "node scripts/serve.mjs",
+    "test": "cargo test && node --test tests/wasm.test.mjs"
+  },
+  "devDependencies": {
+    "wasm-pack": "^0.15.0"
+  }
+}
