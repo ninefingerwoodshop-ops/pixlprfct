@@ -6,10 +6,13 @@ const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 let toastTimer, savingTimer, recoveryBlocked = false;
 const icons = { rectangle: '□', ellipse: '○', frame: '▦', text: 'T' };
+const pageViews = new Map();
+function pageShapes() { return doc?.shapes.filter(s => s.page_id === doc.active_page) || []; }
+function activePage() { return doc?.pages.find(p => p.id === doc.active_page); }
 
 function toast(message) { $('toast').textContent = message; $('toast').style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').style.display = 'none', 4000); }
 function safe(action) { try { action(); } catch (error) { toast(String(error)); } }
-function current() { return doc?.shapes.find(s => s.id === selected); }
+function current() { return pageShapes().find(s => s.id === selected); }
 function snapshot() { doc = JSON.parse(editor.snapshot()); if (!current()) selected = 0; }
 function persist() {
   if (recoveryBlocked) { $('save-status').textContent = 'Recovery needed — save to a file'; return; }
@@ -20,15 +23,43 @@ function persist() {
   }, 250);
 }
 function refresh(save = true) {
-  snapshot(); renderLayers(); renderProperties(); draw();
+  const previousPage = doc?.active_page;
+  if (previousPage) pageViews.set(previousPage, { zoom, pan: { ...pan } });
+  snapshot();
+  const changedPage = previousPage !== doc.active_page;
+  if (changedPage) { selected = 0; gesture = null; }
+  renderPages(); renderLayers(); renderProperties();
+  if (changedPage) {
+    const view = pageViews.get(doc.active_page);
+    if (view) { zoom = view.zoom; pan = { ...view.pan }; } else fit();
+  }
+  draw();
   $('undo').disabled = !editor.can_undo(); $('redo').disabled = !editor.can_redo();
-  $('document-name').value = doc.name; $('canvas-label').textContent = doc.name;
+  $('document-name').value = doc.name; $('canvas-label').textContent = `${doc.name} / ${activePage().name}`;
   if (save) persist();
 }
 function update(shape) { safe(() => { editor.update(JSON.stringify(shape)); refresh(); }); }
+function switchPage(id) { safe(() => { editor.select_page(id); refresh(); }); }
+function renderPages() {
+  $('pages').replaceChildren(...doc.pages.map(page => {
+    const button = document.createElement('button');
+    button.className = 'page-row' + (page.id === doc.active_page ? ' active' : '');
+    button.textContent = `▤  ${page.name}`; button.title = page.name;
+    button.setAttribute('aria-pressed', String(page.id === doc.active_page));
+    button.onclick = () => switchPage(page.id);
+    button.ondblclick = () => $('rename-page').click();
+    return button;
+  }));
+  $('page-picker').replaceChildren(...doc.pages.map(page => {
+    const option = document.createElement('option'); option.value = page.id; option.textContent = page.name; return option;
+  }));
+  $('page-picker').value = doc.active_page;
+  for (const id of ['delete-page', 'mobile-delete-page']) $(id).disabled = doc.pages.length <= 1;
+  for (const id of ['add-page', 'mobile-add-page']) $(id).disabled = doc.pages.length >= 100;
+}
 function renderLayers() {
-  $('layer-count').textContent = doc.shapes.length;
-  $('layers').replaceChildren(...[...doc.shapes].reverse().map(shape => {
+  $('layer-count').textContent = pageShapes().length;
+  $('layers').replaceChildren(...pageShapes().reverse().map(shape => {
     const button = document.createElement('button');
     button.className = 'layer' + (selected === shape.id ? ' active' : '');
     button.setAttribute('aria-pressed', String(selected === shape.id));
@@ -39,6 +70,7 @@ function renderLayers() {
     button.onclick = () => { selected = shape.id; refresh(false); };
     return button;
   }));
+  if (!pageShapes().length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'A fresh page. Pick a tool below and click the canvas to start.'; $('layers').append(hint); }
 }
 function renderProperties() {
   const shape = current(); $('empty-selection').hidden = !!shape; $('properties').hidden = !shape;
@@ -70,7 +102,7 @@ function draw() {
   const grid = 24 * zoom * (zoom < .5 ? 4 : 1); ctx.fillStyle = '#465054';
   for (let x = ((pan.x % grid) + grid) % grid; x < w; x += grid) for (let y = ((pan.y % grid) + grid) % grid; y < h; y += grid) ctx.fillRect(x, y, 1, 1);
   ctx.translate(pan.x, pan.y); ctx.scale(zoom, zoom);
-  for (const shape of doc.shapes) drawShape(gesture?.preview?.id === shape.id ? gesture.preview : shape);
+  for (const shape of pageShapes()) drawShape(gesture?.preview?.id === shape.id ? gesture.preview : shape);
   const shape = gesture?.preview || current();
   if (shape && !shape.hidden) {
     ctx.strokeStyle = '#91caff'; ctx.lineWidth = 1.3 / zoom; ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -81,7 +113,7 @@ function draw() {
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
 }
 function fit() {
-  const shapes = doc.shapes.filter(s => !s.hidden);
+  const shapes = pageShapes().filter(s => !s.hidden);
   if (!shapes.length) { zoom = 1; pan = { x: 80, y: 100 }; draw(); return; }
   const minX = Math.min(...shapes.map(s => s.x)), minY = Math.min(...shapes.map(s => s.y));
   const width = Math.max(...shapes.map(s => s.x + s.width)) - minX;
@@ -102,7 +134,7 @@ function setTool(value) {
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 function escapeXml(value) { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c])); }
 function exportSvg() {
-  const shapes = doc.shapes.filter(s => !s.hidden); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
+  const shapes = pageShapes().filter(s => !s.hidden); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
   const x = Math.min(...shapes.map(s => s.x)), y = Math.min(...shapes.map(s => s.y));
   const w = Math.max(...shapes.map(s => s.x + s.width)) - x, h = Math.max(...shapes.map(s => s.y + s.height)) - y;
   const body = shapes.map(s => {
@@ -110,9 +142,18 @@ function exportSvg() {
     if (s.kind === 'text') { const size = Math.max(10, Math.min(72, s.height * .66)); return `<clipPath id="clip${s.id}"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}"/></clipPath><text clip-path="url(#clip${s.id})" fill="${s.fill}" font-family="Manrope, sans-serif" font-size="${size}" font-weight="600" dominant-baseline="text-before-edge">${s.text.split('\n').map((line, i) => `<tspan x="${s.x}" y="${s.y + i * size * 1.2}">${escapeXml(line)}</tspan>`).join('')}</text>`; }
     return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" fill="${s.fill}"/>`;
   }).join('');
-  download(`${doc.name || 'design'}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('SVG exported');
+  download(`${doc.name || 'design'} - ${activePage().name}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('Current page exported as SVG');
 }
 function bind() {
+  $('add-page').onclick = () => safe(() => { editor.add_page(); refresh(); setTool('select'); toast('New page added — pick a tool to start designing'); });
+  $('delete-page').onclick = () => safe(() => { editor.delete_page(doc.active_page); refresh(); toast('Page deleted. Use Undo to restore it.'); });
+  $('rename-page').onclick = () => { $('page-name').value = activePage().name; $('page-dialog').showModal(); $('page-name').focus(); $('page-name').select(); };
+  $('cancel-page-name').onclick = () => $('page-dialog').close();
+  $('page-form').onsubmit = event => { event.preventDefault(); safe(() => { editor.rename_page(doc.active_page, $('page-name').value); $('page-dialog').close(); refresh(); }); };
+  $('page-picker').onchange = () => switchPage(Number($('page-picker').value));
+  $('mobile-add-page').onclick = () => $('add-page').click();
+  $('mobile-rename-page').onclick = () => $('rename-page').click();
+  $('mobile-delete-page').onclick = () => $('delete-page').click();
   document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   $('undo').onclick = () => { gesture = null; editor.undo(); refresh(); }; $('redo').onclick = () => { gesture = null; editor.redo(); refresh(); };
   $('zoom-fit').onclick = fit; $('zoom-in').onclick = () => zoomAt(1.2); $('zoom-out').onclick = () => zoomAt(1 / 1.2);
@@ -131,7 +172,7 @@ function bind() {
   $('export').onclick = exportSvg; $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
-    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); editor.load(text); selected = 0; gesture = null; recoveryBlocked = false; refresh(); fit(); toast('Design opened'); }
+    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); editor.load(text); selected = 0; gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
     catch (error) { toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
   };
   canvas.onpointerdown = event => safe(() => {
@@ -167,6 +208,7 @@ function bind() {
   canvas.onlostpointercapture = () => { gesture = null; draw(); };
   canvas.addEventListener('wheel', event => { event.preventDefault(); const rect = canvas.getBoundingClientRect(); zoomAt(Math.exp(-event.deltaY * .001), event.clientX - rect.left, event.clientY - rect.top); }, { passive: false });
   window.addEventListener('keydown', event => {
+    if ($('page-dialog').open) return;
     if (event.target.closest('input,textarea,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }

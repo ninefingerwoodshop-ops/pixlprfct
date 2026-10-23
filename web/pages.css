@@ -1,0 +1,15 @@
+.add-page{color:var(--accent);font-size:10px;padding:7px 6px}
+#pages{max-height:230px;overflow:auto;flex-shrink:0;padding-bottom:4px}
+#pages .page-row{display:block;width:calc(100% - 24px);text-align:left;margin:2px 12px;background:transparent;border-color:transparent;color:#b1bdc0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pages .page-row.active{background:#2b3529;border-color:#40503a;color:#d8edc5}
+#pages .page-row:hover{background:#303a33}
+.page-actions{display:flex;justify-content:space-between;padding:3px 14px 14px;gap:5px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.page-actions button{font-size:10px;color:#a2adb0;padding:7px}
+.empty-layers{font-size:11px;color:#89979a;line-height:1.8;padding:0 20px}
+.mobile-pages{display:none}
+#page-dialog{color:#dfe3e5;background:#1c2123;border:1px solid #4a5942;border-radius:12px;width:min(380px,90vw);padding:26px;box-shadow:0 20px 60px #0006}
+#page-dialog::backdrop{background:#0b1012aa}
+#page-dialog label{display:block;font-size:12px;color:#9eadaf;margin-bottom:10px}
+#page-name{width:100%}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:24px;font-size:12px}
+@media(max-width:760px){.mobile-pages{display:flex;position:absolute;top:12px;left:12px;right:12px;z-index:2;background:#202628;border:1px solid var(--line);border-radius:7px;padding:4px;gap:2px}.mobile-pages select{min-width:0;flex:1;background:#202628;color:#dfe3e5;border:0;padding:6px;font:11px 'DM Sans',sans-serif}.mobile-pages button{padding:5px 8px}.canvas-heading{top:68px}.eyebrow{display:none}}

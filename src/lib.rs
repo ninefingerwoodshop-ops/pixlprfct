@@ -4,6 +4,8 @@ use wasm_bindgen::prelude::*;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
     pub id: u32,
+    #[serde(default = "first_page")]
+    pub page_id: u32,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -20,6 +22,26 @@ pub struct Document {
     pub version: u32,
     pub name: String,
     pub shapes: Vec<Shape>,
+    #[serde(default = "default_pages")]
+    pub pages: Vec<Page>,
+    #[serde(default = "first_page")]
+    pub active_page: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Page {
+    pub id: u32,
+    pub name: String,
+}
+
+fn first_page() -> u32 {
+    1
+}
+fn default_pages() -> Vec<Page> {
+    vec![Page {
+        id: 1,
+        name: "Page 1".into(),
+    }]
 }
 
 #[wasm_bindgen]
@@ -28,14 +50,35 @@ pub struct Editor {
     undo: Vec<Document>,
     redo: Vec<Document>,
     next_id: u32,
+    next_page_id: u32,
 }
 
 fn validate(document: &Document) -> Result<(), String> {
-    if document.version != 1 || document.shapes.len() > 10_000 || document.name.len() > 256 {
+    if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
         return Err("Unsupported document version or document too large".into());
     }
     let mut ids = std::collections::HashSet::new();
+    let mut pages = std::collections::HashSet::new();
+    if document.pages.is_empty() || document.pages.len() > 100 {
+        return Err("Documents must have between 1 and 100 pages".into());
+    }
+    for page in &document.pages {
+        if page.id == 0
+            || page.id == u32::MAX
+            || !pages.insert(page.id)
+            || page.name.trim().is_empty()
+            || page.name.len() > 256
+        {
+            return Err("Invalid page name or ID".into());
+        }
+    }
+    if !pages.contains(&document.active_page) {
+        return Err("Active page not found".into());
+    }
     for shape in &document.shapes {
+        if !pages.contains(&shape.page_id) {
+            return Err("Shape belongs to a missing page".into());
+        }
         if !ids.insert(shape.id) || shape.id == 0 || shape.id == u32::MAX {
             return Err("Invalid or duplicate shape ID".into());
         }
@@ -84,13 +127,16 @@ impl Editor {
     pub fn new() -> Self {
         Self {
             document: Document {
-                version: 1,
+                version: 2,
                 name: "Untitled design".into(),
                 shapes: vec![],
+                pages: default_pages(),
+                active_page: 1,
             },
             undo: vec![],
             redo: vec![],
             next_id: 1,
+            next_page_id: 2,
         }
     }
 
@@ -102,8 +148,19 @@ impl Editor {
         if json.len() > 5_000_000 {
             return Err("Document exceeds 5 MB".into());
         }
-        let document: Document = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let mut document: Document = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if document.version == 1 {
+            document.version = 2;
+            document.pages = default_pages();
+            document.active_page = 1;
+            for shape in &mut document.shapes {
+                shape.page_id = 1;
+            }
+        }
         validate(&document)?;
+        self.next_page_id = self
+            .next_page_id
+            .max(document.pages.iter().map(|p| p.id).max().unwrap_or(1) + 1);
         self.next_id = self
             .next_id
             .max(document.shapes.iter().map(|s| s.id).max().unwrap_or(0) + 1);
@@ -123,6 +180,7 @@ impl Editor {
         };
         document.shapes.push(Shape {
             id,
+            page_id: document.active_page,
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -144,7 +202,9 @@ impl Editor {
         let entry = document
             .shapes
             .iter_mut()
-            .find(|s| s.id == shape.id)
+            .find(|s| {
+                s.id == shape.id && s.page_id == document.active_page && shape.page_id == s.page_id
+            })
             .ok_or("Shape not found")?;
         *entry = shape;
         self.commit(document)
@@ -152,7 +212,9 @@ impl Editor {
 
     pub fn remove(&mut self, id: u32) -> Result<(), String> {
         let mut document = self.document.clone();
-        document.shapes.retain(|s| s.id != id);
+        document
+            .shapes
+            .retain(|s| s.id != id || s.page_id != document.active_page);
         self.commit(document)
     }
 
@@ -164,7 +226,7 @@ impl Editor {
             .document
             .shapes
             .iter()
-            .find(|s| s.id == id)
+            .find(|s| s.id == id && s.page_id == self.document.active_page)
             .ok_or("Shape not found")?
             .clone();
         shape.id = self.next_id;
@@ -180,15 +242,28 @@ impl Editor {
 
     pub fn reorder(&mut self, id: u32, delta: i32) -> Result<(), String> {
         let mut document = self.document.clone();
-        let index = document
+        let indices: Vec<usize> = document
             .shapes
             .iter()
-            .position(|s| s.id == id)
+            .enumerate()
+            .filter(|(_, s)| s.page_id == document.active_page)
+            .map(|(i, _)| i)
+            .collect();
+        let index = indices
+            .iter()
+            .position(|&i| document.shapes[i].id == id)
             .ok_or("Shape not found")?;
-        let target =
-            (index as i64 + delta as i64).clamp(0, document.shapes.len() as i64 - 1) as usize;
-        let shape = document.shapes.remove(index);
-        document.shapes.insert(target, shape);
+        let target = (index as i64 + delta as i64).clamp(0, indices.len() as i64 - 1) as usize;
+        // Rotate only this page's slots, leaving every other page's order intact.
+        let mut shapes: Vec<Shape> = indices
+            .iter()
+            .map(|&i| document.shapes[i].clone())
+            .collect();
+        let shape = shapes.remove(index);
+        shapes.insert(target, shape);
+        for (&i, shape) in indices.iter().zip(shapes) {
+            document.shapes[i] = shape;
+        }
         self.commit(document)
     }
 
@@ -198,7 +273,13 @@ impl Editor {
             .iter()
             .rev()
             .find(|s| {
-                if s.hidden || x < s.x || x > s.x + s.width || y < s.y || y > s.y + s.height {
+                if s.page_id != self.document.active_page
+                    || s.hidden
+                    || x < s.x
+                    || x > s.x + s.width
+                    || y < s.y
+                    || y > s.y + s.height
+                {
                     return false;
                 }
                 if s.kind == "ellipse" {
@@ -211,6 +292,68 @@ impl Editor {
             })
             .map(|s| s.id)
             .unwrap_or(0)
+    }
+
+    pub fn add_page(&mut self) -> Result<u32, String> {
+        if self.next_page_id == u32::MAX {
+            return Err("Page ID limit reached".into());
+        }
+        let id = self.next_page_id;
+        let mut document = self.document.clone();
+        let mut number = 1;
+        while document
+            .pages
+            .iter()
+            .any(|p| p.name == format!("Page {}", number))
+        {
+            number += 1;
+        }
+        document.pages.push(Page {
+            id,
+            name: format!("Page {}", number),
+        });
+        document.active_page = id;
+        self.commit(document)?;
+        self.next_page_id += 1;
+        Ok(id)
+    }
+
+    pub fn select_page(&mut self, id: u32) -> Result<(), String> {
+        if !self.document.pages.iter().any(|p| p.id == id) {
+            return Err("Page not found".into());
+        }
+        // Navigation is not an edit and must not consume undo or discard redo.
+        self.document.active_page = id;
+        Ok(())
+    }
+
+    pub fn rename_page(&mut self, id: u32, name: &str) -> Result<(), String> {
+        let mut document = self.document.clone();
+        let page = document
+            .pages
+            .iter_mut()
+            .find(|p| p.id == id)
+            .ok_or("Page not found")?;
+        page.name = name.trim().into();
+        self.commit(document)
+    }
+
+    pub fn delete_page(&mut self, id: u32) -> Result<(), String> {
+        if self.document.pages.len() == 1 {
+            return Err("Keep at least one page in your document".into());
+        }
+        let mut document = self.document.clone();
+        let index = document
+            .pages
+            .iter()
+            .position(|p| p.id == id)
+            .ok_or("Page not found")?;
+        document.pages.remove(index);
+        document.shapes.retain(|s| s.page_id != id);
+        if document.active_page == id {
+            document.active_page = document.pages[index.min(document.pages.len() - 1)].id;
+        }
+        self.commit(document)
     }
 
     pub fn undo(&mut self) {

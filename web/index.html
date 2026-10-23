@@ -6,6 +6,7 @@
   <meta name="description" content="PixlPrfct — a browser design workspace powered by Rust.">
   <title>PixlPrfct — Design workspace</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./pages.css">
 </head>
 <body>
   <header>
@@ -15,13 +16,15 @@
   </header>
   <main>
     <aside class="left-panel">
-      <div class="panel-heading"><strong>Workspace</strong><span class="small-tag">01</span></div>
-      <div class="page-row"><span>▤</span> Page 1 <span class="page-dot">●</span></div>
+      <div class="panel-heading"><strong>Pages</strong><button id="add-page" class="add-page" title="Add a new page" aria-label="Add a new page">+ New page</button></div>
+      <div id="pages" aria-label="Pages"></div>
+      <div class="page-actions"><button id="rename-page">Rename</button><button id="delete-page" title="Delete current page (undoable)">Delete page</button></div>
       <div class="section-label">LAYERS <span id="layer-count">0</span></div>
       <div id="layers" aria-label="Layers"></div>
       <div class="left-footer"><span class="engine-dot"></span><div><strong>Made for your next idea.</strong><small id="engine-status">Starting Rust engine…</small></div></div>
     </aside>
     <section id="workspace" aria-label="Design canvas workspace">
+      <div class="mobile-pages"><select id="page-picker" aria-label="Current page"></select><button id="mobile-add-page" aria-label="Add a new page">+</button><button id="mobile-rename-page" aria-label="Rename current page">✎</button><button id="mobile-delete-page" aria-label="Delete current page">×</button></div>
       <div class="canvas-heading"><span class="eyebrow">YOUR CREATIVE SPACE</span><span id="canvas-label">Launch concept</span></div>
       <canvas id="canvas" tabindex="0" aria-label="Design canvas. Use the toolbar to add shapes. Edit selected objects in the properties panel."></canvas>
       <div class="toolbox" role="toolbar" aria-label="Drawing tools">
@@ -45,6 +48,7 @@
   </main>
   <footer><span><i></i> <span id="save-status">Stored on this device</span></span><span>Space + drag to pan <b>·</b> Scroll to zoom <b>·</b> Shift to snap</span><span>RUST + WEBASSEMBLY</span></footer>
   <input type="file" id="file" accept=".json,.pixl,application/json" hidden>
+  <dialog id="page-dialog"><form id="page-form"><h2>Rename page</h2><label for="page-name">Page name</label><input id="page-name" maxlength="256" required autocomplete="off"><div class="dialog-actions"><button type="button" id="cancel-page-name">Cancel</button><button class="primary" type="submit">Save name</button></div></form></dialog>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

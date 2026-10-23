@@ -19,6 +19,7 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 ## First milestone
 
 - Canvas pan/zoom, rectangles, ellipses, text, and visual frame backgrounds.
+- Multiple pages: create, rename, switch, and delete with undo. Each page has independent layers and an in-session pan/zoom position.
 - Selection, dragging, corner resizing, arrow-key nudging, and 8-unit snapping while holding Shift.
 - Layers, visibility, fill, position, dimensions, duplicate/delete, and layer order.
 - Rust-backed hit testing, document validation, and 100-step undo/redo.
@@ -40,6 +41,8 @@ Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, 1 fit, Spac
 No accounts, cloud document sync, multiplayer, components, auto layout, groups, vector paths, image import, or `.fig` import. Frames are background shapes, not containers. Selection is single-object. Text uses a fixed weight and a size derived from its bounding box, with clipping and no word wrapping. SVG text depends on fonts available in the viewing application.
 
 Local storage belongs to this browser and origin; use **Save file** for portable backups. Multiple tabs do not merge edits. The desktop application is not implemented yet.
+
+Use **+ New page** in the Pages sidebar to start another canvas. Select a page and use **Rename** or **Delete page** below the list. At least one page must remain. On narrow screens the page picker and page controls appear above the canvas. Save files include every page; SVG export includes only the current page. Version 1 files and existing local designs automatically migrate to Page 1 in the version 2 format. Page navigation does not consume undo history; undo/redo of an edit returns to its saved active page.
 
 ## Hosting
 
