@@ -127,3 +127,46 @@ test('older text retains its original size and unwrapped layout on migration', (
   assert.ok(Math.abs(JSON.parse(editor.snapshot()).shapes[0].typography.font_size - migrated.typography.font_size) < 1e-9);
   editor.free();
 });
+
+test('multi-layer edits commit atomically and undo in one step', () => {
+  const editor = new Editor();
+  const a=editor.add('rectangle',0,0), b=editor.add('ellipse',200,50);
+  const original=editor.snapshot(), shapes=JSON.parse(original).shapes;
+  editor.update_many(JSON.stringify(shapes.map(s=>({...s,x:s.x+30,y:s.y+10}))));
+  editor.undo(); assert.equal(editor.snapshot(),original);
+  editor.redo(); assert.equal(JSON.parse(editor.snapshot()).shapes[1].x,230);
+  const before=editor.snapshot();
+  assert.throws(()=>editor.update_many(JSON.stringify([{...shapes[0],x:90},{...shapes[1],width:-3}])));
+  assert.equal(editor.snapshot(),before);
+  assert.throws(()=>editor.update_many(JSON.stringify([shapes[0],shapes[0]])));
+  assert.equal(editor.snapshot(),before);
+  const ids=JSON.parse(editor.duplicate_many(JSON.stringify([b,a])));
+  const copies=JSON.parse(editor.snapshot()).shapes.slice(-2);
+  assert.deepEqual(copies.map(s=>s.kind),['rectangle','ellipse']);
+  assert.equal(copies[0].x,54);
+  editor.remove_many(JSON.stringify(ids));
+  assert.equal(JSON.parse(editor.snapshot()).shapes.length,2);
+  editor.undo(); assert.equal(JSON.parse(editor.snapshot()).shapes.length,4);
+  editor.free();
+});
+
+test('alignment and unequal-size spacing preserve anchors and page isolation', () => {
+  const editor=new Editor(); const a=editor.add('rectangle',0,0), b=editor.add('rectangle',55,30), c=editor.add('rectangle',100,60);
+  const original=JSON.parse(editor.snapshot());
+  editor.update_many(JSON.stringify(original.shapes.map((s,i)=>({...s,width:[10,20,30][i],height:10}))));
+  const ids=JSON.stringify([a,b,c]);
+  editor.distribute_many(ids,'horizontal');
+  assert.deepEqual(JSON.parse(editor.snapshot()).shapes.map(s=>s.x),[0,45,100]);
+  const spaced=editor.snapshot();
+  editor.align_many(ids,'bottom');
+  assert.deepEqual(JSON.parse(editor.snapshot()).shapes.map(s=>s.y),[60,60,60]);
+  editor.undo(); assert.equal(editor.snapshot(),spaced);
+  const page=editor.add_page(); const other=editor.add('rectangle',10,10);
+  const before=editor.snapshot();
+  assert.throws(()=>editor.align_many(JSON.stringify([a,other]),'left'));
+  assert.throws(()=>editor.remove_many(ids));
+  assert.throws(()=>editor.duplicate_many(ids));
+  assert.equal(editor.snapshot(),before);
+  assert.equal(JSON.parse(before).active_page,page);
+  editor.free();
+});

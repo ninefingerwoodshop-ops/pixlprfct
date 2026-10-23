@@ -2,41 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#171b1d">
+  <meta name="theme-color" content="#ffffff">
   <meta name="description" content="PixlPrfct — a browser design workspace powered by Rust.">
   <title>PixlPrfct — Design workspace</title>
-  <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./pages.css">
-  <link rel="stylesheet" href="./typography.css">
+  <link rel="stylesheet" href="./editor.css">
 </head>
 <body>
-  <header>
-    <a class="brand" href="./" aria-label="PixlPrfct home"><span class="brand-icon">p<span>·</span></span>pixl<span>prfct</span><sup>PREVIEW</sup></a>
-    <div class="document-title"><span class="muted">Drafts</span><span class="slash">/</span><input id="document-name" aria-label="Document name" value="Untitled design" maxlength="256"><span class="save-dot" title="Local document"></span></div>
-    <div class="header-actions"><button id="open">Open</button><button id="save">Save file <span>↗</span></button><button id="export" class="primary">Export SVG <span>↗</span></button></div>
-  </header>
+  <nav class="navigation-rail" aria-label="Editor navigation">
+    <details class="file-menu"><summary aria-label="PixlPrfct menu" title="PixlPrfct menu"><span class="app-mark">P</span></summary><div class="menu-panel"><strong>PixlPrfct</strong><button id="open">Open design… <kbd>File</kbd></button><button id="save">Save local copy… <kbd>Ctrl S</kbd></button><button id="shortcuts">Keyboard shortcuts <kbd>?</kbd></button></div></details>
+    <button class="rail-button active" id="nav-file" aria-label="File panel" title="File"><span data-icon="file"></span><span>File</span></button>
+    <button class="rail-button" id="nav-search" aria-label="Find layers" title="Find layers"><span data-icon="search"></span><span>Find</span></button>
+    <button class="rail-button" id="nav-tools" aria-label="Tools and shortcuts" title="Tools and shortcuts"><span data-icon="tools"></span><span>Tools</span></button>
+    <button class="rail-button rail-bottom" id="nav-help" aria-label="Keyboard shortcuts" title="Keyboard shortcuts"><span data-icon="help"></span><span>Help</span></button>
+  </nav>
   <main>
     <aside class="left-panel">
+      <div class="file-heading"><input id="document-name" aria-label="Document name" value="Untitled design" maxlength="256"><span class="file-chevron">⌄</span><span class="file-location">Drafts <span>Local file</span></span></div>
+      <div class="file-tabs"><span class="selected-tab">File</span><span class="app-name">PixlPrfct</span><button id="search-toggle" aria-label="Search layers" title="Search layers" data-icon="search"></button></div>
+      <div id="search-panel" hidden><input id="layer-search" type="search" placeholder="Find a layer…" aria-label="Find a layer"></div>
       <div class="panel-heading"><strong>Pages</strong><button id="add-page" class="add-page" title="Add a new page" aria-label="Add a new page">+ New page</button></div>
       <div id="pages" aria-label="Pages"></div>
       <div class="page-actions"><button id="rename-page">Rename</button><button id="delete-page" title="Delete current page (undoable)">Delete page</button></div>
-      <div class="section-label">LAYERS <span id="layer-count">0</span></div>
+      <div class="section-label">Layers <span id="layer-count">0</span></div>
       <div id="layers" aria-label="Layers"></div>
-      <div class="left-footer"><span class="engine-dot"></span><div><strong>Made for your next idea.</strong><small id="engine-status">Starting Rust engine…</small></div></div>
+      <div class="left-footer"><span class="engine-dot"></span><span id="save-status">Stored on this device</span><span id="engine-status" class="sr-only">Starting Rust engine…</span></div>
     </aside>
+    <div id="sidebar-resize" role="separator" aria-label="Resize layers panel" aria-orientation="vertical" tabindex="0" aria-valuemin="200" aria-valuemax="400" aria-valuenow="240"></div>
     <section id="workspace" aria-label="Design canvas workspace">
       <div class="mobile-pages"><select id="page-picker" aria-label="Current page"></select><button id="mobile-add-page" aria-label="Add a new page">+</button><button id="mobile-rename-page" aria-label="Rename current page">✎</button><button id="mobile-delete-page" aria-label="Delete current page">×</button></div>
-      <div class="canvas-heading"><span class="eyebrow">YOUR CREATIVE SPACE</span><span id="canvas-label">Launch concept</span></div>
+      <div class="canvas-heading"><span id="canvas-label">Launch concept</span></div>
       <canvas id="canvas" tabindex="0" aria-label="Design canvas. Use the toolbar to add shapes. Edit selected objects in the properties panel."></canvas>
       <div class="toolbox" role="toolbar" aria-label="Drawing tools">
         <button data-tool="select" class="active" title="Select (V)" aria-label="Select" aria-pressed="true">↖</button><button data-tool="hand" title="Hand (H)" aria-label="Pan" aria-pressed="false">✥</button><i></i><button data-tool="frame" title="Frame (F)" aria-label="Frame" aria-pressed="false">▦</button><button data-tool="rectangle" title="Rectangle (R)" aria-label="Rectangle" aria-pressed="false">□</button><button data-tool="ellipse" title="Ellipse (O)" aria-label="Ellipse" aria-pressed="false">○</button><button data-tool="text" title="Text (T)" aria-label="Text" aria-pressed="false">T</button><i></i><button id="undo" title="Undo (Ctrl/Cmd Z)" aria-label="Undo">↶</button><button id="redo" title="Redo (Ctrl/Cmd Shift Z)" aria-label="Redo">↷</button>
       </div>
-      <div class="canvas-bottom"><span id="hint">Select an object to make it yours</span><div class="zoom-control"><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-fit" title="Fit document (1)">100%</button><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+      <div class="canvas-bottom"><span id="hint">Shift-click to select multiple layers · Drag empty canvas to select</span></div>
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
     <aside class="right-panel">
-      <div class="panel-heading"><strong>Design</strong><span class="muted">Properties</span></div>
-      <div id="empty-selection"><div class="empty-icon">↖</div><h2>A little space.<br>Infinite possibilities.</h2><p>Select a layer to edit its properties, or pick a tool and click the canvas to create.</p><div class="shortcut"><kbd>V</kbd> Select <kbd>R</kbd> Rectangle</div><div class="shortcut"><kbd>O</kbd> Ellipse <kbd>T</kbd> Text</div></div>
+      <div class="inspector-top"><span class="user-avatar" title="Local editor">P</span><div class="zoom-control"><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-fit" title="Fit document (Shift 1)">100%</button><button id="zoom-in" aria-label="Zoom in">+</button></div><button id="export" class="primary">Export</button></div>
+      <div class="inspector-tabs"><strong>Design</strong><span class="selection-caption" id="selection-caption">Page</span></div>
+      <div id="empty-selection"><section class="property-section"><h3>Page</h3><div class="page-color"><span></span><span>F5F5F5</span><span class="muted">100%</span></div></section><section class="property-section"><h3>Start designing</h3><p>Choose a tool below to add a frame, shape, or text.</p><div class="shortcut"><kbd>V</kbd> Move <kbd>F</kbd> Frame</div><div class="shortcut"><kbd>R</kbd> Rectangle <kbd>T</kbd> Text</div></section><section class="property-section"><h3>Selection</h3><p>Shift-click objects to select more than one. Drag on empty canvas to select an area.</p></section></div>
+      <div id="multi-properties" hidden><section class="property-section"><h3 id="multi-title">Selection</h3><div id="multi-size" class="muted"></div></section><section class="property-section"><h3>Position</h3><div class="align-tools" role="toolbar" aria-label="Align selection"><button data-align="left" data-icon="align-left" aria-label="Align left" title="Align left (Alt A)"></button><button data-align="center" data-icon="align-center" aria-label="Align horizontal centers" title="Align horizontal centers"></button><button data-align="right" data-icon="align-right" aria-label="Align right" title="Align right (Alt D)"></button><button data-align="top" data-icon="align-top" aria-label="Align top" title="Align top (Alt W)"></button><button data-align="middle" data-icon="align-middle" aria-label="Align vertical centers" title="Align vertical centers"></button><button data-align="bottom" data-icon="align-bottom" aria-label="Align bottom" title="Align bottom (Alt S)"></button></div><div class="distribute-tools"><button data-distribute="horizontal">Distribute horizontally</button><button data-distribute="vertical">Distribute vertically</button></div></section><section class="property-section"><h3>Fill</h3><div class="fill-row"><input id="multi-fill" type="color" aria-label="Selection fill color"><span id="multi-fill-value">Mixed</span></div></section><section class="property-section"><button id="multi-duplicate" class="wide-button">Duplicate selection <kbd>Ctrl D</kbd></button><button id="multi-delete" class="wide-button danger">Delete selection <kbd>Del</kbd></button></section></div>
       <div id="properties" hidden>
         <section class="property-section"><label class="field-label" for="shape-name">LAYER</label><input id="shape-name" maxlength="256"><div class="kind-row"><span id="shape-kind"></span><label><input type="checkbox" id="visible"> Visible</label></div></section>
         <section class="property-section"><h3>Position & size</h3><div class="property-grid"><label>X<input id="x" type="number" step="1"></label><label>Y<input id="y" type="number" step="1"></label><label>W<input id="width" type="number" min="1" max="1000000" step="1"></label><label>H<input id="height" type="number" min="1" max="1000000" step="1"></label></div></section>
@@ -54,12 +60,11 @@
         </section>
         <section class="property-section"><h3>Arrange</h3><div class="arrange-row"><button id="backward">↓ Backward</button><button id="forward">↑ Forward</button></div><button id="duplicate" class="wide-button">Duplicate layer <kbd>⌘/Ctrl D</kbd></button><button id="delete" class="wide-button danger">Delete layer <kbd>Del</kbd></button></section>
       </div>
-      <div class="right-footer"><span>PIXLPRFCT / EARLY ACCESS</span><p>Less friction. More creation.</p></div>
     </aside>
   </main>
-  <footer><span><i></i> <span id="save-status">Stored on this device</span></span><span>Space + drag to pan <b>·</b> Scroll to zoom <b>·</b> Shift to snap</span><span>RUST + WEBASSEMBLY</span></footer>
   <input type="file" id="file" accept=".json,.pixl,application/json" hidden>
   <dialog id="page-dialog"><form id="page-form"><h2>Rename page</h2><label for="page-name">Page name</label><input id="page-name" maxlength="256" required autocomplete="off"><div class="dialog-actions"><button type="button" id="cancel-page-name">Cancel</button><button class="primary" type="submit">Save name</button></div></form></dialog>
+  <dialog id="shortcuts-dialog"><h2>Keyboard shortcuts</h2><dl><dt>Move / hand / frame</dt><dd>V / H / F</dd><dt>Rectangle / ellipse / text</dt><dd>R / O / T</dd><dt>Select all on page</dt><dd>Ctrl / Cmd A</dd><dt>Add or remove from selection</dt><dd>Shift-click</dd><dt>Layer range selection</dt><dd>Shift-click layer</dd><dt>Duplicate selection</dt><dd>Ctrl / Cmd D</dd><dt>Undo / redo</dt><dd>Ctrl Z / Ctrl Shift Z</dd><dt>Fit page / selection</dt><dd>Shift 1 / Shift 2</dd><dt>Pan / zoom</dt><dd>Scroll / Ctrl-scroll</dd><dt>Temporary hand</dt><dd>Hold Space</dd><dt>Nudge / large nudge</dt><dd>Arrow / Shift-arrow</dd><dt>Align left / right / top / bottom</dt><dd>Alt A / D / W / S</dd></dl><button id="close-shortcuts" class="primary">Done</button></dialog>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

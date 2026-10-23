@@ -1,9 +1,0 @@
-#text-section select{width:100%;font:11px 'DM Sans',sans-serif;color:#dfe3e5;background:#252d2f;border:1px solid var(--line);border-radius:5px;padding:9px;min-width:0}
-.type-label,.type-grid label{display:block;font-size:10px;color:#a3afb3}
-.type-label{margin-bottom:7px}.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.type-grid input,.type-grid select{display:block;margin-top:7px;width:100%;font-size:11px;padding:9px}
-.wrap-label{display:flex;gap:6px;align-items:center;font-size:11px;margin:16px 0 20px;color:#c1cbcd}
-.fit-text{width:100%;margin-top:10px;border:1px solid #4b6040;color:var(--accent);font-size:11px;background:#293225}
-#text-overflow{font-size:10px;line-height:1.6;color:#ebbf7b;margin-bottom:0}
-.type-help{font-size:10px;color:#859498;line-height:1.7;margin:12px 0 0}
-aside{scrollbar-width:thin;scrollbar-color:#465054 #1c2123}

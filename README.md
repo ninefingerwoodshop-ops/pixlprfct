@@ -1,6 +1,6 @@
 # PixlPrfct
 
-A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. This is an early, single-user prototype, not a complete Figma replacement.
+A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor now follows the structure and interaction conventions of the current Figma Design UI, while retaining the PixlPrfct name. This is an early, single-user prototype, not a complete Figma replacement.
 
 ## Run locally
 
@@ -20,14 +20,16 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 
 - Canvas pan/zoom, rectangles, ellipses, text, and visual frame backgrounds.
 - Multiple pages: create, rename, switch, and delete with undo. Each page has independent layers and an in-session pan/zoom position.
-- Selection, dragging, corner resizing, arrow-key nudging, and 8-unit snapping while holding Shift.
+- Multi-selection, marquee selection, dragging, single-object corner resizing, arrow-key nudging, and axis-constrained movement while holding Shift.
+- Align to selection bounds, distribute equal gaps, and batch fill, duplicate, delete, and move operations with one undo step per operation.
+- Vertical navigation rail, resizable file sidebar, searchable layer list, compact properties inspector, and floating drawing toolbar.
 - Layers, visibility, fill, position, dimensions, duplicate/delete, and layer order.
 - Rust-backed hit testing, document validation, and 100-step undo/redo.
 - Browser-local autosave, `.pixl` JSON save/load, and SVG export.
 - Text controls for font family, size, weight, alignment, line spacing, wrapping, and fitting the box height to its content. Double-click canvas text to focus the content editor.
 - An editable starter composition to explore immediately.
 
-Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, 1 fit, Space+drag pan, Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo, Ctrl/Cmd+D duplicate, Ctrl/Cmd+S save. Click to place a shape, then resize it. Text content is edited in the inspector.
+Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, Shift+1 fit page, Shift+2 fit selection, Space+drag pan, Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo, Ctrl/Cmd+D duplicate, Ctrl/Cmd+S save, Ctrl/Cmd+A select all visible objects on the page. Scroll pans; Ctrl/Cmd+scroll zooms. Shift-click toggles canvas objects, Shift-click selects a layer range in the sidebar, and Ctrl/Cmd-click toggles individual sidebar layers. Alt+A/D/W/S aligns the selection left/right/top/bottom. Click to place a shape, then resize it. Text content is edited in the inspector. The menu and Help rail button show shortcuts.
 
 ## Architecture
 
@@ -39,7 +41,9 @@ Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, 1 fit, Spac
 
 ## Current limits
 
-No accounts, cloud document sync, multiplayer, components, auto layout, groups, vector paths, image import, or `.fig` import. Frames are background shapes, not containers. Selection is single-object. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
+No accounts, cloud document sync, multiplayer, components, auto layout, groups, vector paths, image import, or `.fig` import. Frames are background shapes, not containers: parent/child selection and moving frame contents are not implemented yet. Multi-selection supports movement and alignment, but not collective resizing. Marquee intersects bounding boxes; no deep selection of nested objects is available. Alignment targets the selection bounds, not a parent frame. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
+
+Interface references: [current navigation](https://help.figma.com/hc/en-us/articles/360039831974-Explore-the-navigation-bar-and-left-sidebar), [selection](https://help.figma.com/hc/en-us/articles/360040449873-Select-layers-and-objects), and [alignment and distribution](https://help.figma.com/hc/en-us/articles/360039956914-Adjust-alignment-rotation-position-and-dimensions). Unimplemented Figma features are not presented as functioning controls.
 
 Local storage belongs to this browser and origin; use **Save file** for portable backups. Multiple tabs do not merge edits. The desktop application is not implemented yet.
 

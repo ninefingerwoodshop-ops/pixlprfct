@@ -139,6 +139,24 @@ fn validate(document: &Document) -> Result<(), String> {
 }
 
 impl Editor {
+    fn selection_ids(&self, json: &str) -> Result<Vec<u32>, String> {
+        let ids: Vec<u32> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let unique: std::collections::HashSet<u32> = ids.iter().copied().collect();
+        if ids.is_empty()
+            || unique.len() != ids.len()
+            || ids.iter().any(|id| {
+                !self
+                    .document
+                    .shapes
+                    .iter()
+                    .any(|s| s.id == *id && s.page_id == self.document.active_page)
+            })
+        {
+            return Err("Selection must contain unique layers from the current page".into());
+        }
+        Ok(ids)
+    }
+
     fn commit(&mut self, document: Document) -> Result<(), String> {
         validate(&document)?;
         if document != self.document {
@@ -223,8 +241,8 @@ impl Editor {
         let mut document = self.document.clone();
         let (width, height, fill) = match kind {
             "frame" => (600.0, 400.0, "#ffffff"),
-            "text" => (240.0, 56.0, "#20252b"),
-            _ => (160.0, 120.0, "#a3e635"),
+            "text" => (240.0, 56.0, "#000000"),
+            _ => (160.0, 120.0, "#d9d9d9"),
         };
         document.shapes.push(Shape {
             id,
@@ -260,6 +278,126 @@ impl Editor {
             })
             .ok_or("Shape not found")?;
         *entry = shape;
+        self.commit(document)
+    }
+
+    pub fn update_many(&mut self, json: &str) -> Result<(), String> {
+        let shapes: Vec<Shape> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
+        self.selection_ids(&serde_json::to_string(&ids).unwrap())?;
+        let mut document = self.document.clone();
+        for shape in shapes {
+            if shape.page_id != document.active_page {
+                return Err("Cannot move a layer to another page through a selection edit".into());
+            }
+            let id = shape.id;
+            *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
+        }
+        self.commit(document)
+    }
+
+    pub fn remove_many(&mut self, json: &str) -> Result<(), String> {
+        let ids = self.selection_ids(json)?;
+        let mut document = self.document.clone();
+        document.shapes.retain(|s| !ids.contains(&s.id));
+        self.commit(document)
+    }
+
+    pub fn duplicate_many(&mut self, json: &str) -> Result<String, String> {
+        let ids = self.selection_ids(json)?;
+        let next_id = self
+            .next_id
+            .checked_add(ids.len() as u32)
+            .ok_or("Shape ID limit reached")?;
+        let mut document = self.document.clone();
+        let mut created = vec![];
+        // Copy in document order, independent of the order of selection clicks.
+        for shape in &self.document.shapes {
+            if ids.contains(&shape.id) {
+                let mut copy = shape.clone();
+                copy.id = self.next_id + created.len() as u32;
+                copy.x += 24.0;
+                copy.y += 24.0;
+                created.push(copy.id);
+                document.shapes.push(copy);
+            }
+        }
+        self.commit(document)?;
+        self.next_id = next_id;
+        Ok(serde_json::to_string(&created).unwrap())
+    }
+
+    pub fn align_many(&mut self, json: &str, alignment: &str) -> Result<(), String> {
+        let ids = self.selection_ids(json)?;
+        if ids.len() < 2 {
+            return Err("Select at least two layers to align".into());
+        }
+        let mut document = self.document.clone();
+        let shapes: Vec<&Shape> = document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .collect();
+        let left = shapes.iter().map(|s| s.x).fold(f64::INFINITY, f64::min);
+        let top = shapes.iter().map(|s| s.y).fold(f64::INFINITY, f64::min);
+        let right = shapes
+            .iter()
+            .map(|s| s.x + s.width)
+            .fold(f64::NEG_INFINITY, f64::max);
+        let bottom = shapes
+            .iter()
+            .map(|s| s.y + s.height)
+            .fold(f64::NEG_INFINITY, f64::max);
+        for shape in document.shapes.iter_mut().filter(|s| ids.contains(&s.id)) {
+            match alignment {
+                "left" => shape.x = left,
+                "center" => shape.x = (left + right - shape.width) / 2.0,
+                "right" => shape.x = right - shape.width,
+                "top" => shape.y = top,
+                "middle" => shape.y = (top + bottom - shape.height) / 2.0,
+                "bottom" => shape.y = bottom - shape.height,
+                _ => return Err("Unknown alignment".into()),
+            }
+        }
+        self.commit(document)
+    }
+
+    pub fn distribute_many(&mut self, json: &str, axis: &str) -> Result<(), String> {
+        let ids = self.selection_ids(json)?;
+        if ids.len() < 3 {
+            return Err("Select at least three layers to distribute".into());
+        }
+        if axis != "horizontal" && axis != "vertical" {
+            return Err("Unknown distribution axis".into());
+        }
+        let horizontal = axis == "horizontal";
+        let mut document = self.document.clone();
+        let mut shapes: Vec<Shape> = document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .cloned()
+            .collect();
+        let pos = |s: &Shape| if horizontal { s.x } else { s.y };
+        let size = |s: &Shape| if horizontal { s.width } else { s.height };
+        shapes.sort_by(|a, b| pos(a).total_cmp(&pos(b)));
+        let first = pos(&shapes[0]);
+        let last = shapes.last().unwrap();
+        let gap = (pos(last) + size(last) - first - shapes.iter().map(size).sum::<f64>())
+            / (shapes.len() - 1) as f64;
+        let mut cursor = first;
+        for shape in shapes.iter_mut() {
+            if horizontal {
+                shape.x = cursor;
+            } else {
+                shape.y = cursor;
+            }
+            cursor += size(shape) + gap;
+        }
+        for shape in shapes {
+            let id = shape.id;
+            *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
+        }
         self.commit(document)
     }
 
@@ -453,7 +591,7 @@ mod tests {
         editor.add("rectangle", 0.0, 0.0).unwrap();
         let original = editor.snapshot();
         assert!(editor
-            .load(&original.replace("#a3e635", "invalid"))
+            .load(&original.replace("#d9d9d9", "invalid"))
             .is_err());
         assert_eq!(editor.snapshot(), original);
         let mut restored = Editor::new();
