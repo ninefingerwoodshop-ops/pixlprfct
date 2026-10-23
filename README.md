@@ -24,6 +24,7 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 - Layers, visibility, fill, position, dimensions, duplicate/delete, and layer order.
 - Rust-backed hit testing, document validation, and 100-step undo/redo.
 - Browser-local autosave, `.pixl` JSON save/load, and SVG export.
+- Text controls for font family, size, weight, alignment, line spacing, wrapping, and fitting the box height to its content. Double-click canvas text to focus the content editor.
 - An editable starter composition to explore immediately.
 
 Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, 1 fit, Space+drag pan, Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo, Ctrl/Cmd+D duplicate, Ctrl/Cmd+S save. Click to place a shape, then resize it. Text content is edited in the inspector.
@@ -38,7 +39,7 @@ Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, 1 fit, Spac
 
 ## Current limits
 
-No accounts, cloud document sync, multiplayer, components, auto layout, groups, vector paths, image import, or `.fig` import. Frames are background shapes, not containers. Selection is single-object. Text uses a fixed weight and a size derived from its bounding box, with clipping and no word wrapping. SVG text depends on fonts available in the viewing application.
+No accounts, cloud document sync, multiplayer, components, auto layout, groups, vector paths, image import, or `.fig` import. Frames are background shapes, not containers. Selection is single-object. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
 
 Local storage belongs to this browser and origin; use **Save file** for portable backups. Multiple tabs do not merge edits. The desktop application is not implemented yet.
 

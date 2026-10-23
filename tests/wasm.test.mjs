@@ -96,3 +96,34 @@ test('page navigation preserves redo, and layer reordering stays within a page',
   assert.equal(editor.snapshot(), state);
   editor.free();
 });
+
+test('typography survives history and roundtrip; invalid updates are atomic', () => {
+  const editor = new Editor(); editor.add('text', 0, 0);
+  const shape = JSON.parse(editor.snapshot()).shapes[0];
+  const styled = {...shape, typography:{font_size:48,font_family:'Georgia',font_weight:700,align:'center',line_height:1.5,wrap:true}};
+  editor.update(JSON.stringify(styled));
+  const saved = editor.snapshot();
+  editor.undo(); assert.deepEqual(JSON.parse(editor.snapshot()).shapes[0],shape);
+  editor.redo(); assert.equal(editor.snapshot(),saved);
+  const restored = new Editor(); restored.load(saved); assert.equal(restored.snapshot(),saved);
+  for (const invalid of [{font_size:0},{font_size:513},{font_weight:999},{font_family:'unknown'},{align:'justify'},{line_height:0}]) {
+    assert.throws(() => editor.update(JSON.stringify({...styled,typography:{...styled.typography,...invalid}})));
+    assert.equal(editor.snapshot(),saved);
+  }
+  editor.update(JSON.stringify({...styled,height:300}));
+  assert.equal(JSON.parse(editor.snapshot()).shapes[0].typography.font_size,48);
+  editor.free(); restored.free();
+});
+
+test('older text retains its original size and unwrapped layout on migration', () => {
+  const editor = new Editor(); editor.add('text', 0, 0);
+  const old = JSON.parse(editor.snapshot());
+  delete old.shapes[0].typography; old.shapes[0].height=40;
+  editor.load(JSON.stringify(old));
+  const migrated=JSON.parse(editor.snapshot()).shapes[0];
+  assert.ok(Math.abs(migrated.typography.font_size - 26.4) < 1e-9);
+  assert.equal(migrated.typography.wrap,false);
+  editor.update(JSON.stringify({...migrated,height:200}));
+  assert.ok(Math.abs(JSON.parse(editor.snapshot()).shapes[0].typography.font_size - migrated.typography.font_size) < 1e-9);
+  editor.free();
+});

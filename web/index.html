@@ -7,6 +7,7 @@
   <title>PixlPrfct — Design workspace</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./pages.css">
+  <link rel="stylesheet" href="./typography.css">
 </head>
 <body>
   <header>
@@ -40,7 +41,17 @@
         <section class="property-section"><label class="field-label" for="shape-name">LAYER</label><input id="shape-name" maxlength="256"><div class="kind-row"><span id="shape-kind"></span><label><input type="checkbox" id="visible"> Visible</label></div></section>
         <section class="property-section"><h3>Position & size</h3><div class="property-grid"><label>X<input id="x" type="number" step="1"></label><label>Y<input id="y" type="number" step="1"></label><label>W<input id="width" type="number" min="1" max="1000000" step="1"></label><label>H<input id="height" type="number" min="1" max="1000000" step="1"></label></div></section>
         <section class="property-section"><h3>Fill</h3><div class="fill-row"><input type="color" id="fill" aria-label="Fill color"><span id="fill-value"></span><span class="muted">100%</span></div></section>
-        <section id="text-section" class="property-section" hidden><label class="field-label" for="text">TEXT CONTENT</label><textarea id="text" rows="4" maxlength="10000"></textarea></section>
+        <section id="text-section" class="property-section" hidden>
+          <h3>Typography</h3>
+          <label class="type-label" for="font-family">Font</label><select id="font-family"><option>Manrope</option><option>DM Sans</option><option>Georgia</option><option value="monospace">Monospace</option></select>
+          <div class="type-grid"><label>Size<input id="font-size" type="number" min="1" max="512" step="1"></label><label>Weight<select id="font-weight"><option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option><option value="700">Bold</option><option value="800">Extra bold</option></select></label></div>
+          <div class="type-grid"><label>Line spacing<input id="line-height" type="number" min="0.5" max="4" step="0.1"></label><label>Alignment<select id="text-align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select></label></div>
+          <label class="wrap-label"><input id="text-wrap" type="checkbox"> Wrap text to box</label>
+          <label class="field-label" for="text">TEXT CONTENT</label><textarea id="text" rows="4" maxlength="10000"></textarea>
+          <p id="text-overflow" role="status" hidden>Some text is clipped. Increase the box size or fit its height.</p>
+          <button id="fit-text" class="fit-text">Fit height to text</button>
+          <p class="type-help">Double-click text on the canvas to edit its content here.</p>
+        </section>
         <section class="property-section"><h3>Arrange</h3><div class="arrange-row"><button id="backward">↓ Backward</button><button id="forward">↑ Forward</button></div><button id="duplicate" class="wide-button">Duplicate layer <kbd>⌘/Ctrl D</kbd></button><button id="delete" class="wide-button danger">Delete layer <kbd>Del</kbd></button></section>
       </div>
       <div class="right-footer"><span>PIXLPRFCT / EARLY ACCESS</span><p>Less friction. More creation.</p></div>

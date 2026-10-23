@@ -15,6 +15,31 @@ pub struct Shape {
     pub fill: String,
     pub text: String,
     pub hidden: bool,
+    #[serde(default)]
+    pub typography: Option<Typography>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Typography {
+    pub font_size: f64,
+    pub font_family: String,
+    pub font_weight: u16,
+    pub align: String,
+    pub line_height: f64,
+    pub wrap: bool,
+}
+
+impl Default for Typography {
+    fn default() -> Self {
+        Self {
+            font_size: 32.0,
+            font_family: "Manrope".into(),
+            font_weight: 600,
+            align: "left".into(),
+            line_height: 1.2,
+            wrap: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -76,6 +101,19 @@ fn validate(document: &Document) -> Result<(), String> {
         return Err("Active page not found".into());
     }
     for shape in &document.shapes {
+        if let Some(style) = &shape.typography {
+            if !style.font_size.is_finite()
+                || !(1.0..=512.0).contains(&style.font_size)
+                || !style.line_height.is_finite()
+                || !(0.5..=4.0).contains(&style.line_height)
+                || ![400, 500, 600, 700, 800].contains(&style.font_weight)
+                || !["Manrope", "DM Sans", "Georgia", "monospace"]
+                    .contains(&style.font_family.as_str())
+                || !["left", "center", "right"].contains(&style.align.as_str())
+            {
+                return Err("Invalid typography settings".into());
+            }
+        }
         if !pages.contains(&shape.page_id) {
             return Err("Shape belongs to a missing page".into());
         }
@@ -158,6 +196,16 @@ impl Editor {
             }
         }
         validate(&document)?;
+        // Preserve legacy text size and wrapping when opening older documents.
+        for shape in &mut document.shapes {
+            if shape.kind == "text" && shape.typography.is_none() {
+                shape.typography = Some(Typography {
+                    font_size: (shape.height * 0.66).clamp(10.0, 72.0),
+                    wrap: false,
+                    ..Typography::default()
+                });
+            }
+        }
         self.next_page_id = self
             .next_page_id
             .max(document.pages.iter().map(|p| p.id).max().unwrap_or(1) + 1);
@@ -190,6 +238,11 @@ impl Editor {
             fill: fill.into(),
             text: "Your next big idea".into(),
             hidden: false,
+            typography: if kind == "text" {
+                Some(Typography::default())
+            } else {
+                None
+            },
         });
         self.commit(document)?;
         self.next_id += 1;

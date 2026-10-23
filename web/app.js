@@ -1,7 +1,10 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
+import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
+const measureCtx = document.createElement('canvas').getContext('2d');
+function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
 const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 let toastTimer, savingTimer, recoveryBlocked = false;
@@ -79,6 +82,13 @@ function renderProperties() {
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
   $('fill').value = shape.fill; $('fill-value').textContent = shape.fill.toUpperCase();
   $('text-section').hidden = shape.kind !== 'text'; $('text').value = shape.text; $('visible').checked = !shape.hidden;
+  if (shape.kind === 'text') {
+    const style = textStyle(shape);
+    $('font-family').value = style.font_family; $('font-size').value = Math.round(style.font_size * 100) / 100;
+    $('font-weight').value = style.font_weight; $('line-height').value = style.line_height;
+    $('text-align').value = style.align; $('text-wrap').checked = style.wrap;
+    $('text-overflow').hidden = !textLayout(shape).overflow;
+  }
 }
 function drawShape(shape) {
   if (shape.hidden) return;
@@ -86,9 +96,9 @@ function drawShape(shape) {
   if (shape.kind === 'ellipse') { ctx.beginPath(); ctx.ellipse(shape.x + shape.width / 2, shape.y + shape.height / 2, shape.width / 2, shape.height / 2, 0, 0, Math.PI * 2); ctx.fill(); }
   else if (shape.kind === 'text') {
     ctx.save(); ctx.beginPath(); ctx.rect(shape.x, shape.y, shape.width, shape.height); ctx.clip();
-    const size = Math.max(10, Math.min(72, shape.height * .66));
-    ctx.font = `600 ${size}px Manrope, sans-serif`; ctx.textBaseline = 'top';
-    shape.text.split('\n').forEach((line, index) => ctx.fillText(line, shape.x, shape.y + index * size * 1.2)); ctx.restore();
+    const layout = textLayout(shape);
+    ctx.font = fontCss(layout.style); ctx.textBaseline = 'top'; ctx.textAlign = layout.style.align;
+    layout.lines.forEach(line => ctx.fillText(line.text, line.x, line.y)); ctx.restore();
   } else {
     if (shape.kind === 'frame') { ctx.save(); ctx.shadowColor = '#0003'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8; ctx.fillRect(shape.x, shape.y, shape.width, shape.height); ctx.restore(); }
     else ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
@@ -132,19 +142,31 @@ function setTool(value) {
   $('hint').textContent = tool === 'select' ? 'Drag to move · Corner handles to resize' : tool === 'hand' ? 'Drag to explore your canvas' : `Click the canvas to add ${tool === 'ellipse' ? 'an' : 'a'} ${tool}`;
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
-function escapeXml(value) { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c])); }
-function exportSvg() {
+async function exportSvg() {
+  await document.fonts.ready;
   const shapes = pageShapes().filter(s => !s.hidden); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
   const x = Math.min(...shapes.map(s => s.x)), y = Math.min(...shapes.map(s => s.y));
   const w = Math.max(...shapes.map(s => s.x + s.width)) - x, h = Math.max(...shapes.map(s => s.y + s.height)) - y;
   const body = shapes.map(s => {
     if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" fill="${s.fill}"/>`;
-    if (s.kind === 'text') { const size = Math.max(10, Math.min(72, s.height * .66)); return `<clipPath id="clip${s.id}"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}"/></clipPath><text clip-path="url(#clip${s.id})" fill="${s.fill}" font-family="Manrope, sans-serif" font-size="${size}" font-weight="600" dominant-baseline="text-before-edge">${s.text.split('\n').map((line, i) => `<tspan x="${s.x}" y="${s.y + i * size * 1.2}">${escapeXml(line)}</tspan>`).join('')}</text>`; }
+    if (s.kind === 'text') return textSvg(s, textLayout(s));
     return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" fill="${s.fill}"/>`;
   }).join('');
   download(`${doc.name || 'design'} - ${activePage().name}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('Current page exported as SVG');
 }
 function bind() {
+  const styleFields = { 'font-family': 'font_family', 'font-size': 'font_size', 'font-weight': 'font_weight', 'line-height': 'line_height', 'text-align': 'align', 'text-wrap': 'wrap' };
+  for (const [id, key] of Object.entries(styleFields)) $(id).onchange = () => {
+    const shape = current(); if (shape?.kind !== 'text') return;
+    const value = id === 'text-wrap' ? $(id).checked : ['font-size', 'font-weight', 'line-height'].includes(id) ? Number($(id).value) : $(id).value;
+    update({ ...shape, typography: { ...textStyle(shape), [key]: value } }); renderProperties();
+  };
+  $('fit-text').onclick = () => { if (current()?.kind === 'text') update({ ...current(), height: Math.ceil(textLayout(current()).height) }); };
+  canvas.ondblclick = event => {
+    const p = point(event); selected = editor.hit_test(p.x, p.y); refresh(false);
+    if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
+  };
+  document.fonts.addEventListener('loadingdone', () => { draw(); if (current()?.kind === 'text') $('text-overflow').hidden = !textLayout(current()).overflow; });
   $('add-page').onclick = () => safe(() => { editor.add_page(); refresh(); setTool('select'); toast('New page added — pick a tool to start designing'); });
   $('delete-page').onclick = () => safe(() => { editor.delete_page(doc.active_page); refresh(); toast('Page deleted. Use Undo to restore it.'); });
   $('rename-page').onclick = () => { $('page-name').value = activePage().name; $('page-dialog').showModal(); $('page-name').focus(); $('page-name').select(); };
@@ -169,7 +191,7 @@ function bind() {
   $('forward').onclick = () => safe(() => { if (current()) { editor.reorder(selected, 1); refresh(); } });
   $('backward').onclick = () => safe(() => { if (current()) { editor.reorder(selected, -1); refresh(); } });
   $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
-  $('export').onclick = exportSvg; $('open').onclick = () => $('file').click();
+  $('export').onclick = () => exportSvg().catch(error => toast(`Could not export: ${error}`)); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
     try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); editor.load(text); selected = 0; gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
@@ -209,7 +231,7 @@ function bind() {
   canvas.addEventListener('wheel', event => { event.preventDefault(); const rect = canvas.getBoundingClientRect(); zoomAt(Math.exp(-event.deltaY * .001), event.clientX - rect.left, event.clientY - rect.top); }, { passive: false });
   window.addEventListener('keydown', event => {
     if ($('page-dialog').open) return;
-    if (event.target.closest('input,textarea,[contenteditable]')) return;
+    if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }
     if (event.code === 'Space') { event.preventDefault(); space = true; return; }
