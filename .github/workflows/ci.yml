@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Until the Cargo project exists, the Rust steps skip and the job still
+      # passes, so `ci` can stay a required status check on main.
+      - name: Check for Cargo project
+        if: hashFiles('Cargo.toml') == ''
+        run: echo "::notice::No Cargo.toml yet, skipping Rust checks."
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        if: hashFiles('Cargo.toml') != ''
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        if: hashFiles('Cargo.toml') != ''
+
+      - name: Format
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Test
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo test --all-features
