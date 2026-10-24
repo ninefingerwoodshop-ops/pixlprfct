@@ -1,3 +1,4 @@
+import {parseSvg} from './svg-import.js';
 import {snapGuides,drawSnapGuides} from './guide-snap.js';
 import {inspectorRenderer} from './inspector-focus.js';
 import {exportJobs,zipFiles} from './batch-export.js';
@@ -408,11 +409,23 @@ function finishPen(closed) {
 async function placeImage(file,location=null,replaceId=0) {
   if(imageLoading){toast('An image is already loading');return;}imageLoading=true;const page=doc.active_page;
   try {
+    if(file.type==='image/svg+xml'||/\.svg$/i.test(file.name)){
+      if(replaceId)throw new Error('Import SVG as new editable layers instead of replacing a raster image');
+      if(file.size>2_000_000)throw new Error('SVG must be smaller than 2 MB');
+      const payload=parseSvg(await file.text(),file.name.replace(/\.svg$/i,''));
+      if(doc.active_page!==page)throw new Error('Page changed during import. Import the SVG again.');
+      placeSvg(payload,location);return;
+    }
     const raster=await readImage(file);if(doc.active_page!==page)throw new Error('Page changed during import. Place the image again.');
     if(replaceId){const target=pageShapes().find(s=>s.id===replaceId&&s.kind==='image');if(!target)throw new Error('The target image no longer exists');editor.update(JSON.stringify({...target,image:raster}));setSelection([replaceId]);}
     else {const scale=Math.min(1,480/raster.width,360/raster.height),width=raster.width*scale,height=raster.height*scale;const start=location??{x:(canvas.clientWidth/2-pan.x)/zoom-width/2,y:(canvas.clientHeight/2-pan.y)/zoom-height/2};setSelection([insertAt({id:0,kind:'image',name:file.name.slice(0,80)||'Image',x:start.x,y:start.y,width,height,fill:'#ffffff',text:'',hidden:false,image:raster},start)]);}
     setTool('select');refresh();toast('Image placed');
   } catch(error){toast(String(error));}finally{imageLoading=false;}
+}
+function placeSvg(payload,location=null){
+  const root=payload.shapes[0],start=location??{x:(canvas.clientWidth/2-pan.x)/zoom-root.width/2,y:(canvas.clientHeight/2-pan.y)/zoom-root.height/2};
+  const ids=JSON.parse(editor.paste_layers(JSON.stringify(payload),start.x,start.y,frameAt(pageShapes(),start)));
+  setSelection(ids);setTool('select');refresh();toast('SVG imported as editable layers');
 }
 function bind() {
   $('toggle-lock').onclick=toggleSelectionLock;
@@ -462,6 +475,8 @@ function bind() {
     const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace,replace=pasteReplace,frames=pasteFrames;pasteInPlace=false;pasteReplace=false;pasteFrames=false;
     if(payload){event.preventDefault();safe(()=>pasteLayerText(text,inPlace,replace,frames));return;}
     if(replace||frames){event.preventDefault();toast('Copy PixlPrfct layers first');return;}
+    const svgText=event.clipboardData.getData('image/svg+xml')||(/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(text)?text:'');
+    if(svgText){event.preventDefault();safe(()=>placeSvg(parseSvg(svgText,'Pasted SVG')));return;}
     const item=[...event.clipboardData.items].find(i=>i.kind==='file'&&i.type.startsWith('image/'));if(item){event.preventDefault();const file=item.getAsFile();if(file)placeImage(file);return;}
     if(text){event.preventDefault();safe(()=>{if(new TextEncoder().encode(text).length>10000)throw new Error('Text layers are limited to 10 KB');const start={x:(canvas.clientWidth/2-pan.x)/zoom-200,y:(canvas.clientHeight/2-pan.y)/zoom-20};const shape={id:0,kind:'text',name:text.split('\n')[0].slice(0,80)||'Pasted text',...start,width:400,height:24,fill:'#1e1e1e',text,hidden:false,typography:{sizing:'height',font_family:'Manrope',font_size:16,font_weight:400,line_height:1.4,align:'left',wrap:true}};shape.height=Math.max(1,Math.ceil(textLayout(shape).height));setSelection([insertAt(shape,start)]);refresh();toast('Text pasted');});}
   });

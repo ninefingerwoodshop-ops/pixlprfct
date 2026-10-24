@@ -47,12 +47,13 @@
     "atomic paste into multiple selected frames with independent subtree/group/prototype remapping, auto-layout integration and component synchronization",
     "inspector focus and caret preservation across dynamic field refreshes, coalesced rendering and uninterrupted click/Tab editing",
     "layout guide snapping for drag and resize with nearest edge/center matching, zoom-adjusted tolerance, fractional coordinates, axis locks and Alt bypass",
-    "document-level reusable layout-guide styles with linked updates across pages, create/apply/rename/detach/delete controls, component override pairing, clipboard flattening and atomic history"
+    "document-level reusable layout-guide styles with linked updates across pages, create/apply/rename/detach/delete controls, component override pairing, clipboard flattening and atomic history",
+    "editable SVG file/drop/markup-paste import for solid shapes, single filled paths and multiple stroked subpaths, cubic/quadratic/arc conversion, affine transforms, nested frame groups, viewport clipping and atomic history"
   ],
   "remaining": [
     "Additional frame layout controls",
     "Nested groups and complete tree reordering",
-    "SVG import and external vector clipboard interoperability",
+    "Broader SVG import: compound/even-odd fills, gradients, masks, clipping paths, text, images, use references, CSS, paint opacity, arbitrary miter limits and transformed strokes; external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and effects",
     "Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
