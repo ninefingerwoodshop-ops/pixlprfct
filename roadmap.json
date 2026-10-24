@@ -17,7 +17,8 @@
     "automatic containment and atomic drag reparenting",
     "embedded raster images, fill/fit cropping, replacement, file/drop/paste import",
     "frame resize constraints on both axes with nested propagation and live preview",
-    "uniform corner radius, composited layer/frame opacity, independent solid fill and centered stroke"
+    "uniform corner radius, composited layer/frame opacity, independent solid fill and centered stroke",
+    "horizontal/vertical auto layout, padding, gap, alignment, hug/fill sizing, ignored children and drag reordering"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
@@ -25,7 +26,7 @@
     "SVG import and vector clipboard interoperability",
     "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, gradients and effects",
     "Vector node insertion/deletion, Boolean operations, pencil smoothing and slice export",
-    "Auto layout, spacing, padding, sizing and responsive layout behavior",
+    "Auto layout wrapping/grid, min/max sizing, text auto-sizing, group layout units and on-canvas spacing controls",
     "Components, instances, variants, reusable styles and variables",
     "Prototyping interactions and presentation mode",
     "Cloud document storage, authentication, sharing, permissions and collaboration",

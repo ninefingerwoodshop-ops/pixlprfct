@@ -20,6 +20,10 @@ pub struct Shape {
     pub constraints: Constraints,
     #[serde(default)]
     pub appearance: Option<Appearance>,
+    #[serde(default)]
+    pub auto_layout: Option<AutoLayout>,
+    #[serde(default)]
+    pub layout_item: LayoutItem,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -39,6 +43,44 @@ pub struct Shape {
     pub closed: bool,
     #[serde(default = "default_stroke")]
     pub stroke_width: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct LayoutItem {
+    pub fill_width: bool,
+    pub fill_height: bool,
+    pub absolute: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AutoLayout {
+    pub direction: String,
+    pub gap: f64,
+    pub padding_top: f64,
+    pub padding_right: f64,
+    pub padding_bottom: f64,
+    pub padding_left: f64,
+    pub align: String,
+    pub justify: String,
+    pub hug_width: bool,
+    pub hug_height: bool,
+}
+
+impl Default for AutoLayout {
+    fn default() -> Self {
+        Self {
+            direction: "horizontal".into(),
+            gap: 16.0,
+            padding_top: 16.0,
+            padding_right: 16.0,
+            padding_bottom: 16.0,
+            padding_left: 16.0,
+            align: "start".into(),
+            justify: "start".into(),
+            hug_width: true,
+            hug_height: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -247,6 +289,24 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        if let Some(l) = &shape.auto_layout {
+            if shape.kind != "frame"
+                || !["horizontal", "vertical"].contains(&l.direction.as_str())
+                || !["start", "center", "end"].contains(&l.align.as_str())
+                || !["start", "center", "end", "between"].contains(&l.justify.as_str())
+                || ![
+                    l.gap,
+                    l.padding_top,
+                    l.padding_right,
+                    l.padding_bottom,
+                    l.padding_left,
+                ]
+                .iter()
+                .all(|v| v.is_finite() && (0.0..=100_000.0).contains(v))
+            {
+                return Err("Invalid auto layout settings".into());
+            }
+        }
         if let Some(a) = &shape.appearance {
             if !a.opacity.is_finite()
                 || !(0.0..=1.0).contains(&a.opacity)
@@ -452,6 +512,8 @@ impl Editor {
         let mut ordered = vec![];
         append(0, &document.shapes, &mut ordered);
         document.shapes = ordered;
+        reflow(&mut document);
+        validate(&document)?;
         if document != self.document {
             self.undo.push(self.document.clone());
             if self.undo.len() > 100 {
@@ -553,6 +615,8 @@ impl Editor {
             image: None,
             constraints: Constraints::default(),
             appearance: None,
+            auto_layout: None,
+            layout_item: LayoutItem::default(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -630,6 +694,12 @@ impl Editor {
                 .iter()
                 .find(|s| s.id == child.parent_id)
                 .unwrap();
+            if old.auto_layout.is_some() && !child.layout_item.absolute {
+                let (x, y) = (child.x + parent.x - old.x, child.y + parent.y - old.y);
+                document.shapes[i].x = x;
+                document.shapes[i].y = y;
+                continue;
+            }
             let (x, width) = constrain_axis(
                 child.x,
                 child.width,
@@ -722,7 +792,141 @@ impl Editor {
         };
         staged.update_many(json)?;
         staged.reparent_many(&serde_json::to_string(&ids).unwrap(), parent)?;
+        if let Some(layout) = staged
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == parent)
+            .and_then(|s| s.auto_layout.clone())
+        {
+            let roots: Vec<_> = shapes
+                .iter()
+                .filter(|s| !ids.contains(&s.parent_id) && !s.layout_item.absolute)
+                .collect();
+            if !roots.is_empty() {
+                let horizontal = layout.direction == "horizontal";
+                let position = roots
+                    .iter()
+                    .map(|s| {
+                        if horizontal {
+                            s.x + s.width / 2.0
+                        } else {
+                            s.y + s.height / 2.0
+                        }
+                    })
+                    .sum::<f64>()
+                    / roots.len() as f64;
+                let target = self
+                    .document
+                    .shapes
+                    .iter()
+                    .filter(|s| {
+                        s.parent_id == parent
+                            && !ids.contains(&s.id)
+                            && !s.hidden
+                            && !s.layout_item.absolute
+                    })
+                    .find(|s| {
+                        position
+                            < if horizontal {
+                                s.x + s.width / 2.0
+                            } else {
+                                s.y + s.height / 2.0
+                            }
+                    })
+                    .map(|s| s.id);
+                let root_ids: Vec<_> = roots.iter().map(|s| s.id).collect();
+                let moving: Vec<_> = staged
+                    .document
+                    .shapes
+                    .iter()
+                    .filter(|s| root_ids.contains(&s.id))
+                    .cloned()
+                    .collect();
+                staged.document.shapes.retain(|s| !root_ids.contains(&s.id));
+                let index = target
+                    .and_then(|id| staged.document.shapes.iter().position(|s| s.id == id))
+                    .unwrap_or(staged.document.shapes.len());
+                staged.document.shapes.splice(index..index, moving);
+            }
+        }
         self.commit(staged.document)
+    }
+
+    pub fn auto_layout_selection(&mut self, json: &str) -> Result<u32, String> {
+        let ids = self.selection_ids(json)?;
+        if ids.len() == 1 {
+            let s = self
+                .document
+                .shapes
+                .iter()
+                .find(|s| s.id == ids[0])
+                .unwrap();
+            if s.kind == "frame" {
+                if s.auto_layout.is_some() {
+                    return Ok(ids[0]);
+                }
+                let mut changed = s.clone();
+                changed.auto_layout = Some(AutoLayout::default());
+                self.update(&serde_json::to_string(&changed).unwrap())?;
+                return Ok(ids[0]);
+            }
+        }
+        let selected: Vec<_> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .collect();
+        let parent = selected[0].parent_id;
+        if selected.iter().any(|s| s.parent_id != parent) {
+            return Err("Auto layout selection must share a parent frame".into());
+        }
+        let x = selected.iter().map(|s| s.x).fold(f64::INFINITY, f64::min) - 16.0;
+        let y = selected.iter().map(|s| s.y).fold(f64::INFINITY, f64::min) - 16.0;
+        let width = selected
+            .iter()
+            .map(|s| s.x + s.width)
+            .fold(f64::NEG_INFINITY, f64::max)
+            - x
+            + 16.0;
+        let height = selected
+            .iter()
+            .map(|s| s.y + s.height)
+            .fold(f64::NEG_INFINITY, f64::max)
+            - y
+            + 16.0;
+        let mut staged = Editor {
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let id = staged.add("frame", x, y);
+        let frame_id = id?;
+        let frame = staged
+            .document
+            .shapes
+            .iter_mut()
+            .find(|s| s.id == frame_id)
+            .unwrap();
+        frame.parent_id = parent;
+        frame.name = "Auto layout".into();
+        frame.width = width;
+        frame.height = height;
+        frame.auto_layout = Some(AutoLayout::default());
+        for shape in staged
+            .document
+            .shapes
+            .iter_mut()
+            .filter(|s| ids.contains(&s.id))
+        {
+            shape.parent_id = frame_id;
+        }
+        self.commit(staged.document)?;
+        self.next_id = staged.next_id;
+        Ok(frame_id)
     }
 
     pub fn reparent_many(&mut self, json: &str, parent: u32) -> Result<(), String> {
@@ -1205,3 +1409,5 @@ mod tests {
         assert_eq!(editor.hit_test(80.0, 60.0), front);
     }
 }
+mod layout;
+use layout::reflow;

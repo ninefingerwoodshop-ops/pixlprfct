@@ -21,3 +21,6 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 #constraints-panel select{display:block;width:100%;margin-top:6px}
 #appearance-section label{display:block;margin-top:12px;color:var(--muted)}
 #appearance-section input{display:block;width:100%;margin-top:6px}
+#auto-layout-panel label,#layout-child-panel label{display:block;margin-top:12px;color:var(--muted)}
+#auto-layout-panel select,#auto-layout-panel input[type=number]{display:block;width:100%;margin-top:6px}
+#add-auto-layout{width:calc(100% - 32px);margin:12px 16px}
