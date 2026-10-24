@@ -85,16 +85,19 @@
     "Atomic multi-layer forward/backward/front/back arrangement with stable selected order, indivisible flat groups, ancestor selection deduplication, independent parent/page order, component propagation, menu/search access and bracket shortcuts",
     "Nested linked instances inside main components with dependency-ordered propagation, independent inner/outer overrides, source swaps, cycle rejection, structural updates, history and persistence",
     "Explicit outer-instance action targets, nested main navigation, root-only swap/variant controls, and atomic promotion of text/style overrides to main components while preserving geometry and independent instance overrides",
-    "Assets preview drag insertion with live bounds and destination-frame highlighting, selected variants, atomic frame/auto-layout/grid placement, persistent grid-cell overrides and session-scoped drag payloads"
+    "Assets preview drag insertion with live bounds and destination-frame highlighting, selected variants, atomic frame/auto-layout/grid placement, persistent grid-cell overrides and session-scoped drag payloads",
+    "Separate keyboard-accessible Design and Prototype inspector tabs, selection-dependent Position/Layout/Appearance/Typography/Fill/Stroke/Effects ordering, compact fields, advanced disclosures, grouped Move tools and split Shape/Creation toolbar controls",
+    "Individual grid track deletion preserving layers, reducing crossing spans, shifting pinned cells, materializing automatic rows, component propagation and atomic undo"
   ],
   "remaining": [
+    "Exact Figma inspector and toolbar parity: parent alignment, rotation/flips, aspect lock, compact paint rows, multiple paints, styles/variables, complete region/type/comment tools and matching popovers",
     "Figma workflow audit: shared asset libraries, comprehensive context menus and tool discovery; nested instance-swap overrides",
     "Additional frame layout controls and per-edge stroke weights",
     "Nested groups and complete tree reordering",
     "Broader SVG import: compound/even-odd fills, repeating gradients and radial focal circles larger than the outer circle, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, advanced gradients and background blur",
     "Boolean operations and slice export",
-    "Direct drag grid track reordering, multi-track selection and direct track deletion; group layout units",
+    "Direct drag grid track reordering and multi-track selection; group layout units",
     "Nested instance-swap overrides, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
     "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
     "Cloud sharing, team permissions and real-time collaboration",

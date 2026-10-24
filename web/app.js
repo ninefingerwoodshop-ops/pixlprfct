@@ -1,5 +1,9 @@
 import {ASSET_MIME,assetDragPayload,readAssetDrag,centeredPlacement} from './asset-drag.js';
 import {instanceContext} from './instance-context.js';
+import {installInspectorLayout} from './inspector-layout.js';
+let updateInspectorLayout=()=>{};
+import {installToolbelt} from './toolbelt.js';
+let updateToolbelt=()=>{};
 import {componentAssets,renderAssets} from './assets.js';
 import {showContextMenu} from './context-menu.js';
 import {installActionPanel} from './action-panel.js';
@@ -308,7 +312,7 @@ function renderPropertiesNow() {
   $('scale-panel').hidden=tool!=='scale'||!shapes.length;
   $('join-paths').hidden=shapes.length!==2||shapes.some(s=>s.closed||!s.points?.length)||shapes[0].parent_id!==shapes[1].parent_id;
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;
-  $('selection-caption').textContent = shapes.length > 1 ? `${shapes.length} layers` : shape ? shape.kind : 'Page';
+  updateInspectorLayout(shape,shapes.length);
   if (shapes.length > 1) {
     const box = bounds(shapes); $('multi-title').textContent = groupId ? `${shapes[0].group_name} · ${shapes.length} layers` : `${shapes.length} layers selected`;
     $('multi-size').textContent = `${Math.round(box.width)} × ${Math.round(box.height)}`;
@@ -328,7 +332,7 @@ function renderPropertiesNow() {
   if(editingLayout&&!shape.auto_layout){editingLayout=0;activeSpacing=null;}
   $('edit-layout-spacing').textContent=editingLayout===shape.id?'Finish spacing edits':'Edit spacing on canvas';$('edit-layout-spacing').disabled=!canvasEditable();$('edit-layout-spacing').setAttribute('aria-pressed',String(editingLayout===shape.id));
   $('auto-layout-panel').hidden=shape.kind!=='frame';$('layout-direction').value=shape.auto_layout?.direction??'none';$('layout-settings').hidden=!shape.auto_layout;$('layout-text_baseline').parentElement.hidden=shape.auto_layout?.direction!=='horizontal';
-  renderGridControls($('grid-frame-controls'),shape,update,(axis,index,delta)=>safe(()=>{shiftGridTrack(shape.id,axis,index,delta);}),gridPlan(shape));const gridFlow=shape.auto_layout?.direction==='grid';for(const id of ['layout-wrap','layout-align_content','layout-align','layout-justify'])$(id).parentElement.hidden=gridFlow;
+  renderGridControls($('grid-frame-controls'),shape,update,(axis,index,delta)=>safe(()=>{shiftGridTrack(shape.id,axis,index,delta);}),gridPlan(shape),(axis,index)=>safe(()=>{editor.delete_grid_track(shape.id,axis,index);activeSpacing=null;refresh();toast('Grid track deleted · all layers kept');}));const gridFlow=shape.auto_layout?.direction==='grid';for(const id of ['layout-wrap','layout-align_content','layout-align','layout-justify'])$(id).parentElement.hidden=gridFlow;
   $('layout-gap-caption').textContent=gridFlow?'Column gap':'Gap';$('layout-cross-gap-caption').textContent=gridFlow?'Row gap':'Row / column gap';$('layout-gap').min=$('layout-cross_gap').min=gridFlow?'0':'-100000';
   if(shape.auto_layout)for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap','strokes_included','text_baseline','canvas_stacking']){const el=$('layout-'+key);if((key.startsWith('hug')||key==='wrap'||key==='strokes_included'||key==='text_baseline'))el.checked=shape.auto_layout[key];else el.value=shape.auto_layout[key]??'';}
   if(shape.auto_layout)for(const [key,mode] of [['gap','justify'],['cross_gap','align_content']]){const el=$('layout-'+key),auto=shape.auto_layout.direction!=='grid'&&['between','around','evenly'].includes(shape.auto_layout[mode]);el.disabled=auto;el.placeholder=auto?'Auto':key==='cross_gap'?'Use main gap':'';if(auto)el.value='';}
@@ -449,7 +453,7 @@ function setTool(value) {
   penPoints=[]; gesture=null; editingLayout=0;activeSpacing=null;editingPath=0;editingGradient=0;activeGradient=null;
   document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   $('pencil-options').hidden=value!=='pencil';
-  tool = value; document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+  tool = value;updateToolbelt(tool); document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
   renderProperties();
   draw();
   canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'default' : 'crosshair';
@@ -853,7 +857,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
   cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

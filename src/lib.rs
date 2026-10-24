@@ -2385,6 +2385,10 @@ impl Editor {
         self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
         Ok(next)
     }
+    pub fn delete_grid_track(&mut self, id: u32, axis: &str, index: usize) -> Result<(), String> {
+        let changes = grid::delete_track(&self.document, id, axis, index)?;
+        self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)
+    }
     pub fn prototype_hits(&self, root: u32, x: f64, y: f64) -> String {
         let ids = self.prototype_hit_ids(root, x, y);
         serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2]}).to_string()

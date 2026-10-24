@@ -223,3 +223,9 @@ Place a linked instance inside an ordinary frame, then create a component from t
 Selecting a nested instance layer exposes **Go to nested main component** and **Select outer instance**. Swap and variant selectors require the instance root; reset/detach labels explicitly name the outer instance when a child is selected.
 
 **Push text and styles to main** promotes eligible overrides throughout the selected instance to its main component in one undo step. It includes names, text/typography, paints/effects, visibility/locking, image content, stroke weights, and layout guides. Position, size, constraints, auto-layout configuration, vector geometry and prototype overrides remain local. Other instances retain their independent overrides. When an outer component contains a linked source instance, the pushed values become overrides on that source rather than changing its separate inner main.
+
+### Inspector and toolbar
+
+The right panel has separate **Design** and **Prototype** tabs with arrow-key navigation. Design groups position, layout, appearance, typography, fill, stroke and effects; advanced stroke, size limits and layer actions use disclosures. Shape and pen tools have direct buttons and dropdowns; Move tools contains Scale and Hand, and Actions opens command search. These changes follow the inspected Figma interface, but exact visual and functional parity is still pending, including rotation, flips, multiple paints and styles/variables.
+
+Expand a grid row or column in the inspector and choose **Delete row/column**. All artwork is kept; crossing spans shrink and later cells shift. Occupied cells can reflow, and implicit rows can regenerate to fit artwork. At least one resolved track remains per axis. The operation propagates through components and is a single undo step.

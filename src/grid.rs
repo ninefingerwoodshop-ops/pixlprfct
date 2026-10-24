@@ -466,6 +466,115 @@ pub(crate) fn shift_track(
     Ok((changes, mapping[index]))
 }
 
+pub(crate) fn delete_track(
+    doc: &crate::Document,
+    id: u32,
+    axis: &str,
+    index: usize,
+) -> Result<Vec<Shape>, String> {
+    if !["columns", "rows"].contains(&axis) {
+        return Err("Choose a grid axis".into());
+    }
+    let frame = doc
+        .shapes
+        .iter()
+        .find(|s| s.id == id && s.page_id == doc.active_page)
+        .ok_or("Grid frame not found")?;
+    frame
+        .auto_layout
+        .as_ref()
+        .filter(|l| l.direction == "grid")
+        .ok_or("Select a grid auto-layout frame")?;
+    let items: Vec<_> = doc
+        .shapes
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.parent_id == id && !s.hidden && !s.layout_item.absolute)
+        .map(|(i, _)| i)
+        .collect();
+    let p = plan(&doc.shapes, frame, &items, false, false);
+    let columns = axis == "columns";
+    let n = if columns {
+        p.columns.len()
+    } else {
+        p.rows.len()
+    };
+    if index >= n || n > 128 {
+        return Err("Choose an existing track (up to 128 tracks per axis)".into());
+    }
+    if n <= 1 {
+        return Err("Keep at least one track per axis".into());
+    }
+    let mut changed = frame.clone();
+    let g = changed
+        .auto_layout
+        .as_mut()
+        .unwrap()
+        .grid
+        .get_or_insert_with(Default::default);
+    if columns {
+        g.columns.remove(index);
+    } else {
+        g.rows = (0..n)
+            .filter(|i| *i != index)
+            .map(|i| {
+                g.rows
+                    .get(i)
+                    .cloned()
+                    .unwrap_or_else(|| g.auto_rows.clone())
+            })
+            .collect();
+    }
+    let mut changes = vec![changed];
+    for s in doc
+        .shapes
+        .iter()
+        .filter(|s| s.parent_id == id && !s.layout_item.absolute)
+    {
+        let mut changed = s.clone();
+        // Pin visible automatic placements before editing so unrelated cells do
+        // not repack. Hidden automatic children retain their automatic placement.
+        if let Some(placed) = p.placements.iter().find(|p| p.id == s.id) {
+            let c = changed
+                .layout_item
+                .grid_cell
+                .get_or_insert_with(Default::default);
+            c.column = Some(placed.column as u32);
+            c.row = Some(placed.row as u32);
+            c.column_span = placed.column_span as u32;
+            c.row_span = placed.row_span as u32;
+        }
+        if let Some(c) = &mut changed.layout_item.grid_cell {
+            let (position, span) = if columns {
+                (&mut c.column, &mut c.column_span)
+            } else {
+                (&mut c.row, &mut c.row_span)
+            };
+            if let Some(old) = *position {
+                let start = old as usize - 1;
+                if start <= index && index < start + *span as usize {
+                    *span = span.saturating_sub(1).max(1);
+                }
+                let next = if start > index {
+                    start - 1
+                } else if start == index {
+                    start.min(n - 2)
+                } else {
+                    start
+                };
+                *position = Some(next as u32 + 1);
+                if columns {
+                    *span = (*span).min((n - 1).saturating_sub(next).max(1) as u32);
+                }
+            }
+        }
+        if changed != *s {
+            changes.push(changed);
+        }
+    }
+    Ok(changes)
+}
+
 pub(crate) fn plan(
     shapes: &[Shape],
     frame: &Shape,

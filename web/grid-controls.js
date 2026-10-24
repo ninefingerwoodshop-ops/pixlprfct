@@ -3,20 +3,22 @@ export const defaultGrid=()=>({columns:[defaultTrack(),defaultTrack()],rows:[],a
 function el(tag,text){const e=document.createElement(tag);if(text)e.textContent=text;return e;}
 function field(parent,label,id,value,change,{min=0,max=1000000,placeholder=''}={}){const wrap=el('label',label),input=el('input');input.id=id;input.type='number';input.min=min;input.max=max;input.step='any';input.placeholder=placeholder;input.value=value??'';input.onchange=()=>change(input.value===''?null:Number(input.value));wrap.append(input);parent.append(wrap);return input;}
 function select(parent,label,id,value,options,change){const wrap=el('label',label),input=el('select');input.id=id;for(const [v,name] of options){const option=el('option',name);option.value=v;input.append(option);}input.value=value;input.onchange=()=>change(input.value);wrap.append(input);parent.append(wrap);}
-function trackControls(parent,title,id,t,change,reorder){
+function trackControls(parent,title,id,t,change,reorder,remove){
  const section=el('details'),heading=el('summary',`${title} · ${t.mode==='hug'?'Hug':t.value+(t.mode==='fr'?'fr':' px')}`);section.id=id;section.append(heading);parent.append(section);
  select(section,'Sizing',`${id}-mode`,t.mode,[['fixed','Fixed'],['hug','Hug contents'],['fr','Fill (fr)']],mode=>change({...t,mode,value:mode==='fr'?1:mode==='fixed'?100:t.value}));
  if(t.mode!=='hug')field(section,t.mode==='fr'?'Fraction':'Pixels',`${id}-value`,t.value,value=>change({...t,value:value??1}),{min:t.mode==='fr'?.001:0});
  const limits=el('div');limits.className='property-grid';section.append(limits);for(const key of ['min','max'])field(limits,key==='min'?'Minimum':'Maximum',`${id}-${key}`,t[key],value=>change({...t,[key]:value}),{placeholder:'None'});
  if(reorder){const actions=el('div');actions.className='property-grid';for(const [delta,text] of [[-1,'Move earlier'],[1,'Move later']]){const button=el('button',text);button.type='button';button.onclick=()=>reorder(delta);actions.append(button);}section.append(actions);}
+ if(remove){const button=el('button',`Delete ${title.toLowerCase()}`);button.type='button';button.className='wide-button';button.onclick=remove;section.append(button);}
 }
-export function renderGridControls(panel,shape,update,reorder,plan){
+export function renderGridControls(panel,shape,update,reorder,plan,remove){
  const expanded=new Set([...panel.querySelectorAll('details[open]')].map(e=>e.id));panel.replaceChildren();panel.hidden=shape?.auto_layout?.direction!=='grid';if(panel.hidden)return;
  const l=shape.auto_layout,g=l.grid??defaultGrid(),commit=grid=>update({...shape,auto_layout:{...l,grid}});
  const counts=el('div');counts.className='property-grid';panel.append(counts);
  for(const key of ['columns','rows'])field(counts,key==='columns'?'Columns':'Rows (0 = auto)',`grid-${key}-count`,g[key].length,value=>{const n=Math.max(key==='columns'?1:0,Math.min(128,Math.trunc(value??0)));commit({...g,[key]:Array.from({length:n},(_,i)=>g[key][i]??defaultTrack())});},{min:key==='columns'?1:0,max:128});
  panel.append(el('p','Expand a track to set fixed pixels, hug contents, fractional sizing, or limits. Additional rows use the automatic row settings.'));
- for(const key of ['columns','rows']){const tracks=key==='rows'?Array.from({length:Math.min(128,Math.max(g.rows.length,plan?.rows.length??0))},(_,i)=>g.rows[i]??g.auto_rows??defaultTrack()):g.columns;tracks.forEach((t,i)=>trackControls(panel,`${key==='columns'?'Column':'Row'} ${i+1}`,`grid-${key}-${i}`,t,value=>commit({...g,[key]:tracks.map((old,j)=>i===j?value:old)}),reorder?delta=>reorder(key,i,delta):null));}
+ for(const key of ['columns','rows']){const tracks=key==='rows'?Array.from({length:Math.min(128,Math.max(g.rows.length,plan?.rows.length??0))},(_,i)=>g.rows[i]??g.auto_rows??defaultTrack()):g.columns;tracks.forEach((t,i)=>trackControls(panel,`${key==='columns'?'Column':'Row'} ${i+1}`,`grid-${key}-${i}`,t,value=>commit({...g,[key]:tracks.map((old,j)=>i===j?value:old)}),reorder?delta=>reorder(key,i,delta):null,remove&&tracks.length>1?()=>remove(key,i):null));}
+ if(remove)panel.append(el('p','Deleting a track keeps all layers, shrinks crossing spans, and shifts later cells. Occupied cells can reflow, and automatic rows can regenerate to fit artwork. Keep at least one row and column.'));
  if(reorder)panel.append(el('p','Moving a track also moves connected spans. Canvas: select a track edge, then Alt + arrow to reorder.'));
  trackControls(panel,'Automatic rows','grid-auto-rows',g.auto_rows??defaultTrack(),value=>commit({...g,auto_rows:value}));
  for(const section of panel.querySelectorAll('details'))section.open=expanded.has(section.id);
