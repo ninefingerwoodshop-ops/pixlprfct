@@ -222,6 +222,8 @@ impl Default for AutoLayout {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Appearance {
     #[serde(default)]
+    pub shadows: Vec<DropShadow>,
+    #[serde(default)]
     pub gradient: Option<Gradient>,
     pub opacity: f64,
     pub corner_radius: f64,
@@ -248,6 +250,23 @@ pub struct Appearance {
 
 fn opaque_paint() -> f64 {
     1.0
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DropShadow {
+    pub x: f64,
+    pub y: f64,
+    pub blur: f64,
+    #[serde(default)]
+    pub spread: f64,
+    pub color: String,
+    pub opacity: f64,
+    #[serde(default = "shadow_visible")]
+    pub visible: bool,
+}
+
+fn shadow_visible() -> bool {
+    true
 }
 
 fn default_miter_limit() -> f64 {
@@ -662,6 +681,22 @@ fn validate(document: &Document) -> Result<(), String> {
                 {
                     return Err("Invalid gradient geometry or color stops".into());
                 }
+            }
+            if a.shadows.len() > 8
+                || a.shadows.iter().any(|shadow| {
+                    [shadow.x, shadow.y, shadow.spread]
+                        .iter()
+                        .any(|v| !v.is_finite() || v.abs() > 100_000.0)
+                        || !shadow.blur.is_finite()
+                        || !(0.0..=100_000.0).contains(&shadow.blur)
+                        || !shadow.opacity.is_finite()
+                        || !(0.0..=1.0).contains(&shadow.opacity)
+                        || shadow.color.len() != 7
+                        || !shadow.color.starts_with('#')
+                        || !shadow.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+                })
+            {
+                return Err("Invalid drop shadows: use at most eight with bounded geometry, hex colors and 0–1 opacity".into());
             }
             if [a.fill_opacity, a.stroke_opacity]
                 .iter()

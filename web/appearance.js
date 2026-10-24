@@ -1,3 +1,4 @@
+import {visibleShadows,compositeGeometry,effectSurfaceSize,drawShadow,shadowFilter} from './shadows.js';
 export function appearance(s) {
   return s.appearance??{opacity:1,corner_radius:0,fill_enabled:!s.points?.length||!!s.closed,stroke_enabled:!!s.points?.length,stroke_color:s.points?.length?s.fill:'#000000'};
 }
@@ -19,18 +20,23 @@ export function paintAttributes(s){const a=appearance(s);return `fill="${a.fill_
 // Composite each layer with its descendants before applying opacity. This avoids
 // dark overlaps when a translucent frame contains overlapping children.
 export function drawScene(shapes,context,paint) {
- const children=new Map();for(const s of shapes){const list=children.get(s.parent_id||0)??[];list.push(s);children.set(s.parent_id||0,list);}
+ const {children,geometry}=compositeGeometry(shapes,appearance);
  const visit=(s,target)=>{
   if(s.hidden)return;const a=appearance(s);if(a.opacity===0)return;
   const content=c=>{paint(s,c);c.save();if(s.kind==='frame'&&s.clip_content){c.beginPath();c.roundRect(s.x,s.y,s.width,s.height,radii(s));c.clip();}for(const child of children.get(s.id)??[])visit(child,c);c.restore();};
-  if(a.opacity===1){content(target);return;}
-  const surface=new OffscreenCanvas(target.canvas.width,target.canvas.height),layer=surface.getContext('2d');layer.setTransform(target.getTransform());content(layer);
-  target.save();target.setTransform(1,0,0,1,0,0);target.globalAlpha=a.opacity;target.drawImage(surface,0,0);target.restore();
+  const shadows=visibleShadows(a);if(a.opacity===1&&!shadows.length){content(target);return;}
+  const box=geometry.get(s.id)?.content;if(!box)return;const density=Math.hypot(target.getTransform().a,target.getTransform().b),size=effectSurfaceSize(box,density),surface=new OffscreenCanvas(size.width,size.height),layer=surface.getContext('2d');layer.setTransform(size.scale,0,0,size.scale,-box.x*size.scale,-box.y*size.scale);content(layer);
+  const sourceBox={...box,width:size.width/size.scale,height:size.height/size.scale};
+  const compose=c=>{for(const shadow of [...shadows].reverse())drawShadow(c,surface,sourceBox,shadow);c.drawImage(surface,sourceBox.x,sourceBox.y,sourceBox.width,sourceBox.height);};
+  target.save();target.globalAlpha*=a.opacity;
+  if(shadows.length&&a.opacity<1){const output=geometry.get(s.id).output,outSize=effectSurfaceSize(output,density),combined=new OffscreenCanvas(outSize.width,outSize.height),c=combined.getContext('2d');c.setTransform(outSize.scale,0,0,outSize.scale,-output.x*outSize.scale,-output.y*outSize.scale);compose(c);target.drawImage(combined,output.x,output.y,outSize.width/outSize.scale,outSize.height/outSize.scale);}else compose(target);
+  target.restore();
  };
  for(const root of children.get(0)??[])visit(root,context);
 }
 export function sceneSvg(shapes,paint){
- const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=shapes.filter(c=>c.parent_id===s.id).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;return `<g opacity="${a.opacity}">${paint(s)}${children}</g>`;};
+ const {geometry}=compositeGeometry(shapes,appearance);
+ const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=shapes.filter(c=>c.parent_id===s.id).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows);return `<g opacity="${a.opacity}">${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${paint(s)}${children}${filter?"</g>":""}</g>`;};
  return shapes.filter(s=>!s.parent_id).map(visit).join('');
 }
 

@@ -1,3 +1,4 @@
+import {renderShadowControls} from './shadow-controls.js';
 import {parseSvg} from './svg-import.js';
 import {snapGuides,drawSnapGuides} from './guide-snap.js';
 import {inspectorRenderer} from './inspector-focus.js';
@@ -192,7 +193,7 @@ function renderComponentProperties(shape){
     $('swap-component').value=c.master;
     const paths=displayedOverrides(shape).filter(p=>c.master!==c.source||(p!=='x'&&p!=='y'));
     $('override-count').textContent=paths.length;
-    const labels={prototype:'Prototype interactions',typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',stroke_dash:'Dash pattern',stroke_dash_offset:'Dash offset',stroke_cap:'Line cap',stroke_join:'Line join',stroke_miter_limit:'Miter limit',fill_opacity:'Fill opacity',stroke_opacity:'Stroke opacity',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
+    const labels={shadows:'Drop shadows',prototype:'Prototype interactions',typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',stroke_dash:'Dash pattern',stroke_dash_offset:'Dash offset',stroke_cap:'Line cap',stroke_join:'Line join',stroke_miter_limit:'Miter limit',fill_opacity:'Fill opacity',stroke_opacity:'Stroke opacity',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
     const rows=paths.map(path=>{const row=document.createElement('div');row.className='override-row';const label=document.createElement('span');label.textContent=path.split('.').map(p=>labels[p]??p.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())).join(' · ');const b=document.createElement('button');b.textContent='Reset';b.setAttribute('aria-label','Reset '+label.textContent+' override');b.onclick=()=>safe(()=>{editor.reset_override(shape.id,path);refresh();});row.append(label,b);return row;});
     if(!rows.length){const p=document.createElement('p');p.textContent='This layer inherits its component properties.';rows.push(p);}
     $('override-list').replaceChildren(...rows);
@@ -244,6 +245,7 @@ function renderPropertiesNow() {
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
+  renderShadowControls($('shadow-section'),shape,update);
   renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype);
   renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();},{
     styles:doc.guide_styles??[],
