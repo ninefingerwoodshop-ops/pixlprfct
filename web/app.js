@@ -3,6 +3,7 @@ import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
+import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-edit.js';
 import {appearance,radius,paintAttributes,drawScene,sceneSvg} from './appearance.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
@@ -19,8 +20,9 @@ const imageCache=new Map();
 let imageReplaceId=0,imageLoading=false;
 let penPoints = [];
 let editingPath = 0;
+let activeNode=-1;
 let selectedIds = new Set(), layerAnchor = 0;
-function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath) editingPath=0; }
+function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
 function selectionJson() { return JSON.stringify([...selectedIds]); }
 const pageViews = new Map();
@@ -135,6 +137,10 @@ function renderLayers() {
 }
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
+  $('node-actions').hidden=!editingPath||!shape?.points?.length;
+  if(activeNode>=(shape?.points?.length??0))activeNode=-1;
+  $('node-caption').textContent=activeNode<0?'Select an anchor':`Anchor ${activeNode+1} of ${shape.points.length}`;
+  for(const id of ['delete-node','smooth-node','corner-node'])$(id).disabled=activeNode<0;
   $('auto-layout-panel').hidden=shape?.kind!=='frame';
   const excluded=new Set(transformedSelection().map(s=>s.id));
   $('parent-panel').hidden=!shapes.length||(!shapes.some(s=>s.parent_id)&&!pageShapes().some(s=>s.kind==='frame'&&!excluded.has(s.id)));
@@ -231,12 +237,13 @@ function draw() {
 }
 function drawAnchors(points) {
   ctx.strokeStyle='#0d99ff'; ctx.lineWidth=1/zoom; ctx.fillStyle='#fff';
-  for(const p of points) {
+  for(const [index,p] of points.entries()) {
+    ctx.fillStyle='#fff';
     for(const h of [p.in,p.out].filter(Boolean)) {
       ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(h.x,h.y);ctx.stroke();
       ctx.beginPath();ctx.arc(h.x,h.y,3/zoom,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
-    ctx.fillRect(p.x-4/zoom,p.y-4/zoom,8/zoom,8/zoom);ctx.strokeRect(p.x-4/zoom,p.y-4/zoom,8/zoom,8/zoom);
+    ctx.fillStyle=editingPath&&index===activeNode?'#0d99ff':'#fff';ctx.fillRect(p.x-4/zoom,p.y-4/zoom,8/zoom,8/zoom);ctx.strokeRect(p.x-4/zoom,p.y-4/zoom,8/zoom,8/zoom);
   }
 }
 function fit(onlySelection = false) {
@@ -292,6 +299,8 @@ async function placeImage(file,location=null,replaceId=0) {
 }
 function bind() {
   installIcons();
+  $('delete-node').onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0){const changed=deleteAnchor(current(),activeNode);activeNode=-1;update(changed);}});
+  for(const [id,smooth] of [['smooth-node',true],['corner-node',false]])$(id).onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0)update(convertAnchor(current(),activeNode,smooth));});
   const layoutDefaults={direction:'horizontal',gap:16,padding_top:16,padding_right:16,padding_bottom:16,padding_left:16,align:'start',justify:'start',hug_width:false,hug_height:false};
   $('add-auto-layout').onclick=()=>safe(()=>{setSelection([editor.auto_layout_selection(selectionJson())]);refresh();});
   $('layout-direction').onchange=()=>{const s=current();if(s)update({...s,auto_layout:$('layout-direction').value==='none'?null:{...layoutDefaults,...s.auto_layout,direction:$('layout-direction').value}});};
@@ -313,7 +322,7 @@ function bind() {
   $('group-name').onchange=()=>safe(()=>{const id=selectedGroup(pageShapes(),[...selectedIds]);if(id){editor.rename_group(id,$('group-name').value);refresh();}});
   $('apply-scale').onclick=()=>safe(()=>{const shapes=transformedSelection(),box=bounds(selectionShapes());if(box) updateMany(scaleShapes(shapes,box,Number($('scale-percent').value)/100));});
   $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
-  $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingPath=editingPath?0:current().id; $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
+  $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingPath=editingPath?0:current().id;activeNode=-1;renderProperties(); $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
   document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) document.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-tools','nav-help']) $(id).onclick = showShortcuts;
@@ -342,6 +351,7 @@ function bind() {
   $('fit-text').onclick = () => { if (current()?.kind === 'text') update({ ...current(), height: Math.ceil(textLayout(current()).height) }); };
   canvas.ondblclick = event => {
     if(tool!=='select') return;
+    if(editingPath&&current()?.points?.length){const p=point(event),shape=current();if(anchors(shape).some(a=>Math.hypot(a.x-p.x,a.y-p.y)<8/zoom))return;const hit=nearestSegment(shape,p);if(hit&&hit.distance<10/zoom)safe(()=>{const changed=insertAnchor(shape,hit.segment,hit.t);activeNode=hit.segment+1;update(changed);});return;}
     const p = point(event), hit = editor.hit_test(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
     else if(current()?.points?.length) $('edit-path').click();
@@ -357,7 +367,7 @@ function bind() {
   $('mobile-rename-page').onclick = () => $('rename-page').click();
   $('mobile-delete-page').onclick = () => $('delete-page').click();
   document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
-  $('undo').onclick = () => { gesture = null; editor.undo(); refresh(); }; $('redo').onclick = () => { gesture = null; editor.redo(); refresh(); };
+  $('undo').onclick = () => { gesture = null; activeNode=-1; editor.undo(); refresh(); }; $('redo').onclick = () => { gesture = null; activeNode=-1; editor.redo(); refresh(); };
   $('zoom-fit').onclick = fit; $('zoom-in').onclick = () => zoomAt(1.2); $('zoom-out').onclick = () => zoomAt(1 / 1.2);
   $('document-name').onchange = () => safe(() => { editor.load(JSON.stringify({ ...doc, name: $('document-name').value.trim() || 'Untitled design' })); refresh(); });
   for (const key of ['x', 'y', 'width', 'height', 'fill', 'text']) $(key).onchange = () => {
@@ -400,10 +410,11 @@ function bind() {
         const a=nodes[i];
         for(const part of ['anchor','in','out']) {
           const h=part==='anchor'?a:a[part];
-          if(Math.hypot(p.x-h.x,p.y-h.y)<8/zoom) {gesture={type:'node',index:i,part:event.altKey&&part==='anchor'?'smooth':part,start:p,original:shape,nodes,preview:shape};return;}
+          if(Math.hypot(p.x-h.x,p.y-h.y)<8/zoom) {activeNode=i;gesture={type:'node',index:i,part:event.altKey&&part==='anchor'?'smooth':part,start:p,original:shape,nodes,preview:shape};renderProperties();draw();return;}
         }
       }
-      editingPath=0;
+      const segment=nearestSegment(shape,p);if(segment&&segment.distance<10/zoom){activeNode=-1;renderProperties();draw();return;}
+      editingPath=0;activeNode=-1;
     }
     if (shape && !shape.hidden) {
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
@@ -490,6 +501,8 @@ function bind() {
     if ($('page-dialog').open || $('shortcuts-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(editingPath&&!mod&&['delete','backspace'].includes(key)){event.preventDefault();if(activeNode>=0)$('delete-node').click();else toast('Select an anchor to delete, or press Enter to finish editing');return;}
+    if(editingPath&&activeNode>=0&&!mod&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current(),nodes=anchors(s),a=nodes[activeNode],amount=event.shiftKey?10:1,dx=event.key==='ArrowLeft'?-amount:event.key==='ArrowRight'?amount:0,dy=event.key==='ArrowUp'?-amount:event.key==='ArrowDown'?amount:0;a.x+=dx;a.y+=dy;a.in.x+=dx;a.in.y+=dy;a.out.x+=dx;a.out.y+=dy;update(reshape(s,nodes));return;}
     if(!mod&&event.shiftKey&&key==='a'&&selectedIds.size){event.preventDefault();$('add-auto-layout').click();return;}
     if(mod && event.shiftKey && key==='k'){event.preventDefault();$('place-image').click();return;}
     if(mod && key==='g') {event.preventDefault(); if(selectedIds.size)(event.shiftKey?ungroupSelection:groupSelection)();return;}
