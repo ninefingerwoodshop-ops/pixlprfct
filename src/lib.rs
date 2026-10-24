@@ -676,9 +676,12 @@ fn validate(document: &Document) -> Result<(), String> {
             if shape.kind != "frame"
                 || !["horizontal", "vertical"].contains(&l.direction.as_str())
                 || !["start", "center", "end"].contains(&l.align.as_str())
-                || !["start", "center", "end", "between"].contains(&l.justify.as_str())
-                || !["start", "center", "end", "between", "stretch"]
-                    .contains(&l.align_content.as_str())
+                || !["start", "center", "end", "between", "around", "evenly"]
+                    .contains(&l.justify.as_str())
+                || ![
+                    "start", "center", "end", "between", "around", "evenly", "stretch",
+                ]
+                .contains(&l.align_content.as_str())
                 || l.cross_gap
                     .is_some_and(|v| !v.is_finite() || !(0.0..=100_000.0).contains(&v))
                 || ![

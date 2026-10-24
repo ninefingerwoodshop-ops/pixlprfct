@@ -1,5 +1,25 @@
 use crate::{constrain_axis, Document, Shape};
 
+// Return the leading offset and additional inter-item space. The configured
+// gap remains the minimum; distributed space never becomes negative.
+fn distribution(mode: &str, count: usize, spare: f64) -> (f64, f64) {
+    if count == 0 {
+        return (0.0, 0.0);
+    }
+    let spare = spare.max(0.0);
+    match mode {
+        "center" => (spare / 2.0, 0.0),
+        "end" => (spare, 0.0),
+        "between" if count > 1 => (0.0, spare / (count - 1) as f64),
+        "around" => (spare / (2 * count) as f64, spare / count as f64),
+        "evenly" => {
+            let space = spare / (count + 1) as f64;
+            (space, space)
+        }
+        _ => (0.0, 0.0),
+    }
+}
+
 fn inset(s: &Shape) -> f64 {
     if s.auto_layout.as_ref().is_some_and(|l| l.strokes_included)
         && s.appearance
@@ -345,21 +365,12 @@ pub(crate) fn reflow(doc: &mut Document) {
             } else {
                 0.0
             };
-            let row_gap = cg
-                + if l.wrap && l.align_content == "between" && rows.len() > 1 {
-                    spare / (rows.len() - 1) as f64
-                } else {
-                    0.0
-                };
-            let mut row_cursor = if l.wrap {
-                match l.align_content.as_str() {
-                    "center" => spare / 2.0,
-                    "end" => spare,
-                    _ => 0.0,
-                }
+            let (mut row_cursor, row_extra) = if l.wrap {
+                distribution(&l.align_content, rows.len(), spare)
             } else {
-                0.0
+                (0.0, 0.0)
             };
+            let row_gap = cg + row_extra;
             for (row, line) in rows.iter().enumerate() {
                 let row_cross = heights[row] + stretch;
                 let mut sizes: Vec<f64> = line
@@ -408,17 +419,8 @@ pub(crate) fn reflow(doc: &mut Document) {
                     - sizes.iter().sum::<f64>()
                     - l.gap * line.len().saturating_sub(1) as f64)
                     .max(0.0);
-                let gap = l.gap
-                    + if l.justify == "between" && line.len() > 1 {
-                        extra / (line.len() - 1) as f64
-                    } else {
-                        0.0
-                    };
-                let mut cursor = match l.justify.as_str() {
-                    "center" => extra / 2.0,
-                    "end" => extra,
-                    _ => 0.0,
-                };
+                let (mut cursor, gap_extra) = distribution(&l.justify, line.len(), extra);
+                let gap = l.gap + gap_extra;
                 for (j, &c) in line.iter().enumerate() {
                     let s = &shapes[c];
                     let cs = bounded(

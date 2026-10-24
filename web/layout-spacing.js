@@ -11,13 +11,13 @@ export function spacingHandles(frame,shapes){
  const horizontal=l.direction==='horizontal',main=horizontal?'x':'y',cross=horizontal?'y':'x',size=horizontal?'width':'height',crossSize=horizontal?'height':'width';
  const items=shapes.filter(s=>s.parent_id===frame.id&&!s.hidden&&!s.layout_item?.absolute),rows=[];
  for(const s of items){let row=rows.at(-1);if(!row||l.wrap&&Math.min(row.end,s[cross]+s[crossSize])-Math.max(row.start,s[cross])<=1e-7){row={items:[],start:s[cross],end:s[cross]+s[crossSize]};rows.push(row);}row.items.push(s);row.start=Math.min(row.start,s[cross]);row.end=Math.max(row.end,s[cross]+s[crossSize]);}
- for(const row of rows)if(l.justify!=='between')for(let i=1;i<row.items.length;i++){
+ for(const row of rows)if(!['between','around','evenly'].includes(l.justify))for(let i=1;i<row.items.length;i++){
   const a=row.items[i-1],b=row.items[i],start=a[main]+a[size],end=b[main],lo=Math.max(a[cross],b[cross]),hi=Math.min(a[cross]+a[crossSize],b[cross]+b[crossSize]);
   if(end<start-1e-7||hi<=lo)continue;
   const area=horizontal?{x:start,y:lo,width:end-start,height:hi-lo}:{x:lo,y:start,width:hi-lo,height:end-start};
   add('gap',main,1,area.x+area.width/2,area.y+area.height/2,area);
  }
- if(l.wrap&&l.align_content!=='between')for(let i=1;i<rows.length;i++){
+ if(l.wrap&&!['between','around','evenly'].includes(l.align_content))for(let i=1;i<rows.length;i++){
   const start=rows[i-1].end,end=rows[i].start;if(end<start-1e-7)continue;
   const area=horizontal?{x:x+l.padding_left,y:start,width:Math.max(0,w-l.padding_left-l.padding_right),height:end-start}:{x:start,y:y+l.padding_top,width:end-start,height:Math.max(0,h-l.padding_top-l.padding_bottom)};
   add('cross_gap',cross,1,area.x+area.width/2,area.y+area.height/2,area);

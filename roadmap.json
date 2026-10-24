@@ -69,7 +69,8 @@
     "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; Bézier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
     "on-canvas auto-layout padding, main-gap and wrapped cross-gap handles with Rust descendant preview, linked opposite padding, keyboard adjustment, zoom-aware hit targets, clipping and atomic undo",
     "inside/center/outside stroke alignment for closed geometry, text and image outlines with shared masks, independent stroke opacity/gradients, outer-edge hit testing, bounded export buffers, component overrides and pixel-verified PNG/SVG placement",
-    "per-frame inside-stroke inclusion in auto layout with independent nested settings, content-space fill allocation, padding/border minimums, stroke-aware wrapping and canvas handles, component overrides and legacy persistence"
+    "per-frame inside-stroke inclusion in auto layout with independent nested settings, content-space fill allocation, padding/border minimums, stroke-aware wrapping and canvas handles, component overrides and legacy persistence",
+    "Space Around and Space Evenly distribution for main-axis children and wrapped rows/columns, minimum-gap preservation, single-item centering, overflow stability and fill-first allocation"
   ],
   "remaining": [
     "Additional frame layout controls and per-edge stroke weights",
