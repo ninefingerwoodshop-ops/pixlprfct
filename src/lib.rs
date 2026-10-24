@@ -86,6 +86,14 @@ pub struct Prototype {
     pub action: String,
     #[serde(default)]
     pub target: u32,
+    #[serde(default)]
+    pub close_on_outside: bool,
+    #[serde(default = "default_overlay_position")]
+    pub overlay_position: String,
+}
+
+fn default_overlay_position() -> String {
+    "center".into()
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -411,17 +419,23 @@ fn validate(document: &Document) -> Result<(), String> {
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
         if let Some(p) = &shape.prototype {
-            if !["navigate", "back"].contains(&p.action.as_str())
-                || (p.action == "navigate"
+            if !["navigate", "back", "overlay", "close"].contains(&p.action.as_str())
+                || (["navigate", "overlay"].contains(&p.action.as_str())
                     && !document
                         .shapes
                         .iter()
                         .any(|s| s.id == p.target && s.kind == "frame"))
-                || (p.action == "back" && p.target != 0)
+                || (["back", "close"].contains(&p.action.as_str()) && p.target != 0)
+                || ![
+                    "center",
+                    "top-left",
+                    "top-right",
+                    "bottom-left",
+                    "bottom-right",
+                ]
+                .contains(&p.overlay_position.as_str())
             {
-                return Err(
-                    "Prototype actions must navigate to an existing frame or go back".into(),
-                );
+                return Err("Invalid prototype action, destination or overlay position".into());
             }
         }
         if shape.layout_grids.len() > 8 || (!shape.layout_grids.is_empty() && shape.kind != "frame")
@@ -807,10 +821,9 @@ impl Editor {
             .map(|s| s.id)
             .collect();
         for s in &mut document.shapes {
-            if s.prototype
-                .as_ref()
-                .is_some_and(|p| p.action == "navigate" && removed.contains(&p.target))
-            {
+            if s.prototype.as_ref().is_some_and(|p| {
+                ["navigate", "overlay"].contains(&p.action.as_str()) && removed.contains(&p.target)
+            }) {
                 s.prototype = None;
             }
         }
@@ -866,7 +879,7 @@ impl Editor {
             .collect();
         for s in &mut document.shapes {
             if s.prototype.as_ref().is_some_and(|p| {
-                p.action == "navigate"
+                ["navigate", "overlay"].contains(&p.action.as_str())
                     && before_sync.contains(&p.target)
                     && !after_sync.contains(&p.target)
             }) {
@@ -957,11 +970,9 @@ impl Editor {
             .map(|s| {
                 let mut copy = s.clone();
                 copy.component = None;
-                if copy
-                    .prototype
-                    .as_ref()
-                    .is_some_and(|p| p.action == "navigate" && !ids.contains(&p.target))
-                {
+                if copy.prototype.as_ref().is_some_and(|p| {
+                    ["navigate", "overlay"].contains(&p.action.as_str()) && !ids.contains(&p.target)
+                }) {
                     copy.prototype = None;
                 }
                 if !ids.contains(&copy.parent_id) {
@@ -1029,7 +1040,7 @@ impl Editor {
         let mut document = self.document.clone();
         for mut s in payload.shapes {
             if let Some(p) = &mut s.prototype {
-                if p.action == "navigate" {
+                if ["navigate", "overlay"].contains(&p.action.as_str()) {
                     p.target = ids[&p.target];
                 }
             }
@@ -1275,7 +1286,7 @@ impl Editor {
                 copy.id = self.next_id + created.len() as u32;
                 copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
                 if let Some(p) = &mut copy.prototype {
-                    if p.action == "navigate" {
+                    if ["navigate", "overlay"].contains(&p.action.as_str()) {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
                 }
