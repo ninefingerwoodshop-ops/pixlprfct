@@ -1,3 +1,4 @@
+import {smoothPencil} from './pencil.js';
 import {connectionHit,connectionTarget,connectedShape,drawConnections} from './prototype-connections.js';
 import {prototypeFrames,renderPrototypeControls,presentPrototype} from './prototype.js';
 import {drawLayoutGuides,renderGuideControls} from './layout-guides.js';
@@ -349,11 +350,12 @@ function point(event) { const rect = canvas.getBoundingClientRect(); return { x:
 function setTool(value) {
   penPoints=[]; gesture=null; editingPath=0;editingGradient=0;activeGradient=null;
   document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
+  $('pencil-options').hidden=value!=='pencil';
   tool = value; document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
   renderProperties();
   draw();
   canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'default' : 'crosshair';
-  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
+  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Smoothing preserves sharp corners · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 function pasteLayerText(text,overSelection=false,replace=false){
@@ -614,6 +616,7 @@ function bind() {
     if(gesture?.type==='pen-handle') {gesture=null;draw();return;}
     if(gesture?.type==='create') {
       let shape=gesture.preview;
+      if(gesture.kind==='pencil')shape=fromPoints('pencil',smoothPencil(gesture.points,Number($('pencil-smoothing').value),zoom));
       if(gesture.kind==='pencil' && shape.points.length<2) { gesture=null; draw(); return; }
       if(gesture.kind!=='pencil' && shape.width<3 && shape.height<3) shape=drawnShape(gesture.kind,gesture.start,{x:gesture.start.x+160,y:gesture.start.y+(gesture.kind==='line'||gesture.kind==='arrow'?0:120)});
       const start=gesture.start;gesture=null; safe(()=>{setSelection([insertAt(shape,start)]); setTool('select'); refresh();}); return;
