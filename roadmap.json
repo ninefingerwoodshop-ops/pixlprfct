@@ -41,14 +41,15 @@
     "atomic paste-to-replace across selected destinations with parent/stack/layout preservation, subtree replacement, internal-link remapping and undo",
     "adjustable Pencil point reduction and Bézier smoothing with corner/endpoint retention, zoom-adjusted tolerance and editable persistent handles",
     "JPEG page/selection export with adjustable quality, opaque backgrounds, resolution scaling and bounded raster memory",
-    "batch SVG/PNG/JPEG export of selected roots or top-level frames to ZIP with unique filenames, sequential rendering, progress and size limits"
+    "batch SVG/PNG/JPEG export of selected roots or top-level frames to ZIP with unique filenames, sequential rendering, progress and size limits",
+    "Rust vector path splitting and closed-path opening at anchors with cubic preservation, separate bounds, inherited settings and atomic history"
   ],
   "remaining": [
     "Additional frame layout controls, guide snapping and reusable guide styles",
     "Nested groups and complete tree reordering",
     "SVG import, external vector clipboard interoperability, multi-frame paste",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and effects",
-    "Vector path joining/splitting, Boolean operations and slice export",
+    "Vector path joining, Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
     "Smart Animate, directional overlay motion, hover/drag/timer triggers, scrolling and conditional interactions",

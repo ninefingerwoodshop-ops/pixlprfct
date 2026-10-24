@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+mod path_split;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
@@ -1312,6 +1313,38 @@ impl Editor {
         self.commit(document)?;
         self.next_id += 1;
         Ok(id)
+    }
+
+    pub fn split_path(&mut self, id: u32, index: usize) -> Result<String, String> {
+        self.selection_ids(&serde_json::to_string(&vec![id]).unwrap())?;
+        let original = self.document.shapes.iter().find(|s| s.id == id).unwrap();
+        let mut node = Some(original);
+        while let Some(s) = node {
+            if s.locked {
+                return Err("Unlock the path or its parent before splitting".into());
+            }
+            node = self.document.shapes.iter().find(|p| p.id == s.parent_id);
+        }
+        let mut parts = path_split::split(original, index)?;
+        if parts.len() > 1 && self.next_id == u32::MAX {
+            return Err("Shape ID limit reached".into());
+        }
+        components::record_overrides(original, &mut parts[0])?;
+        let mut ids = vec![id];
+        if parts.len() > 1 {
+            parts[1].id = self.next_id;
+            parts[1].component = None;
+            parts[1].name = format!("{} split", original.name);
+            ids.push(self.next_id);
+        }
+        let mut document = self.document.clone();
+        let position = document.shapes.iter().position(|s| s.id == id).unwrap();
+        document.shapes.splice(position..=position, parts);
+        self.commit(document)?;
+        if ids.len() > 1 {
+            self.next_id = self.next_id.max(ids[1] + 1);
+        }
+        Ok(serde_json::to_string(&ids).unwrap())
     }
 
     pub fn insert(&mut self, json: &str) -> Result<u32, String> {
