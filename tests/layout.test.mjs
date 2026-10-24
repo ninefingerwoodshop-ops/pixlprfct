@@ -32,5 +32,5 @@ test('wrapping and drag reordering are single undo steps; scaling scales layout 
  const e=new Editor(),a=e.add('rectangle',0,0),b=e.add('rectangle',100,0);const before=e.snapshot();const f=e.auto_layout_selection(JSON.stringify([a,b]));assert.equal(get(e,a).parent_id,f);e.undo();assert.equal(e.snapshot(),before);e.redo();
  const old=e.snapshot(),target={...get(e,a),x:get(e,b).x+get(e,b).width+10};e.move_into(JSON.stringify([target]),f);assert.ok(get(e,a).x>get(e,b).x);e.undo();assert.equal(e.snapshot(),old);
  const list=shapes(e),scaled=scaleShapes(list,{x:get(e,f).x,y:get(e,f).y},2);e.update_many(JSON.stringify(scaled));assert.equal(get(e,f).auto_layout.gap,32);assert.deepEqual(shapes(e),scaled);
- const stable=e.snapshot();assert.equal(e.auto_layout_selection(JSON.stringify([f])),f);assert.equal(e.snapshot(),stable);assert.throws(()=>edit(e,f,{auto_layout:{...layout,gap:-10}}));assert.equal(e.snapshot(),stable);e.free();
+  const stable=e.snapshot();assert.equal(e.auto_layout_selection(JSON.stringify([f])),f);assert.equal(e.snapshot(),stable);assert.throws(()=>edit(e,f,{auto_layout:{...layout,gap:-100001}}));assert.equal(e.snapshot(),stable);e.free();
 });

@@ -1,0 +1,18 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import init,{Editor} from '../web/pkg/pixlprfct_core.js';import {spacingHandles,changeSpacing} from '../web/layout-spacing.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+const all=e=>JSON.parse(e.snapshot()).shapes,get=(e,id)=>all(e).find(s=>s.id===id),set=(e,id,v)=>e.update(JSON.stringify({...get(e,id),...v}));
+const layout={direction:'horizontal',gap:-20,padding_top:10,padding_right:10,padding_bottom:10,padding_left:10,align:'start',justify:'start',hug_width:true,hug_height:true};
+function setup(){const e=new Editor(),f=e.add('frame',100,100),ids=[];for(let i=0;i<4;i++){const id=e.add('rectangle',0,0);set(e,id,{width:80,height:80});ids.push(id);}e.reparent_many(JSON.stringify(ids),f);set(e,f,{auto_layout:layout});return{e,f,ids};}
+test('negative gaps overlap on either axis, hug actual extents and survive save/undo',()=>{
+ const {e,f,ids}=setup();for(const direction of ['horizontal','vertical'])for(const gap of [-20,-100]){set(e,f,{auto_layout:{...layout,direction,gap}});const axis=direction==='horizontal'?'x':'y',size=direction==='horizontal'?'width':'height',positions=ids.map(id=>get(e,id)[axis]);assert.deepEqual(positions,gap===-20?[110,170,230,290]:[170,150,130,110]);assert.equal(get(e,f)[size],gap===-20?280:160);const handles=spacingHandles(get(e,f),all(e)).filter(h=>h.key==='gap');assert.equal(handles.length,3);assert.ok(handles.every(h=>h.area.width>=0&&h.area.height>=0&&h.value===gap));}
+ const saved=e.snapshot();set(e,f,{auto_layout:{...layout,gap:0}});e.undo();assert.equal(e.snapshot(),saved);const copy=new Editor();copy.load(saved);assert.equal(copy.snapshot(),saved);e.free();copy.free();
+});
+test('overlapping wrapped rows remain distinct in engine and canvas controls',()=>{
+ const {e,f,ids}=setup();for(const direction of ['horizontal','vertical']){const h=direction==='horizontal';set(e,f,{width:h?160:400,height:h?400:160,auto_layout:{...layout,direction,wrap:true,cross_gap:-30,hug_width:!h,hug_height:h}});const main=h?'x':'y',cross=h?'y':'x';assert.deepEqual(ids.map(id=>get(e,id)[main]),[110,170,110,170]);assert.deepEqual(ids.map(id=>get(e,id)[cross]),[110,110,160,160]);assert.equal(get(e,f)[h?'height':'width'],150);const handles=spacingHandles(get(e,f),all(e));assert.equal(handles.filter(h=>h.key==='gap').length,2);assert.equal(handles.filter(h=>h.key==='cross_gap').length,1);assert.equal(handles.find(h=>h.key==='cross_gap').value,-30);}e.free();
+});
+test('auto spacing replaces negative numeric gaps and never creates overlap under overflow',()=>{
+ const {e,f,ids}=setup();for(const justify of ['between','around','evenly']){set(e,f,{width:200,auto_layout:{...layout,justify,hug_width:false}});assert.deepEqual(ids.map(id=>get(e,id).x),[110,190,270,350]);}e.free();
+});
+test('canvas gap editing crosses zero, preserves padding limits and previews atomically',()=>{
+ const {e,f}=setup(),s=get(e,f),handle=spacingHandles(s,all(e)).find(h=>h.key==='gap'),changed=changeSpacing(s,handle,-15);assert.equal(changed.auto_layout.gap,-35);const saved=e.snapshot(),preview=JSON.parse(e.preview_update_many(JSON.stringify([changed])));assert.equal(preview.shapes.find(s=>s.id===f).width,235);assert.equal(e.snapshot(),saved);e.update(JSON.stringify(changed));assert.deepEqual(all(e),preview.shapes);e.undo();assert.equal(e.snapshot(),saved);assert.equal(changeSpacing(s,{key:'padding_left',sign:1},-100).auto_layout.padding_left,0);assert.throws(()=>set(e,f,{auto_layout:{...layout,gap:-100001}}));assert.equal(e.snapshot(),saved);e.free();
+});

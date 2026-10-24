@@ -10,23 +10,31 @@ export function spacingHandles(frame,shapes){
  add('padding_bottom','y',-1,x+w/2,y+h-l.padding_bottom,{x,y:y+h-l.padding_bottom,width:w,height:l.padding_bottom});
  const horizontal=l.direction==='horizontal',main=horizontal?'x':'y',cross=horizontal?'y':'x',size=horizontal?'width':'height',crossSize=horizontal?'height':'width';
  const items=shapes.filter(s=>s.parent_id===frame.id&&!s.hidden&&!s.layout_item?.absolute),rows=[];
- for(const s of items){let row=rows.at(-1);if(!row||l.wrap&&Math.min(row.end,s[cross]+s[crossSize])-Math.max(row.start,s[cross])<=1e-7){row={items:[],start:s[cross],end:s[cross]+s[crossSize]};rows.push(row);}row.items.push(s);row.start=Math.min(row.start,s[cross]);row.end=Math.max(row.end,s[cross]+s[crossSize]);}
+ const available=horizontal?w-l.padding_left-l.padding_right:h-l.padding_top-l.padding_bottom,gap=['between','around','evenly'].includes(l.justify)?0:l.gap;
+ let cursor=0,low=0,high=0;
+ for(const s of items){
+  const sl=s.auto_layout,b=sl?.strokes_included&&s.appearance?.stroke_enabled&&s.appearance?.stroke_alignment==='inside'?s.stroke_width:0;
+  const floor=Math.max(1,sl?(horizontal?sl.padding_left+sl.padding_right:sl.padding_top+sl.padding_bottom)+2*b:0),li=s.layout_item??{},min=Math.max(floor,li[horizontal?'min_width':'min_height']??1),max=Math.max(floor,li[horizontal?'max_width':'max_height']??1e6);
+  const basis=li[horizontal?'fill_width':'fill_height']?min:Math.max(min,Math.min(max,s[size]));
+  let row=rows.at(-1);if(!row||l.wrap&&Math.max(high,cursor+basis)-Math.min(low,cursor)>available+1e-7){row={items:[],start:s[cross],end:s[cross]+s[crossSize]};rows.push(row);cursor=0;low=0;high=0;}
+  low=Math.min(low,cursor);high=Math.max(high,cursor+basis);cursor+=basis+gap;row.items.push(s);row.start=Math.min(row.start,s[cross]);row.end=Math.max(row.end,s[cross]+s[crossSize]);
+ }
  for(const row of rows)if(!['between','around','evenly'].includes(l.justify))for(let i=1;i<row.items.length;i++){
   const a=row.items[i-1],b=row.items[i],start=a[main]+a[size],end=b[main],lo=Math.max(a[cross],b[cross]),hi=Math.min(a[cross]+a[crossSize],b[cross]+b[crossSize]);
-  if(end<start-1e-7||hi<=lo)continue;
-  const area=horizontal?{x:start,y:lo,width:end-start,height:hi-lo}:{x:lo,y:start,width:hi-lo,height:end-start};
+  if(hi<=lo)continue;
+  const area=horizontal?{x:Math.min(start,end),y:lo,width:Math.abs(end-start),height:hi-lo}:{x:lo,y:Math.min(start,end),width:hi-lo,height:Math.abs(end-start)};
   add('gap',main,1,area.x+area.width/2,area.y+area.height/2,area);
  }
  if(l.wrap&&!['between','around','evenly'].includes(l.align_content))for(let i=1;i<rows.length;i++){
-  const start=rows[i-1].end,end=rows[i].start;if(end<start-1e-7)continue;
-  const area=horizontal?{x:x+l.padding_left,y:start,width:Math.max(0,w-l.padding_left-l.padding_right),height:end-start}:{x:start,y:y+l.padding_top,width:end-start,height:Math.max(0,h-l.padding_top-l.padding_bottom)};
+  const start=rows[i-1].end,end=rows[i].start;
+  const area=horizontal?{x:x+l.padding_left,y:Math.min(start,end),width:Math.max(0,w-l.padding_left-l.padding_right),height:Math.abs(end-start)}:{x:Math.min(start,end),y:y+l.padding_top,width:Math.abs(end-start),height:Math.max(0,h-l.padding_top-l.padding_bottom)};
   add('cross_gap',cross,1,area.x+area.width/2,area.y+area.height/2,area);
  }
  return handles;
 }
 export function spacingHit(frame,shapes,p,zoom){return spacingHandles(frame,shapes).map(h=>({...h,distance:Math.hypot(p.x-h.x,p.y-h.y)})).filter(h=>h.distance<=9/zoom).sort((a,b)=>a.distance-b.distance)[0]??null;}
 export function changeSpacing(frame,handle,delta,{shiftKey=false,altKey=false}={}){
- const step=shiftKey?10:1,value=Math.max(0,Math.min(100000,Math.round(((frame.auto_layout[handle.key]??frame.auto_layout.gap)+delta*handle.sign)/step)*step));
+ const step=shiftKey?10:1,min=handle.key==='gap'||handle.key==='cross_gap'?-100000:0,value=Math.max(min,Math.min(100000,Math.round(((frame.auto_layout[handle.key]??frame.auto_layout.gap)+delta*handle.sign)/step)*step));
  const l={...frame.auto_layout,[handle.key]:value};
  if(altKey&&handle.key.startsWith('padding_')){const opposite={padding_left:'padding_right',padding_right:'padding_left',padding_top:'padding_bottom',padding_bottom:'padding_top'};l[opposite[handle.key]]=value;}
  return {...frame,auto_layout:l};

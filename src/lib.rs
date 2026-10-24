@@ -683,9 +683,10 @@ fn validate(document: &Document) -> Result<(), String> {
                 ]
                 .contains(&l.align_content.as_str())
                 || l.cross_gap
-                    .is_some_and(|v| !v.is_finite() || !(0.0..=100_000.0).contains(&v))
+                    .is_some_and(|v| !v.is_finite() || !(-100_000.0..=100_000.0).contains(&v))
+                || !l.gap.is_finite()
+                || !(-100_000.0..=100_000.0).contains(&l.gap)
                 || ![
-                    l.gap,
                     l.padding_top,
                     l.padding_right,
                     l.padding_bottom,

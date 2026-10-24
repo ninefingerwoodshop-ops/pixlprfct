@@ -1,7 +1,32 @@
 use crate::{constrain_axis, Document, Shape};
 
-// Return the leading offset and additional inter-item space. The configured
-// gap remains the minimum; distributed space never becomes negative.
+// Automatic spacing replaces the stored numeric gap and never overlaps.
+fn automatic(mode: &str) -> bool {
+    matches!(mode, "between" | "around" | "evenly")
+}
+fn main_gap(l: &crate::AutoLayout) -> f64 {
+    if automatic(&l.justify) {
+        0.0
+    } else {
+        l.gap
+    }
+}
+fn cross_gap(l: &crate::AutoLayout) -> f64 {
+    if automatic(&l.align_content) {
+        0.0
+    } else {
+        l.cross_gap.unwrap_or(l.gap)
+    }
+}
+fn track_bounds(sizes: impl Iterator<Item = f64>, gap: f64) -> (f64, f64) {
+    let (mut cursor, mut lo, mut hi) = (0.0_f64, 0.0_f64, 0.0_f64);
+    for size in sizes {
+        lo = lo.min(cursor);
+        hi = hi.max(cursor + size);
+        cursor += size + gap;
+    }
+    (lo, hi)
+}
 fn distribution(mode: &str, count: usize, spare: f64) -> (f64, f64) {
     if count == 0 {
         return (0.0, 0.0);
@@ -73,7 +98,7 @@ pub(crate) fn drop_before(
         horizontal,
         layout.wrap,
         available,
-        layout.gap,
+        main_gap(layout),
     );
     let row = if layout.wrap {
         rows.iter()
@@ -172,18 +197,19 @@ fn lines(
 ) -> Vec<Vec<usize>> {
     let mut result = vec![];
     let mut line = vec![];
-    let mut used = 0.0;
+    let (mut cursor, mut lo, mut hi) = (0.0_f64, 0.0_f64, 0.0_f64);
     for &c in items {
         let n = basis(&shapes[c], h);
-        if wrap && !line.is_empty() && used + gap + n > available + 1e-7 {
+        if wrap && !line.is_empty() && hi.max(cursor + n) - lo.min(cursor) > available + 1e-7 {
             result.push(line);
             line = vec![];
-            used = 0.0;
+            cursor = 0.0;
+            lo = 0.0;
+            hi = 0.0;
         }
-        if !line.is_empty() {
-            used += gap;
-        }
-        used += n;
+        lo = lo.min(cursor);
+        hi = hi.max(cursor + n);
+        cursor += n + gap;
         line.push(c);
     }
     if !line.is_empty() {
@@ -296,17 +322,20 @@ pub(crate) fn reflow(doc: &mut Document) {
             let pw = padding(s, true);
             let ph = padding(s, false);
             let available = if horizontal { w - pw } else { h - ph };
-            let rows = lines(shapes, &items, horizontal, l.wrap, available, l.gap);
-            let main = items
-                .iter()
-                .map(|&c| size(&shapes[c], horizontal))
-                .sum::<f64>()
-                + l.gap * items.len().saturating_sub(1) as f64;
+            let rows = lines(shapes, &items, horizontal, l.wrap, available, main_gap(&l));
+            let (main_lo, main_hi) = track_bounds(
+                items.iter().map(|&c| size(&shapes[c], horizontal)),
+                main_gap(&l),
+            );
+            let main = main_hi - main_lo;
             let cross = if l.wrap {
-                rows.iter()
-                    .map(|r| cross_size(shapes, r, horizontal))
-                    .sum::<f64>()
-                    + l.cross_gap.unwrap_or(l.gap) * rows.len().saturating_sub(1) as f64
+                {
+                    let (lo, hi) = track_bounds(
+                        rows.iter().map(|r| cross_size(shapes, r, horizontal)),
+                        cross_gap(&l),
+                    );
+                    hi - lo
+                }
             } else {
                 items
                     .iter()
@@ -345,8 +374,8 @@ pub(crate) fn reflow(doc: &mut Document) {
             } else {
                 parent.width - padding(&parent, true)
             };
-            let rows = lines(shapes, &items, horizontal, l.wrap, available, l.gap);
-            let cg = l.cross_gap.unwrap_or(l.gap);
+            let rows = lines(shapes, &items, horizontal, l.wrap, available, main_gap(&l));
+            let cg = cross_gap(&l);
             let heights: Vec<f64> = rows
                 .iter()
                 .map(|r| {
@@ -357,9 +386,8 @@ pub(crate) fn reflow(doc: &mut Document) {
                     }
                 })
                 .collect();
-            let spare =
-                (cross - heights.iter().sum::<f64>() - cg * rows.len().saturating_sub(1) as f64)
-                    .max(0.0);
+            let (row_lo, row_hi) = track_bounds(heights.iter().copied(), cg);
+            let spare = (cross - (row_hi - row_lo)).max(0.0);
             let stretch = if l.wrap && l.align_content == "stretch" {
                 spare / rows.len().max(1) as f64
             } else {
@@ -370,6 +398,7 @@ pub(crate) fn reflow(doc: &mut Document) {
             } else {
                 (0.0, 0.0)
             };
+            row_cursor -= row_lo;
             let row_gap = cg + row_extra;
             for (row, line) in rows.iter().enumerate() {
                 let row_cross = heights[row] + stretch;
@@ -381,7 +410,7 @@ pub(crate) fn reflow(doc: &mut Document) {
                     .filter(|&j| fill(&shapes[line[j]], horizontal))
                     .collect();
                 let budget = available
-                    - l.gap * line.len().saturating_sub(1) as f64
+                    - main_gap(&l) * line.len().saturating_sub(1) as f64
                     - line
                         .iter()
                         .enumerate()
@@ -415,12 +444,11 @@ pub(crate) fn reflow(doc: &mut Document) {
                         low + padding(&shapes[line[j]], horizontal),
                     );
                 }
-                let extra = (available
-                    - sizes.iter().sum::<f64>()
-                    - l.gap * line.len().saturating_sub(1) as f64)
-                    .max(0.0);
+                let (lo, hi) = track_bounds(sizes.iter().copied(), main_gap(&l));
+                let extra = (available - (hi - lo)).max(0.0);
                 let (mut cursor, gap_extra) = distribution(&l.justify, line.len(), extra);
-                let gap = l.gap + gap_extra;
+                cursor -= lo;
+                let gap = main_gap(&l) + gap_extra;
                 for (j, &c) in line.iter().enumerate() {
                     let s = &shapes[c];
                     let cs = bounded(
