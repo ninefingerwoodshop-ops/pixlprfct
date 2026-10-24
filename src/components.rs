@@ -487,119 +487,10 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
 #[wasm_bindgen]
 impl Editor {
     pub fn create_component_selection(&mut self, json: &str) -> Result<u32, String> {
-        let ids = self.selection_ids(json)?;
-        let roots: Vec<_> = self
-            .document
-            .shapes
-            .iter()
-            .filter(|s| ids.contains(&s.id))
-            .filter(|s| {
-                let mut parent = s.parent_id;
-                while parent != 0 {
-                    if ids.contains(&parent) {
-                        return false;
-                    }
-                    parent = self
-                        .document
-                        .shapes
-                        .iter()
-                        .find(|p| p.id == parent)
-                        .map_or(0, |p| p.parent_id);
-                }
-                true
-            })
-            .cloned()
-            .collect();
-        if roots.len() == 1 && roots[0].kind == "frame" {
-            self.create_component(roots[0].id)?;
-            return Ok(roots[0].id);
-        }
-        let first = roots.first().ok_or("Select layers to create a component")?;
-        if roots.iter().any(|s| s.parent_id != first.parent_id) {
-            return Err("Select layers in the same parent to create a component".into());
-        }
-        for root in &roots {
-            if subtree(&self.document.shapes, root.id)
-                .iter()
-                .any(|s| s.component.is_some())
-            {
-                return Err("Nested components are not supported yet".into());
-            }
-            if root.group_id != 0
-                && self
-                    .document
-                    .shapes
-                    .iter()
-                    .any(|s| s.group_id == root.group_id && !roots.iter().any(|r| r.id == s.id))
-            {
-                return Err("Select the whole group to create a component".into());
-            }
-        }
-        let x = roots.iter().map(|s| s.x).fold(f64::INFINITY, f64::min);
-        let y = roots.iter().map(|s| s.y).fold(f64::INFINITY, f64::min);
-        let width = roots
-            .iter()
-            .map(|s| s.x + s.width)
-            .fold(f64::NEG_INFINITY, f64::max)
-            - x;
-        let height = roots
-            .iter()
-            .map(|s| s.y + s.height)
-            .fold(f64::NEG_INFINITY, f64::max)
-            - y;
-        let mut staged = Editor {
-            text_measurer: self.text_measurer.clone(),
-            document: self.document.clone(),
-            undo: vec![],
-            redo: vec![],
-            next_id: self.next_id,
-            next_page_id: self.next_page_id,
-        };
-        let id = staged.add("frame", x, y)?;
-        let index = staged
-            .document
-            .shapes
-            .iter()
-            .position(|s| s.id == id)
-            .unwrap();
-        let mut frame = staged.document.shapes.remove(index);
-        frame.width = width.max(1.0);
-        frame.height = height.max(1.0);
-        frame.parent_id = first.parent_id;
-        frame.name = if roots.len() == 1 {
-            first.name.clone()
-        } else {
-            "Component".into()
-        };
-        frame.clip_content = false;
-        frame.component = Some(Component::Master);
-        frame.appearance = Some(
-            serde_json::from_value(serde_json::json!({
-                "opacity":1.0,"corner_radius":0.0,"fill_enabled":false,
-                "stroke_enabled":false,"stroke_color":"#000000"
-            }))
-            .map_err(|e| e.to_string())?,
-        );
-        if roots.len() == 1 {
-            frame.layout_item = first.layout_item.clone();
-            frame.constraints = first.constraints.clone();
-        }
-        let slot = staged
-            .document
-            .shapes
-            .iter()
-            .position(|s| s.id == first.id)
-            .unwrap();
-        staged.document.shapes.insert(slot, frame);
-        for s in &mut staged.document.shapes {
-            if roots.iter().any(|r| r.id == s.id) {
-                s.parent_id = id;
-                s.layout_item = Default::default();
-            }
-        }
-        self.commit(staged.document)?;
-        self.next_id = self.next_id.max(staged.next_id);
-        Ok(id)
+        self.wrap_selection(json, true)
+    }
+    pub fn frame_selection(&mut self, json: &str) -> Result<u32, String> {
+        self.wrap_selection(json, false)
     }
 
     pub fn create_component(&mut self, id: u32) -> Result<(), String> {
@@ -830,5 +721,134 @@ impl Editor {
                 _ => return Err("Select an instance".into()),
             }
         }
+    }
+}
+
+impl Editor {
+    fn wrap_selection(&mut self, json: &str, component: bool) -> Result<u32, String> {
+        let ids = self.selection_ids(json)?;
+        let roots: Vec<_> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .filter(|s| {
+                let mut parent = s.parent_id;
+                while parent != 0 {
+                    if ids.contains(&parent) {
+                        return false;
+                    }
+                    parent = self
+                        .document
+                        .shapes
+                        .iter()
+                        .find(|p| p.id == parent)
+                        .map_or(0, |p| p.parent_id);
+                }
+                true
+            })
+            .cloned()
+            .collect();
+        if component && roots.len() == 1 && roots[0].kind == "frame" {
+            self.create_component(roots[0].id)?;
+            return Ok(roots[0].id);
+        }
+        let first = roots
+            .first()
+            .ok_or("Select layers to frame the selection")?;
+        if roots.iter().any(|s| s.parent_id != first.parent_id) {
+            return Err("Select layers in the same parent to frame the selection".into());
+        }
+        for root in &roots {
+            if component
+                && subtree(&self.document.shapes, root.id)
+                    .iter()
+                    .any(|s| s.component.is_some())
+            {
+                return Err("Nested components are not supported yet".into());
+            }
+            if root.group_id != 0
+                && self
+                    .document
+                    .shapes
+                    .iter()
+                    .any(|s| s.group_id == root.group_id && !roots.iter().any(|r| r.id == s.id))
+            {
+                return Err("Select the whole group to frame the selection".into());
+            }
+        }
+        let x = roots.iter().map(|s| s.x).fold(f64::INFINITY, f64::min);
+        let y = roots.iter().map(|s| s.y).fold(f64::INFINITY, f64::min);
+        let width = roots
+            .iter()
+            .map(|s| s.x + s.width)
+            .fold(f64::NEG_INFINITY, f64::max)
+            - x;
+        let height = roots
+            .iter()
+            .map(|s| s.y + s.height)
+            .fold(f64::NEG_INFINITY, f64::max)
+            - y;
+        let mut staged = Editor {
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let id = staged.add("frame", x, y)?;
+        let index = staged
+            .document
+            .shapes
+            .iter()
+            .position(|s| s.id == id)
+            .unwrap();
+        let mut frame = staged.document.shapes.remove(index);
+        frame.width = width.max(1.0);
+        frame.height = height.max(1.0);
+        frame.parent_id = first.parent_id;
+        frame.name = if roots.len() == 1 {
+            first.name.clone()
+        } else {
+            if component {
+                "Component".into()
+            } else {
+                "Frame".into()
+            }
+        };
+        frame.clip_content = false;
+        frame.component = if component {
+            Some(Component::Master)
+        } else {
+            None
+        };
+        frame.appearance = Some(
+            serde_json::from_value(serde_json::json!({
+                "opacity":1.0,"corner_radius":0.0,"fill_enabled":false,
+                "stroke_enabled":false,"stroke_color":"#000000"
+            }))
+            .map_err(|e| e.to_string())?,
+        );
+        if roots.len() == 1 {
+            frame.layout_item = first.layout_item.clone();
+            frame.constraints = first.constraints.clone();
+        }
+        let slot = staged
+            .document
+            .shapes
+            .iter()
+            .position(|s| s.id == first.id)
+            .unwrap();
+        staged.document.shapes.insert(slot, frame);
+        for s in &mut staged.document.shapes {
+            if roots.iter().any(|r| r.id == s.id) {
+                s.parent_id = id;
+                s.layout_item = Default::default();
+            }
+        }
+        self.commit(staged.document)?;
+        self.next_id = self.next_id.max(staged.next_id);
+        Ok(id)
     }
 }

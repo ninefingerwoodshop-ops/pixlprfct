@@ -78,7 +78,8 @@
     "canvas grid track resizing and row/column gutter handles with Rust preview geometry, fixed-size conversion, bounds, automatic-row expansion, keyboard editing, nonnegative gaps and atomic undo",
     "grid track reordering through inspector and canvas keyboard controls with transitive span-connected blocks, destination span preservation, hidden pinned cells, stable paint order, component propagation, selection tracking and atomic history",
     "component creation from shapes and sibling multi-selections with transparent wrapping, tight bounds, linked instances, Ctrl/Command Alt K, selection context menu and Assets entry point",
-    "searchable Tools and actions command panel with Ctrl/Command K, drawing tools, component/layout/layer/page/file commands, selection availability explanations, keyboard navigation and Escape preserving selection"
+    "searchable Tools and actions command panel with Ctrl/Command K, drawing tools, component/layout/layer/page/file commands, selection availability explanations, keyboard navigation and Escape preserving selection",
+    "Frame selection from context menu, command search and Ctrl/Command Alt G, with transparent tight bounds, preserved linked instances and child geometry, ancestry deduplication and atomic undo"
   ],
   "remaining": [
     "Figma workflow audit: full Assets panel and libraries, comprehensive context menus and tool discovery; nested component creation",
