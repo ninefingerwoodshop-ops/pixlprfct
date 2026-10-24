@@ -1,3 +1,4 @@
+import {instanceContext} from './instance-context.js';
 import {componentAssets,renderAssets} from './assets.js';
 import {showContextMenu} from './context-menu.js';
 import {installActionPanel} from './action-panel.js';
@@ -108,7 +109,7 @@ function arrangeSelection(direction){safe(()=>{if(!selectedIds.size)return;edito
 function toggleSelectionVisibility(){const shapes=selectionShapes();if(!shapes.length)return;const hidden=shapes.some(s=>!s.hidden);gesture=null;updateMany(shapes.map(s=>({...s,hidden})));}
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
 function selectionActions(){
-  const shapes=selectionShapes(),shape=current();
+  const shapes=selectionShapes(),shape=current(),context=instanceContext(doc,shape);
   const available={'create-component':!shape?.component||(shape.component.type==='instance'&&shape.component.master===shape.component.source),'add-auto-layout':!shape?.auto_layout,'group-layers':shapes.length>1&&!selectedGroup(pageShapes(),[...selectedIds]),'ungroup-layers':shapes.some(s=>s.group_id),'insert-instance':shape?.component?.type==='master','go-main':shape?.component?.type==='instance','reset-instance':shape?.component?.type==='instance','detach-instance':shape?.component?.type==='instance','forward':!!shape,'backward':!!shape};
   const button=(id,label,shortcut)=>({label,shortcut,enabled:!!available[id],run:()=>$(id).click()});
   return [
@@ -119,7 +120,9 @@ function selectionActions(){
     button('group-layers','Group selection','Ctrl/⌘ G'),
     {...button('ungroup-layers','Ungroup selection','Ctrl/⌘ Shift G'),visible:shapes.some(s=>s.group_id)},
     {...button('insert-instance','Insert instance'),visible:shape?.component?.type==='master'},
-    ...['go-main','reset-instance','detach-instance'].map((id,i)=>({...button(id,['Go to main component','Reset instance overrides','Detach instance'][i]),visible:shape?.component?.type==='instance'})),
+    ...['go-main','reset-instance','detach-instance'].map((id,i)=>({...button(id,context&&!context.isRoot?['Go to outer main component','Reset outer instance overrides','Detach outer instance'][i]:['Go to main component','Reset instance overrides','Detach instance'][i]),visible:shape?.component?.type==='instance'})),
+    {label:'Go to nested main component',visible:!!context?.nestedMain,run:()=>goToMain(context.nestedMain.id)},
+    {label:'Select outer instance',visible:!!context&&!context.isRoot,run:()=>{setSelection([context.root.id]);refresh(false);}},
     {label:'Rename layer',shortcut:'Ctrl/⌘ R',enabled:!!shape,run:renameSelection},
     {label:shapes.every(s=>s.hidden)?'Show selection':'Hide selection',shortcut:'Ctrl/⌘ Shift H',run:toggleSelectionVisibility},
     {label:shapes.every(s=>s.locked)?'Unlock selection':'Lock selection',shortcut:'Ctrl/⌘ Shift L',enabled:shapes.some(s=>!inheritedLock(s)),run:toggleSelectionLock},
@@ -224,7 +227,17 @@ function renderComponents(){
   $('components-list').replaceChildren(...rows);
 }
 function renderComponentProperties(shape){
-  const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master';
+  const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master',context=instanceContext(doc,shape);
+  $('go-nested-main').hidden=!context?.nestedMain;$('select-instance-root').hidden=!linked||context.isRoot;
+  $('swap-component').disabled=!!linked&&!context.isRoot;
+  $('swap-component-help').textContent=linked&&!context.isRoot?'Select the outer instance to swap the whole component. Independent nested-instance swapping is not available yet.':'Overrides carry over on matching layer names and hierarchy.';
+  $('go-main').textContent=context?.nestedMain?'Go to outer main component':'Go to main component';
+  $('detach-instance').textContent=linked&&!context.isRoot?'Detach outer instance':'Detach instance';
+  $('reset-instance').textContent=linked&&!context.isRoot?'Reset outer instance overrides':'Reset all overrides';
+  $('push-style-overrides').hidden=!linked;
+  const pushFields=['name','text','fill','appearance','typography','hidden','locked','image','stroke_width','layout_grids','guide_style'];
+  $('push-style-overrides').disabled=!linked||!descendants(doc.shapes,[context.root.id]).some(s=>(s.component?.overrides??[]).some(p=>pushFields.includes(p.split('.')[0])));
+  $('push-style-overrides').textContent=linked&&!context.isRoot?'Push outer text and styles to main':'Push text and styles to main';
   $('add-component-property').hidden=!master;
   renderExposedProperties($('exposed-properties'),doc,shape,{
     change:(property,value)=>safe(()=>{editor.set_component_property(selected,property,JSON.stringify(value));refresh();}),
@@ -237,7 +250,7 @@ function renderComponentProperties(shape){
   $('create-component').hidden=master||(linked&&c.master!==c.source);$('create-component').textContent=linked?'Create component around instance':'Create component';$('insert-instance').hidden=!master;
   const variantSet=componentSet(doc,master?shape.id:c?.master);
   $('manage-variants').hidden=!master;$('manage-variants').textContent=variantSet?'Edit variant set':'Create variant set';$('add-variant').hidden=!master||!variantSet;
-  renderVariantProperties($('variant-properties'),doc,linked?c.master:0,(property,value)=>safe(()=>{setSelection([editor.set_variant_property(selected,property,value)]);refresh();}));
+  renderVariantProperties($('variant-properties'),doc,linked&&context.isRoot?c.master:0,(property,value)=>safe(()=>{setSelection([editor.set_variant_property(selected,property,value)]);refresh();}));
   for(const id of ['go-main','reset-instance','detach-instance'])$(id).hidden=!linked;
   $('instance-controls').hidden=!linked;
   const displayedOverrides=s=>[...new Set((s.component?.overrides??[]).map(p=>p==='additional_interactions'?'prototype':p))];
@@ -501,9 +514,12 @@ function bind() {
   $('manage-variants').onclick=()=>editVariantSet(doc,selected,set=>{editor.save_component_set(JSON.stringify(set));refresh();},id=>{editor.remove_component_set(id);refresh();});
   $('add-variant').onclick=()=>safe(()=>{setSelection([editor.duplicate_variant(selected)]);refresh();fit();toast('Variant added. Edit its properties in Edit variant set.');});
   $('add-component-property').onclick=()=>editComponentProperty(doc,selected,null,p=>{editor.save_component_property(JSON.stringify(p));refresh();});
+  $('go-nested-main').onclick=()=>{const main=instanceContext(doc,current())?.nestedMain;if(main)goToMain(main.id);};
+  $('select-instance-root').onclick=()=>{const context=instanceContext(doc,current());if(context){setSelection([context.root.id]);refresh(false);}};
+  $('push-style-overrides').onclick=()=>safe(()=>{editor.push_style_overrides(selected);refresh();toast('Text and style overrides applied to main component');});
   $('detach-instance').onclick=()=>safe(()=>{editor.detach_instance(selected);refresh();toast('Instance detached');});
   $('reset-instance').onclick=()=>safe(()=>{editor.reset_instance(selected);refresh();toast('Instance overrides reset');});
-  $('swap-component').onchange=()=>safe(()=>{const root=editor.swap_instance(selected,Number($('swap-component').value));setSelection([root]);refresh();toast('Component swapped');});
+  $('swap-component').onchange=()=>safe(()=>{if(!instanceContext(doc,current())?.isRoot)return;const root=editor.swap_instance(selected,Number($('swap-component').value));setSelection([root]);refresh();toast('Component swapped');});
   $('go-main').onclick=()=>safe(()=>{const master=doc.shapes.find(s=>s.id===current()?.component?.master);if(!master)return;editor.select_page(master.page_id);refresh();setSelection([master.id]);refresh(false);fit();});
   installIcons();
   $('export-dialog').addEventListener('cancel',event=>{if(exportBusy)event.preventDefault();});
@@ -561,7 +577,7 @@ function bind() {
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-help']) $(id).onclick = showShortcuts;
   const toolActions=[['select','Move','V'],['scale','Scale','K'],['hand','Hand / pan','H'],['frame','Frame','F'],['rectangle','Rectangle','R'],['ellipse','Ellipse','O'],['line','Line','L'],['arrow','Arrow','Shift L'],['polygon','Polygon',''],['star','Star',''],['pen','Pen','P'],['pencil','Pencil','Shift P'],['text','Text','T']].map(([tool,label,shortcut])=>({label,shortcut,category:'Drawing',run:()=>{setTool(tool);canvas.focus();}}));
-  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&![...document.querySelectorAll('[hidden]')].some(el=>el.id!=='file-panel'&&el.contains(b));},run:()=>$(id).click()}));
+  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&![...document.querySelectorAll('[hidden]')].some(el=>el.id!=='file-panel'&&el.contains(b));},run:()=>$(id).click()}));
   commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
   commands.push(...[['front','Bring to front',']'],['back','Send to back','['],['forward','Bring forward','Ctrl/⌘ ]'],['backward','Send backward','Ctrl/⌘ [']].map(([direction,label,shortcut])=>({label,shortcut,category:'Layers',enabled:()=>selectedIds.size>0,unavailable:'Select layers',run:()=>arrangeSelection(direction)})));

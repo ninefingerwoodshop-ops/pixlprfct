@@ -728,6 +728,64 @@ impl Editor {
         }
         self.commit(doc)
     }
+
+    pub fn push_style_overrides(&mut self, id: u32) -> Result<(), String> {
+        let root = self.instance_root(id)?;
+        let tree = subtree(&self.document.shapes, root);
+        let mut doc = self.document.clone();
+        let mut changed = false;
+        for instance in tree {
+            let Some(Component::Instance {
+                source, overrides, ..
+            }) = &instance.component
+            else {
+                continue;
+            };
+            let paths: Vec<_> = overrides
+                .iter()
+                .filter(|p| {
+                    let field = p.split('.').next().unwrap_or("");
+                    [
+                        "name",
+                        "text",
+                        "fill",
+                        "appearance",
+                        "typography",
+                        "hidden",
+                        "locked",
+                        "image",
+                        "stroke_width",
+                        "layout_grids",
+                        "guide_style",
+                    ]
+                    .contains(&field)
+                })
+                .cloned()
+                .collect();
+            if paths.is_empty() {
+                continue;
+            }
+            let target = doc
+                .shapes
+                .iter_mut()
+                .find(|s| s.id == *source)
+                .ok_or("Main component layer not found")?;
+            let previous = target.clone();
+            apply_overrides(target, &instance, &paths)?;
+            // A source may itself be a nested instance. Record the local source
+            // override so synchronizing its own main does not erase the push.
+            record_overrides(&previous, target)?;
+            let selected = doc.shapes.iter_mut().find(|s| s.id == instance.id).unwrap();
+            if let Some(Component::Instance { overrides, .. }) = &mut selected.component {
+                overrides.retain(|p| !paths.contains(p));
+            }
+            changed = true;
+        }
+        if !changed {
+            return Ok(());
+        }
+        self.commit(doc)
+    }
 }
 
 impl Editor {
