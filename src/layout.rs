@@ -389,7 +389,26 @@ pub(crate) fn reflow(doc: &mut Document) {
             let (row_lo, row_hi) = track_bounds(heights.iter().copied(), cg);
             let spare = (cross - (row_hi - row_lo)).max(0.0);
             let stretch = if l.wrap && l.align_content == "stretch" {
-                spare / rows.len().max(1) as f64
+                // With negative gaps, extending rows can first reduce their
+                // combined extent before increasing it. Starting from a fitting
+                // extent, find the largest common growth that still fits.
+                if cg >= 0.0 {
+                    spare / rows.len().max(1) as f64
+                } else if row_hi - row_lo <= cross && !rows.is_empty() {
+                    let (mut low, mut high) = (0.0, 1e6);
+                    for _ in 0..64 {
+                        let growth = (low + high) / 2.0;
+                        let (lo, hi) = track_bounds(heights.iter().map(|h| h + growth), cg);
+                        if hi - lo <= cross {
+                            low = growth;
+                        } else {
+                            high = growth;
+                        }
+                    }
+                    low
+                } else {
+                    0.0
+                }
             } else {
                 0.0
             };
@@ -398,7 +417,8 @@ pub(crate) fn reflow(doc: &mut Document) {
             } else {
                 (0.0, 0.0)
             };
-            row_cursor -= row_lo;
+            let (stretched_lo, _) = track_bounds(heights.iter().map(|h| h + stretch), cg);
+            row_cursor -= stretched_lo;
             let row_gap = cg + row_extra;
             for (row, line) in rows.iter().enumerate() {
                 let row_cross = heights[row] + stretch;
