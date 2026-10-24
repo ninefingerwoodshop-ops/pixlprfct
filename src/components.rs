@@ -603,7 +603,7 @@ impl Editor {
 }
 
 impl Editor {
-    fn instance_root(&self, id: u32) -> Result<u32, String> {
+    pub(crate) fn instance_root(&self, id: u32) -> Result<u32, String> {
         let mut s = self
             .document
             .shapes

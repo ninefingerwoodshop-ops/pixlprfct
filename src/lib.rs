@@ -265,6 +265,8 @@ pub struct Document {
     pub pages: Vec<Page>,
     #[serde(default = "first_page")]
     pub active_page: u32,
+    #[serde(default)]
+    pub component_sets: Vec<variants::ComponentSet>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -301,6 +303,7 @@ pub struct Editor {
 }
 
 fn validate(document: &Document) -> Result<(), String> {
+    variants::validate_sets(document)?;
     if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
         return Err("Unsupported document version or document too large".into());
     }
@@ -638,7 +641,8 @@ impl Editor {
         Ok(ids)
     }
 
-    fn commit(&mut self, document: Document) -> Result<(), String> {
+    fn commit(&mut self, mut document: Document) -> Result<(), String> {
+        variants::prune(&mut document);
         validate(&document)?;
         components::protect_structure(&self.document, &document)?;
         self.commit_document(document)
@@ -718,6 +722,7 @@ impl Editor {
                 shapes: vec![],
                 pages: default_pages(),
                 active_page: 1,
+                component_sets: vec![],
             },
             undo: vec![],
             redo: vec![],
@@ -804,6 +809,7 @@ impl Editor {
             shapes: payload.shapes.clone(),
             pages: default_pages(),
             active_page: 1,
+            component_sets: vec![],
         })?;
         let next = self
             .next_id
@@ -1707,4 +1713,5 @@ mod tests {
 }
 mod components;
 mod layout;
+mod variants;
 use layout::reflow;

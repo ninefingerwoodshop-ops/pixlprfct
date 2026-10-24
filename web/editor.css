@@ -60,3 +60,20 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 .override-row span {flex:1;min-width:0;overflow-wrap:anywhere;}
 .override-row button {padding:4px 6px;color:var(--component-color);border-radius:4px;}
 .override-row button:hover {background:#f2edfc;}
+.variant-dialog {width:min(880px,90vw);max-height:85vh;overflow:auto;border:1px solid #ddd;border-radius:12px;padding:24px;color:#242424;box-shadow:0 20px 70px #0003;}
+.variant-dialog::backdrop {background:#0005;}
+.variant-dialog h2 {font-size:18px;margin:0 0 8px;}
+.variant-dialog p {font-size:12px;line-height:1.5;color:#666;}
+.variant-dialog label {display:block;font-size:12px;}
+.variant-dialog input,.variant-dialog select {display:block;background:#f5f5f5;border:1px solid #ddd;border-radius:5px;padding:8px;margin-top:5px;width:100%;min-width:130px;}
+.variant-matrix {overflow:auto;margin:16px 0;}
+.variant-matrix table {width:100%;border-collapse:collapse;font-size:12px;}
+.variant-matrix th,.variant-matrix td {padding:8px;border-bottom:1px solid #eee;text-align:left;vertical-align:top;}
+.variant-matrix th input {display:inline-block;width:calc(100% - 26px);}
+.variant-matrix th button {padding:4px;}
+.variant-actions {display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap;}
+.variant-actions button,.variant-matrix td button {padding:8px 12px;border:1px solid #ddd;border-radius:6px;}
+.variant-dialog .variant-error {color:#b42318;}
+#variant-properties {padding:12px 0;border-bottom:1px solid #eee;margin-bottom:12px;}
+#variant-properties label {display:grid;grid-template-columns:minmax(50px,1fr) minmax(0,1.5fr);align-items:center;gap:8px;margin:8px 0;}
+#variant-properties select {width:100%;min-width:0;}

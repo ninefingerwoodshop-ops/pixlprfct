@@ -1,4 +1,5 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
+import {componentSet,renderVariantProperties,editVariantSet} from './variants.js';
 import {canvasFill} from './gradients.js';
 import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradientStopAt,drawGradientHandles} from './gradient-edit.js';
 import {renderGradientControls} from './gradient-controls.js';
@@ -150,8 +151,10 @@ function renderLayers() {
 }
 function insertInstance(masterId){safe(()=>{const master=doc.shapes.find(s=>s.id===masterId);if(!master)return;const same=master.page_id===doc.active_page;const x=same?master.x+master.width+40:(canvas.clientWidth/2-pan.x)/zoom;const y=same?master.y:(canvas.clientHeight/2-pan.y)/zoom;const id=editor.create_instance(masterId,x,y);setSelection([id]);refresh();fit();toast('Linked instance inserted');});}
 function renderComponents(){
-  const masters=doc.shapes.filter(s=>s.component?.type==='master');$('component-count').textContent=masters.length;
-  const rows=masters.map(s=>{const b=document.createElement('button');b.className='component-asset';b.textContent='◆ '+s.name;b.title='Insert instance of '+s.name;b.setAttribute('aria-label',b.title);b.onclick=()=>insertInstance(s.id);return b;});
+  const grouped=new Set((doc.component_sets??[]).flatMap(s=>s.variants.map(v=>v.component_id)));
+  const masters=doc.shapes.filter(s=>s.component?.type==='master'&&!grouped.has(s.id));
+  const assets=[...(doc.component_sets??[]).map(s=>({id:s.variants[0].component_id,name:s.name,count:s.variants.length})),...masters];$('component-count').textContent=assets.length;
+  const rows=assets.map(s=>{const b=document.createElement('button');b.className='component-asset';b.textContent=(s.count?'▦ ':'◆ ')+s.name+(s.count?` · ${s.count} variants`:'');b.title='Insert instance of '+s.name;b.setAttribute('aria-label',b.title);b.onclick=()=>insertInstance(s.id);return b;});
   if(!rows.length){const hint=document.createElement('p');hint.textContent='Select a frame and choose Create component.';rows.push(hint);}
   $('components-list').replaceChildren(...rows);
 }
@@ -160,6 +163,9 @@ function renderComponentProperties(shape){
   $('component-panel').hidden=!shape||(!c&&shape.kind!=='frame');
   $('component-heading').textContent=master?'◆ Main component':linked?'◇ Instance':'Component';
   $('create-component').hidden=!!c;$('insert-instance').hidden=!master;
+  const variantSet=componentSet(doc,master?shape.id:c?.master);
+  $('manage-variants').hidden=!master;$('manage-variants').textContent=variantSet?'Edit variant set':'Create variant set';$('add-variant').hidden=!master||!variantSet;
+  renderVariantProperties($('variant-properties'),doc,linked?c.master:0,(property,value)=>safe(()=>{setSelection([editor.set_variant_property(selected,property,value)]);refresh();}));
   for(const id of ['go-main','reset-instance','detach-instance'])$(id).hidden=!linked;
   $('instance-controls').hidden=!linked;
   if(linked){
@@ -177,6 +183,7 @@ function renderComponentProperties(shape){
   const count=linked?descendants(doc.shapes,[root.id]).reduce((n,s)=>n+(s.component?.overrides?.filter(f=>s.id!==root.id||(f!=='x'&&f!=='y')).length??0),0):0;
   $('reset-instance').disabled=!count;
   $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · ${count} overrides. Detach to add, remove, or reorder layers.`:'Reuse this frame and its layers as linked instances.';
+  if(master&&variantSet){const v=variantSet.variants.find(v=>v.component_id===shape.id);$('component-status').textContent=variantSet.name+' · '+variantSet.properties.map((p,i)=>p+': '+v.values[i]).join(', ')+'. Edits update linked instances.';}
 }
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
@@ -364,6 +371,8 @@ function bind() {
   $('toggle-lock').onclick=toggleSelectionLock;
   $('create-component').onclick=()=>safe(()=>{editor.create_component(selected);refresh();toast('Main component created');});
   $('insert-instance').onclick=()=>insertInstance(selected);
+  $('manage-variants').onclick=()=>editVariantSet(doc,selected,set=>{editor.save_component_set(JSON.stringify(set));refresh();},id=>{editor.remove_component_set(id);refresh();});
+  $('add-variant').onclick=()=>safe(()=>{setSelection([editor.duplicate_variant(selected)]);refresh();fit();toast('Variant added. Edit its properties in Edit variant set.');});
   $('detach-instance').onclick=()=>safe(()=>{editor.detach_instance(selected);refresh();toast('Instance detached');});
   $('reset-instance').onclick=()=>safe(()=>{editor.reset_instance(selected);refresh();toast('Instance overrides reset');});
   $('swap-component').onchange=()=>safe(()=>{const root=editor.swap_instance(selected,Number($('swap-component').value));setSelection([root]);refresh();toast('Component swapped');});
@@ -589,7 +598,7 @@ function bind() {
     else { pan.x -= event.shiftKey ? event.deltaY : event.deltaX; pan.y -= event.shiftKey ? 0 : event.deltaY; draw(); }
   }, { passive: false });
   window.addEventListener('keydown', event => {
-    if ($('page-dialog').open || $('shortcuts-dialog').open || $('export-dialog').open) return;
+    if (document.querySelector('dialog[open]')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(mod&&event.shiftKey&&key==='l'){event.preventDefault();toggleSelectionLock();return;}
