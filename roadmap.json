@@ -75,7 +75,8 @@
     "horizontal auto-layout first text baseline alignment using browser font metrics, independent wrapped-row baselines, bottom-edge alignment for non-text children, ascent/descent hug sizing, fixed-text preservation and component overrides",
     "first/last-on-top auto-layout canvas stacking with stable layout/layer order, subtree paint contexts, matching canvas/SVG export and Rust edit/prototype hits, frame drop targeting, component overrides and persistence",
     "grid auto layout with fixed/hug/weighted fractional tracks, minimum/maximum bounds, explicit and automatic rows, row/column spans, cell alignment, nested sizing, cell drops, inspector controls, component overrides, scaling and atomic history",
-    "canvas grid track resizing and row/column gutter handles with Rust preview geometry, fixed-size conversion, bounds, automatic-row expansion, keyboard editing, nonnegative gaps and atomic undo"
+    "canvas grid track resizing and row/column gutter handles with Rust preview geometry, fixed-size conversion, bounds, automatic-row expansion, keyboard editing, nonnegative gaps and atomic undo",
+    "grid track reordering through inspector and canvas keyboard controls with transitive span-connected blocks, destination span preservation, hidden pinned cells, stable paint order, component propagation, selection tracking and atomic history"
   ],
   "remaining": [
     "Additional frame layout controls and per-edge stroke weights",
@@ -83,7 +84,7 @@
     "Broader SVG import: compound/even-odd fills, repeating gradients and radial focal circles larger than the outer circle, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, advanced gradients and background blur",
     "Boolean operations and slice export",
-    "Grid track reordering, multi-track selection and direct track deletion; group layout units",
+    "Direct drag grid track reordering, multi-track selection and direct track deletion; group layout units",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
     "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
     "Cloud sharing, team permissions and real-time collaboration",

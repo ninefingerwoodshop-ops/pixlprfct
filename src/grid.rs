@@ -316,6 +316,156 @@ fn align(mode: &str, free: f64) -> f64 {
     }
 }
 
+pub(crate) fn shift_track(
+    doc: &crate::Document,
+    id: u32,
+    axis: &str,
+    index: usize,
+    delta: i32,
+) -> Result<(Vec<Shape>, usize), String> {
+    if !["columns", "rows"].contains(&axis) || ![-1, 1].contains(&delta) {
+        return Err("Choose a grid axis and an adjacent track direction".into());
+    }
+    let frame = doc
+        .shapes
+        .iter()
+        .find(|s| s.id == id && s.page_id == doc.active_page)
+        .ok_or("Grid frame not found")?;
+    let _layout = frame
+        .auto_layout
+        .as_ref()
+        .filter(|l| l.direction == "grid")
+        .ok_or("Select a grid auto-layout frame")?;
+    let items: Vec<_> = doc
+        .shapes
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.parent_id == id && !s.hidden && !s.layout_item.absolute)
+        .map(|(i, _)| i)
+        .collect();
+    let p = plan(&doc.shapes, frame, &items, false, false);
+    let columns = axis == "columns";
+    let n = if columns {
+        p.columns.len()
+    } else {
+        p.rows.len()
+    };
+    if index >= n || n > 128 {
+        return Err("Track reordering supports up to 128 tracks per axis".into());
+    }
+    // Every spanned interval joins adjacent tracks. Taking connected components
+    // also handles overlapping spans transitively, including the destination.
+    let mut joined = vec![false; n.saturating_sub(1)];
+    let mut connect = |start: usize, span: usize| {
+        for i in start
+            ..start
+                .saturating_add(span)
+                .saturating_sub(1)
+                .min(n.saturating_sub(1))
+        {
+            joined[i] = true;
+        }
+    };
+    for c in &p.placements {
+        connect(
+            if columns { c.column - 1 } else { c.row - 1 },
+            if columns { c.column_span } else { c.row_span },
+        );
+    }
+    for s in doc
+        .shapes
+        .iter()
+        .filter(|s| s.parent_id == id && s.hidden && !s.layout_item.absolute)
+    {
+        if let Some(c) = &s.layout_item.grid_cell {
+            if let Some(start) = if columns { c.column } else { c.row } {
+                connect(
+                    start as usize - 1,
+                    if columns { c.column_span } else { c.row_span } as usize,
+                );
+            }
+        }
+    }
+    let mut groups: Vec<Vec<usize>> = vec![vec![]];
+    for i in 0..n {
+        groups.last_mut().unwrap().push(i);
+        if i + 1 < n && !joined[i] {
+            groups.push(vec![]);
+        }
+    }
+    let from = groups.iter().position(|g| g.contains(&index)).unwrap();
+    let to = (from as i64 + delta as i64).clamp(0, groups.len() as i64 - 1) as usize;
+    if from == to {
+        return Ok((vec![], index));
+    }
+    groups.swap(from, to);
+    let order: Vec<_> = groups.into_iter().flatten().collect();
+    let mut mapping = vec![0; n];
+    for (new, old) in order.iter().enumerate() {
+        mapping[*old] = new;
+    }
+    let mut changed = frame.clone();
+    let g = changed
+        .auto_layout
+        .as_mut()
+        .unwrap()
+        .grid
+        .get_or_insert_with(Default::default);
+    let tracks: Vec<_> = if columns {
+        g.columns.clone()
+    } else {
+        (0..n)
+            .map(|i| {
+                g.rows
+                    .get(i)
+                    .cloned()
+                    .unwrap_or_else(|| g.auto_rows.clone())
+            })
+            .collect()
+    };
+    let reordered = order.iter().map(|i| tracks[*i].clone()).collect();
+    if columns {
+        g.columns = reordered;
+    } else {
+        g.rows = reordered;
+    }
+    let mut changes = vec![changed];
+    for s in doc
+        .shapes
+        .iter()
+        .filter(|s| s.parent_id == id && !s.layout_item.absolute)
+    {
+        let mut changed = s.clone();
+        if let Some(p) = p.placements.iter().find(|p| p.id == s.id) {
+            let c = changed
+                .layout_item
+                .grid_cell
+                .get_or_insert_with(Default::default);
+            c.column = Some(if columns {
+                mapping[p.column - 1] + 1
+            } else {
+                p.column
+            } as u32);
+            c.row = Some(if columns {
+                p.row
+            } else {
+                mapping[p.row - 1] + 1
+            } as u32);
+        } else if let Some(c) = &mut changed.layout_item.grid_cell {
+            let position = if columns { &mut c.column } else { &mut c.row };
+            if let Some(old) = *position {
+                if let Some(new) = mapping.get(old as usize - 1) {
+                    *position = Some(*new as u32 + 1);
+                }
+            }
+        }
+        if changed != *s {
+            changes.push(changed);
+        }
+    }
+    Ok((changes, mapping[index]))
+}
+
 pub(crate) fn plan(
     shapes: &[Shape],
     frame: &Shape,
