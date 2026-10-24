@@ -4,7 +4,7 @@ import {clippingFrames} from './scene.js';
 export function connectionHandle(s,zoom){return{x:s.x+s.width+12/zoom,y:s.y+s.height/2};}
 export function connectionHit(s,p,zoom){const h=connectionHandle(s,zoom);return Math.hypot(h.x-p.x,h.y-p.y)<=9/zoom;}
 export function connectionTarget(shapes,source,p){return [...shapes].reverse().find(s=>s.id!==source&&s.kind==='frame'&&visibleInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,p)))?.id??0;}
-export function connectedShape(source,target){return{...source,prototype:{...source.prototype,action:source.prototype?.action==='overlay'?'overlay':'navigate',target}};}
+export function connectedShape(source,target){return{...source,prototype:{...source.prototype,action:['overlay','swap'].includes(source.prototype?.action)?source.prototype.action:'navigate',target}};}
 export function drawConnections(ctx,shapes,selected,zoom,gesture,editable){
  ctx.save();ctx.lineWidth=2/zoom;ctx.strokeStyle='#2563eb';ctx.fillStyle='#2563eb';ctx.font=12/zoom+'px Inter,sans-serif';ctx.textBaseline='bottom';
  for(const f of shapes.filter(s=>s.flow_name&&visibleInTree(s,shapes)))ctx.fillText('▶ '+f.flow_name,f.x,f.y-8/zoom);

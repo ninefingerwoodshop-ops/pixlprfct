@@ -3,8 +3,23 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import init,{Editor} from '../web/pkg/pixlprfct_core.js';
 import {prototypeState,overlayPlacement} from '../web/prototype.js';
+import {connectedShape} from '../web/prototype-connections.js';
 await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
 const doc=e=>JSON.parse(e.snapshot()),get=(e,id)=>doc(e).shapes.find(s=>s.id===id),edit=(e,id,p)=>e.update(JSON.stringify({...get(e,id),...p}));
+test('swap replaces only the top overlay and retains modal settings and history',()=>{
+ const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',400,0),c=e.add('frame',800,0),s=prototypeState(doc(e),a);
+ assert.equal(s.swap(b),false);assert.equal(s.current,a);
+ const settings={target:b,overlay_position:'manual',overlay_x:20,overlay_y:40,backdrop_color:'#123456',backdrop_opacity:.6,close_on_outside:true};
+ s.open(settings);s.open({...settings,target:c});assert.equal(s.swap(b),true);assert.equal(s.current,a);assert.equal(s.overlays.length,2);assert.deepEqual(s.overlays[1],settings);
+ assert.equal(s.swap(999),false);assert.equal(s.active,b);s.back();assert.equal(s.active,b);s.back();assert.equal(s.active,a);assert.equal(s.canBack,false);e.free();
+});
+test('swap links validate targets, remap copies, clear on deletion and keep their action on connection drag',()=>{
+ const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',400,0);edit(e,a,{prototype:{action:'swap',target:b,transition:'dissolve'}});const before=e.snapshot(),p=get(e,a).prototype;
+ assert.throws(()=>edit(e,a,{prototype:{...p,target:999}}));assert.throws(()=>edit(e,a,{prototype:{...p,transition:'slide-left'}}));assert.equal(e.snapshot(),before);
+ assert.equal(connectedShape(get(e,a),a).prototype.action,'swap');
+ const copy=new Editor();copy.load(before);const roots=JSON.parse(copy.paste_layers(e.copy_layers(JSON.stringify([a,b])),0,0,0));assert.equal(get(copy,roots[0]).prototype.target,roots[1]);assert.equal(get(copy,roots[0]).prototype.action,'swap');
+ const ids=JSON.parse(e.duplicate_many(JSON.stringify([a,b])));assert.equal(get(e,ids[0]).prototype.target,ids[1]);e.remove(b);assert.equal(get(e,a).prototype,null);e.undo();assert.deepEqual(get(e,a).prototype,p);copy.free();e.free();
+});
 test('overlay stack preserves the base, closes one layer, and clears on navigation/restart',()=>{
  const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',400,0),c=e.add('frame',800,0),s=prototypeState(doc(e),a),action={action:'overlay',target:b,close_on_outside:true,overlay_position:'center'};
  assert.equal(s.open(action),true);assert.equal(s.current,a);assert.equal(s.active,b);assert.equal(s.canBack,true);s.open({...action,target:c});s.back();assert.equal(s.active,b);s.close();assert.equal(s.active,a);s.close();assert.equal(s.canBack,false);

@@ -470,13 +470,13 @@ fn validate(document: &Document) -> Result<(), String> {
             .contains(&p.transition.as_str())
                 || p.duration > 10_000
                 || !["linear", "ease-in", "ease-out", "ease-in-out"].contains(&p.easing.as_str())
-                || (["overlay", "close"].contains(&p.action.as_str())
+                || (["overlay", "close", "swap"].contains(&p.action.as_str())
                     && p.transition.starts_with("slide-"))
             {
                 return Err("Invalid prototype transition, duration or easing".into());
             }
-            if !["navigate", "back", "overlay", "close"].contains(&p.action.as_str())
-                || (["navigate", "overlay"].contains(&p.action.as_str())
+            if !["navigate", "back", "overlay", "close", "swap"].contains(&p.action.as_str())
+                || (["navigate", "overlay", "swap"].contains(&p.action.as_str())
                     && !document
                         .shapes
                         .iter()
@@ -890,7 +890,8 @@ impl Editor {
             .collect();
         for s in &mut document.shapes {
             if s.prototype.as_ref().is_some_and(|p| {
-                ["navigate", "overlay"].contains(&p.action.as_str()) && removed.contains(&p.target)
+                ["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                    && removed.contains(&p.target)
             }) {
                 s.prototype = None;
             }
@@ -947,7 +948,7 @@ impl Editor {
             .collect();
         for s in &mut document.shapes {
             if s.prototype.as_ref().is_some_and(|p| {
-                ["navigate", "overlay"].contains(&p.action.as_str())
+                ["navigate", "overlay", "swap"].contains(&p.action.as_str())
                     && before_sync.contains(&p.target)
                     && !after_sync.contains(&p.target)
             }) {
@@ -1039,7 +1040,8 @@ impl Editor {
                 let mut copy = s.clone();
                 copy.component = None;
                 if copy.prototype.as_ref().is_some_and(|p| {
-                    ["navigate", "overlay"].contains(&p.action.as_str()) && !ids.contains(&p.target)
+                    ["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                        && !ids.contains(&p.target)
                 }) {
                     copy.prototype = None;
                 }
@@ -1108,7 +1110,7 @@ impl Editor {
         let mut document = self.document.clone();
         for mut s in payload.shapes {
             if let Some(p) = &mut s.prototype {
-                if ["navigate", "overlay"].contains(&p.action.as_str()) {
+                if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                     p.target = ids[&p.target];
                 }
             }
@@ -1355,7 +1357,7 @@ impl Editor {
                 copy.id = self.next_id + created.len() as u32;
                 copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
                 if let Some(p) = &mut copy.prototype {
-                    if ["navigate", "overlay"].contains(&p.action.as_str()) {
+                    if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
                 }
