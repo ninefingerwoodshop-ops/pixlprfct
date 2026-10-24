@@ -1,6 +1,7 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 import { bounds, marqueeSelection, layerRange } from './selection.js';
+import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg } from './vectors.js';
 import { icon, installIcons } from './icons.js';
 
 const $ = id => document.getElementById(id);
@@ -10,6 +11,7 @@ function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return
 const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 let toastTimer, savingTimer, recoveryBlocked = false;
+let penPoints = [];
 let selectedIds = new Set(), layerAnchor = 0;
 function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
@@ -35,7 +37,7 @@ function refresh(save = true) {
   if (previousPage) pageViews.set(previousPage, { zoom, pan: { ...pan } });
   snapshot();
   const changedPage = previousPage !== doc.active_page;
-  if (changedPage) { setSelection([]); layerAnchor = 0; gesture = null; }
+  if (changedPage) { setSelection([]); layerAnchor = 0; gesture = null; penPoints = []; }
   renderPages(); renderLayers(); renderProperties();
   if (changedPage) {
     const view = pageViews.get(doc.active_page);
@@ -103,6 +105,8 @@ function renderProperties() {
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3);
   }
   if (!shape) return;
+  $('stroke-section').hidden = !vectorTools.includes(shape.kind); $('stroke-width').value = shape.stroke_width ?? 2;
+  $('paint-label').textContent = shape.points?.length && !shape.closed ? 'Stroke color' : 'Fill';
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
   $('fill').value = shape.fill; $('fill-value').textContent = shape.fill.toUpperCase();
@@ -118,7 +122,8 @@ function renderProperties() {
 function drawShape(shape) {
   if (shape.hidden) return;
   ctx.fillStyle = shape.fill;
-  if (shape.kind === 'ellipse') { ctx.beginPath(); ctx.ellipse(shape.x + shape.width / 2, shape.y + shape.height / 2, shape.width / 2, shape.height / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+  if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); ctx.strokeStyle=shape.fill; ctx.lineWidth=shape.stroke_width??2; ctx.lineCap='round'; ctx.lineJoin='round'; if(shape.closed) ctx.fill(path); ctx.stroke(path); }
+  else if (shape.kind === 'ellipse') { ctx.beginPath(); ctx.ellipse(shape.x + shape.width / 2, shape.y + shape.height / 2, shape.width / 2, shape.height / 2, 0, 0, Math.PI * 2); ctx.fill(); }
   else if (shape.kind === 'text') {
     ctx.save(); ctx.beginPath(); ctx.rect(shape.x, shape.y, shape.width, shape.height); ctx.clip();
     const layout = textLayout(shape);
@@ -137,6 +142,8 @@ function draw() {
   ctx.translate(pan.x, pan.y); ctx.scale(zoom, zoom);
   const previews = gesture?.previews || (gesture?.preview ? [gesture.preview] : []);
   for (const shape of pageShapes()) drawShape(previews.find(s => s.id === shape.id) || shape);
+  if (gesture?.type==='create') drawShape(gesture.preview);
+  if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); ctx.fillStyle='#0d99ff'; for(const p of penPoints) ctx.fillRect(p.x-3/zoom,p.y-3/zoom,6/zoom,6/zoom); }
   const visibleSelection = selectionShapes().filter(s => !s.hidden).map(s => previews.find(p => p.id === s.id) || s);
   const shape = bounds(visibleSelection);
   if (shape) {
@@ -168,25 +175,36 @@ function zoomAt(factor, x = canvas.clientWidth / 2, y = canvas.clientHeight / 2)
 }
 function point(event) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left - pan.x) / zoom, y: (event.clientY - rect.top - pan.y) / zoom }; }
 function setTool(value) {
+  penPoints=[]; gesture=null;
+  document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   tool = value; document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+  draw();
   canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'default' : 'crosshair';
-  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : `Click the canvas to add ${tool === 'ellipse' ? 'an' : 'a'} ${tool}`;
+  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'pen' ? 'Click to add points · Click first point to close · Enter to finish · Escape to cancel' : tool === 'pencil' ? 'Drag to draw freehand · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 async function exportSvg() {
   await document.fonts.ready;
   const shapes = pageShapes().filter(s => !s.hidden); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
-  const x = Math.min(...shapes.map(s => s.x)), y = Math.min(...shapes.map(s => s.y));
-  const w = Math.max(...shapes.map(s => s.x + s.width)) - x, h = Math.max(...shapes.map(s => s.y + s.height)) - y;
+  const padding = Math.max(0,...shapes.map(s=>s.points?.length ? (s.stroke_width??2)/2 : 0));
+  const x = Math.min(...shapes.map(s => s.x)) - padding, y = Math.min(...shapes.map(s => s.y)) - padding;
+  const w = Math.max(...shapes.map(s => s.x + s.width)) - x + padding, h = Math.max(...shapes.map(s => s.y + s.height)) - y + padding;
   const body = shapes.map(s => {
+    if (s.points?.length) return vectorSvg(s);
     if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" fill="${s.fill}"/>`;
     if (s.kind === 'text') return textSvg(s, textLayout(s));
     return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" fill="${s.fill}"/>`;
   }).join('');
   download(`${doc.name || 'design'} - ${activePage().name}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('Current page exported as SVG');
 }
+function finishPen(closed) {
+  if(penPoints.length<2) return;
+  safe(()=>{ const id=editor.insert(JSON.stringify(fromPoints('pen',penPoints,closed))); penPoints=[]; setSelection([id]); setTool('select'); refresh(); });
+}
 function bind() {
   installIcons();
+  $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
+  document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) document.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-tools','nav-help']) $(id).onclick = showShortcuts;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
@@ -213,6 +231,7 @@ function bind() {
   };
   $('fit-text').onclick = () => { if (current()?.kind === 'text') update({ ...current(), height: Math.ceil(textLayout(current()).height) }); };
   canvas.ondblclick = event => {
+    if(tool!=='select') return;
     const p = point(event), hit = editor.hit_test(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
   };
@@ -252,7 +271,12 @@ function bind() {
     canvas.focus(); canvas.setPointerCapture(event.pointerId);
     const p = point(event);
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
-    if (tool !== 'select') { setSelection([editor.add(tool, Math.round(p.x), Math.round(p.y))]); setTool('select'); refresh(); return; }
+    if (tool === 'text') { setSelection([editor.add(tool,p.x,p.y)]); setTool('select'); refresh(); return; }
+    if (tool === 'pen') {
+      if(penPoints.length>2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
+      if(penPoints.length<4096) penPoints.push(p); draw(); return;
+    }
+    if (tool !== 'select') { setSelection([]); gesture={type:'create',kind:tool,start:p,points:[p],preview:tool==='pencil'?fromPoints(tool,[p,p]):drawnShape(tool,p,p)}; renderProperties(); draw(); return; }
     const shape = current();
     if (shape && !shape.hidden) {
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
@@ -275,6 +299,11 @@ function bind() {
     if (!gesture) return;
     if (gesture.type === 'pan') { pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; draw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
+    if (gesture.type === 'create') {
+      if(gesture.kind==='pencil') { if(gesture.points.length<4096 && Math.hypot(p.x-gesture.points.at(-1).x,p.y-gesture.points.at(-1).y)>1/zoom) gesture.points.push(p); gesture.preview=fromPoints('pencil',gesture.points); }
+      else gesture.preview=drawnShape(gesture.kind,gesture.start,p,event);
+      draw(); return;
+    }
     if (gesture.type === 'marquee') {
       gesture.end = p;
       setSelection([...new Set([...gesture.base,...marqueeSelection(pageShapes(),gesture.start,p)])]);
@@ -293,7 +322,14 @@ function bind() {
     }
     draw();
   };
-  canvas.onpointerup = () => { const preview = gesture?.preview, previews = gesture?.previews; gesture = null; if (previews) updateMany(previews); else if (preview) update(preview); else draw(); };
+  canvas.onpointerup = () => {
+    if(gesture?.type==='create') {
+      let shape=gesture.preview;
+      if(gesture.kind==='pencil' && shape.points.length<2) { gesture=null; draw(); return; }
+      if(gesture.kind!=='pencil' && shape.width<3 && shape.height<3) shape=drawnShape(gesture.kind,gesture.start,{x:gesture.start.x+160,y:gesture.start.y+(gesture.kind==='line'||gesture.kind==='arrow'?0:120)});
+      gesture=null; safe(()=>{setSelection([editor.insert(JSON.stringify(shape))]); setTool('select'); refresh();}); return;
+    }
+    const preview = gesture?.preview, previews = gesture?.previews; gesture = null; if (previews) updateMany(previews); else if (preview) update(preview); else draw(); };
   const cancelGesture = () => { if (gesture?.type === 'marquee') setSelection(gesture.base); gesture = null; renderLayers(); renderProperties(); draw(); };
   canvas.onpointercancel = cancelGesture;
   canvas.onlostpointercapture = () => { if (gesture) cancelGesture(); };
@@ -310,10 +346,11 @@ function bind() {
     if (event.altKey && !mod && selectedIds.size > 1 && ['a','d','w','s'].includes(key)) { event.preventDefault(); safe(() => { editor.align_many(selectionJson(),{a:'left',d:'right',w:'top',s:'bottom'}[key]); refresh(); }); return; }
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }
     if (event.code === 'Space' && !event.target.closest('button,summary')) { event.preventDefault(); space = true; return; }
-    if (key === 'escape') { gesture = null; setSelection([]); setTool('select'); refresh(false); return; }
+    if(key==='enter' && tool==='pen') {event.preventDefault(); finishPen(false); return;}
+    if (key === 'escape') { penPoints=[]; gesture = null; setSelection([]); setTool('select'); refresh(false); return; }
     if (['delete', 'backspace'].includes(key)) { event.preventDefault(); $('delete').click(); return; }
     if (selectedIds.size && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.target !== divider) { event.preventDefault(); const step = event.shiftKey ? 10 : 1; updateMany(selectionShapes().map(s=>({ ...s, x: s.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0), y: s.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0) }))); return; }
-    const tools = { v: 'select', h: 'hand', f: 'frame', r: 'rectangle', o: 'ellipse', t: 'text' }; if (!mod && !event.altKey && tools[key]) setTool(tools[key]);
+    const tools = { v: 'select', h: 'hand', f: 'frame', r: 'rectangle', o: 'ellipse', t: 'text', l:event.shiftKey?'arrow':'line', p:event.shiftKey?'pencil':'pen' }; if (!mod && !event.altKey && tools[key]) setTool(tools[key]);
     if (event.code === 'Digit1' && !mod) { event.preventDefault(); fit(); }
     if (event.code === 'Digit2' && event.shiftKey && !mod) { event.preventDefault(); fit(true); }
     if (key === '?') showShortcuts();

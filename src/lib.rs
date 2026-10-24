@@ -17,6 +17,16 @@ pub struct Shape {
     pub hidden: bool,
     #[serde(default)]
     pub typography: Option<Typography>,
+    #[serde(default)]
+    pub points: Vec<[f64; 2]>,
+    #[serde(default)]
+    pub closed: bool,
+    #[serde(default = "default_stroke")]
+    pub stroke_width: f64,
+}
+
+fn default_stroke() -> f64 {
+    2.0
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -120,7 +130,33 @@ fn validate(document: &Document) -> Result<(), String> {
         if !ids.insert(shape.id) || shape.id == 0 || shape.id == u32::MAX {
             return Err("Invalid or duplicate shape ID".into());
         }
-        if !["rectangle", "ellipse", "frame", "text"].contains(&shape.kind.as_str())
+        let vector =
+            ["line", "arrow", "polygon", "star", "pen", "pencil"].contains(&shape.kind.as_str());
+        if !shape.stroke_width.is_finite()
+            || !(0.1..=100.0).contains(&shape.stroke_width)
+            || shape.points.len() > 4096
+            || (vector && shape.points.len() < 2)
+            || shape
+                .points
+                .iter()
+                .flatten()
+                .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
+        {
+            return Err("Invalid vector geometry or stroke width".into());
+        }
+        if ![
+            "rectangle",
+            "ellipse",
+            "frame",
+            "text",
+            "line",
+            "arrow",
+            "polygon",
+            "star",
+            "pen",
+            "pencil",
+        ]
+        .contains(&shape.kind.as_str())
             || shape.name.len() > 256
             || shape.text.len() > 10_000
             || shape.fill.len() != 7
@@ -256,12 +292,30 @@ impl Editor {
             fill: fill.into(),
             text: "Your next big idea".into(),
             hidden: false,
+            points: vec![],
+            closed: false,
+            stroke_width: default_stroke(),
             typography: if kind == "text" {
                 Some(Typography::default())
             } else {
                 None
             },
         });
+        self.commit(document)?;
+        self.next_id += 1;
+        Ok(id)
+    }
+
+    pub fn insert(&mut self, json: &str) -> Result<u32, String> {
+        if self.next_id == u32::MAX {
+            return Err("Shape ID limit reached".into());
+        }
+        let mut shape: Shape = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        shape.id = self.next_id;
+        shape.page_id = self.document.active_page;
+        let id = shape.id;
+        let mut document = self.document.clone();
+        document.shapes.push(shape);
         self.commit(document)?;
         self.next_id += 1;
         Ok(id)
@@ -464,13 +518,44 @@ impl Editor {
             .iter()
             .rev()
             .find(|s| {
-                if s.page_id != self.document.active_page
-                    || s.hidden
-                    || x < s.x
-                    || x > s.x + s.width
-                    || y < s.y
-                    || y > s.y + s.height
-                {
+                if s.page_id != self.document.active_page || s.hidden {
+                    return false;
+                }
+                if !s.points.is_empty() {
+                    let points: Vec<[f64; 2]> = s
+                        .points
+                        .iter()
+                        .map(|p| [s.x + p[0] * s.width, s.y + p[1] * s.height])
+                        .collect();
+                    let mut inside = false;
+                    let count = if s.closed {
+                        points.len()
+                    } else {
+                        points.len() - 1
+                    };
+                    for i in 0..count {
+                        let a = points[i];
+                        let b = points[(i + 1) % points.len()];
+                        let dx = b[0] - a[0];
+                        let dy = b[1] - a[1];
+                        let t = (((x - a[0]) * dx + (y - a[1]) * dy)
+                            / (dx * dx + dy * dy).max(0.000001))
+                        .clamp(0.0, 1.0);
+                        if (x - a[0] - t * dx).hypot(y - a[1] - t * dy)
+                            <= (s.stroke_width / 2.0).max(4.0)
+                        {
+                            return true;
+                        }
+                        if s.closed
+                            && ((a[1] > y) != (b[1] > y))
+                            && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]
+                        {
+                            inside = !inside;
+                        }
+                    }
+                    return inside;
+                }
+                if x < s.x || x > s.x + s.width || y < s.y || y > s.y + s.height {
                     return false;
                 }
                 if s.kind == "ellipse" {

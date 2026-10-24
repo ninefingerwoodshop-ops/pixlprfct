@@ -19,6 +19,7 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 ## First milestone
 
 - Canvas pan/zoom, rectangles, ellipses, text, and visual frame backgrounds.
+- Shape and pen menus with line, arrow, polygon, star, point-by-point pen, and freehand pencil tools. Drag to draw shapes; Shift constrains proportions or line angles, and Alt draws from the center. Vector color and stroke weight are editable, with normalized geometry that survives resizing, history, save/load, and SVG export.
 - Multiple pages: create, rename, switch, and delete with undo. Each page has independent layers and an in-session pan/zoom position.
 - Multi-selection, marquee selection, dragging, single-object corner resizing, arrow-key nudging, and axis-constrained movement while holding Shift.
 - Align to selection bounds, distribute equal gaps, and batch fill, duplicate, delete, and move operations with one undo step per operation.
@@ -31,6 +32,8 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 
 Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, Shift+1 fit page, Shift+2 fit selection, Space+drag pan, Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z redo, Ctrl/Cmd+D duplicate, Ctrl/Cmd+S save, Ctrl/Cmd+A select all visible objects on the page. Scroll pans; Ctrl/Cmd+scroll zooms. Shift-click toggles canvas objects, Shift-click selects a layer range in the sidebar, and Ctrl/Cmd-click toggles individual sidebar layers. Alt+A/D/W/S aligns the selection left/right/top/bottom. Click to place a shape, then resize it. Text content is edited in the inspector. The menu and Help rail button show shortcuts.
 
+Drawing shortcuts: L line, Shift+L arrow, P pen, Shift+P pencil. Click pen anchors, then press Enter to finish an open path or click the first anchor to close it. Escape cancels an unfinished drawing. Polygon and star are in the Shape tools menu. Clicking without dragging places a default-size shape.
+
 ## Architecture
 
 `src/lib.rs` owns versioned documents, shapes, mutations, history, hit testing, and validation. It builds as both a native Rust library and a WASM module. The native library can later back a desktop application.
@@ -41,7 +44,7 @@ Shortcuts: V select, H pan, F frame, R rectangle, O ellipse, T text, Shift+1 fit
 
 ## Current limits
 
-No accounts, cloud document sync, multiplayer, components, auto layout, groups, vector paths, image import, or `.fig` import. Frames are background shapes, not containers: parent/child selection and moving frame contents are not implemented yet. Multi-selection supports movement and alignment, but not collective resizing. Marquee intersects bounding boxes; no deep selection of nested objects is available. Alignment targets the selection bounds, not a parent frame. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
+No accounts, cloud document sync, multiplayer, components, auto layout, groups, image import, or `.fig` import. Pen currently creates straight segments; Bézier handles, vector point editing, Boolean operations, and pencil smoothing are not implemented. Polygon and star use fixed point counts. Paths have one paint color, a round stroke, and a 4096-point limit. Frames are background shapes, not containers: parent/child selection and moving frame contents are not implemented yet. Multi-selection supports movement and alignment, but not collective resizing. Marquee intersects bounding boxes; no deep selection of nested objects is available. Alignment targets the selection bounds, not a parent frame. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
 
 Interface references: [current navigation](https://help.figma.com/hc/en-us/articles/360039831974-Explore-the-navigation-bar-and-left-sidebar), [selection](https://help.figma.com/hc/en-us/articles/360040449873-Select-layers-and-objects), and [alignment and distribution](https://help.figma.com/hc/en-us/articles/360039956914-Adjust-alignment-rotation-position-and-dimensions). Unimplemented Figma features are not presented as functioning controls.
 
