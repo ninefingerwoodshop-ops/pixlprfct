@@ -1,6 +1,7 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
+import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons } from './icons.js';
@@ -21,6 +22,7 @@ function selectionJson() { return JSON.stringify([...selectedIds]); }
 const pageViews = new Map();
 const collapsedGroups=new Set();
 const collapsedFrames=new Set();
+function insertAt(shape,start){return editor.insert(JSON.stringify({...shape,parent_id:frameAt(pageShapes(),start),clip_content:shape.kind==='frame'}));}
 function transformedSelection(){return descendants(pageShapes(),[...selectedIds]);}
 function groupSelection() { safe(()=>{const ids=expandGroups(pageShapes(),[...selectedIds]); editor.group_many(JSON.stringify(ids));setSelection(ids);refresh();});}
 function ungroupSelection() {safe(()=>{editor.ungroup_many(selectionJson());refresh();});}
@@ -129,11 +131,11 @@ function renderLayers() {
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
   const excluded=new Set(transformedSelection().map(s=>s.id));
-  $('parent-panel').hidden=!shapes.length;
+  $('parent-panel').hidden=!shapes.length||(!shapes.some(s=>s.parent_id)&&!pageShapes().some(s=>s.kind==='frame'&&!excluded.has(s.id)));
   $('parent-frame').replaceChildren(...[{id:0,name:'Page (no parent)'},...pageShapes().filter(s=>s.kind==='frame'&&!excluded.has(s.id))].map(s=>{const option=document.createElement('option');option.value=s.id;option.textContent=s.name;return option;}));
   $('parent-frame').value=shapes[0]?.parent_id??0;
   const groupId=selectedGroup(pageShapes(),[...selectedIds]);
-  $('group-actions').hidden=!shapes.length; $('group-layers').disabled=shapes.length<2||!!groupId; $('ungroup-layers').disabled=!shapes.some(s=>s.group_id);
+  $('group-actions').hidden=shapes.length<2&&!shapes.some(s=>s.group_id); $('group-layers').disabled=shapes.length<2||!!groupId; $('ungroup-layers').disabled=!shapes.some(s=>s.group_id);
   $('group-name-row').hidden=!groupId;if(groupId)$('group-name').value=shapes[0].group_name;
   document.querySelectorAll('[data-align]').forEach(button=>button.disabled=shapes.some(s=>s.group_id));
   $('scale-panel').hidden=tool!=='scale'||!shapes.length;
@@ -147,6 +149,7 @@ function renderProperties() {
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
   if (!shape) return;
+  $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
   $('stroke-section').hidden = !vectorTools.includes(shape.kind); $('stroke-width').value = shape.stroke_width ?? 2;
   $('paint-label').textContent = shape.points?.length && !shape.closed ? 'Stroke color' : 'Fill';
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
@@ -183,8 +186,9 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
   ctx.translate(pan.x, pan.y); ctx.scale(zoom, zoom);
   const previews = gesture?.previews || (gesture?.preview ? [gesture.preview] : []);
-  for (const shape of pageShapes()) if(visibleInTree(shape,pageShapes())) drawShape(previews.find(s => s.id === shape.id) || shape);
-  if (gesture?.type==='create') drawShape(gesture.preview);
+  const scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
+  for(const shape of scene) if(visibleInTree(shape,scene)){ctx.save();for(const frame of clippingFrames(shape,scene)){ctx.beginPath();ctx.rect(frame.x,frame.y,frame.width,frame.height);ctx.clip();}drawShape(shape);ctx.restore();}
+  if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.rect(frame.x,frame.y,frame.width,frame.height);ctx.clip();}drawShape(preview);ctx.restore();}
   if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
   if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
   const visibleSelection = selectionShapes().filter(s => visibleInTree(s,pageShapes())).map(s => previews.find(p => p.id === s.id) || s);
@@ -214,7 +218,7 @@ function drawAnchors(points) {
   }
 }
 function fit(onlySelection = false) {
-  const shapes = (onlySelection === true ? selectionShapes() : pageShapes()).filter(s => !s.hidden);
+  const shapes = (onlySelection === true ? selectionShapes() : pageShapes()).map(s=>paintBounds(s,pageShapes())).filter(Boolean);
   if (!shapes.length) { zoom = 1; pan = { x: 80, y: 100 }; draw(); return; }
   const minX = Math.min(...shapes.map(s => s.x)), minY = Math.min(...shapes.map(s => s.y));
   const width = Math.max(...shapes.map(s => s.x + s.width)) - minX;
@@ -240,23 +244,23 @@ function download(name, body, type) { const url = URL.createObjectURL(new Blob([
 async function exportSvg() {
   await document.fonts.ready;
   const shapes = pageShapes().filter(s => visibleInTree(s,pageShapes())); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
-  const padding = Math.max(0,...shapes.map(s=>s.points?.length ? (s.stroke_width??2)/2 : 0));
-  const x = Math.min(...shapes.map(s => s.x)) - padding, y = Math.min(...shapes.map(s => s.y)) - padding;
-  const w = Math.max(...shapes.map(s => s.x + s.width)) - x + padding, h = Math.max(...shapes.map(s => s.y + s.height)) - y + padding;
-  const body = shapes.map(s => {
+  const box=bounds(shapes.map(s=>paintBounds(s,pageShapes())).filter(Boolean));if(!box){toast('Nothing visible to export');return;}const {x,y,width:w,height:h}=box;
+  const renderSvg=s=>{
     if (s.points?.length) return vectorSvg(s);
     if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" fill="${s.fill}"/>`;
     if (s.kind === 'text') return textSvg(s, textLayout(s));
     return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" fill="${s.fill}"/>`;
-  }).join('');
+  };
+  const body=clipDefinitions(shapes)+shapes.map(s=>clipSvg(s,pageShapes(),renderSvg(s))).join('');
   download(`${doc.name || 'design'} - ${activePage().name}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('Current page exported as SVG');
 }
 function finishPen(closed) {
   if(penPoints.length<2) return;
-  safe(()=>{ const id=editor.insert(JSON.stringify(fromPoints('pen',penPoints,closed))); penPoints=[]; setSelection([id]); setTool('select'); refresh(); });
+  safe(()=>{ const id=insertAt(fromPoints('pen',penPoints,closed),penPoints[0]); penPoints=[]; setSelection([id]); setTool('select'); refresh(); });
 }
 function bind() {
   installIcons();
+  $('clip-content').onchange=()=>{if(current()?.kind==='frame')update({...current(),clip_content:$('clip-content').checked});};
   $('move-to-frame').onclick=()=>safe(()=>{editor.reparent_many(selectionJson(),Number($('parent-frame').value));refresh();});
   $('group-layers').onclick=groupSelection; $('ungroup-layers').onclick=ungroupSelection;
   $('group-name').onchange=()=>safe(()=>{const id=selectedGroup(pageShapes(),[...selectedIds]);if(id){editor.rename_group(id,$('group-name').value);refresh();}});
@@ -331,7 +335,7 @@ function bind() {
     canvas.focus(); canvas.setPointerCapture(event.pointerId);
     const p = point(event);
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
-    if (tool === 'text') { setSelection([editor.add(tool,p.x,p.y)]); setTool('select'); refresh(); return; }
+    if (tool === 'text') { setSelection([insertAt({id:0,kind:'text',name:'Text',x:p.x,y:p.y,width:240,height:56,fill:'#000000',text:'Your next big idea',hidden:false,typography:{font_size:32,font_family:'Manrope',font_weight:600,align:'left',line_height:1.2,wrap:true}},p)]); setTool('select'); refresh(); return; }
     if (tool === 'pen') {
       if(penPoints.length>=2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
       if(penPoints.length<4096) { penPoints.push(p); gesture={type:'pen-handle',index:penPoints.length-1}; } draw(); return;
@@ -397,7 +401,7 @@ function bind() {
     }
     if (gesture.type === 'marquee') {
       gesture.end = p;
-      setSelection([...new Set([...gesture.base,...expandGroups(pageShapes(),marqueeSelection(pageShapes().filter(s=>visibleInTree(s,pageShapes())),gesture.start,p))])]);
+      setSelection([...new Set([...gesture.base,...expandGroups(pageShapes(),marqueeSelection(pageShapes().map(s=>paintBounds(s,pageShapes())).filter(Boolean),gesture.start,p))])]);
       renderLayers(); renderProperties(); draw(); return;
     }
     if (gesture.type === 'move') {
@@ -419,9 +423,14 @@ function bind() {
       let shape=gesture.preview;
       if(gesture.kind==='pencil' && shape.points.length<2) { gesture=null; draw(); return; }
       if(gesture.kind!=='pencil' && shape.width<3 && shape.height<3) shape=drawnShape(gesture.kind,gesture.start,{x:gesture.start.x+160,y:gesture.start.y+(gesture.kind==='line'||gesture.kind==='arrow'?0:120)});
-      gesture=null; safe(()=>{setSelection([editor.insert(JSON.stringify(shape))]); setTool('select'); refresh();}); return;
+      const start=gesture.start;gesture=null; safe(()=>{setSelection([insertAt(shape,start)]); setTool('select'); refresh();}); return;
     }
-    const preview = gesture?.preview, previews = gesture?.previews; gesture = null; if (previews) updateMany(previews); else if (preview) update(preview); else draw(); };
+    const preview = gesture?.preview, previews = gesture?.previews,type=gesture?.type;
+    const parent=type==='move'&&previews?dropParent(pageShapes(),previews,[...selectedIds]):null;
+    const moved=type==='move'&&previews?.some(s=>{const old=pageShapes().find(o=>o.id===s.id);return old&&(old.x!==s.x||old.y!==s.y);});
+    gesture = null;
+    if(moved&&parent!==null) safe(()=>{editor.move_into(JSON.stringify(previews),parent);refresh();});
+    else if (previews) updateMany(previews); else if (preview) update(preview); else draw(); };
   const cancelGesture = () => { if (gesture?.type === 'marquee') setSelection(gesture.base); gesture = null; renderLayers(); renderProperties(); draw(); };
   canvas.onpointercancel = cancelGesture;
   canvas.onlostpointercapture = () => { if (gesture) cancelGesture(); };

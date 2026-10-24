@@ -12,6 +12,8 @@ pub struct Shape {
     pub group_name: String,
     #[serde(default)]
     pub parent_id: u32,
+    #[serde(default)]
+    pub clip_content: bool,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -413,6 +415,7 @@ impl Editor {
             group_id: 0,
             group_name: String::new(),
             parent_id: 0,
+            clip_content: false,
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -530,6 +533,21 @@ impl Editor {
         self.commit(document)?;
         self.next_id = next_id;
         Ok(serde_json::to_string(&created).unwrap())
+    }
+
+    pub fn move_into(&mut self, json: &str, parent: u32) -> Result<(), String> {
+        let shapes: Vec<Shape> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
+        let mut staged = Editor {
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        staged.update_many(json)?;
+        staged.reparent_many(&serde_json::to_string(&ids).unwrap(), parent)?;
+        self.commit(staged.document)
     }
 
     pub fn reparent_many(&mut self, json: &str, parent: u32) -> Result<(), String> {
@@ -821,7 +839,13 @@ impl Editor {
                         .iter()
                         .find(|s| s.id == parent)
                         .unwrap();
-                    if ancestor.hidden {
+                    if ancestor.hidden
+                        || (ancestor.clip_content
+                            && (x < ancestor.x
+                                || x > ancestor.x + ancestor.width
+                                || y < ancestor.y
+                                || y > ancestor.y + ancestor.height))
+                    {
                         return false;
                     }
                     parent = ancestor.parent_id;

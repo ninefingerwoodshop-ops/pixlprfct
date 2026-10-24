@@ -1,9 +1,23 @@
 {
   "objective": "Browser-first Figma replacement with a Rust document engine",
   "completionPolicy": "Individual feature deployments are progress, not completion of the replacement.",
-  "implemented": ["pages", "basic drawing tools", "Bezier drawing and handle editing", "text typography", "multi-selection", "proportional scaling", "flat groups", "nested frame parent relationships", "local save/load", "SVG export", "undo/redo"],
+  "implemented": [
+    "pages",
+    "basic drawing tools",
+    "Bezier drawing and handle editing",
+    "text typography",
+    "multi-selection",
+    "proportional scaling",
+    "flat groups",
+    "nested frame parent relationships",
+    "local save/load",
+    "SVG export",
+    "undo/redo",
+    "frame clipping across canvas, selection and SVG",
+    "automatic containment and atomic drag reparenting"
+  ],
   "remaining": [
-    "Frame clipping, automatic containment, drag reparenting and resize constraints",
+    "Frame resize constraints and additional layout controls",
     "Nested groups and complete tree reordering",
     "Image placement and cropping, SVG import, clipboard interoperability",
     "Rotation, corner radii, independent fills and strokes, opacity, gradients and effects",
@@ -15,5 +29,7 @@
     "Broader export formats, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope"
   ],
-  "deferred": ["Desktop application: browser version is the current priority"]
+  "deferred": [
+    "Desktop application: browser version is the current priority"
+  ]
 }
