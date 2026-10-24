@@ -1,7 +1,8 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 import { bounds, marqueeSelection, layerRange } from './selection.js';
-import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg } from './vectors.js';
+import { scaleShapes } from './scaling.js';
+import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons } from './icons.js';
 
 const $ = id => document.getElementById(id);
@@ -12,8 +13,9 @@ const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 let toastTimer, savingTimer, recoveryBlocked = false;
 let penPoints = [];
+let editingPath = 0;
 let selectedIds = new Set(), layerAnchor = 0;
-function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; }
+function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath) editingPath=0; }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
 function selectionJson() { return JSON.stringify([...selectedIds]); }
 const pageViews = new Map();
@@ -95,6 +97,7 @@ function renderLayers() {
 }
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
+  $('scale-panel').hidden=tool!=='scale'||!shapes.length;
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;
   $('selection-caption').textContent = shapes.length > 1 ? `${shapes.length} layers` : shape ? shape.kind : 'Page';
   if (shapes.length > 1) {
@@ -143,10 +146,11 @@ function draw() {
   const previews = gesture?.previews || (gesture?.preview ? [gesture.preview] : []);
   for (const shape of pageShapes()) drawShape(previews.find(s => s.id === shape.id) || shape);
   if (gesture?.type==='create') drawShape(gesture.preview);
-  if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); ctx.fillStyle='#0d99ff'; for(const p of penPoints) ctx.fillRect(p.x-3/zoom,p.y-3/zoom,6/zoom,6/zoom); }
+  if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
+  if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
   const visibleSelection = selectionShapes().filter(s => !s.hidden).map(s => previews.find(p => p.id === s.id) || s);
   const shape = bounds(visibleSelection);
-  if (shape) {
+  if (shape && !editingPath) {
     ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom;
     for (const item of visibleSelection) ctx.strokeRect(item.x, item.y, item.width, item.height);
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -159,6 +163,16 @@ function draw() {
     ctx.fillStyle = '#0d99ff18'; ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom; ctx.fillRect(box.x,box.y,box.width,box.height); ctx.strokeRect(box.x,box.y,box.width,box.height);
   }
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
+}
+function drawAnchors(points) {
+  ctx.strokeStyle='#0d99ff'; ctx.lineWidth=1/zoom; ctx.fillStyle='#fff';
+  for(const p of points) {
+    for(const h of [p.in,p.out].filter(Boolean)) {
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(h.x,h.y);ctx.stroke();
+      ctx.beginPath();ctx.arc(h.x,h.y,3/zoom,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
+    ctx.fillRect(p.x-4/zoom,p.y-4/zoom,8/zoom,8/zoom);ctx.strokeRect(p.x-4/zoom,p.y-4/zoom,8/zoom,8/zoom);
+  }
 }
 function fit(onlySelection = false) {
   const shapes = (onlySelection === true ? selectionShapes() : pageShapes()).filter(s => !s.hidden);
@@ -175,12 +189,13 @@ function zoomAt(factor, x = canvas.clientWidth / 2, y = canvas.clientHeight / 2)
 }
 function point(event) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left - pan.x) / zoom, y: (event.clientY - rect.top - pan.y) / zoom }; }
 function setTool(value) {
-  penPoints=[]; gesture=null;
+  penPoints=[]; gesture=null; editingPath=0;
   document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   tool = value; document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+  renderProperties();
   draw();
   canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'default' : 'crosshair';
-  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'pen' ? 'Click to add points · Click first point to close · Enter to finish · Escape to cancel' : tool === 'pencil' ? 'Drag to draw freehand · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
+  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 async function exportSvg() {
@@ -203,7 +218,9 @@ function finishPen(closed) {
 }
 function bind() {
   installIcons();
+  $('apply-scale').onclick=()=>safe(()=>{const shapes=selectionShapes(),box=bounds(shapes);if(box) updateMany(scaleShapes(shapes,box,Number($('scale-percent').value)/100));});
   $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
+  $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingPath=editingPath?0:current().id; $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
   document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) document.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-tools','nav-help']) $(id).onclick = showShortcuts;
@@ -234,6 +251,7 @@ function bind() {
     if(tool!=='select') return;
     const p = point(event), hit = editor.hit_test(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
+    else if(current()?.points?.length) $('edit-path').click();
   };
   document.fonts.addEventListener('loadingdone', () => { draw(); if (current()?.kind === 'text') $('text-overflow').hidden = !textLayout(current()).overflow; });
   $('add-page').onclick = () => safe(() => { editor.add_page(); refresh(); setTool('select'); toast('New page added — pick a tool to start designing'); });
@@ -273,11 +291,27 @@ function bind() {
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
     if (tool === 'text') { setSelection([editor.add(tool,p.x,p.y)]); setTool('select'); refresh(); return; }
     if (tool === 'pen') {
-      if(penPoints.length>2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
-      if(penPoints.length<4096) penPoints.push(p); draw(); return;
+      if(penPoints.length>=2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
+      if(penPoints.length<4096) { penPoints.push(p); gesture={type:'pen-handle',index:penPoints.length-1}; } draw(); return;
+    }
+    if(tool==='scale') {
+      if(!selectedIds.size) {const hit=editor.hit_test(p.x,p.y);if(hit)setSelection([hit]);}
+      const originals=selectionShapes(),box=bounds(originals); if(!box) {toast('Select layers to scale first');return;}
+      gesture={type:'scale',start:p,origin:{x:box.x,y:box.y},originals,previews:originals}; renderLayers();renderProperties();return;
     }
     if (tool !== 'select') { setSelection([]); gesture={type:'create',kind:tool,start:p,points:[p],preview:tool==='pencil'?fromPoints(tool,[p,p]):drawnShape(tool,p,p)}; renderProperties(); draw(); return; }
     const shape = current();
+    if(editingPath && shape?.points?.length) {
+      const nodes=anchors(shape);
+      for(let i=0;i<nodes.length;i++) {
+        const a=nodes[i];
+        for(const part of ['anchor','in','out']) {
+          const h=part==='anchor'?a:a[part];
+          if(Math.hypot(p.x-h.x,p.y-h.y)<8/zoom) {gesture={type:'node',index:i,part:event.altKey&&part==='anchor'?'smooth':part,start:p,original:shape,nodes,preview:shape};return;}
+        }
+      }
+      editingPath=0;
+    }
     if (shape && !shape.hidden) {
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         if (Math.abs(p.x - shape.x - cx * shape.width) < 9 / zoom && Math.abs(p.y - shape.y - cy * shape.height) < 9 / zoom) { gesture = { type: 'resize', start: p, original: { ...shape }, preview: { ...shape }, cx, cy }; return; }
@@ -299,6 +333,20 @@ function bind() {
     if (!gesture) return;
     if (gesture.type === 'pan') { pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; draw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
+    if(gesture.type==='scale') {
+      const dx=gesture.start.x-gesture.origin.x,dy=gesture.start.y-gesture.origin.y;
+      let factor=Math.max(.01,((p.x-gesture.origin.x)*dx+(p.y-gesture.origin.y)*dy)/Math.max(1,dx*dx+dy*dy));
+      if(event.shiftKey) factor=Math.max(.1,Math.round(factor*10)/10);
+      gesture.previews=scaleShapes(gesture.originals,gesture.origin,factor); draw(); return;
+    }
+    if(gesture.type==='pen-handle') { const a=penPoints[gesture.index]; a.out={...p}; a.in={x:2*a.x-p.x,y:2*a.y-p.y}; draw(); return; }
+    if(gesture.type==='node') {
+      const nodes=structuredClone(gesture.nodes),a=nodes[gesture.index],part=gesture.part;
+      if(part==='anchor') { const dx=p.x-gesture.start.x,dy=p.y-gesture.start.y; a.x+=dx;a.y+=dy; for(const h of [a.in,a.out]) {h.x+=dx;h.y+=dy;} }
+      else if(part==='smooth') {a.out={...p};a.in={x:2*a.x-p.x,y:2*a.y-p.y};}
+      else a[part]={...p};
+      gesture.preview=reshape(original,nodes);draw();return;
+    }
     if (gesture.type === 'create') {
       if(gesture.kind==='pencil') { if(gesture.points.length<4096 && Math.hypot(p.x-gesture.points.at(-1).x,p.y-gesture.points.at(-1).y)>1/zoom) gesture.points.push(p); gesture.preview=fromPoints('pencil',gesture.points); }
       else gesture.preview=drawnShape(gesture.kind,gesture.start,p,event);
@@ -323,6 +371,7 @@ function bind() {
     draw();
   };
   canvas.onpointerup = () => {
+    if(gesture?.type==='pen-handle') {gesture=null;draw();return;}
     if(gesture?.type==='create') {
       let shape=gesture.preview;
       if(gesture.kind==='pencil' && shape.points.length<2) { gesture=null; draw(); return; }
@@ -347,10 +396,11 @@ function bind() {
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }
     if (event.code === 'Space' && !event.target.closest('button,summary')) { event.preventDefault(); space = true; return; }
     if(key==='enter' && tool==='pen') {event.preventDefault(); finishPen(false); return;}
+    if(key==='enter' && current()?.points?.length) {event.preventDefault(); $('edit-path').click(); return;}
     if (key === 'escape') { penPoints=[]; gesture = null; setSelection([]); setTool('select'); refresh(false); return; }
     if (['delete', 'backspace'].includes(key)) { event.preventDefault(); $('delete').click(); return; }
     if (selectedIds.size && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.target !== divider) { event.preventDefault(); const step = event.shiftKey ? 10 : 1; updateMany(selectionShapes().map(s=>({ ...s, x: s.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0), y: s.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0) }))); return; }
-    const tools = { v: 'select', h: 'hand', f: 'frame', r: 'rectangle', o: 'ellipse', t: 'text', l:event.shiftKey?'arrow':'line', p:event.shiftKey?'pencil':'pen' }; if (!mod && !event.altKey && tools[key]) setTool(tools[key]);
+    const tools = { k:'scale', v: 'select', h: 'hand', f: 'frame', r: 'rectangle', o: 'ellipse', t: 'text', l:event.shiftKey?'arrow':'line', p:event.shiftKey?'pencil':'pen' }; if (!mod && !event.altKey && tools[key]) setTool(tools[key]);
     if (event.code === 'Digit1' && !mod) { event.preventDefault(); fit(); }
     if (event.code === 'Digit2' && event.shiftKey && !mod) { event.preventDefault(); fit(true); }
     if (key === '?') showShortcuts();

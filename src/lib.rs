@@ -20,6 +20,8 @@ pub struct Shape {
     #[serde(default)]
     pub points: Vec<[f64; 2]>,
     #[serde(default)]
+    pub handles: Vec<[[f64; 2]; 2]>,
+    #[serde(default)]
     pub closed: bool,
     #[serde(default = "default_stroke")]
     pub stroke_width: f64,
@@ -27,6 +29,49 @@ pub struct Shape {
 
 fn default_stroke() -> f64 {
     2.0
+}
+
+// Adaptive subdivision keeps selection close to the visible cubic curve.
+fn flatten_curve(p: [[f64; 2]; 4], depth: u8, output: &mut Vec<[f64; 2]>) {
+    let mid = |a: [f64; 2], b: [f64; 2]| [(a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0];
+    let chord = (p[3][0] - p[0][0]).hypot(p[3][1] - p[0][1]);
+    let polygon = (p[1][0] - p[0][0]).hypot(p[1][1] - p[0][1])
+        + (p[2][0] - p[1][0]).hypot(p[2][1] - p[1][1])
+        + (p[3][0] - p[2][0]).hypot(p[3][1] - p[2][1]);
+    if depth >= 12 || polygon - chord < 0.1 {
+        output.push(p[3]);
+        return;
+    }
+    let a = mid(p[0], p[1]);
+    let b = mid(p[1], p[2]);
+    let c = mid(p[2], p[3]);
+    let d = mid(a, b);
+    let e = mid(b, c);
+    let f = mid(d, e);
+    flatten_curve([p[0], a, d, f], depth + 1, output);
+    flatten_curve([f, e, c, p[3]], depth + 1, output);
+}
+fn path_polyline(shape: &Shape) -> Vec<[f64; 2]> {
+    let world = |p: [f64; 2]| [shape.x + p[0] * shape.width, shape.y + p[1] * shape.height];
+    if shape.handles.is_empty() {
+        return shape.points.iter().map(|p| world(*p)).collect();
+    }
+    let mut result = vec![world(shape.points[0])];
+    let count = shape.points.len() - if shape.closed { 0 } else { 1 };
+    for i in 0..count {
+        let j = (i + 1) % shape.points.len();
+        flatten_curve(
+            [
+                world(shape.points[i]),
+                world(shape.handles[i][1]),
+                world(shape.handles[j][0]),
+                world(shape.points[j]),
+            ],
+            0,
+            &mut result,
+        );
+    }
+    result
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -132,6 +177,16 @@ fn validate(document: &Document) -> Result<(), String> {
         }
         let vector =
             ["line", "arrow", "polygon", "star", "pen", "pencil"].contains(&shape.kind.as_str());
+        if (!shape.handles.is_empty() && shape.handles.len() != shape.points.len())
+            || shape
+                .handles
+                .iter()
+                .flatten()
+                .flatten()
+                .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
+        {
+            return Err("Invalid curve handles".into());
+        }
         if !shape.stroke_width.is_finite()
             || !(0.1..=100.0).contains(&shape.stroke_width)
             || shape.points.len() > 4096
@@ -293,6 +348,7 @@ impl Editor {
             text: "Your next big idea".into(),
             hidden: false,
             points: vec![],
+            handles: vec![],
             closed: false,
             stroke_width: default_stroke(),
             typography: if kind == "text" {
@@ -522,11 +578,15 @@ impl Editor {
                     return false;
                 }
                 if !s.points.is_empty() {
-                    let points: Vec<[f64; 2]> = s
-                        .points
-                        .iter()
-                        .map(|p| [s.x + p[0] * s.width, s.y + p[1] * s.height])
-                        .collect();
+                    let margin = (s.stroke_width / 2.0).max(4.0);
+                    if x < s.x - margin
+                        || x > s.x + s.width + margin
+                        || y < s.y - margin
+                        || y > s.y + s.height + margin
+                    {
+                        return false;
+                    }
+                    let points = path_polyline(s);
                     let mut inside = false;
                     let count = if s.closed {
                         points.len()
