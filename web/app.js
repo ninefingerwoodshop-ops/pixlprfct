@@ -161,6 +161,17 @@ function renderComponentProperties(shape){
   $('component-heading').textContent=master?'◆ Main component':linked?'◇ Instance':'Component';
   $('create-component').hidden=!!c;$('insert-instance').hidden=!master;
   for(const id of ['go-main','reset-instance','detach-instance'])$(id).hidden=!linked;
+  $('instance-controls').hidden=!linked;
+  if(linked){
+    $('swap-component').replaceChildren(...doc.shapes.filter(s=>s.component?.type==='master').sort((a,b)=>a.name.localeCompare(b.name)).map(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=`${s.name} · ${doc.pages.find(p=>p.id===s.page_id)?.name}`;return o;}));
+    $('swap-component').value=c.master;
+    const paths=(c.overrides??[]).filter(p=>c.master!==c.source||(p!=='x'&&p!=='y'));
+    $('override-count').textContent=paths.length;
+    const labels={typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',stroke_color:'Stroke color',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
+    const rows=paths.map(path=>{const row=document.createElement('div');row.className='override-row';const label=document.createElement('span');label.textContent=path.split('.').map(p=>labels[p]??p.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())).join(' · ');const b=document.createElement('button');b.textContent='Reset';b.setAttribute('aria-label','Reset '+label.textContent+' override');b.onclick=()=>safe(()=>{editor.reset_override(shape.id,path);refresh();});row.append(label,b);return row;});
+    if(!rows.length){const p=document.createElement('p');p.textContent='This layer inherits its component properties.';rows.push(p);}
+    $('override-list').replaceChildren(...rows);
+  }
   let root=shape;
   while(root?.component?.type==='instance'&&root.component.master!==root.component.source)root=doc.shapes.find(s=>s.id===root.parent_id);
   const count=linked?descendants(doc.shapes,[root.id]).reduce((n,s)=>n+(s.component?.overrides?.filter(f=>s.id!==root.id||(f!=='x'&&f!=='y')).length??0),0):0;
@@ -355,6 +366,7 @@ function bind() {
   $('insert-instance').onclick=()=>insertInstance(selected);
   $('detach-instance').onclick=()=>safe(()=>{editor.detach_instance(selected);refresh();toast('Instance detached');});
   $('reset-instance').onclick=()=>safe(()=>{editor.reset_instance(selected);refresh();toast('Instance overrides reset');});
+  $('swap-component').onchange=()=>safe(()=>{const root=editor.swap_instance(selected,Number($('swap-component').value));setSelection([root]);refresh();toast('Component swapped');});
   $('go-main').onclick=()=>safe(()=>{const master=doc.shapes.find(s=>s.id===current()?.component?.master);if(!master)return;editor.select_page(master.page_id);refresh();setSelection([master.id]);refresh(false);fit();});
   installIcons();
   $('export-dialog').addEventListener('cancel',event=>{if(exportBusy)event.preventDefault();});

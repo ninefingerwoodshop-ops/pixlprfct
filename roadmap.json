@@ -26,7 +26,8 @@
     "linear/radial gradient fills with multiple color/opacity stops, normalized geometry and PNG/SVG support",
     "on-canvas gradient endpoint/stop dragging, interpolated insertion, keyboard editing, snapping and undo",
     "persistent layer locking, inherited frame locks, layer-list/selection controls and canvas interaction protection",
-    "reusable frame components, linked instances across pages, property overrides/reset, detach, component library and atomic propagation/history"
+    "reusable frame components, linked instances across pages, property overrides/reset, detach, component library and atomic propagation/history",
+    "instance swapping by matching main-layer names/kinds/hierarchy, granular typography/appearance/layout overrides, individual override reset and legacy compatibility"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
@@ -35,7 +36,7 @@
     "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, advanced gradients and effects",
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout wrapping/grid, min/max sizing, group layout units and on-canvas spacing controls",
-    "Nested components, variants, instance swapping, granular style overrides, reusable styles and variables",
+    "Nested components, variants, exposed component properties, reusable styles and variables",
     "Prototyping interactions and presentation mode",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
     "PDF/JPEG and batch export, accessibility and performance validation",

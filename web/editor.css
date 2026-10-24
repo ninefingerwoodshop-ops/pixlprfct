@@ -52,3 +52,11 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 .component-asset {display:block;width:100%;text-align:left;padding:8px;border-radius:5px;color:var(--component-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .component-asset:hover {background:#f2edfc;}
 .component-glyph, #component-heading {color:var(--component-color);}
+#layer-overrides {font-size:11px;margin:12px 0;}
+#layer-overrides summary {cursor:pointer;line-height:1.5;}
+#override-count {color:#888;margin-left:4px;}
+#override-list {max-height:220px;overflow:auto;}
+.override-row {display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee;}
+.override-row span {flex:1;min-width:0;overflow-wrap:anywhere;}
+.override-row button {padding:4px 6px;color:var(--component-color);border-radius:4px;}
+.override-row button:hover {background:#f2edfc;}

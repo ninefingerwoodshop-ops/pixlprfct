@@ -35,6 +35,92 @@ const FIELDS: &[&str] = &[
     "y",
 ];
 
+fn subfields(field: &str) -> &'static [&'static str] {
+    match field {
+        "typography" => &[
+            "sizing",
+            "font_size",
+            "font_family",
+            "font_weight",
+            "align",
+            "line_height",
+            "wrap",
+        ],
+        "appearance" => &[
+            "gradient",
+            "opacity",
+            "corner_radius",
+            "fill_enabled",
+            "stroke_enabled",
+            "stroke_color",
+        ],
+        "constraints" => &["horizontal", "vertical"],
+        "layout_item" => &["fill_width", "fill_height", "absolute"],
+        "auto_layout" => &[
+            "direction",
+            "gap",
+            "padding_top",
+            "padding_right",
+            "padding_bottom",
+            "padding_left",
+            "align",
+            "justify",
+            "hug_width",
+            "hug_height",
+        ],
+        _ => &[],
+    }
+}
+fn valid_override(path: &str) -> bool {
+    if let Some((field, property)) = path.split_once('.') {
+        subfields(field).contains(&property)
+    } else {
+        FIELDS.contains(&path)
+    }
+}
+// Legacy paint defaults must be compared by appearance, not by whether the
+// optional object was serialized. Otherwise changing opacity also overrides fill.
+fn effective_value(s: &Shape) -> serde_json::Value {
+    let mut value = serde_json::to_value(s).unwrap();
+    if s.appearance.is_none() {
+        value["appearance"] = serde_json::json!({"gradient":null,"opacity":1.0,"corner_radius":0.0,"fill_enabled":s.points.is_empty()||s.closed,"stroke_enabled":!s.points.is_empty(),"stroke_color":if s.points.is_empty(){"#000000"}else{&s.fill}});
+    }
+    if s.typography.is_none() {
+        value["typography"] = serde_json::to_value(Typography::default()).unwrap();
+    }
+    value
+}
+fn apply_overrides(
+    shape: &mut Shape,
+    previous: &Shape,
+    overrides: &[String],
+) -> Result<(), String> {
+    let mut value = serde_json::to_value(&shape).unwrap();
+    let defaults = effective_value(shape);
+    let old = effective_value(previous);
+    for path in overrides {
+        if path == "x" || path == "y" {
+            continue;
+        }
+        if let Some((field, property)) = path.split_once('.') {
+            if !value[field].is_object() {
+                value[field] = if defaults[field].is_object() {
+                    defaults[field].clone()
+                } else {
+                    old[field].clone()
+                };
+            }
+            if value[field].is_object() {
+                value[field][property] = old[field][property].clone();
+            }
+        } else {
+            value[path] = serde_json::to_value(previous).unwrap()[path].clone();
+        }
+    }
+    *shape = serde_json::from_value(value).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub fn subtree(shapes: &[Shape], root: u32) -> Vec<Shape> {
     fn walk(shapes: &[Shape], id: u32, out: &mut Vec<Shape>) {
         if let Some(s) = shapes.iter().find(|s| s.id == id) {
@@ -67,8 +153,9 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
             }) => {
                 if *master == 0
                     || *source == 0
-                    || overrides.len() > FIELDS.len()
-                    || overrides.iter().any(|f| !FIELDS.contains(&f.as_str()))
+                    || overrides.len() > 64
+                    || overrides.iter().any(|f| !valid_override(f))
+                    || overrides.iter().collect::<HashSet<_>>().len() != overrides.len()
                 {
                     return Err("Invalid component link or override".into());
                 }
@@ -129,11 +216,22 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
         {
             return Err("Detach the instance before changing its structure".into());
         }
-        let a = serde_json::to_value(old).unwrap();
-        let b = serde_json::to_value(&new).unwrap();
+        let a = effective_value(old);
+        let b = effective_value(new);
         let mut changed = overrides.clone();
         for field in FIELDS {
-            if a[field] != b[field] && !changed.iter().any(|f| f == field) {
+            if a[field] == b[field] || changed.iter().any(|f| f == field) {
+                continue;
+            }
+            if !subfields(field).is_empty() && a[field].is_object() && b[field].is_object() {
+                for property in subfields(field) {
+                    let path = format!("{field}.{property}");
+                    if a[field][property] != b[field][property] && !changed.contains(&path) {
+                        changed.push(path);
+                    }
+                }
+            } else {
+                changed.retain(|f| !f.starts_with(&format!("{field}.")));
                 changed.push((*field).into());
             }
         }
@@ -257,10 +355,7 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
             } else if let Some(id) = groups.get(&src.group_id) {
                 *id
             } else {
-                let id = previous
-                    .filter(|p| p.group_id != 0)
-                    .map(|p| p.group_id)
-                    .unwrap_or(new_id);
+                let id = new_id;
                 groups.insert(src.group_id, id);
                 id
             };
@@ -271,6 +366,12 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
             } else {
                 let sp = source.iter().find(|s| s.id == src.parent_id).unwrap();
                 let np = built.iter().find(|s| s.id == shape.parent_id).unwrap();
+                let mut constrained = src.clone();
+                if let Some(p) = previous {
+                    if let Some(Component::Instance { overrides, .. }) = &p.component {
+                        apply_overrides(&mut constrained, p, overrides)?;
+                    }
+                }
                 (shape.x, shape.width) = constrain_axis(
                     src.x,
                     src.width,
@@ -278,7 +379,7 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                     sp.width,
                     np.x,
                     np.width,
-                    &src.constraints.horizontal,
+                    &constrained.constraints.horizontal,
                 );
                 (shape.y, shape.height) = constrain_axis(
                     src.y,
@@ -287,7 +388,7 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                     sp.height,
                     np.y,
                     np.height,
-                    &src.constraints.vertical,
+                    &constrained.constraints.vertical,
                 );
             }
             let overrides = match previous.and_then(|s| s.component.as_ref()) {
@@ -295,15 +396,7 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                 _ => vec![],
             };
             if let Some(p) = previous {
-                let mut value = serde_json::to_value(&shape).unwrap();
-                let previous_value = serde_json::to_value(p).unwrap();
-                for field in &overrides {
-                    if field == "x" || field == "y" {
-                        continue;
-                    }
-                    value[field] = previous_value[field].clone();
-                }
-                shape = serde_json::from_value(value).map_err(|e| e.to_string())?;
+                apply_overrides(&mut shape, p, &overrides)?;
                 if src.id != master {
                     let op = old.iter().find(|s| s.id == p.parent_id).unwrap();
                     let np = built.iter().find(|s| s.id == shape.parent_id).unwrap();
@@ -396,6 +489,98 @@ impl Editor {
                 s.component = None;
             }
         }
+        self.commit(doc)
+    }
+
+    pub fn swap_instance(&mut self, id: u32, master: u32) -> Result<u32, String> {
+        let root = self.instance_root(id)?;
+        let old = subtree(&self.document.shapes, root);
+        let Some(Component::Instance {
+            master: old_master, ..
+        }) = old[0].component
+        else {
+            unreachable!()
+        };
+        if old_master == master {
+            return Ok(root);
+        }
+        let target = subtree(&self.document.shapes, master);
+        if target
+            .first()
+            .is_none_or(|s| s.component != Some(Component::Master))
+        {
+            return Err("Main component not found".into());
+        }
+        let original = subtree(&self.document.shapes, old_master);
+        // Match layer names, kinds and hierarchy. Repeated sibling names match
+        // by occurrence in paint order; instance renames do not alter identity.
+        fn match_children(
+            old: &[Shape],
+            new: &[Shape],
+            a: u32,
+            b: u32,
+            map: &mut HashMap<u32, u32>,
+        ) {
+            let mut used = HashSet::new();
+            for child in old.iter().filter(|s| s.parent_id == a) {
+                if let Some(other) = new.iter().find(|s| {
+                    s.parent_id == b
+                        && s.name == child.name
+                        && s.kind == child.kind
+                        && !used.contains(&s.id)
+                }) {
+                    used.insert(other.id);
+                    map.insert(child.id, other.id);
+                    match_children(old, new, child.id, other.id, map);
+                }
+            }
+        }
+        let mut mapping = HashMap::from([(old_master, master)]);
+        match_children(&original, &target, old_master, master, &mut mapping);
+        let mut kept = vec![];
+        for mut s in old.clone() {
+            if let Some(Component::Instance {
+                source, overrides, ..
+            }) = &s.component
+            {
+                if let Some(&source) = mapping.get(source) {
+                    s.component = Some(Component::Instance {
+                        master,
+                        source,
+                        overrides: overrides.clone(),
+                    });
+                    // Groups are reconstructed from the new main component.
+                    if s.id != root {
+                        s.group_id = 0;
+                        s.group_name.clear();
+                    }
+                    kept.push(s);
+                }
+            }
+        }
+        let ids: HashSet<_> = old.iter().map(|s| s.id).collect();
+        let mut doc = self.document.clone();
+        let slot = doc.shapes.iter().position(|s| s.id == root).unwrap();
+        doc.shapes.retain(|s| !ids.contains(&s.id));
+        doc.shapes.splice(slot..slot, kept);
+        self.commit_document(doc)?;
+        Ok(root)
+    }
+
+    pub fn reset_override(&mut self, id: u32, path: &str) -> Result<(), String> {
+        if !valid_override(path) {
+            return Err("Unknown override property".into());
+        }
+        let mut doc = self.document.clone();
+        let shape = doc
+            .shapes
+            .iter_mut()
+            .find(|s| s.id == id && s.page_id == doc.active_page)
+            .ok_or("Layer not found")?;
+        let Some(Component::Instance { overrides, .. }) = &mut shape.component else {
+            return Err("Select an instance layer".into());
+        };
+        overrides.retain(|p| p != path && !p.starts_with(&format!("{path}.")));
         self.commit(doc)
     }
 
