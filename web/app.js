@@ -1,3 +1,4 @@
+import {exportJobs,zipFiles} from './batch-export.js';
 import {rasterSettings} from './export.js';
 import {smoothPencil} from './pencil.js';
 import {connectionHit,connectionTarget,connectedShape,drawConnections} from './prototype-connections.js';
@@ -366,19 +367,27 @@ function pasteLayerText(text,overSelection=false,replace=false){
   setSelection(JSON.parse(editor.paste_layers(text,offset.x,offset.y,overSelection?(target?.parent_id??0):(target?.id??0))));lastPasted=text;pasteCount=count;refresh();toast('Layers pasted');return true;
 }
 function exportOptions(){return{format:$('export-format').value,scope:$('export-scope').value,scale:Number($('export-scale').value),quality:Number($('export-quality').value),background:$('export-format').value!=='jpeg'&&$('export-transparent').checked?null:$('export-background').value};}
-function exportSummary(){const jpeg=$('export-format').value==='jpeg';$('export-transparent').disabled=jpeg;$('export-transparent').closest('label').hidden=jpeg;$('export-quality-row').hidden=!jpeg;try{const o=exportOptions();if(o.format!=='svg')rasterSettings(o.format,o.background,o.quality);const shapes=exportShapes(pageShapes(),[...selectedIds],o.scope),box=exportBounds(shapes),size=exportSize(box,o.scale,o.format,shapes);$('export-summary').textContent=size.width+' × '+size.height+' px · '+shapes.length+' layers';$('export-download').disabled=false;}catch(error){$('export-summary').textContent=String(error);$('export-download').disabled=true;}$('export-background').disabled=$('export-format').value!=='jpeg'&&$('export-transparent').checked;}
+function exportSummary(){
+ const jpeg=$('export-format').value==='jpeg';$('export-transparent').disabled=jpeg;$('export-transparent').closest('label').hidden=jpeg;$('export-quality-row').hidden=!jpeg;
+ try{const o=exportOptions();if(o.format!=='svg')rasterSettings(o.format,o.background,o.quality);const jobs=exportJobs(pageShapes(),[...selectedIds],o,activePage().name),batch=['frames','layers'].includes(o.scope);$('export-summary').textContent=batch?jobs.length+' separate '+o.format.toUpperCase()+' files in a ZIP':jobs[0].size.width+' × '+jobs[0].size.height+' px · '+jobs[0].shapes.length+' layers';$('export-download').disabled=false;}catch(error){$('export-summary').textContent=String(error);$('export-download').disabled=true;}
+ $('export-background').disabled=$('export-format').value!=='jpeg'&&$('export-transparent').checked;
+}
 async function exportArtwork(){
  if(exportBusy)return;
- const options=exportOptions(),shapes=structuredClone(exportShapes(pageShapes(),[...selectedIds],options.scope)),box=exportBounds(shapes),size=exportSize(box,options.scale,options.format,shapes);
- const name=doc.name+' - '+(options.scope==='selection'?(current()?.name??'selection'):activePage().name);
- exportBusy=true;for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background'])$(id).disabled=true;$('export-download').disabled=true;$('export-cancel').disabled=true;$('export-summary').textContent='Preparing export…';
+ const options=exportOptions(),name=doc.name+' - '+(options.scope==='selection'?(current()?.name??'selection'):activePage().name),jobs=structuredClone(exportJobs(pageShapes(),[...selectedIds],options,name)),batch=['frames','layers'].includes(options.scope),files=[];let bytes=0;
+ exportBusy=true;for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background'])$(id).disabled=true;$('export-download').disabled=true;$('export-cancel').disabled=true;
  try{await document.fonts.ready;
-  if(options.format==='svg')download(name+'.svg',svgDocument(shapes,box,options.scale,options.background,textLayout),'image/svg+xml');
-  else{const raster=rasterSettings(options.format,options.background,options.quality);const entries=shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url));await Promise.all(entries.map(e=>e.promise));if(entries.some(e=>!e.ready))throw new Error('An embedded image could not be decoded');
-   const surface=new OffscreenCanvas(size.width,size.height),output=surface.getContext('2d');if(raster.background){output.fillStyle=raster.background;output.fillRect(0,0,size.width,size.height);}output.setTransform(options.scale,0,0,options.scale,-box.x*options.scale,-box.y*options.scale);drawScene(shapes,output,drawShape);const blob=await surface.convertToBlob({type:raster.type,quality:raster.quality});if(blob.type!==raster.type)throw new Error('This browser cannot encode '+options.format.toUpperCase());download(name+'.'+raster.extension,blob,raster.type);
+  for(const [index,job] of jobs.entries()){
+   $('export-summary').textContent='Exporting '+(index+1)+' of '+jobs.length+'…';const {shapes,box,size}=job;let blob,extension;
+   if(options.format==='svg'){extension='svg';blob=new Blob([svgDocument(shapes,box,options.scale,options.background,textLayout)],{type:'image/svg+xml'});}
+   else{const raster=rasterSettings(options.format,options.background,options.quality),entries=shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url));await Promise.all(entries.map(e=>e.promise));if(entries.some(e=>!e.ready))throw new Error('An embedded image could not be decoded');
+    const surface=new OffscreenCanvas(size.width,size.height),output=surface.getContext('2d');if(raster.background){output.fillStyle=raster.background;output.fillRect(0,0,size.width,size.height);}output.setTransform(options.scale,0,0,options.scale,-box.x*options.scale,-box.y*options.scale);drawScene(shapes,output,drawShape);blob=await surface.convertToBlob({type:raster.type,quality:raster.quality});surface.width=1;surface.height=1;if(blob.type!==raster.type)throw new Error('This browser cannot encode '+options.format.toUpperCase());extension=raster.extension;
+   }
+   if(batch){bytes+=blob.size;if(bytes>134217728)throw new Error('Batch export exceeds 128 MB. Export fewer layers or reduce scale.');files.push({name:job.name+'.'+extension,data:new Uint8Array(await blob.arrayBuffer())});}else download(job.name+'.'+extension,blob,blob.type);
+   await new Promise(resolve=>requestAnimationFrame(resolve));
   }
-  $('export-dialog').close();toast(options.format.toUpperCase()+' exported');
- }finally{exportBusy=false;for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background'])$(id).disabled=false;$('export-background').disabled=$('export-format').value!=='jpeg'&&$('export-transparent').checked;$('export-download').disabled=false;$('export-cancel').disabled=false;exportSummary();}
+  if(batch)download(name+'.zip',zipFiles(files),'application/zip');$('export-dialog').close();toast(batch?jobs.length+' files exported as ZIP':options.format.toUpperCase()+' exported');
+ }finally{exportBusy=false;for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background'])$(id).disabled=false;$('export-download').disabled=false;$('export-cancel').disabled=false;exportSummary();}
 }
 function finishPen(closed) {
   if(penPoints.length<2) return;
