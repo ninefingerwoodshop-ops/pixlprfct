@@ -34,6 +34,8 @@ pub struct Shape {
     pub text: String,
     pub hidden: bool,
     #[serde(default)]
+    pub locked: bool,
+    #[serde(default)]
     pub typography: Option<Typography>,
     #[serde(default)]
     pub points: Vec<[f64; 2]>,
@@ -870,6 +872,7 @@ impl Editor {
             fill: fill.into(),
             text: "Your next big idea".into(),
             hidden: false,
+            locked: false,
             points: vec![],
             handles: vec![],
             closed: false,
@@ -1454,7 +1457,7 @@ impl Editor {
             .iter()
             .rev()
             .find(|s| {
-                if s.page_id != self.document.active_page || s.hidden {
+                if s.page_id != self.document.active_page || s.hidden || s.locked {
                     return false;
                 }
                 let mut parent = s.parent_id;
@@ -1466,6 +1469,7 @@ impl Editor {
                         .find(|s| s.id == parent)
                         .unwrap();
                     if ancestor.hidden
+                        || ancestor.locked
                         || (ancestor.clip_content && !in_rounded_rect(ancestor, x, y))
                     {
                         return false;

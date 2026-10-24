@@ -31,3 +31,9 @@ export function visibleInTree(shape,shapes) {
   while(node) {if(node.hidden)return false;node=shapes.find(s=>s.id===node.parent_id);}
   return true;
 }
+export function lockedInTree(shape,shapes) {
+  let node=shape;while(node){if(node.locked)return true;node=shapes.find(s=>s.id===node.parent_id);}return false;
+}
+export function canvasSelection(shapes,ids) {
+  return expandGroups(shapes,ids).filter(id=>{const s=shapes.find(s=>s.id===id);return visibleInTree(s,shapes)&&!lockedInTree(s,shapes);});
+}

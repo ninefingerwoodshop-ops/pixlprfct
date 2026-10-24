@@ -1,4 +1,4 @@
-import {visibleInTree} from './selection.js';
+import {visibleInTree,lockedInTree} from './selection.js';
 import {appearance,radius,roundedContains} from './appearance.js';
 export function clippingFrames(shape,shapes) {
   const frames=[];let parent=shape.parent_id;
@@ -13,7 +13,7 @@ export function paintBounds(shape,shapes) {
   return right>left&&bottom>top?{...shape,x:left,y:top,width:right-left,height:bottom-top}:null;
 }
 export function frameAt(shapes,point) {
-  return [...shapes].reverse().find(s=>s.kind==='frame'&&visibleInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
+  return [...shapes].reverse().find(s=>s.kind==='frame'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
 }
 export function clipDefinitions(shapes) {
   return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath>`).join('')}</defs>`;

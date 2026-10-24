@@ -3,7 +3,7 @@ import {canvasFill} from './gradients.js';
 import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradientStopAt,drawGradientHandles} from './gradient-edit.js';
 import {renderGradientControls} from './gradient-controls.js';
 import { textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
-import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
+import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree, lockedInTree, canvasSelection } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
 import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-edit.js';
@@ -38,6 +38,10 @@ const collapsedGroups=new Set();
 const collapsedFrames=new Set();
 function insertAt(shape,start){return editor.insert(JSON.stringify({...shape,parent_id:frameAt(pageShapes(),start),clip_content:shape.kind==='frame'}));}
 function transformedSelection(){return descendants(pageShapes(),[...selectedIds]);}
+function inheritedLock(s){return !!s.parent_id&&lockedInTree(pageShapes().find(p=>p.id===s.parent_id),pageShapes());}
+function canvasEditable(){return selectionShapes().every(s=>!lockedInTree(s,pageShapes()));}
+function toggleSelectionLock(){const targets=selectionShapes().filter(s=>!inheritedLock(s));if(!targets.length){toast('Unlock the parent frame first');return;}const locked=targets.some(s=>!s.locked);gesture=null;updateMany(targets.map(s=>({...s,locked})));}
+function layerLockButton(shape){const b=document.createElement('button'),inherited=inheritedLock(shape),locked=lockedInTree(shape,pageShapes());b.className='layer-lock'+(locked?' locked':'');b.disabled=inherited;b.setAttribute('aria-label',inherited?'Locked by parent: '+shape.name:(shape.locked?'Unlock ':'Lock ')+shape.name);b.title=b.getAttribute('aria-label');b.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="7" width="9" height="7" rx="1.4"/><path d="${locked?'M5 7V4a3 3 0 0 1 6 0v3':'M5 7V4a3 3 0 0 1 6 0'}"/></svg>`;b.onclick=()=>{gesture=null;update({...shape,locked:!shape.locked});};return b;}
 function groupSelection() { safe(()=>{const ids=expandGroups(pageShapes(),[...selectedIds]); editor.group_many(JSON.stringify(ids));setSelection(ids);refresh();});}
 function ungroupSelection() {safe(()=>{editor.ungroup_many(selectionJson());refresh();});}
 function pageShapes() { return doc?.shapes.filter(s => s.page_id === doc.active_page) || []; }
@@ -112,7 +116,7 @@ function renderLayers() {
       else { setSelection([shape.id]); layerAnchor = shape.id; }
       refresh(false);
     };
-    return button;
+    const row=document.createElement('div');row.className='layer-entry';row.append(button,layerLockButton(shape));return row;
   };
   const buildRows=parent=>{
   const rows=[],seen=new Set();
@@ -145,6 +149,8 @@ function renderLayers() {
 }
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
+  const lockTargets=shapes.filter(s=>!inheritedLock(s));$('lock-panel').hidden=!shapes.length;$('toggle-lock').disabled=!lockTargets.length;$('toggle-lock').textContent=lockTargets.length?(lockTargets.every(s=>s.locked)?'Unlock selection':'Lock selection'):'Locked by parent';$('lock-status').textContent=shapes.some(s=>lockedInTree(s,pageShapes()))?'Locked layers cannot be edited on the canvas. Use the inspector or unlock their parent.':'Ctrl/Cmd Shift L';
+  if(!canvasEditable()){editingGradient=0;activeGradient=null;editingPath=0;activeNode=-1;}
   if(!shape?.appearance?.gradient||!visibleInTree(shape,pageShapes())){editingGradient=0;activeGradient=null;}
   if(activeGradient?.part==='stop'&&activeGradient.index>=shape?.appearance?.gradient?.stops.length)activeGradient=null;
   $('node-actions').hidden=!editingPath||!shape?.points?.length;
@@ -186,7 +192,7 @@ function renderProperties() {
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
   $('stroke-section').hidden = false; $('stroke-width').value = shape.stroke_width ?? 2;$('vector-edit-controls').hidden=!vectorTools.includes(shape.kind);
   $('paint-label').textContent = 'Fill';
-  renderGradientControls($('gradient-controls'),shape,s=>{activeGradient=null;update(s);},{editing:editingGradient===shape.id,active:activeGradient,toggle:()=>{const was=editingGradient===shape.id;setTool('select');editingGradient=was?0:shape.id;activeGradient=null;renderProperties();draw();}});
+  renderGradientControls($('gradient-controls'),shape,s=>{activeGradient=null;update(s);},{editing:editingGradient===shape.id,active:activeGradient,toggle:()=>{if(!canvasEditable()){toast('Unlock the layer or its parent to edit on canvas');return;}const was=editingGradient===shape.id;setTool('select');editingGradient=was?0:shape.id;activeGradient=null;renderProperties();draw();}});
   $('solid-fill-controls').hidden=!!paint.gradient;
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
@@ -243,7 +249,7 @@ function draw() {
     for (const item of visibleSelection) ctx.strokeRect(item.x, item.y, item.width, item.height);
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
     const size = 6 / zoom;
-    if (visibleSelection.length === 1) for (const [x, y] of [[shape.x, shape.y], [shape.x + shape.width, shape.y], [shape.x, shape.y + shape.height], [shape.x + shape.width, shape.y + shape.height]]) { ctx.fillStyle = '#fff'; ctx.fillRect(x - size / 2, y - size / 2, size, size); ctx.strokeRect(x - size / 2, y - size / 2, size, size); }
+    if (visibleSelection.length === 1 && canvasEditable()) for (const [x, y] of [[shape.x, shape.y], [shape.x + shape.width, shape.y], [shape.x, shape.y + shape.height], [shape.x + shape.width, shape.y + shape.height]]) { ctx.fillStyle = '#fff'; ctx.fillRect(x - size / 2, y - size / 2, size, size); ctx.strokeRect(x - size / 2, y - size / 2, size, size); }
     ctx.fillStyle = '#0d99ff'; ctx.font = `${10 / zoom}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${Math.round(shape.width)} × ${Math.round(shape.height)}`, shape.x + shape.width / 2, shape.y + shape.height + 10 / zoom); ctx.textAlign = 'left';
   }
   if (gesture?.type === 'marquee') {
@@ -322,6 +328,7 @@ async function placeImage(file,location=null,replaceId=0) {
   } catch(error){toast(String(error));}finally{imageLoading=false;}
 }
 function bind() {
+  $('toggle-lock').onclick=toggleSelectionLock;
   installIcons();
   $('export-dialog').addEventListener('cancel',event=>{if(exportBusy)event.preventDefault();});
   $('paste-over').onclick=async()=>{let text;try{text=await navigator.clipboard.readText();}catch{pasteInPlace=true;toast('Press Ctrl/Cmd V to paste over the selection');return;}safe(()=>{if(!pasteLayerText(text,true))toast('Copy PixlPrfct layers first');});};
@@ -358,7 +365,7 @@ function bind() {
   $('group-name').onchange=()=>safe(()=>{const id=selectedGroup(pageShapes(),[...selectedIds]);if(id){editor.rename_group(id,$('group-name').value);refresh();}});
   $('apply-scale').onclick=()=>safe(()=>{const shapes=transformedSelection(),box=bounds(selectionShapes());if(box) updateMany(scaleShapes(shapes,box,Number($('scale-percent').value)/100));});
   $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
-  $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingGradient=0;activeGradient=null;editingPath=editingPath?0:current().id;activeNode=-1;renderProperties(); $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
+  $('edit-path').onclick=()=>{if(!canvasEditable()){toast('Unlock the layer or its parent to edit on canvas');return;}if(current()?.points?.length){if(tool!=='select')setTool('select');editingGradient=0;activeGradient=null;editingPath=editingPath?0:current().id;activeNode=-1;renderProperties(); $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
   document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) document.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-tools','nav-help']) $(id).onclick = showShortcuts;
@@ -438,7 +445,8 @@ function bind() {
       if(penPoints.length<4096) { penPoints.push(p); gesture={type:'pen-handle',index:penPoints.length-1}; } draw(); return;
     }
     if(tool==='scale') {
-      if(!selectedIds.size) {const hit=editor.hit_test(p.x,p.y);if(hit)setSelection(expandGroups(pageShapes(),[hit]));}
+      if(!canvasEditable()){toast('Unlock the selection before scaling on canvas');return;}
+      if(!selectedIds.size) {const hit=editor.hit_test(p.x,p.y);if(hit)setSelection(canvasSelection(pageShapes(),[hit]));}
       const originals=transformedSelection(),box=bounds(selectionShapes()); if(!box) {toast('Select layers to scale first');return;}
       gesture={type:'scale',start:p,origin:{x:box.x,y:box.y},originals,previews:originals}; renderLayers();renderProperties();return;
     }
@@ -457,22 +465,23 @@ function bind() {
       const segment=nearestSegment(shape,p);if(segment&&segment.distance<10/zoom){activeNode=-1;renderProperties();draw();return;}
       editingPath=0;activeNode=-1;
     }
-    if (shape && !shape.hidden) {
+    if (shape && !shape.hidden && canvasEditable()) {
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         if (Math.abs(p.x - shape.x - cx * shape.width) < 9 / zoom && Math.abs(p.y - shape.y - cy * shape.height) < 9 / zoom) { gesture = { type: 'resize', start: p, original: { ...shape }, preview: { ...shape }, cx, cy }; return; }
       }
     }
     const hit = editor.hit_test(p.x, p.y);
     if (event.shiftKey && hit) {
-      const ids = new Set(selectedIds), hits=event.ctrlKey||event.metaKey?[hit]:expandGroups(pageShapes(),[hit]),remove=hits.every(id=>ids.has(id)); hits.forEach(id=>remove?ids.delete(id):ids.add(id)); setSelection([...ids]); refresh(false); return;
+      const ids = new Set(selectedIds), hits=event.ctrlKey||event.metaKey?[hit]:canvasSelection(pageShapes(),[hit]),remove=hits.every(id=>ids.has(id)); hits.forEach(id=>remove?ids.delete(id):ids.add(id)); setSelection([...ids]); refresh(false); return;
     }
     if (!hit) {
       const base = event.shiftKey ? [...selectedIds] : [];
       setSelection(base); refresh(false); gesture = {type:'marquee',start:p,end:p,base}; return;
     }
     if (event.ctrlKey||event.metaKey) setSelection([hit]);
-    else if (!selectedIds.has(hit)) setSelection(expandGroups(pageShapes(),[hit]));
+    else if (!selectedIds.has(hit)) setSelection(canvasSelection(pageShapes(),[hit]));
     layerAnchor = hit; refresh(false);
+    if(!canvasEditable()){toast('Unlock the selection before moving it on canvas');return;}
     gesture = {type:'move',start:p,originals:transformedSelection().map(s=>({...s})),previews:transformedSelection().map(s=>({...s}))};
   });
   canvas.onpointermove = event => {
@@ -501,7 +510,7 @@ function bind() {
     }
     if (gesture.type === 'marquee') {
       gesture.end = p;
-      setSelection([...new Set([...gesture.base,...expandGroups(pageShapes(),marqueeSelection(pageShapes().map(s=>paintBounds(s,pageShapes())).filter(Boolean),gesture.start,p))])]);
+      setSelection([...new Set([...gesture.base,...canvasSelection(pageShapes(),marqueeSelection(pageShapes().map(s=>paintBounds(s,pageShapes())).filter(Boolean),gesture.start,p))])]);
       renderLayers(); renderProperties(); draw(); return;
     }
     if (gesture.type === 'move') {
@@ -544,6 +553,7 @@ function bind() {
     if ($('page-dialog').open || $('shortcuts-dialog').open || $('export-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(mod&&event.shiftKey&&key==='l'){event.preventDefault();toggleSelectionLock();return;}
     if(editingGradient&&!mod){
       if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=gradientHandles(current(),zoom),index=handles.findIndex(h=>h.part===activeGradient?.part&&(h.part!=='stop'||h.index===activeGradient.index));activeGradient=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length];renderProperties();draw();return;}
       if(key==='enter'||key==='escape'){event.preventDefault();const preview=gesture?.type==='gradient'?gesture.preview:null;if(key==='escape'&&preview){gesture=null;activeGradient=null;}else{gesture=null;editingGradient=0;activeGradient=null;if(key==='enter'&&preview)update(preview);}renderProperties();draw();return;}
@@ -556,7 +566,7 @@ function bind() {
     if(!mod&&event.shiftKey&&key==='a'&&selectedIds.size){event.preventDefault();$('add-auto-layout').click();return;}
     if(mod && event.shiftKey && key==='k'){event.preventDefault();$('place-image').click();return;}
     if(mod && key==='g') {event.preventDefault(); if(selectedIds.size)(event.shiftKey?ungroupSelection:groupSelection)();return;}
-    if (mod && key === 'a') { event.preventDefault(); setSelection(pageShapes().filter(s=>visibleInTree(s,pageShapes())).map(s=>s.id)); refresh(false); return; }
+    if (mod && key === 'a') { event.preventDefault(); setSelection(pageShapes().filter(s=>visibleInTree(s,pageShapes())&&!lockedInTree(s,pageShapes())).map(s=>s.id)); refresh(false); return; }
     if (event.altKey && !mod && selectedIds.size > 1 && ['a','d','w','s'].includes(key)) { event.preventDefault(); if(!selectionShapes().some(s=>s.group_id)) safe(() => { editor.align_many(selectionJson(),{a:'left',d:'right',w:'top',s:'bottom'}[key]); refresh(); }); return; }
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }
     if (event.code === 'Space' && !event.target.closest('button,summary')) { event.preventDefault(); space = true; return; }
@@ -564,7 +574,7 @@ function bind() {
     if(key==='enter' && current()?.points?.length) {event.preventDefault(); $('edit-path').click(); return;}
     if (key === 'escape') { penPoints=[]; gesture = null; setSelection([]); setTool('select'); refresh(false); return; }
     if (['delete', 'backspace'].includes(key)) { event.preventDefault(); $('delete').click(); return; }
-    if (selectedIds.size && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.target !== divider) { event.preventDefault(); const step = event.shiftKey ? 10 : 1; updateMany(selectionShapes().map(s=>({ ...s, x: s.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0), y: s.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0) }))); return; }
+    if (selectedIds.size && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.target !== divider) { event.preventDefault();if(!canvasEditable()){toast('Unlock the selection before nudging');return;} const step = event.shiftKey ? 10 : 1; updateMany(selectionShapes().map(s=>({ ...s, x: s.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0), y: s.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0) }))); return; }
     const tools = { k:'scale', v: 'select', h: 'hand', f: 'frame', r: 'rectangle', o: 'ellipse', t: 'text', l:event.shiftKey?'arrow':'line', p:event.shiftKey?'pencil':'pen' }; if (!mod && !event.altKey && tools[key]) setTool(tools[key]);
     if (event.code === 'Digit1' && !mod) { event.preventDefault(); fit(); }
     if (event.code === 'Digit2' && event.shiftKey && !mod) { event.preventDefault(); fit(true); }
