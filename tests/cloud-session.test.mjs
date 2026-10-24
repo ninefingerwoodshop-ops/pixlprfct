@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {CloudSession} from '../web/cloud-session.js';
+const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
+test('autosave serializes edits made in flight and advances revisions without losing newer work',async()=>{
+ let body='first';const first=deferred(),calls=[],storage=new Map(),session=new CloudSession({snapshot:()=>body,storage:{setItem:(k,v)=>storage.set(k,v)},request:async(path,options)=>{calls.push(options);if(calls.length===1)return first.promise;return{revision:3};}});session.adopt({id:'id',revision:1},'original');const saving=session.flush();body='second';first.resolve({revision:2});await saving;assert.equal(calls.length,2);assert.equal(calls[0].body,'first');assert.equal(calls[1].body,'second');assert.equal(calls[1].headers['if-match'],'2');assert.equal(session.ack,'second');assert.equal(session.active.revision,3);assert.equal(session.pending,null);assert.equal(JSON.parse(storage.get('pixlprfct.cloud.session')).clean,true);await session.flush();assert.equal(session.pending,null);
+});
+test('conflicts preserve local edits and stop automatic retries until explicitly resolved',async()=>{
+ let calls=0;const error=Object.assign(new Error('Conflict'),{status:409}),session=new CloudSession({snapshot:()=> 'local changes',request:async()=>{calls++;throw error;}});session.adopt({id:'id',revision:4},'server');await assert.rejects(session.flush(),/Conflict/);await assert.rejects(session.flush(),/Conflict/);assert.equal(calls,1);assert.equal(session.active.revision,4);assert.equal(session.ack,'server');assert.equal(session.pending,null);
+});
+test('network failures can retry with the same revision and no-op saves do not trap future edits',async()=>{
+ let body='saved',calls=0;const session=new CloudSession({snapshot:()=>body,request:async()=>{if(++calls===1)throw Error('offline');return{revision:2};}});session.adopt({id:'id',revision:1},body);await session.flush();body='edit';await assert.rejects(session.flush(),/offline/);assert.equal(session.active.revision,1);await session.flush();assert.equal(session.ack,'edit');assert.equal(calls,2);
+});

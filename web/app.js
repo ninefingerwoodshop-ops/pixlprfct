@@ -1,3 +1,4 @@
+import {cloudFiles} from './cloud-files.js';
 import {renderShadowControls} from './shadow-controls.js';
 import {parseSvg} from './svg-import.js';
 import {snapGuides,drawSnapGuides} from './guide-snap.js';
@@ -33,7 +34,7 @@ function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return
 const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 let guidesVisible=true,prototypeConnections=false;
-let toastTimer, savingTimer, recoveryBlocked = false;
+let toastTimer, savingTimer, recoveryBlocked = false, cloud=null;
 const imageCache=new Map();
 let imageReplaceId=0,imageLoading=false;
 let penPoints = [];
@@ -67,9 +68,10 @@ function current() { return selectedIds.size === 1 ? pageShapes().find(s => sele
 function snapshot() { doc = JSON.parse(editor.snapshot()); setSelection([...selectedIds].filter(id => pageShapes().some(s => s.id === id))); }
 function persist() {
   if (recoveryBlocked) { $('save-status').textContent = 'Recovery needed — save to a file'; return; }
+  cloud?.changed();
   clearTimeout(savingTimer);
   savingTimer = setTimeout(() => {
-    try { localStorage.setItem(KEY, editor.snapshot()); $('save-status').textContent = 'Saved on this device'; }
+    try { if(!cloud?.session.active)localStorage.setItem(KEY, editor.snapshot()); if(!cloud?.session.active)$('save-status').textContent = 'Saved on this device'; }
     catch { $('save-status').textContent = 'Local storage unavailable — save to a file'; }
   }, 250);
 }
@@ -557,7 +559,7 @@ function bind() {
   $('export-cancel').onclick=()=>$('export-dialog').close();$('export-download').onclick=()=>exportArtwork().catch(error=>{$('export-summary').textContent=String(error);}); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
-    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); editor.load(text); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
+    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); await cloud?.beforeLocalOpen(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
     catch (error) { toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
   };
   canvas.onpointerdown = event => safe(() => {
@@ -747,5 +749,6 @@ try {
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
   bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }
