@@ -90,6 +90,8 @@ pub struct LayoutGrid {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Prototype {
+    #[serde(default = "default_trigger")]
+    pub trigger: String,
     pub action: String,
     #[serde(default)]
     pub target: u32,
@@ -111,6 +113,10 @@ pub struct Prototype {
     pub duration: u32,
     #[serde(default = "default_easing")]
     pub easing: String,
+}
+
+fn default_trigger() -> String {
+    "click".into()
 }
 
 fn default_transition() -> String {
@@ -481,6 +487,9 @@ fn validate(document: &Document) -> Result<(), String> {
             );
         }
         if let Some(p) = &shape.prototype {
+            if !["click", "mouseenter", "mouseleave"].contains(&p.trigger.as_str()) {
+                return Err("Invalid prototype trigger".into());
+            }
             if ![
                 "instant",
                 "dissolve",
@@ -866,6 +875,53 @@ impl Editor {
             .map(|s| s.id)
             .collect()
     }
+    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 3] {
+        let Some(frame) = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == root && s.kind == "frame" && !s.hidden)
+        else {
+            return std::array::from_fn(|_| vec![]);
+        };
+        if !in_rounded_rect(frame, x, y) {
+            return std::array::from_fn(|_| vec![]);
+        }
+        let mut document = self.document.clone();
+        document.active_page = frame.page_id;
+        document.shapes = components::subtree(&self.document.shapes, root);
+        for s in &mut document.shapes {
+            s.locked = false;
+            if s.id == root {
+                s.parent_id = 0;
+                s.clip_content = true;
+            }
+        }
+        let staged = Editor {
+            text_measurer: None,
+            document,
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let mut result: [Vec<u32>; 3] = std::array::from_fn(|_| vec![]);
+        let mut hit = staged.hit_test(x, y);
+        while hit != 0 {
+            let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
+            if let Some(p) = &s.prototype {
+                if let Some(index) = ["click", "mouseenter", "mouseleave"]
+                    .iter()
+                    .position(|t| *t == p.trigger)
+                {
+                    result[index].push(s.id);
+                }
+            }
+            hit = s.parent_id;
+        }
+        result
+    }
+
     fn selection_ids(&self, json: &str) -> Result<Vec<u32>, String> {
         let ids: Vec<u32> = serde_json::from_str(json).map_err(|e| e.to_string())?;
         let unique: std::collections::HashSet<u32> = ids.iter().copied().collect();
@@ -2036,44 +2092,14 @@ impl Editor {
     // Presentation ignores editing locks and isolates the displayed frame. Its
     // viewport always clips descendants, even when canvas overflow is enabled.
     pub fn prototype_hit_test(&self, root: u32, x: f64, y: f64) -> u32 {
-        let Some(frame) = self
-            .document
-            .shapes
-            .iter()
-            .find(|s| s.id == root && s.kind == "frame" && !s.hidden)
-        else {
-            return 0;
-        };
-        if !in_rounded_rect(frame, x, y) {
-            return 0;
-        }
-        let mut document = self.document.clone();
-        document.active_page = frame.page_id;
-        document.shapes = components::subtree(&self.document.shapes, root);
-        for s in &mut document.shapes {
-            s.locked = false;
-            if s.id == root {
-                s.parent_id = 0;
-                s.clip_content = true;
-            }
-        }
-        let staged = Editor {
-            text_measurer: None,
-            document,
-            undo: vec![],
-            redo: vec![],
-            next_id: self.next_id,
-            next_page_id: self.next_page_id,
-        };
-        let mut hit = staged.hit_test(x, y);
-        while hit != 0 {
-            let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
-            if s.prototype.is_some() {
-                return s.id;
-            }
-            hit = s.parent_id;
-        }
-        0
+        self.prototype_hit_ids(root, x, y)[0]
+            .first()
+            .copied()
+            .unwrap_or(0)
+    }
+    pub fn prototype_hits(&self, root: u32, x: f64, y: f64) -> String {
+        let ids = self.prototype_hit_ids(root, x, y);
+        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2]}).to_string()
     }
 
     pub fn hit_test(&self, x: f64, y: f64) -> u32 {
