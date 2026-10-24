@@ -16,6 +16,8 @@ pub struct Shape {
     pub clip_content: bool,
     #[serde(default)]
     pub image: Option<RasterImage>,
+    #[serde(default)]
+    pub constraints: Constraints,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -35,6 +37,46 @@ pub struct Shape {
     pub closed: bool,
     #[serde(default = "default_stroke")]
     pub stroke_width: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Constraints {
+    pub horizontal: Constraint,
+    pub vertical: Constraint,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Constraint {
+    #[default]
+    Min,
+    Max,
+    Center,
+    Stretch,
+    Scale,
+}
+
+fn constrain_axis(
+    position: f64,
+    size: f64,
+    old_origin: f64,
+    old_size: f64,
+    origin: f64,
+    parent_size: f64,
+    mode: &Constraint,
+) -> (f64, f64) {
+    let relative = position - old_origin;
+    let delta = parent_size - old_size;
+    match mode {
+        Constraint::Min => (origin + relative, size),
+        Constraint::Max => (origin + relative + delta, size),
+        Constraint::Center => (origin + relative + delta / 2.0, size),
+        Constraint::Stretch => (origin + relative, (size + delta).max(1.0)),
+        Constraint::Scale => (
+            origin + relative * parent_size / old_size,
+            (size * parent_size / old_size).max(1.0),
+        ),
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -471,6 +513,7 @@ impl Editor {
             parent_id: 0,
             clip_content: false,
             image: None,
+            constraints: Constraints::default(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -522,23 +565,6 @@ impl Editor {
         let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
         self.selection_ids(&serde_json::to_string(&ids).unwrap())?;
         let mut document = self.document.clone();
-        for child in document.shapes.iter_mut().filter(|s| !ids.contains(&s.id)) {
-            let mut parent = child.parent_id;
-            while parent != 0 {
-                let old = self
-                    .document
-                    .shapes
-                    .iter()
-                    .find(|s| s.id == parent)
-                    .unwrap();
-                if let Some(changed) = shapes.iter().find(|s| s.id == parent) {
-                    child.x += changed.x - old.x;
-                    child.y += changed.y - old.y;
-                    break;
-                }
-                parent = old.parent_id;
-            }
-        }
         for shape in shapes {
             if shape.page_id != document.active_page {
                 return Err("Cannot move a layer to another page through a selection edit".into());
@@ -546,7 +572,62 @@ impl Editor {
             let id = shape.id;
             *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
         }
+        validate(&document)?;
+        // The committed scene is parent-first. Explicit edits (including Scale's
+        // entire subtree) win; other children inherit their immediate frame's change.
+        for i in 0..document.shapes.len() {
+            let child = &document.shapes[i];
+            if ids.contains(&child.id) || child.parent_id == 0 {
+                continue;
+            }
+            let old = self
+                .document
+                .shapes
+                .iter()
+                .find(|s| s.id == child.parent_id)
+                .unwrap();
+            let parent = document
+                .shapes
+                .iter()
+                .find(|s| s.id == child.parent_id)
+                .unwrap();
+            let (x, width) = constrain_axis(
+                child.x,
+                child.width,
+                old.x,
+                old.width,
+                parent.x,
+                parent.width,
+                &child.constraints.horizontal,
+            );
+            let (y, height) = constrain_axis(
+                child.y,
+                child.height,
+                old.y,
+                old.height,
+                parent.y,
+                parent.height,
+                &child.constraints.vertical,
+            );
+            let child = &mut document.shapes[i];
+            child.x = x;
+            child.y = y;
+            child.width = width;
+            child.height = height;
+        }
         self.commit(document)
+    }
+
+    pub fn preview_update_many(&self, json: &str) -> Result<String, String> {
+        let mut staged = Editor {
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        staged.update_many(json)?;
+        Ok(staged.snapshot())
     }
 
     pub fn remove_many(&mut self, json: &str) -> Result<(), String> {
