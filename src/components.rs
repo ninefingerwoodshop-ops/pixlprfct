@@ -359,6 +359,7 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
             };
             map.insert(src.id, new_id);
             let mut shape = src.clone();
+            shape.flow_name = previous.map_or_else(String::new, |p| p.flow_name.clone());
             shape.id = new_id;
             shape.page_id = root.page_id;
             shape.parent_id = if src.id == master {
@@ -480,6 +481,7 @@ impl Editor {
         root.parent_id = 0;
         root.group_id = 0;
         root.group_name.clear();
+        root.flow_name.clear();
         root.page_id = self.document.active_page;
         root.x = x;
         root.y = y;

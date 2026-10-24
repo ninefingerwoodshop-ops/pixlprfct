@@ -1,3 +1,4 @@
+import {connectionHit,connectionTarget,connectedShape,drawConnections} from './prototype-connections.js';
 import {prototypeFrames,renderPrototypeControls,presentPrototype} from './prototype.js';
 import {drawLayoutGuides,renderGuideControls} from './layout-guides.js';
 import init, { Editor } from './pkg/pixlprfct_core.js';
@@ -24,7 +25,7 @@ const measureCtx = document.createElement('canvas').getContext('2d');
 function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
 const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
-let guidesVisible=true;
+let guidesVisible=true,prototypeConnections=false;
 let toastTimer, savingTimer, recoveryBlocked = false;
 const imageCache=new Map();
 let imageReplaceId=0,imageLoading=false;
@@ -267,7 +268,7 @@ function rasterEntry(data){
  let entry=imageCache.get(data);if(entry)return entry;const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);
  entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
 }
-function playPrototype(){safe(()=>{const frames=prototypeFrames(doc);if(!frames.length){toast('Add a frame to present a prototype');return;}let chosen=current();while(chosen&&chosen.kind!=='frame')chosen=doc.shapes.find(s=>s.id===chosen.parent_id);const start=frames.find(s=>s.id===chosen?.id)??frames.find(s=>s.page_id===doc.active_page)??frames[0];presentPrototype(doc,start.id,editor,drawShape,async shapes=>{await Promise.all(shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url).promise));});});}
+function playPrototype(){safe(()=>{const frames=prototypeFrames(doc);if(!frames.length){toast('Add a frame to present a prototype');return;}let chosen=current();while(chosen&&chosen.kind!=='frame')chosen=doc.shapes.find(s=>s.id===chosen.parent_id);const start=frames.find(s=>s.id===chosen?.id)??frames.find(s=>s.flow_name&&s.page_id===doc.active_page)??frames.find(s=>s.flow_name)??frames.find(s=>s.page_id===doc.active_page)??frames[0];presentPrototype(doc,start.id,editor,drawShape,async shapes=>{await Promise.all(shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url).promise));});});}
 function drawShape(shape, target=ctx) {
   const ctx=target,a=appearance(shape);
   if (shape.hidden) return;
@@ -317,6 +318,7 @@ function draw() {
     ctx.fillStyle = '#0d99ff18'; ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom; ctx.fillRect(box.x,box.y,box.width,box.height); ctx.strokeRect(box.x,box.y,box.width,box.height);
   }
   if(editingGradient&&current()?.appearance?.gradient)drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:current(),zoom,activeGradient);
+  if(prototypeConnections&&!editingPath&&!editingGradient)drawConnections(ctx,scene,current(),zoom,gesture,tool==='select'&&canvasEditable());
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
 }
 function drawAnchors(points) {
@@ -409,6 +411,7 @@ function bind() {
   for(const [id,smooth] of [['smooth-node',true],['corner-node',false]])$(id).onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0)update(convertAnchor(current(),activeNode,smooth));});
   const layoutDefaults={direction:'horizontal',gap:16,padding_top:16,padding_right:16,padding_bottom:16,padding_left:16,align:'start',justify:'start',hug_width:false,hug_height:false};
   $('present-prototype').onclick=playPrototype;
+  $('prototype-connections').onclick=()=>{prototypeConnections=!prototypeConnections;$('prototype-connections').setAttribute('aria-pressed',String(prototypeConnections));if(prototypeConnections){setTool('select');toast('Drag the blue connection handle to a frame');}draw();};
   $('add-auto-layout').onclick=()=>safe(()=>{setSelection([editor.auto_layout_selection(selectionJson())]);refresh();});
   for(const key of ['min_width','max_width','min_height','max_height'])$('limit-'+key).onchange=()=>{const s=current();if(s){const value=$('limit-'+key).value;update({...s,layout_item:{...s.layout_item,[key]:value===''?null:Number(value)}});renderProperties();}};
   $('layout-direction').onchange=()=>{const s=current();if(s)update({...s,auto_layout:$('layout-direction').value==='none'?null:{...layoutDefaults,...s.auto_layout,direction:$('layout-direction').value}});};
@@ -526,6 +529,7 @@ function bind() {
     }
     if (tool !== 'select') { setSelection([]); gesture={type:'create',kind:tool,start:p,points:[p],preview:tool==='pencil'?fromPoints(tool,[p,p]):drawnShape(tool,p,p)}; renderProperties(); draw(); return; }
     const shape = current();
+    if(prototypeConnections&&!editingPath&&!editingGradient&&shape&&visibleInTree(shape,pageShapes())&&canvasEditable()&&connectionHit(shape,p,zoom)){gesture={type:'prototype-link',source:shape,end:p,target:0};draw();return;}
     if(editingGradient&&shape?.appearance?.gradient){const hit=gradientHit(shape,p,zoom);if(hit){activeGradient=hit;gesture={type:'gradient',handle:hit,original:shape,preview:shape};renderProperties();draw();return;}if(gradientPosition(shape,p).distance<10/zoom){activeGradient=null;draw();return;}editingGradient=0;activeGradient=null;renderProperties();}
     if(editingPath && shape?.points?.length) {
       const nodes=anchors(shape);
@@ -562,6 +566,7 @@ function bind() {
     if (!gesture) return;
     if (gesture.type === 'pan') { pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; draw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
+    if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes(),gesture.source.id,p);draw();return;}
     if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey);gesture.preview=result.shape;activeGradient=result.active;draw();return;}
     if(gesture.type==='scale') {
       const dx=gesture.start.x-gesture.origin.x,dy=gesture.start.y-gesture.origin.y;
@@ -602,6 +607,7 @@ function bind() {
     draw();
   };
   canvas.onpointerup = () => {
+    if(gesture?.type==='prototype-link'){const {source,target}=gesture;gesture=null;if(target)update(connectedShape(source,target));else draw();return;}
     if(gesture?.type==='pen-handle') {gesture=null;draw();return;}
     if(gesture?.type==='create') {
       let shape=gesture.preview;

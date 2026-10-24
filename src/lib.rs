@@ -27,6 +27,8 @@ pub struct Shape {
     #[serde(default)]
     pub prototype: Option<Prototype>,
     #[serde(default)]
+    pub flow_name: String,
+    #[serde(default)]
     pub layout_item: LayoutItem,
     pub kind: String,
     pub name: String,
@@ -418,6 +420,14 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        if shape.flow_name.len() > 128
+            || (!shape.flow_name.is_empty()
+                && (shape.kind != "frame" || shape.flow_name.trim().is_empty()))
+        {
+            return Err(
+                "Flow starting points require a frame and a name of at most 128 bytes".into(),
+            );
+        }
         if let Some(p) = &shape.prototype {
             if !["navigate", "back", "overlay", "close"].contains(&p.action.as_str())
                 || (["navigate", "overlay"].contains(&p.action.as_str())
@@ -1127,6 +1137,7 @@ impl Editor {
             auto_layout: None,
             layout_grids: vec![],
             prototype: None,
+            flow_name: String::new(),
             layout_item: LayoutItem::default(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),
