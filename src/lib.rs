@@ -92,6 +92,14 @@ pub struct Prototype {
     pub close_on_outside: bool,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: String,
+    #[serde(default)]
+    pub overlay_x: f64,
+    #[serde(default)]
+    pub overlay_y: f64,
+    #[serde(default = "default_backdrop_color")]
+    pub backdrop_color: String,
+    #[serde(default = "default_backdrop_opacity")]
+    pub backdrop_opacity: f64,
     #[serde(default = "default_transition")]
     pub transition: String,
     #[serde(default = "default_duration")]
@@ -102,6 +110,12 @@ pub struct Prototype {
 
 fn default_transition() -> String {
     "instant".into()
+}
+fn default_backdrop_color() -> String {
+    "#000000".into()
+}
+fn default_backdrop_opacity() -> f64 {
+    0.4
 }
 fn default_duration() -> u32 {
     300
@@ -470,6 +484,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 || (["back", "close"].contains(&p.action.as_str()) && p.target != 0)
                 || ![
                     "center",
+                    "manual",
                     "top-left",
                     "top-right",
                     "bottom-left",
@@ -478,6 +493,17 @@ fn validate(document: &Document) -> Result<(), String> {
                 .contains(&p.overlay_position.as_str())
             {
                 return Err("Invalid prototype action, destination or overlay position".into());
+            }
+            if [p.overlay_x, p.overlay_y]
+                .iter()
+                .any(|v| !v.is_finite() || v.abs() > 1_000_000.0)
+                || !p.backdrop_opacity.is_finite()
+                || !(0.0..=1.0).contains(&p.backdrop_opacity)
+                || p.backdrop_color.len() != 7
+                || !p.backdrop_color.starts_with('#')
+                || !p.backdrop_color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+            {
+                return Err("Invalid overlay offset or backdrop".into());
             }
         }
         if shape.layout_grids.len() > 8 || (!shape.layout_grids.is_empty() && shape.kind != "frame")

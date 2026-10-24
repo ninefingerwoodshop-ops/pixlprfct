@@ -14,6 +14,17 @@ test('overlay stack preserves the base, closes one layer, and clears on navigati
 test('overlay positions use the base viewport rather than document coordinates',()=>{
  const base={x:300,y:200,width:400,height:300},overlay={x:1000,y:800,width:100,height:80};
  assert.deepEqual(overlayPlacement(base,overlay,'center'),{x:150,y:110});assert.deepEqual(overlayPlacement(base,overlay,'top-left'),{x:0,y:0});assert.deepEqual(overlayPlacement(base,overlay,'bottom-right'),{x:300,y:220});
+ assert.deepEqual(overlayPlacement(base,overlay,'manual',-20,45),{x:-20,y:45});
+});
+test('custom overlay offsets and backdrops round-trip, undo and reject invalid data atomically',()=>{
+ const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',400,0);
+ edit(e,a,{prototype:{action:'overlay',target:b}});const defaults=get(e,a).prototype;
+ assert.equal(defaults.backdrop_color,'#000000');assert.equal(defaults.backdrop_opacity,.4);assert.equal(defaults.overlay_x,0);
+ const settings={...defaults,overlay_position:'manual',overlay_x:-25,overlay_y:120,backdrop_color:'#17324f',backdrop_opacity:.65};
+ edit(e,a,{prototype:settings});const saved=e.snapshot(),copy=new Editor();copy.load(saved);assert.deepEqual(get(copy,a).prototype,settings);
+ for(const bad of [{overlay_x:1000001},{overlay_y:-1000001},{backdrop_opacity:1.01},{backdrop_opacity:-.1},{backdrop_color:'red'},{backdrop_color:'#gg0000'}]){assert.throws(()=>edit(e,a,{prototype:{...settings,...bad}}));assert.equal(e.snapshot(),saved);}
+ e.undo();assert.deepEqual(get(e,a).prototype,defaults);e.redo();assert.deepEqual(get(e,a).prototype,settings);
+ const roots=JSON.parse(copy.paste_layers(e.copy_layers(JSON.stringify([a,b])),0,0,0));assert.deepEqual(get(copy,roots[0]).prototype,{...settings,target:roots[1]});copy.free();e.free();
 });
 test('overlay links validate, duplicate, clipboard-remap, delete and undo like navigation links',()=>{
  const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',400,0);edit(e,a,{prototype:{action:'overlay',target:b,overlay_position:'top-right',close_on_outside:true}});edit(e,b,{prototype:{action:'close',target:0}});const before=e.snapshot();

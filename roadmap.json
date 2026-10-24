@@ -35,7 +35,7 @@
     "stroke dash patterns and offsets, butt/round/square caps, miter/round/bevel joins, scaling, component overrides and PNG/SVG parity",
     "frame square-grid, column and row layout guides with sizing/alignment/color controls, visibility toggle, clipping, persistence and export exclusion",
     "persistent click-to-navigate/back prototype links, cross-page frame targets, cropped presentation player, history/restart/frame chooser, hotspot hints and keyboard-accessible interactions",
-    "stacked prototype overlays with center/corner placement, close actions, outside-click dismissal, modal input isolation and navigation/history integration",
+    "stacked prototype overlays with center/corner placement, close actions, outside-click dismissal, modal input isolation and navigation/history integration, custom backdrop color/opacity and manual viewport-relative offsets",
     "named prototype flow starting points, presentation flow switching/reset, same-page canvas connection wires and drag-to-connect with atomic undo",
     "instant, dissolve and directional slide prototype transitions with duration/easing, reduced-motion support and clean cancellation"
   ],
@@ -47,7 +47,7 @@
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
-    "Smart Animate, directional overlay motion, advanced overlay settings, hover/drag/timer triggers, scrolling and conditional interactions",
+    "Smart Animate, directional overlay motion, replacement overlays, hover/drag/timer triggers, scrolling and conditional interactions",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
     "PDF/JPEG and batch export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope"
