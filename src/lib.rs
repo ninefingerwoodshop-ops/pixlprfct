@@ -227,6 +227,8 @@ pub struct Appearance {
     pub shadows: Vec<DropShadow>,
     #[serde(default)]
     pub gradient: Option<Gradient>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_gradient: Option<Gradient>,
     pub opacity: f64,
     pub corner_radius: f64,
     #[serde(default)]
@@ -678,7 +680,7 @@ fn validate(document: &Document) -> Result<(), String> {
             }
         }
         if let Some(a) = &shape.appearance {
-            if let Some(g) = &a.gradient {
+            for g in a.gradient.iter().chain(a.stroke_gradient.iter()) {
                 if g.radial_transform.is_some_and(|m| {
                     m.iter().any(|v| !v.is_finite() || v.abs() > 100000.0)
                         || (m[0] * m[3] - m[1] * m[2]).abs() < 1e-12

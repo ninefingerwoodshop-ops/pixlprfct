@@ -42,7 +42,8 @@ let activeNode=-1;
 let lastPasted='',pasteCount=0,pasteInPlace=false,pasteReplace=false,pasteFrames=false;
 let exportBusy=false;
 let selectedIds = new Set(), layerAnchor = 0;
-let editingGradient=0,activeGradient=null;
+let editingGradient=0,activeGradient=null,gradientChannel='fill';
+const gradientField=()=>gradientChannel==='stroke'?'stroke_gradient':'gradient';
 function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} if(ids.length!==1||ids[0]!==editingGradient){editingGradient=0;activeGradient=null;} }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
 function selectionJson() { return JSON.stringify([...selectedIds]); }
@@ -193,7 +194,7 @@ function renderComponentProperties(shape){
     $('swap-component').value=c.master;
     const paths=displayedOverrides(shape).filter(p=>c.master!==c.source||(p!=='x'&&p!=='y'));
     $('override-count').textContent=paths.length;
-    const labels={layer_blur:'Layer blur',shadows:'Shadows',prototype:'Prototype interactions',typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',stroke_dash:'Dash pattern',stroke_dash_offset:'Dash offset',stroke_cap:'Line cap',stroke_join:'Line join',stroke_miter_limit:'Miter limit',fill_opacity:'Fill opacity',stroke_opacity:'Stroke opacity',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
+    const labels={stroke_gradient:'Stroke gradient',layer_blur:'Layer blur',shadows:'Shadows',prototype:'Prototype interactions',typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',stroke_dash:'Dash pattern',stroke_dash_offset:'Dash offset',stroke_cap:'Line cap',stroke_join:'Line join',stroke_miter_limit:'Miter limit',fill_opacity:'Fill opacity',stroke_opacity:'Stroke opacity',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
     const rows=paths.map(path=>{const row=document.createElement('div');row.className='override-row';const label=document.createElement('span');label.textContent=path.split('.').map(p=>labels[p]??p.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())).join(' · ');const b=document.createElement('button');b.textContent='Reset';b.setAttribute('aria-label','Reset '+label.textContent+' override');b.onclick=()=>safe(()=>{editor.reset_override(shape.id,path);refresh();});row.append(label,b);return row;});
     if(!rows.length){const p=document.createElement('p');p.textContent='This layer inherits its component properties.';rows.push(p);}
     $('override-list').replaceChildren(...rows);
@@ -211,8 +212,8 @@ function renderPropertiesNow() {
   renderComponentProperties(shape);
   const lockTargets=shapes.filter(s=>!inheritedLock(s));$('lock-panel').hidden=!shapes.length;$('toggle-lock').disabled=!lockTargets.length;$('toggle-lock').textContent=lockTargets.length?(lockTargets.every(s=>s.locked)?'Unlock selection':'Lock selection'):'Locked by parent';$('lock-status').textContent=shapes.some(s=>lockedInTree(s,pageShapes()))?'Locked layers cannot be edited on the canvas. Use the inspector or unlock their parent.':'Ctrl/Cmd Shift L';
   if(!canvasEditable()){editingGradient=0;activeGradient=null;editingPath=0;activeNode=-1;}
-  if(!shape?.appearance?.gradient||!visibleInTree(shape,pageShapes())){editingGradient=0;activeGradient=null;}
-  if(activeGradient?.part==='stop'&&activeGradient.index>=shape?.appearance?.gradient?.stops.length)activeGradient=null;
+  if(!shape?.appearance?.[gradientField()]||!visibleInTree(shape,pageShapes())){editingGradient=0;activeGradient=null;}
+  if(activeGradient?.part==='stop'&&activeGradient.index>=shape?.appearance?.[gradientField()]?.stops.length)activeGradient=null;
   $('node-actions').hidden=!editingPath||!shape?.points?.length;
   if(activeNode>=(shape?.points?.length??0))activeNode=-1;
   $('split-node').textContent=shape?.closed?'Open path at anchor':'Split path at anchor';$('split-node').disabled=activeNode<0||(!shape?.closed&&(activeNode===0||activeNode===(shape?.points?.length??0)-1));
@@ -266,7 +267,7 @@ function renderPropertiesNow() {
   $('stroke-dash').value=paint.stroke_dash?.join(', ')??'';$('stroke-dash-offset').value=paint.stroke_dash_offset??0;$('stroke-cap').value=paint.stroke_cap??'round';$('stroke-join').value=paint.stroke_join??'round';$('stroke-miter-limit').value=paint.stroke_miter_limit??10;$('miter-limit-row').hidden=(paint.stroke_join??'round')!=='miter';
   $('stroke-section').hidden = false; $('stroke-width').value = shape.stroke_width ?? 2;$('vector-edit-controls').hidden=!vectorTools.includes(shape.kind);
   $('paint-label').textContent = 'Fill';
-  renderGradientControls($('gradient-controls'),shape,s=>{activeGradient=null;update(s);},{editing:editingGradient===shape.id,active:activeGradient,toggle:()=>{if(!canvasEditable()){toast('Unlock the layer or its parent to edit on canvas');return;}const was=editingGradient===shape.id;setTool('select');editingGradient=was?0:shape.id;activeGradient=null;renderProperties();draw();}});
+  for(const channel of ['fill','stroke'])renderGradientControls($(channel==='fill'?'gradient-controls':'stroke-gradient-controls'),shape,s=>{activeGradient=null;update(s);},{channel,editing:editingGradient===shape.id&&gradientChannel===channel,active:gradientChannel===channel?activeGradient:null,toggle:()=>{if(!canvasEditable()){toast('Unlock the layer or its parent to edit on canvas');return;}const was=editingGradient===shape.id&&gradientChannel===channel;setTool('select');gradientChannel=channel;editingGradient=was?0:shape.id;activeGradient=null;renderProperties();draw();}});
   $('solid-fill-controls').hidden=!!paint.gradient;
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
@@ -290,7 +291,7 @@ function drawShape(shape, target=ctx) {
   const ctx=target,a=appearance(shape),fill=fn=>withPaintOpacity(ctx,a,'fill',fn),stroke=fn=>withPaintOpacity(ctx,a,'stroke',fn);
   if (shape.hidden) return;
   ctx.save();
-  ctx.fillStyle = a.fill_enabled&&shape.kind!=='image'?canvasFill(ctx,shape):shape.fill;ctx.strokeStyle=a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap=a.stroke_cap??'round';ctx.lineJoin=a.stroke_join??'round';ctx.miterLimit=a.stroke_miter_limit??10;ctx.setLineDash(a.stroke_dash??[]);ctx.lineDashOffset=a.stroke_dash_offset??0;
+  ctx.fillStyle = a.fill_enabled&&shape.kind!=='image'?canvasFill(ctx,shape):shape.fill;ctx.strokeStyle=a.stroke_enabled?canvasFill(ctx,shape,'stroke'):a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap=a.stroke_cap??'round';ctx.lineJoin=a.stroke_join??'round';ctx.miterLimit=a.stroke_miter_limit??10;ctx.setLineDash(a.stroke_dash??[]);ctx.lineDashOffset=a.stroke_dash_offset??0;
   const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radii(shape));
   ctx.save();if(shape.kind==='image')ctx.clip(outline);
   if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);fill(()=>ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh));}else{ctx.fillStyle='#e5e7eb';fill(()=>ctx.fillRect(shape.x,shape.y,shape.width,shape.height));}}
@@ -334,7 +335,7 @@ function draw() {
     const box = bounds([{x:gesture.start.x,y:gesture.start.y,width:0,height:0},{x:gesture.end.x,y:gesture.end.y,width:0,height:0}]);
     ctx.fillStyle = '#0d99ff18'; ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom; ctx.fillRect(box.x,box.y,box.width,box.height); ctx.strokeRect(box.x,box.y,box.width,box.height);
   }
-  if(editingGradient&&current()?.appearance?.gradient)drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:current(),zoom,activeGradient);
+  if(editingGradient&&current()?.appearance?.[gradientField()])drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:current(),zoom,activeGradient,gradientField());
   if(prototypeConnections&&!editingPath&&!editingGradient)drawConnections(ctx,scene,current(),zoom,gesture,tool==='select'&&canvasEditable());
   if(guidesVisible)drawSnapGuides(ctx,gesture?.snapLines,zoom);
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
@@ -520,7 +521,7 @@ function bind() {
   $('fit-text').onclick = () => { if (current()?.kind === 'text') update({ ...current(), height: Math.ceil(textLayout(current()).height) }); };
   canvas.ondblclick = event => {
     if(tool!=='select') return;
-    if(editingGradient&&current()?.appearance?.gradient){const hit=gradientPosition(current(),point(event));if(hit.distance<10/zoom){const result=addGradientStopAt(current(),hit.t);if(result){activeGradient=result.active;update(result.shape);}else toast('Gradients support up to 16 color stops');}return;}
+    if(editingGradient&&current()?.appearance?.[gradientField()]){const hit=gradientPosition(current(),point(event),gradientField());if(hit.distance<10/zoom){const result=addGradientStopAt(current(),hit.t,gradientField());if(result){activeGradient=result.active;update(result.shape);}else toast('Gradients support up to 16 color stops');}return;}
     if(editingPath&&current()?.points?.length){const p=point(event),shape=current();if(anchors(shape).some(a=>Math.hypot(a.x-p.x,a.y-p.y)<8/zoom))return;const hit=nearestSegment(shape,p);if(hit&&hit.distance<10/zoom)safe(()=>{const changed=insertAnchor(shape,hit.segment,hit.t);activeNode=hit.segment+1;update(changed);});return;}
     const p = point(event), hit = editor.hit_test(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
@@ -578,7 +579,7 @@ function bind() {
     if (tool !== 'select') { setSelection([]); gesture={type:'create',kind:tool,start:p,points:[p],preview:tool==='pencil'?fromPoints(tool,[p,p]):drawnShape(tool,p,p)}; renderProperties(); draw(); return; }
     const shape = current();
     if(prototypeConnections&&!editingPath&&!editingGradient&&shape&&visibleInTree(shape,pageShapes())&&canvasEditable()&&connectionHit(shape,p,zoom)){gesture={type:'prototype-link',source:shape,end:p,target:0};draw();return;}
-    if(editingGradient&&shape?.appearance?.gradient){const hit=gradientHit(shape,p,zoom);if(hit){activeGradient=hit;gesture={type:'gradient',handle:hit,original:shape,preview:shape};renderProperties();draw();return;}if(gradientPosition(shape,p).distance<10/zoom){activeGradient=null;draw();return;}editingGradient=0;activeGradient=null;renderProperties();}
+    if(editingGradient&&shape?.appearance?.[gradientField()]){const hit=gradientHit(shape,p,zoom,gradientField());if(hit){activeGradient=hit;gesture={type:'gradient',handle:hit,original:shape,preview:shape};renderProperties();draw();return;}if(gradientPosition(shape,p,gradientField()).distance<10/zoom){activeGradient=null;draw();return;}editingGradient=0;activeGradient=null;renderProperties();}
     if(editingPath && shape?.points?.length) {
       const nodes=anchors(shape);
       for(let i=0;i<nodes.length;i++) {
@@ -615,7 +616,7 @@ function bind() {
     if (gesture.type === 'pan') { pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; draw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
     if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes(),gesture.source.id,p);draw();return;}
-    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey);gesture.preview=result.shape;activeGradient=result.active;draw();return;}
+    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey,gradientField());gesture.preview=result.shape;activeGradient=result.active;draw();return;}
     if(gesture.type==='scale') {
       const dx=gesture.start.x-gesture.origin.x,dy=gesture.start.y-gesture.origin.y;
       let factor=Math.max(.01,((p.x-gesture.origin.x)*dx+(p.y-gesture.origin.y)*dy)/Math.max(1,dx*dx+dy*dy));
@@ -688,10 +689,10 @@ function bind() {
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(mod&&event.shiftKey&&key==='l'){event.preventDefault();toggleSelectionLock();return;}
     if(editingGradient&&!mod){
-      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=gradientHandles(current(),zoom),index=handles.findIndex(h=>h.part===activeGradient?.part&&(h.part!=='stop'||h.index===activeGradient.index));activeGradient=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length];renderProperties();draw();return;}
+      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=gradientHandles(current(),zoom,gradientField()),index=handles.findIndex(h=>h.part===activeGradient?.part&&(h.part!=='stop'||h.index===activeGradient.index));activeGradient=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length];renderProperties();draw();return;}
       if(key==='enter'||key==='escape'){event.preventDefault();const preview=gesture?.type==='gradient'?gesture.preview:null;if(key==='escape'&&preview){gesture=null;activeGradient=null;}else{gesture=null;editingGradient=0;activeGradient=null;if(key==='enter'&&preview)update(preview);}renderProperties();draw();return;}
-      if(['delete','backspace'].includes(key)){event.preventDefault();const s=current(),g=s?.appearance?.gradient;if(activeGradient?.part==='stop'&&g.stops.length>2){const index=activeGradient.index;activeGradient=null;update({...s,appearance:{...s.appearance,gradient:{...g,stops:g.stops.filter((_,i)=>i!==index)}}});}else toast('Select a color stop to remove; keep at least two stops');return;}
-      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current();if(activeGradient){const h=gradientHandles(s,zoom).find(h=>h.part===activeGradient.part&&(h.part!=='stop'||h.index===activeGradient.index)),step=event.shiftKey?10:1;let p={x:h.x,y:h.y};if(h.part==='stop'){const g=s.appearance.gradient,t=Math.max(0,Math.min(1,g.stops[h.index].position+(['ArrowLeft','ArrowDown'].includes(event.key)?-step:step)/100));p={x:s.x+(g.start[0]+(g.end[0]-g.start[0])*t)*s.width,y:s.y+(g.start[1]+(g.end[1]-g.start[1])*t)*s.height};}else{p.x+=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;p.y+=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;}const result=moveGradientHandle(s,h,p);activeGradient=result.active;update(result.shape);}return;}
+      if(['delete','backspace'].includes(key)){event.preventDefault();const s=current(),g=s?.appearance?.[gradientField()];if(activeGradient?.part==='stop'&&g.stops.length>2){const index=activeGradient.index;activeGradient=null;update({...s,appearance:{...s.appearance,[gradientField()]:{...g,stops:g.stops.filter((_,i)=>i!==index)}}});}else toast('Select a color stop to remove; keep at least two stops');return;}
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current();if(activeGradient){const h=gradientHandles(s,zoom,gradientField()).find(h=>h.part===activeGradient.part&&(h.part!=='stop'||h.index===activeGradient.index)),step=event.shiftKey?10:1;let p={x:h.x,y:h.y};if(h.part==='stop'){const g=s.appearance[gradientField()],t=Math.max(0,Math.min(1,g.stops[h.index].position+(['ArrowLeft','ArrowDown'].includes(event.key)?-step:step)/100));p={x:s.x+(g.start[0]+(g.end[0]-g.start[0])*t)*s.width,y:s.y+(g.start[1]+(g.end[1]-g.start[1])*t)*s.height};}else{p.x+=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;p.y+=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;}const result=moveGradientHandle(s,h,p,false,gradientField());activeGradient=result.active;update(result.shape);}return;}
     }
     if(mod&&event.shiftKey&&key==='r'){event.preventDefault();$('paste-replace').click();return;}
     if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}

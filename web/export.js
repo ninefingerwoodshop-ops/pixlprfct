@@ -41,5 +41,5 @@ export function svgDocument(shapes,box,scale,background,textLayout){
  };
  if(background&&!/^#[0-9a-f]{6}$/i.test(background))throw new Error('Invalid export background');
  const backdrop=background?`<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${background}"/>`:'';
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.map(gradientSvg).join('')}</defs>${backdrop}${sceneSvg(shapes,paint)}</svg>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.map(s=>gradientSvg(s)+gradientSvg(s,'stroke')).join('')}</defs>${backdrop}${sceneSvg(shapes,paint)}</svg>`;
 }

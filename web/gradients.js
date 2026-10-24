@@ -19,22 +19,23 @@ export function moveGradientPoint(g,key,point){
  return next;
 }
 const radialSurfaces=new Map();let radialPixels=0;
-export function canvasFill(ctx,s) {
- const g=s.appearance?.gradient;if(!g)return s.fill;
+export function canvasFill(ctx,s,channel='fill') {
+ const g=channel==='stroke'?s.appearance?.stroke_gradient:s.appearance?.gradient;if(!g)return channel==='stroke'?s.appearance?.stroke_color:s.fill;
  const p=gradientGeometry(s,g);let paint;
  if(g.kind==='radial') {
   // CanvasGradient has no independent transform. Paint the ellipse into a
   // device-resolution tile, then map that tile back to the shape's coordinates.
   // This also lets the same fill work for text and arbitrary vector paths.
-  const t=ctx.getTransform(),wantedW=Math.max(1,Math.ceil(s.width*Math.hypot(t.a,t.b))),wantedH=Math.max(1,Math.ceil(s.height*Math.hypot(t.c,t.d)));
+  const pad=channel==='stroke'?(s.stroke_width??2)/2*Math.max(s.appearance?.stroke_join==='miter'?(s.appearance.stroke_miter_limit??10):1,s.appearance?.stroke_cap==='square'?Math.SQRT2:1):0,tile={x:s.x-pad,y:s.y-pad,width:s.width+2*pad,height:s.height+2*pad};
+  const t=ctx.getTransform(),wantedW=Math.max(1,Math.ceil(tile.width*Math.hypot(t.a,t.b))),wantedH=Math.max(1,Math.ceil(tile.height*Math.hypot(t.c,t.d)));
   const ratio=Math.min(1,8192/wantedW,8192/wantedH,Math.sqrt(16_777_216/(wantedW*wantedH))),w=Math.max(1,Math.ceil(wantedW*ratio)),h=Math.max(1,Math.ceil(wantedH*ratio));
-  const key=JSON.stringify([g,w,h]);let surface=radialSurfaces.get(key);
-  if(!surface){surface=new OffscreenCanvas(w,h);const c=surface.getContext('2d');c.scale(w,h);const radial=radialGeometry(g);c.transform(...radial.matrix);const gradient=c.createRadialGradient(...radial.focal,radial.focalRadius,0,0,1);addStops(gradient,g);c.fillStyle=gradient;
+  const key=JSON.stringify([g,w,h,pad/s.width,pad/s.height]);let surface=radialSurfaces.get(key);
+  if(!surface){surface=new OffscreenCanvas(w,h);const c=surface.getContext('2d');c.scale(w/tile.width,h/tile.height);c.translate(pad,pad);c.scale(s.width,s.height);const radial=radialGeometry(g);c.transform(...radial.matrix);const gradient=c.createRadialGradient(...radial.focal,radial.focalRadius,0,0,1);addStops(gradient,g);c.fillStyle=gradient;
    // Keep the paint transform while covering the tile in inverse coordinates.
-   const [a,b,cc,d,e,f]=radial.matrix,det=a*d-b*cc;c.beginPath();for(const [i,[x,y]] of [[0,0],[1,0],[1,1],[0,1]].entries()){const px=(d*(x-e)-cc*(y-f))/det,py=(-b*(x-e)+a*(y-f))/det;if(i)c.lineTo(px,py);else c.moveTo(px,py);}c.closePath();c.fill();
+   const [a,b,cc,d,e,f]=radial.matrix,det=a*d-b*cc;c.beginPath();for(const [i,[x,y]] of [[-pad/s.width,-pad/s.height],[1+pad/s.width,-pad/s.height],[1+pad/s.width,1+pad/s.height],[-pad/s.width,1+pad/s.height]].entries()){const px=(d*(x-e)-cc*(y-f))/det,py=(-b*(x-e)+a*(y-f))/det;if(i)c.lineTo(px,py);else c.moveTo(px,py);}c.closePath();c.fill();
    while(radialPixels+w*h>16_777_216&&radialSurfaces.size){const first=radialSurfaces.keys().next().value,old=radialSurfaces.get(first);radialPixels-=old.width*old.height;radialSurfaces.delete(first);}radialSurfaces.set(key,surface);radialPixels+=w*h;
   }
-  paint=ctx.createPattern(surface,'no-repeat');paint.setTransform(new DOMMatrix([s.width/w,0,0,s.height/h,s.x,s.y]));return paint;
+  paint=ctx.createPattern(surface,'no-repeat');paint.setTransform(new DOMMatrix([tile.width/w,0,0,tile.height/h,tile.x,tile.y]));return paint;
  }
  paint=ctx.createLinearGradient(...p.start,...p.end);
  addStops(paint,g);return paint;
@@ -42,11 +43,11 @@ export function canvasFill(ctx,s) {
 function addStops(paint,g){
  for(const stop of g.stops){const rgb=[1,3,5].map(i=>parseInt(stop.color.slice(i,i+2),16));paint.addColorStop(stop.position,`rgba(${rgb.join(',')},${stop.opacity})`);}
 }
-export function gradientSvg(s) {
- const g=s.appearance?.gradient;if(!g||!s.appearance.fill_enabled)return '';
+export function gradientSvg(s,channel='fill') {
+ const g=channel==='stroke'?s.appearance?.stroke_gradient:s.appearance?.gradient;if(!g||!s.appearance[channel+'_enabled'])return '';
  const p=gradientGeometry(s,g),stops=g.stops.map(t=>`<stop offset="${t.position}" stop-color="${t.color}" stop-opacity="${t.opacity}"/>`).join('');
  const radial=radialGeometry(g);
- const common=`id="gradient-${s.id}" gradientUnits="userSpaceOnUse" color-interpolation="sRGB"`;
+ const common=`id="${channel==='stroke'?'stroke-gradient':'gradient'}-${s.id}" gradientUnits="userSpaceOnUse" color-interpolation="sRGB"`;
  return g.kind==='radial'?`<radialGradient ${common} cx="0" cy="0" r="1" fx="${radial.focal[0]}" fy="${radial.focal[1]}" fr="${radial.focalRadius}" gradientTransform="translate(${s.x} ${s.y}) scale(${s.width} ${s.height}) matrix(${radial.matrix.join(' ')})">${stops}</radialGradient>`:`<linearGradient ${common} x1="${p.start[0]}" y1="${p.start[1]}" x2="${p.end[0]}" y2="${p.end[1]}">${stops}</linearGradient>`;
 }
 export function insertGradientStop(g) {
