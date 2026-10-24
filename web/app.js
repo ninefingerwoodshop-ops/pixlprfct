@@ -1,3 +1,4 @@
+import {inspectorRenderer} from './inspector-focus.js';
 import {exportJobs,zipFiles} from './batch-export.js';
 import {rasterSettings} from './export.js';
 import {smoothPencil} from './pencil.js';
@@ -200,7 +201,8 @@ function renderComponentProperties(shape){
   $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · ${count} overrides. Detach to add, remove, or reorder layers.`:'Reuse this frame and its layers as linked instances.';
   if(master&&variantSet){const v=variantSet.variants.find(v=>v.component_id===shape.id);$('component-status').textContent=variantSet.name+' · '+variantSet.properties.map((p,i)=>p+': '+v.values[i]).join(', ')+'. Edits update linked instances.';}
 }
-function renderProperties() {
+const renderProperties=inspectorRenderer(()=>renderPropertiesNow(),()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
+function renderPropertiesNow() {
   const shapes = selectionShapes(), shape = current();
   renderComponentProperties(shape);
   const lockTargets=shapes.filter(s=>!inheritedLock(s));$('lock-panel').hidden=!shapes.length;$('toggle-lock').disabled=!lockTargets.length;$('toggle-lock').textContent=lockTargets.length?(lockTargets.every(s=>s.locked)?'Unlock selection':'Lock selection'):'Locked by parent';$('lock-status').textContent=shapes.some(s=>lockedInTree(s,pageShapes()))?'Locked layers cannot be edited on the canvas. Use the inspector or unlock their parent.':'Ctrl/Cmd Shift L';

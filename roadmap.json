@@ -44,7 +44,8 @@
     "batch SVG/PNG/JPEG export of selected roots or top-level frames to ZIP with unique filenames, sequential rendering, progress and size limits",
     "Rust vector path splitting and closed-path opening at anchors with cubic preservation, separate bounds, inherited settings and atomic history",
     "Rust nearest-endpoint path joining with orientation/handle preservation, coincident-anchor merging, straight bridges and atomic history",
-    "atomic paste into multiple selected frames with independent subtree/group/prototype remapping, auto-layout integration and component synchronization"
+    "atomic paste into multiple selected frames with independent subtree/group/prototype remapping, auto-layout integration and component synchronization",
+    "inspector focus and caret preservation across dynamic field refreshes, coalesced rendering and uninterrupted click/Tab editing"
   ],
   "remaining": [
     "Additional frame layout controls, guide snapping and reusable guide styles",
