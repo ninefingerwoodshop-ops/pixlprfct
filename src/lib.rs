@@ -522,17 +522,26 @@ fn validate(document: &Document) -> Result<(), String> {
                 "Flow starting points require a frame and a name of at most 128 bytes".into(),
             );
         }
-        if shape.additional_interactions.len() > 3
+        if shape.additional_interactions.len() > 5
             || (shape.prototype.is_none() && !shape.additional_interactions.is_empty())
         {
-            return Err("Additional interactions require a primary interaction; at most four triggers are supported".into());
+            return Err("Additional interactions require a primary interaction; at most six triggers are supported".into());
         }
         let mut triggers = std::collections::HashSet::new();
         for p in shape.interactions() {
             if !triggers.insert(&p.trigger) {
                 return Err("Each prototype trigger may occur only once per layer".into());
             }
-            if !["click", "mouseenter", "mouseleave", "afterdelay"].contains(&p.trigger.as_str()) {
+            if ![
+                "click",
+                "mouseenter",
+                "mouseleave",
+                "afterdelay",
+                "mousedown",
+                "mouseup",
+            ]
+            .contains(&p.trigger.as_str())
+            {
                 return Err("Invalid prototype trigger".into());
             }
             if !(1..=600_000).contains(&p.delay)
@@ -927,7 +936,7 @@ impl Editor {
             .map(|s| s.id)
             .collect()
     }
-    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 3] {
+    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 5] {
         let Some(frame) = self
             .document
             .shapes
@@ -957,12 +966,12 @@ impl Editor {
             next_id: self.next_id,
             next_page_id: self.next_page_id,
         };
-        let mut result: [Vec<u32>; 3] = std::array::from_fn(|_| vec![]);
+        let mut result: [Vec<u32>; 5] = std::array::from_fn(|_| vec![]);
         let mut hit = staged.hit_test(x, y);
         while hit != 0 {
             let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
             for p in s.interactions() {
-                if let Some(index) = ["click", "mouseenter", "mouseleave"]
+                if let Some(index) = ["click", "mouseenter", "mouseleave", "mousedown", "mouseup"]
                     .iter()
                     .position(|t| *t == p.trigger)
                 {
@@ -2147,6 +2156,11 @@ impl Editor {
     pub fn prototype_hits(&self, root: u32, x: f64, y: f64) -> String {
         let ids = self.prototype_hit_ids(root, x, y);
         serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2]}).to_string()
+    }
+
+    pub fn prototype_pointer_hits(&self, root: u32, x: f64, y: f64) -> String {
+        let ids = self.prototype_hit_ids(root, x, y);
+        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0)}).to_string()
     }
 
     pub fn hit_test(&self, x: f64, y: f64) -> u32 {

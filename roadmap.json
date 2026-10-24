@@ -55,7 +55,8 @@
     "local SVG use references and axis-aligned symbol viewports with nested independent copies, inherited paints, meet/slice alignment, percentage sizing, clipping, bounded expansion and atomic history",
     "mouse-enter and mouse-leave prototype triggers with independent click hit testing, nested region tracking, overlay isolation, persistence, component overrides and keyboard/touch fallback",
     "after-delay frame and nested-instance prototype actions with configurable delay, transition-aware timing, visit-scoped cancellation, repaint pause/resume, component overrides and persistence",
-    "multiple independent prototype interactions per layer, one per supported trigger, with add/remove controls, trigger-specific playback, all connection wires, complete destination remapping and collection-level component overrides"
+    "multiple independent prototype interactions per layer, one per supported trigger, with add/remove controls, trigger-specific playback, all connection wires, complete destination remapping and collection-level component overrides",
+    "mouse-down/touch-press and mouse-up/touch-release prototype triggers with independent targets, cross-screen gesture continuation, compatibility-click suppression and canceled/secondary-pointer protection"
   ],
   "remaining": [
     "Additional frame layout controls",
@@ -65,7 +66,7 @@
     "Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
-    "Smart Animate, directional overlay motion, reversible while-hovering states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
+    "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
     "PDF export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope"
