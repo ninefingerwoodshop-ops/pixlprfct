@@ -26,3 +26,12 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 #add-auto-layout{width:calc(100% - 32px);margin:12px 16px}
 #export-dialog select,#export-dialog input[type=number]{display:block;width:100%;margin-top:6px}
 #export-dialog label{margin-bottom:16px}#export-summary{font-size:12px;line-height:1.5}
+/* Gradient fill controls share the inspector's compact field rhythm. */
+#gradient-controls label{display:block;font-size:11px;color:#777;margin:8px 0}
+#gradient-controls select,#gradient-controls input[type=number],#gradient-controls input[type=text]{width:100%;box-sizing:border-box;margin-top:5px;padding:7px;border:1px solid transparent;border-radius:4px;background:#f5f5f5;color:#333;font:inherit}
+#gradient-controls input:focus,#gradient-controls select:focus{outline:1px solid #0d99ff}
+.gradient-geometry{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+.gradient-stop{border-top:1px solid #eee;padding:8px 0;display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+.gradient-colors{grid-column:1/-1;display:flex;align-items:center;gap:8px}
+.gradient-colors input[type=color]{width:28px;height:28px;flex-shrink:0;border:0;padding:0;background:none}
+.gradient-stop button{grid-column:1/-1;font-size:11px;text-align:left}

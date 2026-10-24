@@ -85,11 +85,28 @@ impl Default for AutoLayout {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Appearance {
+    #[serde(default)]
+    pub gradient: Option<Gradient>,
     pub opacity: f64,
     pub corner_radius: f64,
     pub fill_enabled: bool,
     pub stroke_enabled: bool,
     pub stroke_color: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Gradient {
+    pub kind: String,
+    pub start: [f64; 2],
+    pub end: [f64; 2],
+    pub stops: Vec<GradientStop>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GradientStop {
+    pub position: f64,
+    pub color: String,
+    pub opacity: f64,
 }
 
 fn in_rounded_rect(s: &Shape, x: f64, y: f64) -> bool {
@@ -323,6 +340,28 @@ fn validate(document: &Document) -> Result<(), String> {
             }
         }
         if let Some(a) = &shape.appearance {
+            if let Some(g) = &a.gradient {
+                if !["linear", "radial"].contains(&g.kind.as_str())
+                    || g.start
+                        .iter()
+                        .chain(g.end.iter())
+                        .any(|v| !v.is_finite() || !(-10.0..=10.0).contains(v))
+                    || (g.start[0] - g.end[0]).hypot(g.start[1] - g.end[1]) < 0.0001
+                    || !(2..=16).contains(&g.stops.len())
+                    || g.stops.windows(2).any(|s| s[0].position > s[1].position)
+                    || g.stops.iter().any(|s| {
+                        !s.position.is_finite()
+                            || !(0.0..=1.0).contains(&s.position)
+                            || !s.opacity.is_finite()
+                            || !(0.0..=1.0).contains(&s.opacity)
+                            || s.color.len() != 7
+                            || !s.color.starts_with('#')
+                            || !s.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+                    })
+                {
+                    return Err("Invalid gradient geometry or color stops".into());
+                }
+            }
             if !a.opacity.is_finite()
                 || !(0.0..=1.0).contains(&a.opacity)
                 || !a.corner_radius.is_finite()

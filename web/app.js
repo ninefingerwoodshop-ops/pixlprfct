@@ -1,4 +1,6 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
+import {canvasFill} from './gradients.js';
+import {renderGradientControls} from './gradient-controls.js';
 import { textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
@@ -166,7 +168,7 @@ function renderProperties() {
   if (shapes.length > 1) {
     const box = bounds(shapes); $('multi-title').textContent = groupId ? `${shapes[0].group_name} · ${shapes.length} layers` : `${shapes.length} layers selected`;
     $('multi-size').textContent = `${Math.round(box.width)} × ${Math.round(box.height)}`;
-    const mixed = shapes.some(s => s.fill !== shapes[0].fill);
+    const mixed = shapes.some(s => s.fill !== shapes[0].fill || appearance(s).gradient);
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
@@ -180,6 +182,8 @@ function renderProperties() {
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
   $('stroke-section').hidden = false; $('stroke-width').value = shape.stroke_width ?? 2;$('vector-edit-controls').hidden=!vectorTools.includes(shape.kind);
   $('paint-label').textContent = 'Fill';
+  renderGradientControls($('gradient-controls'),shape,update);
+  $('solid-fill-controls').hidden=!!paint.gradient;
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
   $('fill').value = shape.fill; $('fill-value').textContent = shape.fill.toUpperCase();
@@ -200,7 +204,7 @@ function rasterEntry(data){
 function drawShape(shape, target=ctx) {
   const ctx=target,a=appearance(shape);
   if (shape.hidden) return;
-  ctx.fillStyle = shape.fill;ctx.strokeStyle=a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.fillStyle = a.fill_enabled&&shape.kind!=='image'?canvasFill(ctx,shape):shape.fill;ctx.strokeStyle=a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap='round';ctx.lineJoin='round';
   const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radius(shape));
   ctx.save();if(shape.kind==='image')ctx.clip(outline);
   if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh);}else{ctx.fillStyle='#e5e7eb';ctx.fillRect(shape.x,shape.y,shape.width,shape.height);}}
@@ -367,7 +371,7 @@ function bind() {
   divider.onkeydown = event => { if (['ArrowLeft','ArrowRight'].includes(event.key)) { event.preventDefault(); setPanelWidth(document.querySelector('.left-panel').clientWidth + (event.key === 'ArrowRight' ? 10 : -10)); } };
   document.querySelectorAll('[data-align]').forEach(button => button.onclick = () => safe(() => { editor.align_many(selectionJson(),button.dataset.align); refresh(); }));
   document.querySelectorAll('[data-distribute]').forEach(button => button.onclick = () => safe(() => { editor.distribute_many(selectionJson(),button.dataset.distribute); refresh(); }));
-  $('multi-fill').onchange = () => updateMany(selectionShapes().map(s => ({...s,fill:$('multi-fill').value})));
+  $('multi-fill').onchange = () => updateMany(selectionShapes().map(s => ({...s,fill:$('multi-fill').value,appearance:{...appearance(s),gradient:null}})));
   $('multi-duplicate').onclick = duplicateSelection; $('multi-delete').onclick = deleteSelection;
   const styleFields = { 'font-family': 'font_family', 'font-size': 'font_size', 'font-weight': 'font_weight', 'line-height': 'line_height', 'text-align': 'align', 'text-wrap': 'wrap' };
   $('text-sizing').onchange=()=>{const s=current();if(s?.kind!=='text')return;const sizing=$('text-sizing').value;update({...s,typography:{...textStyle(s),sizing},layout_item:{...s.layout_item,fill_width:sizing==='width'?false:s.layout_item.fill_width,fill_height:sizing!=='fixed'?false:s.layout_item.fill_height}});};

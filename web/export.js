@@ -4,6 +4,7 @@ import {appearance,radius,paintAttributes,sceneSvg} from './appearance.js';
 import {imageSvg} from './images.js';
 import {vectorSvg} from './vectors.js';
 import {textSvg} from './typography.js';
+import {gradientSvg} from './gradients.js';
 export function exportShapes(page,ids,scope){
  const chosen=scope==='selection'?descendants(page,ids):page,keep=new Set(chosen.map(s=>s.id));
  return chosen.filter(s=>visibleInTree(s,page)).map(s=>({...s,parent_id:keep.has(s.parent_id)?s.parent_id:0}));
@@ -29,5 +30,5 @@ export function svgDocument(shapes,box,scale,background,textLayout){
  };
  if(background&&!/^#[0-9a-f]{6}$/i.test(background))throw new Error('Invalid export background');
  const backdrop=background?`<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${background}"/>`:'';
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}${backdrop}${sceneSvg(shapes,paint)}</svg>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.map(gradientSvg).join('')}</defs>${backdrop}${sceneSvg(shapes,paint)}</svg>`;
 }

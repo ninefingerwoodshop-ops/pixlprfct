@@ -3,7 +3,7 @@ export function appearance(s) {
 }
 export function radius(s){return Math.min(appearance(s).corner_radius,s.width/2,s.height/2);}
 export function roundedContains(s,p){if(p.x<s.x||p.x>s.x+s.width||p.y<s.y||p.y>s.y+s.height)return false;const r=radius(s),x=Math.max(s.x+r,Math.min(s.x+s.width-r,p.x)),y=Math.max(s.y+r,Math.min(s.y+s.height-r,p.y));return Math.hypot(p.x-x,p.y-y)<=r;}
-export function paintAttributes(s){const a=appearance(s);return `fill="${a.fill_enabled?s.fill:'none'}" stroke="${a.stroke_enabled?a.stroke_color:'none'}" stroke-width="${s.stroke_width??2}" stroke-linecap="round" stroke-linejoin="round"`;}
+export function paintAttributes(s){const a=appearance(s);return `fill="${a.fill_enabled?(a.gradient?`url(#gradient-${s.id})`:s.fill):'none'}" stroke="${a.stroke_enabled?a.stroke_color:'none'}" stroke-width="${s.stroke_width??2}" stroke-linecap="round" stroke-linejoin="round"`;}
 // Composite each layer with its descendants before applying opacity. This avoids
 // dark overlaps when a translucent frame contains overlapping children.
 export function drawScene(shapes,context,paint) {

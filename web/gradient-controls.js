@@ -1,0 +1,27 @@
+import {appearance} from './appearance.js';
+import {defaultGradient,insertGradientStop} from './gradients.js';
+export function renderGradientControls(container,shape,update) {
+ container.replaceChildren();const a=appearance(shape),g=a.gradient;
+ const label=(name,input)=>{const l=document.createElement('label');l.append(document.createTextNode(name),input);return l;};
+ const select=document.createElement('select');select.id='fill-type';select.setAttribute('aria-label','Fill type');
+ for(const [value,name] of [['solid','Solid'],['linear','Linear gradient'],['radial','Radial gradient']]){const o=document.createElement('option');o.value=value;o.textContent=name;select.append(o);}select.value=g?.kind??'solid';
+ select.onchange=()=>update({...shape,appearance:{...a,gradient:select.value==='solid'?null:g?{...g,kind:select.value}:defaultGradient(shape.fill,select.value)}});
+ container.append(label('Fill type',select));if(!g)return;
+ const change=gradient=>update({...shape,appearance:{...a,gradient}});
+ const number=(name,value,min,max,step,onchange)=>{const input=document.createElement('input');input.type='number';input.value=value;input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',name);input.onchange=()=>onchange(Number(input.value));return label(name,input);};
+ const geometry=document.createElement('div');geometry.className='gradient-geometry';
+ for(const [key,name] of [['start','Start'],['end','End']])for(let axis=0;axis<2;axis++)geometry.append(number(`${name} ${axis?'Y':'X'} (%)`,Math.round(g[key][axis]*10000)/100,-1000,1000,1,value=>{const point=[...g[key]];point[axis]=value/100;change({...g,[key]:point});}));
+ container.append(geometry);
+ const stops=document.createElement('div');stops.className='gradient-stops';
+ g.stops.forEach((stop,index)=>{
+  const row=document.createElement('div');row.className='gradient-stop';
+  const edit=patch=>change({...g,stops:g.stops.map((s,i)=>i===index?{...s,...patch}:s).sort((a,b)=>a.position-b.position)});
+  const color=document.createElement('input');color.type='color';color.value=stop.color;color.setAttribute('aria-label',`Stop ${index+1} color`);color.onchange=()=>edit({color:color.value});
+  const hex=document.createElement('input');hex.type='text';hex.value=stop.color;hex.maxLength=7;hex.setAttribute('aria-label',`Stop ${index+1} hex`);hex.onchange=()=>edit({color:hex.value.startsWith('#')?hex.value:'#'+hex.value});
+  const colors=document.createElement('div');colors.className='gradient-colors';colors.append(color,hex);row.append(colors);
+  row.append(number(`Stop ${index+1} position (%)`,Math.round(stop.position*10000)/100,0,100,1,v=>edit({position:v/100})),number(`Stop ${index+1} opacity (%)`,Math.round(stop.opacity*10000)/100,0,100,1,v=>edit({opacity:v/100})));
+  const remove=document.createElement('button');remove.textContent='Remove stop';remove.setAttribute('aria-label',`Remove stop ${index+1}`);remove.disabled=g.stops.length<=2;remove.onclick=()=>change({...g,stops:g.stops.filter((_,i)=>i!==index)});row.append(remove);stops.append(row);
+ });container.append(stops);
+ const add=document.createElement('button');add.className='wide-button';add.textContent='Add color stop';add.disabled=g.stops.length>=16;add.onclick=()=>change(insertGradientStop(g));container.append(add);
+ const reverse=document.createElement('button');reverse.className='wide-button';reverse.textContent='Reverse colors';reverse.onclick=()=>change({...g,stops:g.stops.map(s=>({...s,position:1-s.position})).reverse()});container.append(reverse);
+}

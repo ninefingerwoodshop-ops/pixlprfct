@@ -22,13 +22,14 @@
     "vector anchor insertion/deletion, curve-preserving subdivision, corner/smooth conversion and anchor nudging",
     "layer copy/cut/paste across pages and files, frame subtree/group remapping, paste over selection and plain-text paste",
     "PNG/SVG page and selection export, resolution scaling, transparent/solid backgrounds and bounded raster memory",
-    "automatic text width/height with browser font measurement, Rust layout convergence, nested hug/fill integration and atomic history"
+    "automatic text width/height with browser font measurement, Rust layout convergence, nested hug/fill integration and atomic history",
+    "linear/radial gradient fills with multiple color/opacity stops, normalized geometry and PNG/SVG support"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
     "Nested groups and complete tree reordering",
     "SVG import, external vector clipboard interoperability, paste-to-replace and multi-frame paste",
-    "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, gradients and effects",
+    "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, advanced gradients and effects",
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout wrapping/grid, min/max sizing, group layout units and on-canvas spacing controls",
     "Components, instances, variants, reusable styles and variables",
