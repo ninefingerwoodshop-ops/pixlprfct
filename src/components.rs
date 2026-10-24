@@ -28,6 +28,7 @@ const FIELDS: &[&str] = &[
     "clip_content",
     "auto_layout",
     "layout_grids",
+    "prototype",
     "layout_item",
     "constraints",
     "width",

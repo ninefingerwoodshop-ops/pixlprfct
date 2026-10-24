@@ -25,6 +25,8 @@ pub struct Shape {
     #[serde(default)]
     pub layout_grids: Vec<LayoutGrid>,
     #[serde(default)]
+    pub prototype: Option<Prototype>,
+    #[serde(default)]
     pub layout_item: LayoutItem,
     pub kind: String,
     pub name: String,
@@ -77,6 +79,13 @@ pub struct LayoutGrid {
     pub color: String,
     pub opacity: f64,
     pub visible: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Prototype {
+    pub action: String,
+    #[serde(default)]
+    pub target: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -401,6 +410,20 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        if let Some(p) = &shape.prototype {
+            if !["navigate", "back"].contains(&p.action.as_str())
+                || (p.action == "navigate"
+                    && !document
+                        .shapes
+                        .iter()
+                        .any(|s| s.id == p.target && s.kind == "frame"))
+                || (p.action == "back" && p.target != 0)
+            {
+                return Err(
+                    "Prototype actions must navigate to an existing frame or go back".into(),
+                );
+            }
+        }
         if shape.layout_grids.len() > 8 || (!shape.layout_grids.is_empty() && shape.kind != "frame")
         {
             return Err("Layout guides require a frame and allow at most eight grids".into());
@@ -770,6 +793,27 @@ impl Editor {
     }
 
     fn commit(&mut self, mut document: Document) -> Result<(), String> {
+        let removed: std::collections::HashSet<_> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| {
+                s.kind == "frame"
+                    && !document
+                        .shapes
+                        .iter()
+                        .any(|n| n.id == s.id && n.kind == "frame")
+            })
+            .map(|s| s.id)
+            .collect();
+        for s in &mut document.shapes {
+            if s.prototype
+                .as_ref()
+                .is_some_and(|p| p.action == "navigate" && removed.contains(&p.target))
+            {
+                s.prototype = None;
+            }
+        }
         variants::prune(&mut document);
         component_properties::prune(&mut document);
         validate(&document)?;
@@ -807,7 +851,28 @@ impl Editor {
                 .saturating_add(1),
         );
         let mut next = base;
+        let before_sync: std::collections::HashSet<_> = document
+            .shapes
+            .iter()
+            .filter(|s| s.kind == "frame")
+            .map(|s| s.id)
+            .collect();
         components::sync(&mut document, &mut next)?;
+        let after_sync: std::collections::HashSet<_> = document
+            .shapes
+            .iter()
+            .filter(|s| s.kind == "frame")
+            .map(|s| s.id)
+            .collect();
+        for s in &mut document.shapes {
+            if s.prototype.as_ref().is_some_and(|p| {
+                p.action == "navigate"
+                    && before_sync.contains(&p.target)
+                    && !after_sync.contains(&p.target)
+            }) {
+                s.prototype = None;
+            }
+        }
         self.reflow_text(&mut document)?;
         validate(&document)?;
         components::validate_links(&document)?;
@@ -892,6 +957,13 @@ impl Editor {
             .map(|s| {
                 let mut copy = s.clone();
                 copy.component = None;
+                if copy
+                    .prototype
+                    .as_ref()
+                    .is_some_and(|p| p.action == "navigate" && !ids.contains(&p.target))
+                {
+                    copy.prototype = None;
+                }
                 if !ids.contains(&copy.parent_id) {
                     copy.parent_id = 0;
                 }
@@ -956,6 +1028,11 @@ impl Editor {
         let mut roots = vec![];
         let mut document = self.document.clone();
         for mut s in payload.shapes {
+            if let Some(p) = &mut s.prototype {
+                if p.action == "navigate" {
+                    p.target = ids[&p.target];
+                }
+            }
             s.id = ids[&s.id];
             s.page_id = document.active_page;
             if s.parent_id == 0 {
@@ -1038,6 +1115,7 @@ impl Editor {
             appearance: None,
             auto_layout: None,
             layout_grids: vec![],
+            prototype: None,
             layout_item: LayoutItem::default(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),
@@ -1196,6 +1274,11 @@ impl Editor {
                 let mut copy = shape.clone();
                 copy.id = self.next_id + created.len() as u32;
                 copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
+                if let Some(p) = &mut copy.prototype {
+                    if p.action == "navigate" {
+                        p.target = *mapping.get(&p.target).unwrap_or(&p.target);
+                    }
+                }
                 if copy.group_id > 0 {
                     copy.group_id = *copied_groups.entry(copy.group_id).or_insert(copy.id);
                 }
@@ -1607,6 +1690,49 @@ impl Editor {
             document.shapes[i] = shape;
         }
         self.commit(document)
+    }
+
+    // Presentation ignores editing locks and isolates the displayed frame. Its
+    // viewport always clips descendants, even when canvas overflow is enabled.
+    pub fn prototype_hit_test(&self, root: u32, x: f64, y: f64) -> u32 {
+        let Some(frame) = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == root && s.kind == "frame" && !s.hidden)
+        else {
+            return 0;
+        };
+        if !in_rounded_rect(frame, x, y) {
+            return 0;
+        }
+        let mut document = self.document.clone();
+        document.active_page = frame.page_id;
+        document.shapes = components::subtree(&self.document.shapes, root);
+        for s in &mut document.shapes {
+            s.locked = false;
+            if s.id == root {
+                s.parent_id = 0;
+                s.clip_content = true;
+            }
+        }
+        let staged = Editor {
+            text_measurer: None,
+            document,
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let mut hit = staged.hit_test(x, y);
+        while hit != 0 {
+            let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
+            if s.prototype.is_some() {
+                return s.id;
+            }
+            hit = s.parent_id;
+        }
+        0
     }
 
     pub fn hit_test(&self, x: f64, y: f64) -> u32 {

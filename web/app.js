@@ -1,3 +1,4 @@
+import {prototypeFrames,renderPrototypeControls,presentPrototype} from './prototype.js';
 import {drawLayoutGuides,renderGuideControls} from './layout-guides.js';
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import {componentSet,renderVariantProperties,editVariantSet} from './variants.js';
@@ -232,6 +233,7 @@ function renderProperties() {
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
+  renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype);
   renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();});
   if (!shape) return;
   $('auto-layout-panel').hidden=shape.kind!=='frame';$('layout-direction').value=shape.auto_layout?.direction??'none';$('layout-settings').hidden=!shape.auto_layout;
@@ -265,6 +267,7 @@ function rasterEntry(data){
  let entry=imageCache.get(data);if(entry)return entry;const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);
  entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
 }
+function playPrototype(){safe(()=>{const frames=prototypeFrames(doc);if(!frames.length){toast('Add a frame to present a prototype');return;}let chosen=current();while(chosen&&chosen.kind!=='frame')chosen=doc.shapes.find(s=>s.id===chosen.parent_id);const start=frames.find(s=>s.id===chosen?.id)??frames.find(s=>s.page_id===doc.active_page)??frames[0];presentPrototype(doc,start.id,editor,drawShape,async shapes=>{await Promise.all(shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url).promise));});});}
 function drawShape(shape, target=ctx) {
   const ctx=target,a=appearance(shape);
   if (shape.hidden) return;
@@ -405,6 +408,7 @@ function bind() {
   $('delete-node').onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0){const changed=deleteAnchor(current(),activeNode);activeNode=-1;update(changed);}});
   for(const [id,smooth] of [['smooth-node',true],['corner-node',false]])$(id).onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0)update(convertAnchor(current(),activeNode,smooth));});
   const layoutDefaults={direction:'horizontal',gap:16,padding_top:16,padding_right:16,padding_bottom:16,padding_left:16,align:'start',justify:'start',hug_width:false,hug_height:false};
+  $('present-prototype').onclick=playPrototype;
   $('add-auto-layout').onclick=()=>safe(()=>{setSelection([editor.auto_layout_selection(selectionJson())]);refresh();});
   for(const key of ['min_width','max_width','min_height','max_height'])$('limit-'+key).onchange=()=>{const s=current();if(s){const value=$('limit-'+key).value;update({...s,layout_item:{...s.layout_item,[key]:value===''?null:Number(value)}});renderProperties();}};
   $('layout-direction').onchange=()=>{const s=current();if(s)update({...s,auto_layout:$('layout-direction').value==='none'?null:{...layoutDefaults,...s.auto_layout,direction:$('layout-direction').value}});};

@@ -33,7 +33,8 @@
     "horizontal/vertical auto-layout wrapping, independent cross gaps, line distribution, bounded fill allocation, layer min/max sizes and max-width text wrapping",
     "independent four-corner radii with shared normalization, canvas/PNG/SVG geometry, frame/image clipping, hit testing, scaling and component overrides",
     "stroke dash patterns and offsets, butt/round/square caps, miter/round/bevel joins, scaling, component overrides and PNG/SVG parity",
-    "frame square-grid, column and row layout guides with sizing/alignment/color controls, visibility toggle, clipping, persistence and export exclusion"
+    "frame square-grid, column and row layout guides with sizing/alignment/color controls, visibility toggle, clipping, persistence and export exclusion",
+    "persistent click-to-navigate/back prototype links, cross-page frame targets, cropped presentation player, history/restart/frame chooser, hotspot hints and keyboard-accessible interactions"
   ],
   "remaining": [
     "Additional frame layout controls, guide snapping and reusable guide styles",
@@ -43,7 +44,7 @@
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
-    "Prototyping interactions and presentation mode",
+    "Prototype flow starts, connection wires, transitions/overlays, hover/drag/timer triggers, scrolling and conditional interactions",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
     "PDF/JPEG and batch export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope"
