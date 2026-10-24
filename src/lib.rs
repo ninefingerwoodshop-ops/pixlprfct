@@ -222,6 +222,8 @@ impl Default for AutoLayout {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Appearance {
     #[serde(default)]
+    pub layer_blur: f64,
+    #[serde(default)]
     pub shadows: Vec<DropShadow>,
     #[serde(default)]
     pub gradient: Option<Gradient>,
@@ -687,6 +689,9 @@ fn validate(document: &Document) -> Result<(), String> {
                 {
                     return Err("Invalid gradient geometry or color stops".into());
                 }
+            }
+            if !a.layer_blur.is_finite() || !(0.0..=100_000.0).contains(&a.layer_blur) {
+                return Err("Layer blur must be between 0 and 100000".into());
             }
             if a.shadows.len() > 8
                 || a.shadows.iter().any(|shadow| {

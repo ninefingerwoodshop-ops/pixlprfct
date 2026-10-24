@@ -2,6 +2,7 @@ import {appearance} from './appearance.js';
 export function renderShadowControls(host,shape,change){
  host.replaceChildren();host.hidden=!shape;if(!shape)return;
  const heading=document.createElement('h3');heading.textContent='Effects';host.append(heading);const style=appearance(shape),shadows=style.shadows??[];
+ const blurLabel=document.createElement('label'),blur=document.createElement('input');blur.type='number';blur.min=0;blur.max=100000;blur.step='any';blur.value=style.layer_blur??0;blur.id=`layer-blur-${shape.id}`;blur.setAttribute('aria-label','Layer blur');blurLabel.append(document.createTextNode('Layer blur'),blur);host.append(blurLabel);blur.onchange=()=>change({...shape,appearance:{...style,layer_blur:Number(blur.value)}});
  const save=next=>change({...shape,appearance:{...style,shadows:next}});
  shadows.forEach((shadow,index)=>{
   const group=document.createElement('fieldset');group.className='shadow-controls';const legend=document.createElement('legend');legend.textContent=`${shadow.kind==='inner'?'Inner':'Drop'} shadow ${index+1}`;group.append(legend);host.append(group);

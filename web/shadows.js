@@ -35,7 +35,7 @@ export function compositeGeometry(shapes,styleOf){
   const reach=s.points?.length?Math.max(a.stroke_join==='miter'?(a.stroke_miter_limit??10):1,a.stroke_cap==='square'?Math.SQRT2:1):1,pad=a.stroke_enabled?(s.stroke_width??2)/2*reach:0;
   let content={x:s.x-pad,y:s.y-pad,width:s.width+2*pad,height:s.height+2*pad};
   for(const child of children.get(s.id)??[]){let box=visit(child);if(s.kind==='frame'&&s.clip_content)box=intersect(box,s);content=union(content,box);}
-  const output=shadowBounds(content,a.shadows);geometry.set(s.id,{content,output});return output;
+  const output=blurBounds(shadowBounds(content,a.shadows),a.layer_blur??0);geometry.set(s.id,{content,output});return output;
  };
  let bounds=null;for(const s of children.get(0)??[])bounds=union(bounds,visit(s));return{children,geometry,bounds};
 }
@@ -69,3 +69,6 @@ export function drawShadow(target,source,box,shadow){
  ctx.globalCompositeOperation='source-in';const rgb=[1,3,5].map(i=>parseInt(shadow.color.slice(i,i+2),16));ctx.fillStyle=`rgba(${rgb.join(',')},${shadow.opacity})`;ctx.fillRect(0,0,size.width,size.height);
  target.save();if(inner)target.globalCompositeOperation='source-atop';target.filter=shadow.blur?`blur(${shadow.blur*density/2}px)`:'none';target.drawImage(mask,area.x+(inner?0:shadow.x),area.y+(inner?0:shadow.y),size.width/size.scale,size.height/size.scale);target.restore();
 }
+
+export function blurBounds(box,blur=0){if(!box)return null;const pad=blur*1.5;return{x:box.x-pad,y:box.y-pad,width:box.width+2*pad,height:box.height+2*pad};}
+export function layerBlurFilter(id,box,blur){if(!box||!blur)return '';return `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${blur/2}"/></filter>`;}
