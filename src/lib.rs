@@ -196,6 +196,12 @@ pub struct Appearance {
     pub stroke_cap: String,
     #[serde(default = "default_round")]
     pub stroke_join: String,
+    #[serde(default = "default_miter_limit")]
+    pub stroke_miter_limit: f64,
+}
+
+fn default_miter_limit() -> f64 {
+    10.0
 }
 
 fn default_round() -> String {
@@ -599,6 +605,8 @@ fn validate(document: &Document) -> Result<(), String> {
                 || a.stroke_dash_offset.abs() > 1_000_000.0
                 || !["butt", "round", "square"].contains(&a.stroke_cap.as_str())
                 || !["miter", "round", "bevel"].contains(&a.stroke_join.as_str())
+                || !a.stroke_miter_limit.is_finite()
+                || !(1.0..=1000.0).contains(&a.stroke_miter_limit)
             {
                 return Err("Invalid appearance settings".into());
             }

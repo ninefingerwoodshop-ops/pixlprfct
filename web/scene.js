@@ -7,7 +7,7 @@ export function clippingFrames(shape,shapes) {
 }
 export function paintBounds(shape,shapes) {
   if(!visibleInTree(shape,shapes))return null;
-  const style=appearance(shape),reach=shape.points?.length?(style.stroke_join==='miter'?10:style.stroke_cap==='square'?Math.SQRT2:1):1;
+  const style=appearance(shape),reach=shape.points?.length?Math.max(style.stroke_join==='miter'?(style.stroke_miter_limit??10):1,style.stroke_cap==='square'?Math.SQRT2:1):1;
   const pad=style.stroke_enabled?(shape.stroke_width??2)/2*reach:0;
   let left=shape.x-pad,top=shape.y-pad,right=shape.x+shape.width+pad,bottom=shape.y+shape.height+pad;
   for(const frame of clippingFrames(shape,shapes)) {left=Math.max(left,frame.x);top=Math.max(top,frame.y);right=Math.min(right,frame.x+frame.width);bottom=Math.min(bottom,frame.y+frame.height);}

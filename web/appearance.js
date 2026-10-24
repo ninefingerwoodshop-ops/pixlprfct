@@ -15,7 +15,7 @@ export function roundedSvg(s,attributes=''){
  const arc=(r,ex,ey)=>r?`A ${r} ${r} 0 0 1 ${ex} ${ey}`:`L ${ex} ${ey}`;
  return `<path d="M ${x+tl} ${y} H ${right-tr} ${arc(tr,right,y+tr)} V ${bottom-br} ${arc(br,right-br,bottom)} H ${x+bl} ${arc(bl,x,bottom-bl)} V ${y+tl} ${arc(tl,x+tl,y)} Z" ${attributes}/>`;
 }
-export function paintAttributes(s){const a=appearance(s);return `fill="${a.fill_enabled?(a.gradient?`url(#gradient-${s.id})`:s.fill):'none'}" stroke="${a.stroke_enabled?a.stroke_color:'none'}" stroke-width="${s.stroke_width??2}" stroke-linecap="${a.stroke_cap??'round'}" stroke-linejoin="${a.stroke_join??'round'}" stroke-miterlimit="10"${a.stroke_dash?.length?` stroke-dasharray="${a.stroke_dash.join(' ')}" stroke-dashoffset="${a.stroke_dash_offset??0}"`:''}`;}
+export function paintAttributes(s){const a=appearance(s);return `fill="${a.fill_enabled?(a.gradient?`url(#gradient-${s.id})`:s.fill):'none'}" stroke="${a.stroke_enabled?a.stroke_color:'none'}" stroke-width="${s.stroke_width??2}" stroke-linecap="${a.stroke_cap??'round'}" stroke-linejoin="${a.stroke_join??'round'}" stroke-miterlimit="${a.stroke_miter_limit??10}"${a.stroke_dash?.length?` stroke-dasharray="${a.stroke_dash.join(' ')}" stroke-dashoffset="${a.stroke_dash_offset??0}"`:''}`;}
 // Composite each layer with its descendants before applying opacity. This avoids
 // dark overlaps when a translucent frame contains overlapping children.
 export function drawScene(shapes,context,paint) {

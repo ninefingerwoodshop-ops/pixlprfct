@@ -46,3 +46,8 @@ test('unsupported artwork and malformed geometry fail before insertion',()=>{
  assert.throws(()=>parsePath('M0 0 '+Array(4097).fill('L1 1').join(' ')));
  assert.throws(()=>parseTransform('translate(2) garbage'));
 });
+test('SVG default and inherited custom miter limits survive editable import',()=>{
+ const payload=svgLayers(node('svg',{},[node('path',{d:'M0 80L10 0L20 80',fill:'none',stroke:'black'}),node('g',{'stroke-miterlimit':'2.5',stroke:'black',fill:'none'},[node('path',{d:'M30 80L40 0L50 80'})])]));
+ const e=new Editor();e.paste_layers(JSON.stringify(payload),0,0,0);const shapes=JSON.parse(e.snapshot()).shapes;
+ assert.equal(shapes[1].appearance.stroke_miter_limit,4);assert.equal(shapes[3].appearance.stroke_miter_limit,2.5);e.free();
+});

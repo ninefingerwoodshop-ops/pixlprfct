@@ -42,7 +42,6 @@ export function svgLayers(tree,name='SVG artwork'){
    if(depth===0){Object.assign(group,{x:0,y:0,width,height,clip_content:true});}return;
   }
   const paths=geometry(tag,attrs),fill=color(own.fill,own.color),stroke=color(own.stroke,own.color),alpha=opacity(own.opacity);
-  if(stroke!=='none'&&own['stroke-linejoin']==='miter'&&Number(own['stroke-miterlimit'])!==10)throw new Error('SVG miter strokes require a miter limit of 10. Use round/bevel joins or outline the stroke.');
   if(own['fill-rule']!=='nonzero'&&fill!=='none')throw new Error('Even-odd SVG fills are not supported yet');
   if(paths.length>1&&fill!=='none')throw new Error('Filled compound SVG paths are not supported yet. Separate them before importing.');
   if(opacity(own['fill-opacity'])!==1||opacity(own['stroke-opacity'])!==1)throw new Error('Separate fill/stroke opacity is not supported in SVG import yet. Use layer opacity.');
@@ -51,7 +50,7 @@ export function svgLayers(tree,name='SVG artwork'){
   const weight=length(own['stroke-width'])*sx;if(weight<0)throw new Error('Invalid SVG stroke width');
   const dash=own['stroke-dasharray']==='none'?[]:own['stroke-dasharray'].trim().split(/[\s,]+/).map(v=>length(v)*sx);
   for(const path of paths){const points=path.points.map(p=>({...transformPoint(p,m),...(p.in?{in:transformPoint(p.in,m)}:{}),...(p.out?{out:transformPoint(p.out,m)}:{})})),shape=fromPoints('pen',points,path.closed);
-   Object.assign(shape,{id:next++,parent_id:parent,name:(attrs.id||tag).slice(0,128),fill:fill==='none'?'#000000':fill,stroke_width:Math.max(.1,weight),hidden:['hidden','collapse'].includes(own.visibility),appearance:{opacity:alpha,corner_radius:0,fill_enabled:fill!=='none',stroke_enabled:stroke!=='none'&&weight>0,stroke_color:stroke==='none'?'#000000':stroke,stroke_dash:dash,stroke_dash_offset:length(own['stroke-dashoffset'])*sx,stroke_cap:own['stroke-linecap'],stroke_join:own['stroke-linejoin']}});shapes.push(shape);
+   Object.assign(shape,{id:next++,parent_id:parent,name:(attrs.id||tag).slice(0,128),fill:fill==='none'?'#000000':fill,stroke_width:Math.max(.1,weight),hidden:['hidden','collapse'].includes(own.visibility),appearance:{opacity:alpha,corner_radius:0,fill_enabled:fill!=='none',stroke_enabled:stroke!=='none'&&weight>0,stroke_color:stroke==='none'?'#000000':stroke,stroke_dash:dash,stroke_dash_offset:length(own['stroke-dashoffset'])*sx,stroke_cap:own['stroke-linecap'],stroke_join:own['stroke-linejoin'],stroke_miter_limit:Number(own['stroke-miterlimit'])}});shapes.push(shape);
   }
  }
  walk(tree,0,viewport,defaults,0);if(shapes.length===1)throw new Error('SVG contains no supported visible artwork');

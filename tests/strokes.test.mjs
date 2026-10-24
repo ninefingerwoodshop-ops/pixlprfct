@@ -26,3 +26,19 @@ test('export bounds include miter reach and diagonal square caps',()=>{
  const s={id:1,parent_id:0,kind:'pen',x:0,y:0,width:100,height:100,points:[[0,1],[.5,0],[1,1]],stroke_width:10,appearance:{...style,stroke_join:'miter'}};
  assert.deepEqual(paintBounds(s,[s]),{...s,x:-50,y:-50,width:200,height:200});const square={...s,appearance:{...style,stroke_join:'bevel'}};assert.ok(paintBounds(square,[square]).x < -7);
 });
+test('miter limits roundtrip, remain dimensionless when scaled, and bound exported paint',()=>{
+ const e=new Editor(),id=e.insert(JSON.stringify({id:0,kind:'pen',name:'Sharp corner',x:0,y:0,width:100,height:100,fill:'#000000',text:'',hidden:false,points:[[0,1],[.5,0],[1,1]],stroke_width:10}));edit(e,id,{appearance:{...style,stroke_join:'miter',stroke_miter_limit:3.5}});
+ const s=get(e,id),saved=e.snapshot();assert.match(paintAttributes(s),/stroke-miterlimit="3.5"/);
+ const scaled=scaleShapes([s],{x:0,y:0},3)[0];assert.equal(scaled.appearance.stroke_miter_limit,3.5);
+ const box=paintBounds(s,[s]);assert.equal(box.x,s.x-s.stroke_width*3.5/2);
+ const restored=new Editor();restored.load(saved);assert.equal(restored.snapshot(),saved);
+ edit(e,id,{appearance:{...s.appearance,stroke_miter_limit:1}});const low=get(e,id);assert.ok(paintBounds(low,[low]).x<=low.x-low.stroke_width*Math.SQRT2/2);
+ e.undo();assert.equal(e.snapshot(),saved);e.redo();assert.equal(get(e,id).appearance.stroke_miter_limit,1);
+ for(const invalid of [0,.5,1001,null]){const before=e.snapshot();assert.throws(()=>edit(e,id,{appearance:{...get(e,id).appearance,stroke_miter_limit:invalid}}));assert.equal(e.snapshot(),before);}
+ const legacy={...s.appearance};delete legacy.stroke_miter_limit;edit(e,id,{appearance:legacy});assert.equal(get(e,id).appearance.stroke_miter_limit,10);e.free();restored.free();
+});
+test('miter limit overrides reset independently of other component paints',()=>{
+ const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance:{...style,stroke_miter_limit:4}});e.create_component(f);const i=e.create_instance(f,300,0);
+ edit(e,i,{appearance:{...get(e,i).appearance,stroke_miter_limit:2}});edit(e,f,{appearance:{...get(e,f).appearance,stroke_miter_limit:6,stroke_color:'#ff0000'}});
+ assert.equal(get(e,i).appearance.stroke_miter_limit,2);assert.equal(get(e,i).appearance.stroke_color,'#ff0000');e.reset_override(i,'appearance.stroke_miter_limit');assert.equal(get(e,i).appearance.stroke_miter_limit,6);e.free();
+});
