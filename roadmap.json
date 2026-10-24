@@ -16,13 +16,14 @@
     "frame clipping across canvas, selection and SVG",
     "automatic containment and atomic drag reparenting",
     "embedded raster images, fill/fit cropping, replacement, file/drop/paste import",
-    "frame resize constraints on both axes with nested propagation and live preview"
+    "frame resize constraints on both axes with nested propagation and live preview",
+    "uniform corner radius, composited layer/frame opacity, independent solid fill and centered stroke"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
     "Nested groups and complete tree reordering",
     "SVG import and vector clipboard interoperability",
-    "Rotation, corner radii, independent fills and strokes, opacity, gradients and effects",
+    "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, gradients and effects",
     "Vector node insertion/deletion, Boolean operations, pencil smoothing and slice export",
     "Auto layout, spacing, padding, sizing and responsive layout behavior",
     "Components, instances, variants, reusable styles and variables",

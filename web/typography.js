@@ -42,5 +42,6 @@ export function escapeXml(value) { return String(value).replace(/[&<>"']/g, c =>
 export function textSvg(shape, layout) {
   const { style, lines } = layout;
   const anchor = { left: 'start', center: 'middle', right: 'end' }[style.align];
-  return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" fill="${shape.fill}" font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${anchor}" dominant-baseline="text-before-edge" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
+  return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${anchor}" dominant-baseline="text-before-edge" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
 }
+import {paintAttributes} from './appearance.js';

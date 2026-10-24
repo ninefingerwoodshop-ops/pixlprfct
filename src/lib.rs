@@ -18,6 +18,8 @@ pub struct Shape {
     pub image: Option<RasterImage>,
     #[serde(default)]
     pub constraints: Constraints,
+    #[serde(default)]
+    pub appearance: Option<Appearance>,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -37,6 +39,30 @@ pub struct Shape {
     pub closed: bool,
     #[serde(default = "default_stroke")]
     pub stroke_width: f64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Appearance {
+    pub opacity: f64,
+    pub corner_radius: f64,
+    pub fill_enabled: bool,
+    pub stroke_enabled: bool,
+    pub stroke_color: String,
+}
+
+fn in_rounded_rect(s: &Shape, x: f64, y: f64) -> bool {
+    if x < s.x || x > s.x + s.width || y < s.y || y > s.y + s.height {
+        return false;
+    }
+    let radius = s
+        .appearance
+        .as_ref()
+        .map_or(0.0, |a| a.corner_radius)
+        .min(s.width / 2.0)
+        .min(s.height / 2.0);
+    let cx = x.clamp(s.x + radius, s.x + s.width - radius);
+    let cy = y.clamp(s.y + radius, s.y + s.height - radius);
+    (x - cx).hypot(y - cy) <= radius
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -221,6 +247,18 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        if let Some(a) = &shape.appearance {
+            if !a.opacity.is_finite()
+                || !(0.0..=1.0).contains(&a.opacity)
+                || !a.corner_radius.is_finite()
+                || !(0.0..=1_000_000.0).contains(&a.corner_radius)
+                || a.stroke_color.len() != 7
+                || !a.stroke_color.starts_with('#')
+                || !a.stroke_color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+            {
+                return Err("Invalid appearance settings".into());
+            }
+        }
         let mut parent = shape.parent_id;
         let mut seen = std::collections::HashSet::from([shape.id]);
         while parent != 0 {
@@ -514,6 +552,7 @@ impl Editor {
             clip_content: false,
             image: None,
             constraints: Constraints::default(),
+            appearance: None,
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -976,11 +1015,7 @@ impl Editor {
                         .find(|s| s.id == parent)
                         .unwrap();
                     if ancestor.hidden
-                        || (ancestor.clip_content
-                            && (x < ancestor.x
-                                || x > ancestor.x + ancestor.width
-                                || y < ancestor.y
-                                || y > ancestor.y + ancestor.height))
+                        || (ancestor.clip_content && !in_rounded_rect(ancestor, x, y))
                     {
                         return false;
                     }
@@ -1032,7 +1067,7 @@ impl Editor {
                     let dy = (y - s.y - s.height / 2.0) / (s.height / 2.0);
                     dx * dx + dy * dy <= 1.0
                 } else {
-                    true
+                    in_rounded_rect(s, x, y)
                 }
             })
             .map(|s| s.id)

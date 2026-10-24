@@ -44,4 +44,5 @@ export function vectorPath(shape) {
   }
   return d;
 }
-export function vectorSvg(shape) { return `<path d="${vectorPath(shape)}" fill="${shape.closed?shape.fill:'none'}" stroke="${shape.fill}" stroke-width="${shape.stroke_width??2}" stroke-linecap="round" stroke-linejoin="round"/>`; }
+export function vectorSvg(shape) { return `<path d="${vectorPath(shape)}" ${paintAttributes(shape)}/>`; }
+import {paintAttributes} from './appearance.js';

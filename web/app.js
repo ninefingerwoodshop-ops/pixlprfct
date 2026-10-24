@@ -3,6 +3,7 @@ import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
+import {appearance,radius,paintAttributes,drawScene,sceneSvg} from './appearance.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons } from './icons.js';
@@ -156,11 +157,12 @@ function renderProperties() {
   }
   if (!shape) return;
   $('image-section').hidden=shape.kind!=='image';
+  const paint=appearance(shape);$('opacity').value=Math.round(paint.opacity*100);$('corner-radius').value=paint.corner_radius;$('radius-row').hidden=!['rectangle','frame','image'].includes(shape.kind);$('fill-enabled').checked=paint.fill_enabled;$('stroke-enabled').checked=paint.stroke_enabled;$('stroke-color').value=paint.stroke_color;
   $('paint-label').parentElement.hidden=shape.kind==='image';
   if(shape.image){$('image-mode').value=shape.image.mode;$('image-zoom').value=shape.image.zoom;$('image-x').value=Math.round(shape.image.offset_x*100);$('image-y').value=Math.round(shape.image.offset_y*100);$('image-crop-fields').hidden=shape.image.mode==='fit';}
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
-  $('stroke-section').hidden = !vectorTools.includes(shape.kind); $('stroke-width').value = shape.stroke_width ?? 2;
-  $('paint-label').textContent = shape.points?.length && !shape.closed ? 'Stroke color' : 'Fill';
+  $('stroke-section').hidden = false; $('stroke-width').value = shape.stroke_width ?? 2;$('vector-edit-controls').hidden=!vectorTools.includes(shape.kind);
+  $('paint-label').textContent = 'Fill';
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
   $('fill').value = shape.fill; $('fill-value').textContent = shape.fill.toUpperCase();
@@ -173,21 +175,23 @@ function renderProperties() {
     $('text-overflow').hidden = !textLayout(shape).overflow;
   }
 }
-function drawShape(shape) {
+function drawShape(shape, target=ctx) {
+  const ctx=target,a=appearance(shape);
   if (shape.hidden) return;
-  ctx.fillStyle = shape.fill;
+  ctx.fillStyle = shape.fill;ctx.strokeStyle=a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap='round';ctx.lineJoin='round';
+  const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radius(shape));
+  ctx.save();if(shape.kind==='image')ctx.clip(outline);
   if(shape.kind==='image'&&shape.image){const data=shape.image.data_url;let entry=imageCache.get(data);if(!entry){const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);bitmap.onload=()=>{entry.ready=true;draw();};bitmap.onerror=()=>{entry.failed=true;toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;}if(entry.ready){const p=imageLayout(shape);ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh);}else{ctx.fillStyle='#e5e7eb';ctx.fillRect(shape.x,shape.y,shape.width,shape.height);}}
-  else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); ctx.strokeStyle=shape.fill; ctx.lineWidth=shape.stroke_width??2; ctx.lineCap='round'; ctx.lineJoin='round'; if(shape.closed) ctx.fill(path); ctx.stroke(path); }
-  else if (shape.kind === 'ellipse') { ctx.beginPath(); ctx.ellipse(shape.x + shape.width / 2, shape.y + shape.height / 2, shape.width / 2, shape.height / 2, 0, 0, Math.PI * 2); ctx.fill(); }
+  else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)ctx.fill(path);if(a.stroke_enabled)ctx.stroke(path); }
   else if (shape.kind === 'text') {
     ctx.save(); ctx.beginPath(); ctx.rect(shape.x, shape.y, shape.width, shape.height); ctx.clip();
     const layout = textLayout(shape);
     ctx.font = fontCss(layout.style); ctx.textBaseline = 'top'; ctx.textAlign = layout.style.align;
-    layout.lines.forEach(line => ctx.fillText(line.text, line.x, line.y)); ctx.restore();
+    layout.lines.forEach(line => {if(a.fill_enabled)ctx.fillText(line.text,line.x,line.y);if(a.stroke_enabled)ctx.strokeText(line.text,line.x,line.y);}); ctx.restore();
   } else {
-    if (shape.kind === 'frame') { ctx.save(); ctx.shadowColor = '#0003'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8; ctx.fillRect(shape.x, shape.y, shape.width, shape.height); ctx.restore(); }
-    else ctx.fillRect(shape.x, shape.y, shape.width, shape.height);
+    if(a.fill_enabled)ctx.fill(outline);
   }
+  ctx.restore();if(a.stroke_enabled&&!shape.points?.length&&shape.kind!=='text')ctx.stroke(outline);
 }
 function draw() {
   if (!doc) return;
@@ -198,8 +202,8 @@ function draw() {
   const previews = gesture?.previews || (gesture?.preview ? [gesture.preview] : []);
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
   if(gesture?.type==='resize'&&gesture.original.kind==='frame'){try{scene=JSON.parse(editor.preview_update_many(JSON.stringify(previews))).shapes.filter(s=>s.page_id===doc.active_page);}catch{scene=pageShapes();}}
-  for(const shape of scene) if(visibleInTree(shape,scene)){ctx.save();for(const frame of clippingFrames(shape,scene)){ctx.beginPath();ctx.rect(frame.x,frame.y,frame.width,frame.height);ctx.clip();}drawShape(shape);ctx.restore();}
-  if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.rect(frame.x,frame.y,frame.width,frame.height);ctx.clip();}drawShape(preview);ctx.restore();}
+  drawScene(scene,ctx,drawShape);
+  if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radius(frame));ctx.clip();}drawShape(preview);ctx.restore();}
   if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
   if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
   const visibleSelection = selectionShapes().filter(s => visibleInTree(s,pageShapes())).map(s => previews.find(p => p.id === s.id) || s);
@@ -257,13 +261,13 @@ async function exportSvg() {
   const shapes = pageShapes().filter(s => visibleInTree(s,pageShapes())); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
   const box=bounds(shapes.map(s=>paintBounds(s,pageShapes())).filter(Boolean));if(!box){toast('Nothing visible to export');return;}const {x,y,width:w,height:h}=box;
   const renderSvg=s=>{
-    if(s.kind==='image')return imageSvg(s);
+    if(s.kind==='image')return `<clipPath id="image-clip-${s.id}"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath><g clip-path="url(#image-clip-${s.id})">${imageSvg(s)}</g><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}" ${paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}})}/>`;
     if (s.points?.length) return vectorSvg(s);
-    if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" fill="${s.fill}"/>`;
+    if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" ${paintAttributes(s)}/>`;
     if (s.kind === 'text') return textSvg(s, textLayout(s));
-    return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" fill="${s.fill}"/>`;
+    return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}" ${paintAttributes(s)}/>`;
   };
-  const body=clipDefinitions(shapes)+shapes.map(s=>clipSvg(s,pageShapes(),renderSvg(s))).join('');
+  const body=clipDefinitions(shapes)+sceneSvg(shapes,renderSvg);
   download(`${doc.name || 'design'} - ${activePage().name}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('Current page exported as SVG');
 }
 function finishPen(closed) {
@@ -281,6 +285,7 @@ async function placeImage(file,location=null,replaceId=0) {
 }
 function bind() {
   installIcons();
+  for(const [id,key] of [['opacity','opacity'],['corner-radius','corner_radius'],['fill-enabled','fill_enabled'],['stroke-enabled','stroke_enabled'],['stroke-color','stroke_color']])$(id).onchange=()=>{const s=current();if(!s)return;const value=id.endsWith('enabled')?$(id).checked:id==='stroke-color'?$(id).value:Number($(id).value)/(id==='opacity'?100:1);update({...s,appearance:{...appearance(s),[key]:value}});renderProperties();};
   $('place-image').onclick=()=>{imageReplaceId=0;$('image-file').click();};
   $('replace-image').onclick=()=>{imageReplaceId=current()?.id??0;$('image-file').click();};
   $('image-file').onchange=()=>{const file=$('image-file').files[0],replace=imageReplaceId;$('image-file').value='';if(file)placeImage(file,null,replace);};

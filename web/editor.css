@@ -19,3 +19,5 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 #image-section label{display:block;margin:10px 0}#image-section input,#image-section select{display:block;width:100%;margin-top:5px}
 #constraints-panel label{display:block;margin-top:12px;color:var(--muted)}
 #constraints-panel select{display:block;width:100%;margin-top:6px}
+#appearance-section label{display:block;margin-top:12px;color:var(--muted)}
+#appearance-section input{display:block;width:100%;margin-top:6px}

@@ -1,4 +1,5 @@
 import {visibleInTree} from './selection.js';
+import {appearance,radius,roundedContains} from './appearance.js';
 export function clippingFrames(shape,shapes) {
   const frames=[];let parent=shape.parent_id;
   while(parent) {const node=shapes.find(s=>s.id===parent);if(!node)break;if(node.clip_content)frames.push(node);parent=node.parent_id;}
@@ -6,16 +7,16 @@ export function clippingFrames(shape,shapes) {
 }
 export function paintBounds(shape,shapes) {
   if(!visibleInTree(shape,shapes))return null;
-  const pad=shape.points?.length?(shape.stroke_width??2)/2:0;
+  const pad=appearance(shape).stroke_enabled?(shape.stroke_width??2)/2:0;
   let left=shape.x-pad,top=shape.y-pad,right=shape.x+shape.width+pad,bottom=shape.y+shape.height+pad;
   for(const frame of clippingFrames(shape,shapes)) {left=Math.max(left,frame.x);top=Math.max(top,frame.y);right=Math.min(right,frame.x+frame.width);bottom=Math.min(bottom,frame.y+frame.height);}
   return right>left&&bottom>top?{...shape,x:left,y:top,width:right-left,height:bottom-top}:null;
 }
 export function frameAt(shapes,point) {
-  return [...shapes].reverse().find(s=>s.kind==='frame'&&visibleInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>point.x>=f.x&&point.x<=f.x+f.width&&point.y>=f.y&&point.y<=f.y+f.height))?.id??0;
+  return [...shapes].reverse().find(s=>s.kind==='frame'&&visibleInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
 }
 export function clipDefinitions(shapes) {
-  return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}"/></clipPath>`).join('')}</defs>`;
+  return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath>`).join('')}</defs>`;
 }
 export function clipSvg(shape,shapes,content) {
   return clippingFrames(shape,shapes).reduce((body,frame)=>`<g clip-path="url(#frame-clip-${frame.id})">${body}</g>`,content);
