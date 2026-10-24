@@ -1,0 +1,2 @@
+
+.selection-menu{max-height:calc(100vh - 8px);overflow-y:auto}.selection-menu button:disabled{opacity:.45;cursor:default}.selection-menu button:focus-visible{outline:2px solid #7864e8;outline-offset:-2px}

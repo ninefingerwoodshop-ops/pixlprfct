@@ -1,3 +1,4 @@
+import {showContextMenu} from './context-menu.js';
 import {installActionPanel} from './action-panel.js';
 import {renderGridControls,renderGridCell,defaultGrid} from './grid-controls.js';
 import {drawAlignedStroke} from './stroke-alignment.js';
@@ -102,7 +103,31 @@ function update(shape) { safe(() => { editor.update(JSON.stringify(shape)); refr
 function updateMany(shapes) { safe(() => { editor.update_many(JSON.stringify(shapes)); refresh(); }); }
 function frameSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.frame_selection(selectionJson())]);refresh();toast('Selection framed');});}
 function createComponentSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.create_component_selection(selectionJson())]);refresh();document.querySelector('.components-library').open=true;toast('Component created · insert linked copies from Assets');});}
-function showSelectionMenu(event,id){event.preventDefault();if(id&&!selectedIds.has(id)){setSelection([id]);refresh(false);}if(!selectedIds.size)return;document.querySelector('#selection-menu')?.remove();const menu=document.createElement('div');menu.id='selection-menu';menu.className='selection-menu';menu.setAttribute('role','menu');for(const [label,action] of [['Create component · Ctrl/⌘ Alt K',createComponentSelection],['Frame selection · Ctrl/⌘ Alt G',frameSelection],['Add auto layout · Shift A',()=>$('add-auto-layout').click()],['Group selection · Ctrl/⌘ G',groupSelection],['Duplicate',duplicateSelection]]){const b=document.createElement('button');b.textContent=label;b.setAttribute('role','menuitem');b.onclick=()=>{menu.remove();action();};menu.append(b);}menu.style.left=Math.max(0,Math.min(event.clientX,innerWidth-280))+'px';menu.style.top=Math.max(0,Math.min(event.clientY,innerHeight-180))+'px';document.body.append(menu);menu.firstChild.focus();const dismiss=e=>{if(!menu.contains(e.target)){menu.remove();document.removeEventListener('pointerdown',dismiss);}};document.addEventListener('pointerdown',dismiss);menu.onkeydown=e=>{if(e.key==='Escape'){e.stopPropagation();menu.remove();canvas.focus();}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();e.stopPropagation();const a=[...menu.children],i=a.indexOf(document.activeElement);a[(i+(e.key==='ArrowDown'?1:-1)+a.length)%a.length].focus();}};}
+function toggleSelectionVisibility(){const shapes=selectionShapes();if(!shapes.length)return;const hidden=shapes.some(s=>!s.hidden);gesture=null;updateMany(shapes.map(s=>({...s,hidden})));}
+function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
+function selectionActions(){
+  const shapes=selectionShapes(),shape=current();
+  const available={'create-component':!shape?.component,'add-auto-layout':!shape?.auto_layout,'group-layers':shapes.length>1&&!selectedGroup(pageShapes(),[...selectedIds]),'ungroup-layers':shapes.some(s=>s.group_id),'insert-instance':shape?.component?.type==='master','go-main':shape?.component?.type==='instance','reset-instance':shape?.component?.type==='instance','detach-instance':shape?.component?.type==='instance','forward':!!shape,'backward':!!shape};
+  const button=(id,label,shortcut)=>({label,shortcut,enabled:!!available[id],run:()=>$(id).click()});
+  return [
+    button('create-component','Create component','Ctrl/⌘ Alt K'),
+    {label:'Frame selection',shortcut:'Ctrl/⌘ Alt G',run:frameSelection},
+    button('add-auto-layout','Add auto layout','Shift A'),
+    {label:'Remove auto layout',visible:!!shape?.auto_layout,run:()=>update({...shape,auto_layout:null})},
+    button('group-layers','Group selection','Ctrl/⌘ G'),
+    {...button('ungroup-layers','Ungroup selection','Ctrl/⌘ Shift G'),visible:shapes.some(s=>s.group_id)},
+    {...button('insert-instance','Insert instance'),visible:shape?.component?.type==='master'},
+    ...['go-main','reset-instance','detach-instance'].map((id,i)=>({...button(id,['Go to main component','Reset instance overrides','Detach instance'][i]),visible:shape?.component?.type==='instance'})),
+    {label:'Rename layer',shortcut:'Ctrl/⌘ R',enabled:!!shape,run:renameSelection},
+    {label:shapes.every(s=>s.hidden)?'Show selection':'Hide selection',shortcut:'Ctrl/⌘ Shift H',run:toggleSelectionVisibility},
+    {label:shapes.every(s=>s.locked)?'Unlock selection':'Lock selection',shortcut:'Ctrl/⌘ Shift L',enabled:shapes.some(s=>!inheritedLock(s)),run:toggleSelectionLock},
+    button('forward','Bring forward'),button('backward','Send backward'),
+    {label:'Duplicate',shortcut:'Ctrl/⌘ D',run:duplicateSelection},
+    {label:'Delete',shortcut:'Delete',run:deleteSelection}
+  ];
+}
+function showSelectionMenu(event,id){event.preventDefault();if(id&&!selectedIds.has(id)){setSelection([id]);refresh(false);}if(!selectedIds.size)return;showContextMenu(event,selectionActions(),canvas);}
+
 function duplicateSelection() { safe(() => { if (selectedIds.size) { setSelection(JSON.parse(editor.duplicate_many(selectionJson()))); refresh(); } }); }
 function deleteSelection() { safe(() => { if (selectedIds.size) { editor.remove_many(selectionJson()); refresh(); } }); }
 function switchPage(id) { safe(() => { editor.select_page(id); refresh(); }); }
@@ -522,6 +547,7 @@ function bind() {
   for (const id of ['shortcuts','nav-help']) $(id).onclick = showShortcuts;
   const toolActions=[['select','Move','V'],['scale','Scale','K'],['hand','Hand / pan','H'],['frame','Frame','F'],['rectangle','Rectangle','R'],['ellipse','Ellipse','O'],['line','Line','L'],['arrow','Arrow','Shift L'],['polygon','Polygon',''],['star','Star',''],['pen','Pen','P'],['pencil','Pencil','Shift P'],['text','Text','T']].map(([tool,label,shortcut])=>({label,shortcut,category:'Drawing',run:()=>{setTool(tool);canvas.focus();}}));
   const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&!b.closest('[hidden]');},run:()=>$(id).click()}));
+  commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
@@ -719,6 +745,8 @@ function bind() {
     if (document.querySelector('dialog[open]')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(mod&&event.shiftKey&&key==='h'){event.preventDefault();toggleSelectionVisibility();return;}
+    if(mod&&!event.shiftKey&&!event.altKey&&key==='r'){event.preventDefault();renameSelection();return;}
     if(mod&&event.shiftKey&&key==='l'){event.preventDefault();toggleSelectionLock();return;}
     if(editingLayout&&!mod){
       if(key==='escape'||key==='enter'){event.preventDefault();const preview=gesture?.type==='layout-spacing'?gesture.preview:null;gesture=null;if(key==='enter'&&preview)update(preview);if(key==='enter'||!preview){editingLayout=0;activeSpacing=null;}renderProperties();draw();return;}
@@ -732,7 +760,7 @@ function bind() {
       if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current();if(activeGradient){const h=gradientHandles(s,zoom,gradientField()).find(h=>h.part===activeGradient.part&&(h.part!=='stop'||h.index===activeGradient.index)),step=event.shiftKey?10:1;let p={x:h.x,y:h.y};if(h.part==='stop'){const g=s.appearance[gradientField()],t=Math.max(0,Math.min(1,g.stops[h.index].position+(['ArrowLeft','ArrowDown'].includes(event.key)?-step:step)/100));p={x:s.x+(g.start[0]+(g.end[0]-g.start[0])*t)*s.width,y:s.y+(g.start[1]+(g.end[1]-g.start[1])*t)*s.height};}else{p.x+=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;p.y+=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;}const result=moveGradientHandle(s,h,p,false,gradientField());activeGradient=result.active;update(result.shape);}return;}
     }
     if(mod&&event.altKey&&key==='g'){event.preventDefault();frameSelection();return;}
-    if(mod&&!event.altKey&&key==='k'){event.preventDefault();showActions();return;}
+    if(mod&&!event.altKey&&!event.shiftKey&&key==='k'){event.preventDefault();showActions();return;}
     if(mod&&event.altKey&&key==='k'){event.preventDefault();createComponentSelection();return;}
     if(mod&&event.shiftKey&&key==='r'){event.preventDefault();$('paste-replace').click();return;}
     if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}
