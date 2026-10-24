@@ -46,10 +46,11 @@
     "Rust nearest-endpoint path joining with orientation/handle preservation, coincident-anchor merging, straight bridges and atomic history",
     "atomic paste into multiple selected frames with independent subtree/group/prototype remapping, auto-layout integration and component synchronization",
     "inspector focus and caret preservation across dynamic field refreshes, coalesced rendering and uninterrupted click/Tab editing",
-    "layout guide snapping for drag and resize with nearest edge/center matching, zoom-adjusted tolerance, fractional coordinates, axis locks and Alt bypass"
+    "layout guide snapping for drag and resize with nearest edge/center matching, zoom-adjusted tolerance, fractional coordinates, axis locks and Alt bypass",
+    "document-level reusable layout-guide styles with linked updates across pages, create/apply/rename/detach/delete controls, component override pairing, clipboard flattening and atomic history"
   ],
   "remaining": [
-    "Additional frame layout controls and reusable guide styles",
+    "Additional frame layout controls",
     "Nested groups and complete tree reordering",
     "SVG import and external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and effects",

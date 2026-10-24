@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+mod guide_styles;
 mod path_join;
 mod path_split;
 
@@ -26,6 +27,8 @@ pub struct Shape {
     pub auto_layout: Option<AutoLayout>,
     #[serde(default)]
     pub layout_grids: Vec<LayoutGrid>,
+    #[serde(default)]
+    pub guide_style: u32,
     #[serde(default)]
     pub prototype: Option<Prototype>,
     #[serde(default)]
@@ -390,6 +393,8 @@ pub struct Document {
     #[serde(default)]
     pub component_sets: Vec<variants::ComponentSet>,
     #[serde(default)]
+    pub guide_styles: Vec<guide_styles::GuideStyle>,
+    #[serde(default)]
     pub component_properties: Vec<component_properties::ComponentProperty>,
 }
 
@@ -428,6 +433,7 @@ pub struct Editor {
 
 fn validate(document: &Document) -> Result<(), String> {
     variants::validate_sets(document)?;
+    guide_styles::validate_styles(document)?;
     if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
         return Err("Unsupported document version or document too large".into());
     }
@@ -512,24 +518,7 @@ fn validate(document: &Document) -> Result<(), String> {
         {
             return Err("Layout guides require a frame and allow at most eight grids".into());
         }
-        for grid in &shape.layout_grids {
-            if !["grid", "columns", "rows"].contains(&grid.kind.as_str())
-                || !["stretch", "start", "center", "end"].contains(&grid.alignment.as_str())
-                || !grid.size.is_finite()
-                || !(1.0..=1_000_000.0).contains(&grid.size)
-                || !(1..=256).contains(&grid.count)
-                || [grid.gutter, grid.margin]
-                    .iter()
-                    .any(|v| !v.is_finite() || !(0.0..=1_000_000.0).contains(v))
-                || !grid.opacity.is_finite()
-                || !(0.0..=1.0).contains(&grid.opacity)
-                || grid.color.len() != 7
-                || !grid.color.starts_with('#')
-                || !grid.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
-            {
-                return Err("Invalid layout guide settings".into());
-            }
-        }
+        guide_styles::validate_grids(&shape.layout_grids)?;
         for (min, max) in [
             (shape.layout_item.min_width, shape.layout_item.max_width),
             (shape.layout_item.min_height, shape.layout_item.max_height),
@@ -942,6 +931,7 @@ impl Editor {
             .map(|s| s.id)
             .collect();
         components::sync(&mut document, &mut next)?;
+        guide_styles::resolve(&mut document);
         let after_sync: std::collections::HashSet<_> = document
             .shapes
             .iter()
@@ -1001,6 +991,7 @@ impl Editor {
                 pages: default_pages(),
                 active_page: 1,
                 component_sets: vec![],
+                guide_styles: vec![],
                 component_properties: vec![],
             },
             undo: vec![],
@@ -1041,6 +1032,7 @@ impl Editor {
             .map(|s| {
                 let mut copy = s.clone();
                 copy.component = None;
+                copy.guide_style = 0;
                 if copy.prototype.as_ref().is_some_and(|p| {
                     ["navigate", "overlay", "swap"].contains(&p.action.as_str())
                         && !ids.contains(&p.target)
@@ -1087,6 +1079,7 @@ impl Editor {
         for s in &mut payload.shapes {
             s.page_id = 1;
             s.component = None;
+            s.guide_style = 0;
         }
         validate(&Document {
             version: 2,
@@ -1095,6 +1088,7 @@ impl Editor {
             pages: default_pages(),
             active_page: 1,
             component_sets: vec![],
+            guide_styles: vec![],
             component_properties: vec![],
         })?;
         let next = self
@@ -1370,6 +1364,7 @@ impl Editor {
             appearance: None,
             auto_layout: None,
             layout_grids: vec![],
+            guide_style: 0,
             prototype: None,
             flow_name: String::new(),
             layout_item: LayoutItem::default(),

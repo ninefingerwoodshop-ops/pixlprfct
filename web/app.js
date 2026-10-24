@@ -243,7 +243,12 @@ function renderPropertiesNow() {
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
   renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype);
-  renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();});
+  renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();},{
+    styles:doc.guide_styles??[],
+    save:(style,frame)=>safe(()=>{editor.save_guide_style(JSON.stringify(style),frame);refresh();}),
+    apply:id=>safe(()=>{editor.apply_guide_style(JSON.stringify([...selectedIds]),id);refresh();}),
+    remove:id=>safe(()=>{editor.remove_guide_style(id);refresh();})
+  });
   if (!shape) return;
   $('auto-layout-panel').hidden=shape.kind!=='frame';$('layout-direction').value=shape.auto_layout?.direction??'none';$('layout-settings').hidden=!shape.auto_layout;
   if(shape.auto_layout)for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap']){const el=$('layout-'+key);if((key.startsWith('hug')||key==='wrap'))el.checked=shape.auto_layout[key];else el.value=shape.auto_layout[key]??'';}

@@ -28,6 +28,7 @@ const FIELDS: &[&str] = &[
     "clip_content",
     "auto_layout",
     "layout_grids",
+    "guide_style",
     "prototype",
     "layout_item",
     "constraints",
@@ -219,6 +220,9 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
 }
 
 pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
+    if new.guide_style == old.guide_style && new.layout_grids != old.layout_grids {
+        new.guide_style = 0;
+    }
     if old.component != new.component {
         return Err("Use the component actions to change component links".into());
     }
@@ -251,6 +255,13 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
             } else {
                 changed.retain(|f| !f.starts_with(&format!("{field}.")));
                 changed.push((*field).into());
+            }
+        }
+        if a["layout_grids"] != b["layout_grids"] || a["guide_style"] != b["guide_style"] {
+            for field in ["layout_grids", "guide_style"] {
+                if !changed.iter().any(|p| p == field) {
+                    changed.push(field.into());
+                }
             }
         }
         new.component = Some(Component::Instance {
@@ -622,7 +633,12 @@ impl Editor {
         let Some(Component::Instance { overrides, .. }) = &mut shape.component else {
             return Err("Select an instance layer".into());
         };
-        overrides.retain(|p| p != path && !p.starts_with(&format!("{path}.")));
+        overrides.retain(|p| {
+            p != path
+                && !p.starts_with(&format!("{path}."))
+                && !(["layout_grids", "guide_style"].contains(&path)
+                    && ["layout_grids", "guide_style"].contains(&p.as_str()))
+        });
         self.commit(doc)
     }
 

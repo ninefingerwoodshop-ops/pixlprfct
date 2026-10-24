@@ -26,12 +26,27 @@ export function drawLayoutGuides(ctx,shapes,zoom){
   }ctx.restore();
  }
 }
-export function renderGuideControls(host,shape,change,shown,toggle){
+export function renderGuideControls(host,shape,change,shown,toggle,stylesApi){
  host.replaceChildren();host.hidden=shape?.kind!=='frame';if(host.hidden)return;
  const title=document.createElement('h3');title.textContent='Layout guides';host.append(title);
  const show=document.createElement('button');show.className='wide-button';show.textContent=shown?'Hide all guides · Shift G':'Show all guides · Shift G';show.onclick=toggle;host.append(show);
+ const linked=stylesApi?.styles.find(s=>s.id===shape.guide_style);
+ const commit=next=>linked?stylesApi.save({...linked,grids:next.layout_grids},0):change(next);
+ if(stylesApi){
+  const choose=document.createElement('select');choose.setAttribute('aria-label','Layout guide style');
+  for(const s of [{id:0,name:'Custom guides (no style)'},...stylesApi.styles]){const o=document.createElement('option');o.value=s.id;o.textContent=s.name;choose.append(o);}choose.value=shape.guide_style??0;choose.onchange=()=>stylesApi.apply(Number(choose.value));host.append(choose);
+  const name=document.createElement('input');name.type='text';name.maxLength=128;name.placeholder='Guide style name';name.setAttribute('aria-label','Guide style name');name.value=linked?.name??'';host.append(name);
+  const button=(text,fn)=>{const b=document.createElement('button');b.className='wide-button';b.textContent=text;b.onclick=fn;host.append(b);return b;};
+  button('Save as new guide style',()=>stylesApi.save({id:0,name:name.value,grids:shape.layout_grids??[]},shape.id));
+  if(linked){
+   const note=document.createElement('p');note.className='muted';note.textContent='Editing these guides updates every frame linked to this style.';host.append(note);
+   button('Rename guide style',()=>stylesApi.save({...linked,name:name.value},0));
+   button('Detach guide style',()=>stylesApi.apply(0));
+   button('Delete guide style',()=>stylesApi.remove(linked.id));
+  }
+ }
  const grids=shape.layout_grids??[];
- const save=(i,patch)=>change({...shape,layout_grids:grids.map((g,n)=>n===i?{...g,...patch}:g)});
+ const save=(i,patch)=>commit({...shape,layout_grids:grids.map((g,n)=>n===i?{...g,...patch}:g)});
  grids.forEach((g,i)=>{
   const box=document.createElement('div');box.className='guide-settings';host.append(box);
   const label=(name,input)=>{const l=document.createElement('label');l.append(document.createTextNode(name),input);input.setAttribute('aria-label',`Guide ${i+1} ${name}`);box.append(l);};
@@ -42,7 +57,7 @@ export function renderGuideControls(host,shape,change,shown,toggle){
   if(g.kind==='grid'||g.alignment!=='stretch')number('Size','size',1,1000000);
   const color=document.createElement('input');color.type='color';color.value=g.color;color.onchange=()=>save(i,{color:color.value});label('Color',color);number('Opacity (%)','opacity',0,100);
   const visible=document.createElement('input');visible.type='checkbox';visible.checked=g.visible;visible.onchange=()=>save(i,{visible:visible.checked});label('Visible',visible);
-  const remove=document.createElement('button');remove.className='wide-button danger';remove.textContent=`Remove guide ${i+1}`;remove.onclick=()=>change({...shape,layout_grids:grids.filter((_,n)=>n!==i)});box.append(remove);
+  const remove=document.createElement('button');remove.className='wide-button danger';remove.textContent=`Remove guide ${i+1}`;remove.onclick=()=>commit({...shape,layout_grids:grids.filter((_,n)=>n!==i)});box.append(remove);
  });
- const add=document.createElement('button');add.className='wide-button';add.textContent='Add layout guide';add.disabled=grids.length>=8;add.onclick=()=>change({...shape,layout_grids:[...grids,defaultGuide()]});host.append(add);
+ const add=document.createElement('button');add.className='wide-button';add.textContent='Add layout guide';add.disabled=grids.length>=8;add.onclick=()=>commit({...shape,layout_grids:[...grids,defaultGuide()]});host.append(add);
 }
