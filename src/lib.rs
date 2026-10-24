@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+mod path_join;
 mod path_split;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -1313,6 +1314,45 @@ impl Editor {
         self.commit(document)?;
         self.next_id += 1;
         Ok(id)
+    }
+
+    pub fn join_paths(&mut self, selection: &str) -> Result<u32, String> {
+        let ids = self.selection_ids(selection)?;
+        if ids.len() != 2 {
+            return Err("Select exactly two open paths".into());
+        }
+        let a = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == ids[0])
+            .unwrap();
+        let b = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == ids[1])
+            .unwrap();
+        if a.parent_id != b.parent_id {
+            return Err("Paths must share the same parent".into());
+        }
+        for original in [a, b] {
+            let mut node = Some(original);
+            while let Some(s) = node {
+                if s.locked {
+                    return Err("Unlock both paths and their parent before joining".into());
+                }
+                node = self.document.shapes.iter().find(|p| p.id == s.parent_id);
+            }
+        }
+        let mut joined = path_join::join(a, b)?;
+        components::record_overrides(a, &mut joined)?;
+        let mut document = self.document.clone();
+        document.shapes.retain(|s| s.id != ids[1]);
+        let i = document.shapes.iter().position(|s| s.id == ids[0]).unwrap();
+        document.shapes[i] = joined;
+        self.commit(document)?;
+        Ok(ids[0])
     }
 
     pub fn split_path(&mut self, id: u32, index: usize) -> Result<String, String> {

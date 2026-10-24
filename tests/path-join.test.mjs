@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
+import init,{Editor} from '../web/pkg/pixlprfct_core.js';import {fromPoints,anchors} from '../web/vectors.js';import {cubicPoint} from '../web/vector-edit.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+const shapes=e=>JSON.parse(e.snapshot()).shapes,get=(e,id)=>shapes(e).find(s=>s.id===id),near=(a,b)=>assert.ok(Math.hypot(a.x-b.x,a.y-b.y)<1e-8);
+const a=[{x:0,y:0,in:{x:0,y:0},out:{x:30,y:-20}},{x:100,y:30,in:{x:70,y:50},out:{x:100,y:30}}],b=[{x:100,y:30,in:{x:100,y:30},out:{x:130,y:80}},{x:200,y:0,in:{x:180,y:50},out:{x:200,y:0}}];
+const reverse=p=>[...p].reverse().map(n=>({...n,in:n.out,out:n.in}));
+test('joining coincident endpoints handles all orientations and preserves both cubic curves',()=>{
+ for(const ra of [false,true])for(const rb of [false,true]){const e=new Editor(),first=e.insert(JSON.stringify(fromPoints('pen',ra?reverse(a):a))),second=e.insert(JSON.stringify(fromPoints('pen',rb?reverse(b):b))),before=e.snapshot();assert.equal(e.join_paths(JSON.stringify([first,second])),first);const p=anchors(get(e,first));assert.equal(p.length,3);assert.equal(shapes(e).length,1);for(let t=0;t<=1;t+=.05){near(cubicPoint(p[0],p[1],t),cubicPoint(a[0],a[1],t));near(cubicPoint(p[1],p[2],t),cubicPoint(b[0],b[1],t));}const after=e.snapshot();e.undo();assert.equal(e.snapshot(),before);e.redo();assert.equal(e.snapshot(),after);e.free();}
+});
+test('separated endpoints receive a straight bridge and retain first-path style and ID',()=>{
+ const e=new Editor(),first=e.insert(JSON.stringify({...fromPoints('pen',a),fill:'#ff0000',stroke_width:7})),second=e.insert(JSON.stringify(fromPoints('pen',b.map(p=>({...p,x:p.x+40,in:{x:p.in.x+40,y:p.in.y},out:{x:p.out.x+40,y:p.out.y}})))));e.join_paths(JSON.stringify([first,second]));const s=get(e,first),p=anchors(s);assert.equal(p.length,4);assert.equal(s.fill,'#ff0000');assert.equal(s.stroke_width,7);near(p[1].out,p[1]);near(p[2].in,p[2]);near(cubicPoint(p[1],p[2],.5),{x:120,y:30});e.free();
+});
+test('invalid, closed, differently parented and locked paths reject atomically',()=>{
+ const e=new Editor(),first=e.insert(JSON.stringify(fromPoints('pen',a))),second=e.insert(JSON.stringify(fromPoints('pen',b))),before=e.snapshot();assert.throws(()=>e.join_paths(JSON.stringify([first])));assert.equal(e.snapshot(),before);e.update(JSON.stringify({...get(e,second),locked:true}));const locked=e.snapshot();assert.throws(()=>e.join_paths(JSON.stringify([first,second])));assert.equal(e.snapshot(),locked);e.undo();const f=e.add('frame',0,0);e.reparent_many(JSON.stringify([second]),f);const parented=e.snapshot();assert.throws(()=>e.join_paths(JSON.stringify([first,second])));assert.equal(e.snapshot(),parented);const closed=e.insert(JSON.stringify(fromPoints('pen',[...a,{x:50,y:100}],true))),state=e.snapshot();assert.throws(()=>e.join_paths(JSON.stringify([first,closed])));assert.equal(e.snapshot(),state);e.free();
+});
