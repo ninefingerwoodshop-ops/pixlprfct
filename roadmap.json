@@ -57,13 +57,14 @@
     "after-delay frame and nested-instance prototype actions with configurable delay, transition-aware timing, visit-scoped cancellation, repaint pause/resume, component overrides and persistence",
     "multiple independent prototype interactions per layer, one per supported trigger, with add/remove controls, trigger-specific playback, all connection wires, complete destination remapping and collection-level component overrides",
     "mouse-down/touch-press and mouse-up/touch-release prototype triggers with independent targets, cross-screen gesture continuation, compatibility-click suppression and canceled/secondary-pointer protection",
-    "stacked drop shadows with offsets, blur, positive/negative alpha-mask spread, color/opacity/visibility/order controls, clipped subtree compositing, component overrides, scaling, SVG filters and pixel-verified PNG export"
+    "stacked drop shadows with offsets, blur, positive/negative alpha-mask spread, color/opacity/visibility/order controls, clipped subtree compositing, component overrides, scaling, SVG filters and pixel-verified PNG export",
+    "inner shadows with inverse-alpha spread/blur/offset masks, alpha-preserving compositing, mixed shadow stacks, unchanged export bounds, legacy migration, component inheritance and pixel-verified raster output"
   ],
   "remaining": [
     "Additional frame layout controls",
     "Nested groups and complete tree reordering",
     "Broader SVG import: compound/even-odd fills, radial/repeating gradients and gradient strokes, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
-    "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients, inner shadows and layer/background blur",
+    "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and layer/background blur",
     "Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",

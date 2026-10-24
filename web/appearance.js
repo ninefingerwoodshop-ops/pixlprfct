@@ -27,7 +27,8 @@ export function drawScene(shapes,context,paint) {
   const shadows=visibleShadows(a);if(a.opacity===1&&!shadows.length){content(target);return;}
   const box=geometry.get(s.id)?.content;if(!box)return;const density=Math.hypot(target.getTransform().a,target.getTransform().b),size=effectSurfaceSize(box,density),surface=new OffscreenCanvas(size.width,size.height),layer=surface.getContext('2d');layer.setTransform(size.scale,0,0,size.scale,-box.x*size.scale,-box.y*size.scale);content(layer);
   const sourceBox={...box,width:size.width/size.scale,height:size.height/size.scale};
-  const compose=c=>{for(const shadow of [...shadows].reverse())drawShadow(c,surface,sourceBox,shadow);c.drawImage(surface,sourceBox.x,sourceBox.y,sourceBox.width,sourceBox.height);};
+  for(const shadow of [...shadows].reverse().filter(s=>s.kind==='inner'))drawShadow(layer,surface,sourceBox,shadow);
+  const compose=c=>{for(const shadow of [...shadows].reverse().filter(s=>s.kind!=='inner'))drawShadow(c,surface,sourceBox,shadow);c.drawImage(surface,sourceBox.x,sourceBox.y,sourceBox.width,sourceBox.height);};
   target.save();target.globalAlpha*=a.opacity;
   if(shadows.length&&a.opacity<1){const output=geometry.get(s.id).output,outSize=effectSurfaceSize(output,density),combined=new OffscreenCanvas(outSize.width,outSize.height),c=combined.getContext('2d');c.setTransform(outSize.scale,0,0,outSize.scale,-output.x*outSize.scale,-output.y*outSize.scale);compose(c);target.drawImage(combined,output.x,output.y,outSize.width/outSize.scale,outSize.height/outSize.scale);}else compose(target);
   target.restore();

@@ -7,7 +7,7 @@ import {scaleShapes} from '../web/scaling.js';
 import {shadowBounds,shadowFilter,spreadAlpha,compositeGeometry,effectSurfaceSize} from '../web/shadows.js';
 import {exportBounds,exportSize,svgDocument} from '../web/export.js';
 await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
-const get=(e,id)=>JSON.parse(e.snapshot()).shapes.find(s=>s.id===id),shadow={x:4,y:8,blur:12,spread:2,color:'#123456',opacity:.4,visible:true};
+const get=(e,id)=>JSON.parse(e.snapshot()).shapes.find(s=>s.id===id),shadow={kind:'drop',x:4,y:8,blur:12,spread:2,color:'#123456',opacity:.4,visible:true};
 const set=(e,id,shadows)=>{const s=get(e,id);e.update(JSON.stringify({...s,appearance:{...appearance(s),shadows}}));};
 test('shadow stacks persist through history, clipboard and save; malformed effects reject atomically',()=>{
  const e=new Editor(),r=e.add('rectangle',0,0);set(e,r,[shadow,{...shadow,x:-10,spread:-4,visible:false}]);const saved=e.snapshot();

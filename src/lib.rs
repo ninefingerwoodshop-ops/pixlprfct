@@ -254,6 +254,8 @@ fn opaque_paint() -> f64 {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DropShadow {
+    #[serde(default = "shadow_kind")]
+    pub kind: String,
     pub x: f64,
     pub y: f64,
     pub blur: f64,
@@ -267,6 +269,10 @@ pub struct DropShadow {
 
 fn shadow_visible() -> bool {
     true
+}
+
+fn shadow_kind() -> String {
+    "drop".into()
 }
 
 fn default_miter_limit() -> f64 {
@@ -684,9 +690,10 @@ fn validate(document: &Document) -> Result<(), String> {
             }
             if a.shadows.len() > 8
                 || a.shadows.iter().any(|shadow| {
-                    [shadow.x, shadow.y, shadow.spread]
-                        .iter()
-                        .any(|v| !v.is_finite() || v.abs() > 100_000.0)
+                    !["drop", "inner"].contains(&shadow.kind.as_str())
+                        || [shadow.x, shadow.y, shadow.spread]
+                            .iter()
+                            .any(|v| !v.is_finite() || v.abs() > 100_000.0)
                         || !shadow.blur.is_finite()
                         || !(0.0..=100_000.0).contains(&shadow.blur)
                         || !shadow.opacity.is_finite()
