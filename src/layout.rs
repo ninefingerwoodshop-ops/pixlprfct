@@ -217,7 +217,32 @@ fn lines(
     }
     result
 }
-fn cross_size(shapes: &[Shape], line: &[usize], h: bool) -> f64 {
+fn baseline(s: &Shape, height: f64) -> f64 {
+    if s.kind == "text" {
+        s.measured_baseline.unwrap_or_else(|| {
+            s.typography
+                .as_ref()
+                .map_or(height * 0.8, |t| t.font_size * 0.8)
+        })
+    } else {
+        height
+    }
+}
+fn cross_size(shapes: &[Shape], line: &[usize], h: bool, align_baseline: bool) -> f64 {
+    if h && align_baseline {
+        let top = line
+            .iter()
+            .map(|&c| baseline(&shapes[c], basis(&shapes[c], false)))
+            .fold(0.0, f64::max);
+        let bottom = line
+            .iter()
+            .map(|&c| {
+                let height = basis(&shapes[c], false);
+                height - baseline(&shapes[c], height)
+            })
+            .fold(0.0, f64::max);
+        return top + bottom;
+    }
     line.iter()
         .map(|&c| basis(&shapes[c], !h))
         .fold(0.0, f64::max)
@@ -331,11 +356,14 @@ pub(crate) fn reflow(doc: &mut Document) {
             let cross = if l.wrap {
                 {
                     let (lo, hi) = track_bounds(
-                        rows.iter().map(|r| cross_size(shapes, r, horizontal)),
+                        rows.iter()
+                            .map(|r| cross_size(shapes, r, horizontal, l.text_baseline)),
                         cross_gap(&l),
                     );
                     hi - lo
                 }
+            } else if horizontal && l.text_baseline {
+                cross_size(shapes, &items, horizontal, true)
             } else {
                 items
                     .iter()
@@ -380,7 +408,7 @@ pub(crate) fn reflow(doc: &mut Document) {
                 .iter()
                 .map(|r| {
                     if l.wrap {
-                        cross_size(shapes, r, horizontal)
+                        cross_size(shapes, r, horizontal, l.text_baseline)
                     } else {
                         cross
                     }
@@ -422,6 +450,15 @@ pub(crate) fn reflow(doc: &mut Document) {
             let row_gap = cg + row_extra;
             for (row, line) in rows.iter().enumerate() {
                 let row_cross = heights[row] + stretch;
+                let row_baseline = line
+                    .iter()
+                    .map(|&c| {
+                        let s = &shapes[c];
+                        let height =
+                            bounded(s, false, if fill(s, false) { row_cross } else { s.height });
+                        baseline(s, height)
+                    })
+                    .fold(0.0, f64::max);
                 let mut sizes: Vec<f64> = line
                     .iter()
                     .map(|&c| basis(&shapes[c], horizontal))
@@ -480,10 +517,14 @@ pub(crate) fn reflow(doc: &mut Document) {
                             size(s, !horizontal)
                         },
                     );
-                    let offset = match l.align.as_str() {
-                        "center" => (row_cross - cs) / 2.0,
-                        "end" => row_cross - cs,
-                        _ => 0.0,
+                    let offset = if horizontal && l.text_baseline {
+                        row_baseline - baseline(s, cs)
+                    } else {
+                        match l.align.as_str() {
+                            "center" => (row_cross - cs) / 2.0,
+                            "end" => row_cross - cs,
+                            _ => 0.0,
+                        }
                     };
                     let (x, y, w, h) = if horizontal {
                         (

@@ -10,6 +10,15 @@ export function textSize(shape, measure) {
   return [width,Math.max(1,Math.ceil(layoutText({...shape,width},measure).height))];
 }
 
+// Measure the alphabetic baseline relative to the same top origin used by
+// canvas text rendering. The difference avoids assuming a font ascent ratio.
+export function textBaseline(shape, ctx) {
+  ctx.save();ctx.font=fontCss(textStyle(shape));ctx.textBaseline='alphabetic';
+  const alphabetic=ctx.measureText('Hg').actualBoundingBoxAscent;
+  ctx.textBaseline='top';const top=ctx.measureText('Hg').actualBoundingBoxAscent;ctx.restore();
+  const offset=alphabetic-top;return Number.isFinite(offset)&&offset>=0?offset:textStyle(shape).font_size*.8;
+}
+
 export function resizeText(shape, widthChanged, heightChanged) {
   if(shape.kind!=='text')return shape;
   const style=textStyle(shape),sizing=heightChanged?'fixed':widthChanged&&style.sizing==='width'?'height':style.sizing;

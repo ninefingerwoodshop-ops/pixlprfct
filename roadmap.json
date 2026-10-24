@@ -71,7 +71,8 @@
     "inside/center/outside stroke alignment for closed geometry, text and image outlines with shared masks, independent stroke opacity/gradients, outer-edge hit testing, bounded export buffers, component overrides and pixel-verified PNG/SVG placement",
     "per-frame inside-stroke inclusion in auto layout with independent nested settings, content-space fill allocation, padding/border minimums, stroke-aware wrapping and canvas handles, component overrides and legacy persistence",
     "Space Around and Space Evenly distribution for main-axis children and wrapped rows/columns, automatic replacement of stored numeric gaps, single-item centering, overflow stability and fill-first allocation",
-    "negative main/cross gaps for overlapping auto-layout content, full-extents hug sizing, matching Rust/canvas row packing, overlap handles and keyboard editing, automatic gap overflow protection"
+    "negative main/cross gaps for overlapping auto-layout content, full-extents hug sizing, matching Rust/canvas row packing, overlap handles and keyboard editing, automatic gap overflow protection",
+    "horizontal auto-layout first text baseline alignment using browser font metrics, independent wrapped-row baselines, bottom-edge alignment for non-text children, ascent/descent hug sizing, fixed-text preservation and component overrides"
   ],
   "remaining": [
     "Additional frame layout controls and per-edge stroke weights",

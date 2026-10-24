@@ -54,6 +54,8 @@ pub struct Shape {
     pub component: Option<components::Component>,
     #[serde(default)]
     pub typography: Option<Typography>,
+    #[serde(skip)]
+    pub measured_baseline: Option<f64>,
     #[serde(default)]
     pub points: Vec<[f64; 2]>,
     #[serde(default)]
@@ -192,6 +194,8 @@ pub struct AutoLayout {
     #[serde(default)]
     pub strokes_included: bool,
     #[serde(default)]
+    pub text_baseline: bool,
+    #[serde(default)]
     pub wrap: bool,
     #[serde(default)]
     pub cross_gap: Option<f64>,
@@ -217,6 +221,7 @@ impl Default for AutoLayout {
             hug_width: true,
             hug_height: true,
             strokes_included: true,
+            text_baseline: false,
             wrap: false,
             cross_gap: None,
             align_content: default_content_align(),
@@ -935,11 +940,21 @@ fn validate(document: &Document) -> Result<(), String> {
 
 impl Editor {
     fn reflow_text(&self, document: &mut Document) -> Result<(), String> {
-        if !document
+        let baseline_parents: std::collections::HashSet<_> = document
             .shapes
             .iter()
-            .any(|s| s.kind == "text" && s.typography.as_ref().is_some_and(|t| t.sizing != "fixed"))
-        {
+            .filter(|s| {
+                s.auto_layout
+                    .as_ref()
+                    .is_some_and(|l| l.text_baseline && l.direction == "horizontal")
+            })
+            .map(|s| s.id)
+            .collect();
+        if !document.shapes.iter().any(|s| {
+            s.kind == "text"
+                && (baseline_parents.contains(&s.parent_id)
+                    || s.typography.as_ref().is_some_and(|t| t.sizing != "fixed"))
+        }) {
             reflow(document);
             return Ok(());
         }
@@ -974,7 +989,7 @@ impl Editor {
                 } else if in_layout && s.layout_item.fill_width && style.sizing == "width" {
                     style.sizing = "height".into();
                 }
-                if style.sizing == "fixed" {
+                if style.sizing == "fixed" && !baseline_parents.contains(&s.parent_id) {
                     continue;
                 }
                 let sizing = style.sizing.clone();
@@ -990,19 +1005,27 @@ impl Editor {
                         &JsValue::from_str(&serde_json::to_string(&measured).unwrap()),
                     )
                     .map_err(|_| "Text measurement failed")?;
-                let size: [f64; 2] =
+                let size: Vec<f64> =
                     serde_json::from_str(&result.as_string().ok_or("Invalid text measurement")?)
                         .map_err(|_| "Invalid text measurement")?;
-                if size
-                    .iter()
-                    .any(|v| !v.is_finite() || !(1.0..=1_000_000.0).contains(v))
+                if !(2..=3).contains(&size.len())
+                    || size
+                        .iter()
+                        .take(2)
+                        .any(|v| !v.is_finite() || !(1.0..=1_000_000.0).contains(v))
                 {
                     return Err("Text exceeds supported dimensions".into());
                 }
+                if let Some(baseline) = size.get(2) {
+                    if !baseline.is_finite() || !(0.0..=1_000_000.0).contains(baseline) {
+                        return Err("Invalid text baseline measurement".into());
+                    }
+                }
+                s.measured_baseline = size.get(2).copied();
                 if sizing == "width" && !(in_layout && s.layout_item.fill_width) {
                     s.width = size[0];
                 }
-                if !(in_layout && s.layout_item.fill_height) {
+                if sizing != "fixed" && !(in_layout && s.layout_item.fill_height) {
                     s.height = size[1];
                 }
             }
@@ -1622,6 +1645,7 @@ impl Editor {
             } else {
                 None
             },
+            measured_baseline: None,
         });
         self.commit(document)?;
         self.next_id += 1;
