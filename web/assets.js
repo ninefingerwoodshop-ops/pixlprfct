@@ -15,14 +15,17 @@ export function componentAssets(doc, query = '', page = '') {
   return assets.filter(a => (!page || a.pages.includes(Number(page))) && words.every(w => `${a.name} ${a.pages.map(pageName).join(' ')} ${a.variants.map(v=>v.label).join(' ')}`.toLocaleLowerCase().includes(w))).map(a=>({...a,pageNames:a.pages.map(pageName)})).sort((a,b)=>a.name.localeCompare(b.name));
 }
 
-export function renderAssets(container, assets, {insert, goMain, preview, page}, limit = 40) {
+export function renderAssets(container, assets, {insert, goMain, preview, page, dragStart, dragEnd}, limit = 40) {
   const rows = assets.slice(0,limit).map(asset => {
     const card = document.createElement('article');card.className='asset-card';
     const name = document.createElement('strong');name.textContent=asset.name;
     const location = document.createElement('small');location.textContent=asset.pageNames.join(' · ');
-    const thumb = document.createElement('img');thumb.alt='';thumb.loading='lazy';
+    const thumb = document.createElement('img');thumb.alt='';thumb.loading='lazy';thumb.draggable=false;
     const imageButton = document.createElement('button');imageButton.className='asset-preview';imageButton.setAttribute('aria-label','Insert instance of '+asset.name);imageButton.append(thumb);
     let selected = asset.variants.find(v=>String(v.page)===page)?.id ?? asset.variants[0].id;
+    imageButton.draggable=!!dragStart;imageButton.title='Click to insert, or drag onto the canvas';
+    imageButton.ondragstart=event=>dragStart?.(event,selected);
+    imageButton.ondragend=()=>dragEnd?.();
     const updatePreview = () => {try {thumb.src=preview(selected);thumb.hidden=false;} catch {thumb.hidden=true;}};
     updatePreview();imageButton.onclick=()=>insert(selected);
     card.append(imageButton,name,location);
@@ -37,6 +40,6 @@ export function renderAssets(container, assets, {insert, goMain, preview, page},
     actions.append(add,main);card.append(actions);return card;
   });
   if(!rows.length){const message=document.createElement('p');message.className='empty-assets';message.textContent='No matching components. Create a component from selected layers with Ctrl/Command + Alt + K, or clear your filters.';rows.push(message);}
-  if(assets.length>limit){const more=document.createElement('button');more.textContent=`Show more (${assets.length-limit} remaining)`;more.onclick=()=>renderAssets(container,assets,{insert,goMain,preview,page},limit+40);rows.push(more);}
+  if(assets.length>limit){const more=document.createElement('button');more.textContent=`Show more (${assets.length-limit} remaining)`;more.onclick=()=>renderAssets(container,assets,{insert,goMain,preview,page,dragStart,dragEnd},limit+40);rows.push(more);}
   container.replaceChildren(...rows);
 }

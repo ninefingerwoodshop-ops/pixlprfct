@@ -591,6 +591,40 @@ impl Editor {
         self.commit(doc)
     }
 
+    pub fn place_instance(
+        &mut self,
+        master: u32,
+        x: f64,
+        y: f64,
+        parent: u32,
+    ) -> Result<u32, String> {
+        let mut staged = Editor {
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let id = staged.create_instance(master, x, y)?;
+        if parent != 0 {
+            let shape = staged
+                .document
+                .shapes
+                .iter()
+                .find(|s| s.id == id)
+                .unwrap()
+                .clone();
+            staged.move_into(
+                &serde_json::to_string(&vec![shape]).map_err(|e| e.to_string())?,
+                parent,
+            )?;
+        }
+        self.commit(staged.document)?;
+        self.next_id = self.next_id.max(staged.next_id);
+        Ok(id)
+    }
+
     pub fn swap_instance(&mut self, id: u32, master: u32) -> Result<u32, String> {
         let root = self.instance_root(id)?;
         let old = subtree(&self.document.shapes, root);

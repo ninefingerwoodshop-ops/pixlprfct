@@ -1,3 +1,4 @@
+import {ASSET_MIME,assetDragPayload,readAssetDrag,centeredPlacement} from './asset-drag.js';
 import {instanceContext} from './instance-context.js';
 import {componentAssets,renderAssets} from './assets.js';
 import {showContextMenu} from './context-menu.js';
@@ -46,6 +47,9 @@ let toastTimer, savingTimer, recoveryBlocked = false, cloud=null;
 const imageCache=new Map();
 let imageReplaceId=0,imageLoading=false;
 let penPoints = [];
+const assetDragToken=crypto.randomUUID();let assetDrag=null;
+function clearAssetDrag(){assetDrag=null;draw();}
+function startAssetDrag(event,master){if(!event.dataTransfer)return;event.dataTransfer.setData(ASSET_MIME,assetDragPayload(assetDragToken,master));event.dataTransfer.effectAllowed='copy';assetDrag={master,point:null,parent:0};}
 let editingPath = 0;
 let editingLayout=0,activeSpacing=null;
 let activeNode=-1;
@@ -215,7 +219,7 @@ function renderAssetBrowser(){
   $('asset-page').value=doc.pages.some(p=>String(p.id)===page)?page:'';
   const assets=componentAssets(doc,$('asset-search').value,$('asset-page').value);
   $('asset-results').textContent=assets.length+' '+(assets.length===1?'component':'components');
-  renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:insertInstance,goMain:goToMain,preview:id=>{const shapes=exportShapes(doc.shapes,[id],'selection');return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgDocument(shapes,exportBounds(shapes),1,null,textLayout));}});
+  renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:insertInstance,goMain:goToMain,dragStart:startAssetDrag,dragEnd:clearAssetDrag,preview:id=>{const shapes=exportShapes(doc.shapes,[id],'selection');return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgDocument(shapes,exportBounds(shapes),1,null,textLayout));}});
 }
 function renderComponents(){
   renderAssetBrowser();
@@ -392,6 +396,7 @@ function draw() {
   if(gesture?.type==='layout-spacing'&&gesture.scene)scene=gesture.scene;
   drawScene(scene,ctx,drawShape);
   if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
+  if(assetDrag?.point){const source=doc.shapes.find(s=>s.id===assetDrag.master),parent=scene.find(s=>s.id===assetDrag.parent);if(source){const p=centeredPlacement(source,assetDrag.point);ctx.save();ctx.strokeStyle='#9747ff';ctx.lineWidth=2/zoom;if(parent)ctx.strokeRect(parent.x,parent.y,parent.width,parent.height);ctx.setLineDash([6/zoom,4/zoom]);ctx.strokeRect(p.x,p.y,source.width,source.height);ctx.restore();}}
   if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radii(frame));ctx.clip();}drawShape(preview);ctx.restore();}
   if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
   if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
@@ -553,8 +558,9 @@ function bind() {
   $('image-file').onchange=()=>{const file=$('image-file').files[0],replace=imageReplaceId;$('image-file').value='';if(file)placeImage(file,null,replace);};
   for(const [id,key] of [['image-mode','mode'],['image-zoom','zoom'],['image-x','offset_x'],['image-y','offset_y']])$(id).onchange=()=>{const shape=current();if(!shape?.image)return;const value=key==='mode'?$(id).value:Number($(id).value)/(key.startsWith('offset')?100:1);update({...shape,image:{...shape.image,[key]:value}});renderProperties();};
   $('reset-crop').onclick=()=>{const s=current();if(s?.image)update({...s,image:{...s.image,zoom:1,offset_x:.5,offset_y:.5}});};
-  canvas.ondragover=event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';};
-  canvas.ondrop=event=>{event.preventDefault();const file=event.dataTransfer.files[0];if(file)placeImage(file,point(event));};
+  canvas.ondragover=event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';if(event.dataTransfer.types.includes(ASSET_MIME)){if(!assetDrag){event.dataTransfer.dropEffect='none';return;}assetDrag.point=point(event);assetDrag.parent=frameAt(pageShapes(),assetDrag.point);draw();}};
+  canvas.ondragleave=()=>{if(assetDrag){assetDrag.point=null;draw();}};
+  canvas.ondrop=event=>{event.preventDefault();if(event.dataTransfer.types.includes(ASSET_MIME)){const master=readAssetDrag(event.dataTransfer.getData(ASSET_MIME),assetDragToken),p=point(event);clearAssetDrag();safe(()=>{const source=doc.shapes.find(s=>s.id===master&&s.component?.type==='master');if(!source)throw new Error('Drag a component from this file’s Assets panel');const placement=centeredPlacement(source,p),parent=frameAt(pageShapes(),p);setSelection([editor.place_instance(master,placement.x,placement.y,parent)]);refresh();toast(parent?'Linked instance placed in frame':'Linked instance placed');});return;}const file=event.dataTransfer.files[0];if(file)placeImage(file,point(event));};
   window.addEventListener('paste',event=>{
     if(event.target.closest('input,textarea,select,[contenteditable]')||!event.clipboardData)return;
     const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace,replace=pasteReplace,frames=pasteFrames;pasteInPlace=false;pasteReplace=false;pasteFrames=false;

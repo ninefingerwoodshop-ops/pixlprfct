@@ -1946,10 +1946,12 @@ impl Editor {
                             if let Some(s) =
                                 staged.document.shapes.iter_mut().find(|s| s.id == root.id)
                             {
+                                let previous = s.clone();
                                 let cell =
                                     s.layout_item.grid_cell.get_or_insert_with(Default::default);
                                 cell.column = Some(column);
                                 cell.row = Some(row);
+                                components::record_overrides(&previous, s)?;
                             }
                         }
                     }

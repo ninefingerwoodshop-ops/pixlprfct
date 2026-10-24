@@ -84,7 +84,8 @@
     "Dedicated local Assets panel with component SVG previews, name/page/variant-value search, page filtering, variant selection, linked insertion, main-component navigation and incremental result batches",
     "Atomic multi-layer forward/backward/front/back arrangement with stable selected order, indivisible flat groups, ancestor selection deduplication, independent parent/page order, component propagation, menu/search access and bracket shortcuts",
     "Nested linked instances inside main components with dependency-ordered propagation, independent inner/outer overrides, source swaps, cycle rejection, structural updates, history and persistence",
-    "Explicit outer-instance action targets, nested main navigation, root-only swap/variant controls, and atomic promotion of text/style overrides to main components while preserving geometry and independent instance overrides"
+    "Explicit outer-instance action targets, nested main navigation, root-only swap/variant controls, and atomic promotion of text/style overrides to main components while preserving geometry and independent instance overrides",
+    "Assets preview drag insertion with live bounds and destination-frame highlighting, selected variants, atomic frame/auto-layout/grid placement, persistent grid-cell overrides and session-scoped drag payloads"
   ],
   "remaining": [
     "Figma workflow audit: shared asset libraries, comprehensive context menus and tool discovery; nested instance-swap overrides",
