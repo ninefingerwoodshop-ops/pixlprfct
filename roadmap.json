@@ -87,10 +87,11 @@
     "Explicit outer-instance action targets, nested main navigation, root-only swap/variant controls, and atomic promotion of text/style overrides to main components while preserving geometry and independent instance overrides",
     "Assets preview drag insertion with live bounds and destination-frame highlighting, selected variants, atomic frame/auto-layout/grid placement, persistent grid-cell overrides and session-scoped drag payloads",
     "Separate keyboard-accessible Design and Prototype inspector tabs, selection-dependent Position/Layout/Appearance/Typography/Fill/Stroke/Effects ordering, compact fields, advanced disclosures, grouped Move tools and split Shape/Creation toolbar controls",
-    "Individual grid track deletion preserving layers, reducing crossing spans, shifting pinned cells, materializing automatic rows, component propagation and atomic undo"
+    "Individual grid track deletion preserving layers, reducing crossing spans, shifting pinned cells, materializing automatic rows, component propagation and atomic undo",
+    "Six Position inspector alignment controls with single-layer parent-frame alignment, descendant translation, auto-layout flow protection and atomic history"
   ],
   "remaining": [
-    "Exact Figma inspector and toolbar parity: parent alignment, rotation/flips, aspect lock, compact paint rows, multiple paints, styles/variables, complete region/type/comment tools and matching popovers",
+    "Exact Figma inspector and toolbar parity: rotation/flips, aspect lock, compact paint rows, multiple paints, styles/variables, complete region/type/comment tools and matching popovers",
     "Figma workflow audit: shared asset libraries, comprehensive context menus and tool discovery; nested instance-swap overrides",
     "Additional frame layout controls and per-edge stroke weights",
     "Nested groups and complete tree reordering",

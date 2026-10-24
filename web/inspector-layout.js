@@ -16,6 +16,7 @@ export function installInspectorLayout() {
  const header=make('div','inspector-selection');header.append(caption);design.prepend(header);
  const properties=$('properties'),name=$('shape-name').closest('section'),position=$('x').closest('section'),fill=$('paint-label').closest('section'),limits=$('limit-min_width').closest('section'),arrange=$('duplicate').closest('section');
  name.classList.add('inspector-layer-name');position.querySelector('h3').textContent='Position';
+ const alignment=document.querySelector('#multi-properties .align-tools').cloneNode(true);alignment.setAttribute('aria-label','Align to parent frame');position.querySelector('h3').after(alignment);
  $('shape-name').setAttribute('aria-label','Layer name');const visibility=$('visible').closest('label');visibility.classList.add('inspector-visibility');$('appearance-section').querySelector('h3').after(visibility);
  const layout=make('section','property-section');layout.id='dimensions-section';layout.append(make('h3','','Layout'));
  const dimensions=make('div','property-grid');dimensions.append($('width').closest('label'),$('height').closest('label'));layout.append(dimensions);

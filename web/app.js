@@ -308,7 +308,7 @@ function renderPropertiesNow() {
   const groupId=selectedGroup(pageShapes(),[...selectedIds]);
   $('group-actions').hidden=shapes.length<2&&!shapes.some(s=>s.group_id); $('group-layers').disabled=shapes.length<2||!!groupId; $('ungroup-layers').disabled=!shapes.some(s=>s.group_id);
   $('group-name-row').hidden=!groupId;if(groupId)$('group-name').value=shapes[0].group_name;
-  document.querySelectorAll('[data-align]').forEach(button=>button.disabled=shapes.some(s=>s.group_id));
+  document.querySelectorAll('[data-align]').forEach(button=>button.disabled=!shapes.length||shapes.some(s=>s.group_id)||(shapes.length===1&&(!parentShape||(layoutParent&&!shape.layout_item?.absolute))));
   $('scale-panel').hidden=tool!=='scale'||!shapes.length;
   $('join-paths').hidden=shapes.length!==2||shapes.some(s=>s.closed||!s.points?.length)||shapes[0].parent_id!==shapes[1].parent_id;
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;

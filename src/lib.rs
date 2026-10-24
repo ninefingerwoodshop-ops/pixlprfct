@@ -2180,15 +2180,24 @@ impl Editor {
 
     pub fn align_many(&mut self, json: &str, alignment: &str) -> Result<(), String> {
         let ids = self.selection_ids(json)?;
-        if ids.len() < 2 {
-            return Err("Select at least two layers to align".into());
-        }
         let mut document = self.document.clone();
-        let shapes: Vec<&Shape> = document
+        let mut shapes: Vec<&Shape> = document
             .shapes
             .iter()
             .filter(|s| ids.contains(&s.id))
             .collect();
+        if shapes.len() == 1 {
+            let child = shapes[0];
+            let parent = document
+                .shapes
+                .iter()
+                .find(|s| s.id == child.parent_id)
+                .ok_or("Select a layer inside a frame, or multiple layers to align")?;
+            if parent.auto_layout.is_some() && !child.layout_item.absolute {
+                return Err("Use the parent auto-layout alignment for flow children".into());
+            }
+            shapes = vec![parent];
+        }
         let left = shapes.iter().map(|s| s.x).fold(f64::INFINITY, f64::min);
         let top = shapes.iter().map(|s| s.y).fold(f64::INFINITY, f64::min);
         let right = shapes
