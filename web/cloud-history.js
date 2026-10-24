@@ -2,7 +2,7 @@ import {cloudRequest} from './cloud-session.js';
 export function openCloudHistory({session,useFile,closeFiles,toast}){
  if(!session.active)throw new Error('Open or save a cloud file before using version history.');
  const documentId=session.active.id,dialog=document.createElement('dialog');dialog.className='cloud-dialog';dialog.setAttribute('aria-label','Version history');
- const title=document.createElement('h2');title.textContent='Version history';const info=document.createElement('p');info.className='cloud-info';info.setAttribute('role','status');info.textContent='Save named checkpoints. Restoring also saves the current design as “Before restore”.';
+ const title=document.createElement('h2');title.textContent='Version history';const info=document.createElement('p');info.className='cloud-info';info.setAttribute('role','status');info.textContent='Save named checkpoints. Automatic backups preserve prior saved work every five minutes while editing. Restoring also saves the current design as “Before restore”.';
  const actions=document.createElement('div');actions.className='cloud-actions';const input=document.createElement('input');input.placeholder='Version name';input.maxLength=256;input.setAttribute('aria-label','Version name');
  const list=document.createElement('div');list.className='cloud-list';let busy=false,next=null;
  async function run(action){if(busy)return;busy=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);try{await action();}catch(error){info.textContent=error.message;}finally{busy=false;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}}

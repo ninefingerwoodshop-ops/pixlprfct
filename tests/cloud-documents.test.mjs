@@ -1,5 +1,6 @@
+import {cloudDatabase} from './cloud-db.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';import {documentApi} from '../lib/documents.mjs';
-function database(){const sql=new DatabaseSync(':memory:');sql.exec(readFileSync(new URL('../drizzle/0000_flaky_phalanx.sql',import.meta.url),'utf8'));return{close:()=>sql.close(),prepare(query){return{bind(...args){const statement=sql.prepare(query);return{all:async()=>({results:statement.all(...args)}),first:async()=>statement.get(...args)??null,run:async()=>({meta:{changes:Number(statement.run(...args).changes)}})};}}}};}
+const database=cloudDatabase;
 const body=JSON.stringify({version:2,name:'Cloud design',shapes:[],pages:[{id:1,name:'Page 1'}],active_page:1});
 function request(method='GET',data=null,owner='alice',revision=null,headers={}){return new Request('https://studio.example/api/documents',{method,headers:{...(owner?{'oai-authenticated-user-id':owner}:{}),...(data?{'content-type':'application/json'}:{}),...(revision?{'if-match':String(revision)}:{}),...headers},...(data?{body:data}:{})});}
 test('cloud documents authorize every operation and never expose another owner metadata',async()=>{

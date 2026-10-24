@@ -6,17 +6,20 @@ export function cloudFiles({snapshot,load,status,toast}){
  const heading=document.createElement('h2');heading.textContent='Your files';const info=document.createElement('p');info.className='cloud-info';info.setAttribute('role','status');
  const actions=document.createElement('div');actions.className='cloud-actions';const list=document.createElement('div');list.className='cloud-list';
  const signIn=document.createElement('a');signIn.href='/signin-with-chatgpt?return_to=%2Feditor%2Findex.html';signIn.target='_top';signIn.textContent='Sign in with ChatGPT';signIn.hidden=true;
- const close=button('Close',()=>dialog.close());dialog.append(heading,info,actions,signIn,list,close);document.body.append(dialog);
- let busy=false,trash=false;
+ const searchBox=document.createElement('div');searchBox.className='cloud-actions';const search=document.createElement('input');search.type='search';search.placeholder='Search files';search.setAttribute('aria-label','Search cloud files');const searchButton=button('Search',()=>refresh());searchBox.append(search,searchButton);search.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();run(()=>refresh());}};
+ const moreButton=button('Load more files',()=>refresh(true));moreButton.hidden=true;
+ const close=button('Close',()=>dialog.close());dialog.append(heading,info,actions,searchBox,signIn,list,moreButton,close);document.body.append(dialog);
+ let busy=false,trash=false,next=null;
  async function run(action){if(busy)return;busy=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);try{await action();}catch(error){info.textContent=error.message;signIn.hidden=error.status!==401;}finally{busy=false;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}}
  function button(text,action){const b=document.createElement('button');b.textContent=text;b.onclick=()=>run(action);return b;}
  function backupLocal(){if(!session.active){try{localStorage.setItem('pixlprfct.local-draft',snapshot());}catch{throw new Error('Download a local copy before opening another file; browser recovery storage is full.');}}}
  async function beforeSwitch(){await session.flush();backupLocal();}
  function useFile(file){load(file.body);session.adopt(file,snapshot());session.remember();}
- async function refresh(){
-  const result=await cloudRequest();signIn.hidden=true;list.replaceChildren();info.textContent=session.error?.message??'Cloud files are private to your account. Changes save automatically.';
+ async function refresh(more=false){
+  const query=new URLSearchParams();if(trash)query.set('trash','1');if(search.value.trim())query.set('search',search.value.trim());if(more&&next)query.set('before',next);
+  const result=await cloudRequest('?'+query);signIn.hidden=true;if(!more)list.replaceChildren();next=result.next;moreButton.hidden=!next;info.textContent=session.error?.message??'Cloud files are private to your account. Changes save automatically.';
   const files=result.documents.filter(f=>Boolean(f.deleted_at)===trash);
-  if(!files.length){const empty=document.createElement('p');empty.textContent=trash?'Trash is empty.':'No cloud files yet. Save this design or create a new file.';list.append(empty);}
+  if(!files.length&&!more){const empty=document.createElement('p');empty.textContent=search.value.trim()?'No matching files.':trash?'Trash is empty.':'No cloud files yet. Save this design or create a new file.';list.append(empty);}
   for(const f of files){const row=document.createElement('div');row.className='cloud-row';const text=document.createElement('div'),name=document.createElement('strong'),date=document.createElement('small');name.textContent=f.name;date.textContent=new Date(f.updated_at).toLocaleString();text.append(name,date);row.append(text);
    if(trash)row.append(button('Restore',async()=>{await cloudRequest('/'+f.id,{method:'PATCH',headers:{'if-match':String(f.revision)}});await refresh();}));
    else{row.append(button('Open',async()=>{await beforeSwitch();const file=await cloudRequest('/'+f.id);if(file.deleted_at)throw new Error('This file was moved to Trash.');useFile(file);dialog.close();toast('Cloud file opened');}));
