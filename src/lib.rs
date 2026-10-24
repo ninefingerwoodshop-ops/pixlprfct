@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 mod guide_styles;
 mod path_join;
 mod path_split;
+mod stroke_alignment;
 mod stroke_tips;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -247,6 +248,8 @@ pub struct Appearance {
     pub stroke_dash_offset: f64,
     #[serde(default = "default_round")]
     pub stroke_cap: String,
+    #[serde(default = "center_stroke")]
+    pub stroke_alignment: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stroke_start: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -255,6 +258,10 @@ pub struct Appearance {
     pub stroke_join: String,
     #[serde(default = "default_miter_limit")]
     pub stroke_miter_limit: f64,
+}
+
+fn center_stroke() -> String {
+    "center".into()
 }
 
 fn opaque_paint() -> f64 {
@@ -759,6 +766,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 || (!a.stroke_dash.is_empty() && a.stroke_dash.iter().sum::<f64>() == 0.0)
                 || !a.stroke_dash_offset.is_finite()
                 || a.stroke_dash_offset.abs() > 1_000_000.0
+                || !["inside", "center", "outside"].contains(&a.stroke_alignment.as_str())
                 || !["butt", "round", "square"].contains(&a.stroke_cap.as_str())
                 || [&a.stroke_start, &a.stroke_end].iter().any(|v| {
                     v.as_ref().is_some_and(|v| {
@@ -2276,11 +2284,14 @@ impl Editor {
                     }
                     parent = ancestor.parent_id;
                 }
+                if stroke_alignment::hit(s, x, y) {
+                    return true;
+                }
                 if !s.points.is_empty() {
                     if stroke_tips::hit(s, x, y) {
                         return true;
                     }
-                    let margin = (s.stroke_width / 2.0).max(4.0);
+                    let margin = stroke_alignment::reach(s).max(4.0);
                     if x < s.x - margin
                         || x > s.x + s.width + margin
                         || y < s.y - margin
@@ -2303,9 +2314,7 @@ impl Editor {
                         let t = (((x - a[0]) * dx + (y - a[1]) * dy)
                             / (dx * dx + dy * dy).max(0.000001))
                         .clamp(0.0, 1.0);
-                        if (x - a[0] - t * dx).hypot(y - a[1] - t * dy)
-                            <= (s.stroke_width / 2.0).max(4.0)
-                        {
+                        if (x - a[0] - t * dx).hypot(y - a[1] - t * dy) <= margin {
                             return true;
                         }
                         if s.closed

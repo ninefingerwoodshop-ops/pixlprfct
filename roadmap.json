@@ -67,13 +67,14 @@
     "transactional automatic backups of prior cloud saves at five-minute intervals, literal-name file search and cursor pagination across active files and Trash",
     "private immutable object storage for cloud document bodies above 1.5 MB with backward-compatible inline reads, object-backed history/restore, failure preservation and verified 2.56 MB browser round trip",
     "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; Bézier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
-    "on-canvas auto-layout padding, main-gap and wrapped cross-gap handles with Rust descendant preview, linked opposite padding, keyboard adjustment, zoom-aware hit targets, clipping and atomic undo"
+    "on-canvas auto-layout padding, main-gap and wrapped cross-gap handles with Rust descendant preview, linked opposite padding, keyboard adjustment, zoom-aware hit targets, clipping and atomic undo",
+    "inside/center/outside stroke alignment for closed geometry, text and image outlines with shared masks, independent stroke opacity/gradients, outer-edge hit testing, bounded export buffers, component overrides and pixel-verified PNG/SVG placement"
   ],
   "remaining": [
-    "Additional frame layout controls",
+    "Additional frame layout controls, including inside-stroke inclusion/exclusion in auto-layout sizing",
     "Nested groups and complete tree reordering",
     "Broader SVG import: compound/even-odd fills, repeating gradients and radial focal circles larger than the outer circle, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
-    "Rotation, corner smoothing, multiple paints, stroke alignment, advanced gradients and background blur",
+    "Rotation, corner smoothing, multiple paints, advanced gradients and background blur",
     "Boolean operations and slice export",
     "Auto layout grid and group layout units",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",

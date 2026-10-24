@@ -1,3 +1,4 @@
+import {drawAlignedStroke} from './stroke-alignment.js';
 import {spacingHandles,spacingHit,changeSpacing,drawSpacing} from './layout-spacing.js';
 import {drawVectorStroke} from './stroke-render.js';
 import {cloudFiles} from './cloud-files.js';
@@ -199,7 +200,7 @@ function renderComponentProperties(shape){
     $('swap-component').value=c.master;
     const paths=displayedOverrides(shape).filter(p=>c.master!==c.source||(p!=='x'&&p!=='y'));
     $('override-count').textContent=paths.length;
-    const labels={stroke_start:'Start tip',stroke_end:'End tip',stroke_gradient:'Stroke gradient',layer_blur:'Layer blur',shadows:'Shadows',prototype:'Prototype interactions',typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',stroke_dash:'Dash pattern',stroke_dash_offset:'Dash offset',stroke_cap:'Line cap',stroke_join:'Line join',stroke_miter_limit:'Miter limit',fill_opacity:'Fill opacity',stroke_opacity:'Stroke opacity',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
+    const labels={stroke_alignment:'Stroke position',stroke_start:'Start tip',stroke_end:'End tip',stroke_gradient:'Stroke gradient',layer_blur:'Layer blur',shadows:'Shadows',prototype:'Prototype interactions',typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',stroke_dash:'Dash pattern',stroke_dash_offset:'Dash offset',stroke_cap:'Line cap',stroke_join:'Line join',stroke_miter_limit:'Miter limit',fill_opacity:'Fill opacity',stroke_opacity:'Stroke opacity',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
     const rows=paths.map(path=>{const row=document.createElement('div');row.className='override-row';const label=document.createElement('span');label.textContent=path.split('.').map(p=>labels[p]??p.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())).join(' · ');const b=document.createElement('button');b.textContent='Reset';b.setAttribute('aria-label','Reset '+label.textContent+' override');b.onclick=()=>safe(()=>{editor.reset_override(shape.id,path);refresh();});row.append(label,b);return row;});
     if(!rows.length){const p=document.createElement('p');p.textContent='This layer inherits its component properties.';rows.push(p);}
     $('override-list').replaceChildren(...rows);
@@ -271,6 +272,7 @@ function renderPropertiesNow() {
   $('paint-label').parentElement.hidden=shape.kind==='image';
   if(shape.image){$('image-mode').value=shape.image.mode;$('image-zoom').value=shape.image.zoom;$('image-x').value=Math.round(shape.image.offset_x*100);$('image-y').value=Math.round(shape.image.offset_y*100);$('image-crop-fields').hidden=shape.image.mode==='fit';}
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
+  $('stroke-alignment').value=paint.stroke_alignment??'center';$('stroke-alignment-row').hidden=!!shape.points?.length&&!shape.closed;
   $('stroke-endpoints').hidden=!shape.points?.length||shape.closed;for(const end of ['start','end'])$('stroke-'+end).value=paint['stroke_'+end]??'default';
   $('stroke-dash').value=paint.stroke_dash?.join(', ')??'';$('stroke-dash-offset').value=paint.stroke_dash_offset??0;$('stroke-cap').value=paint.stroke_cap??'round';$('stroke-join').value=paint.stroke_join??'round';$('stroke-miter-limit').value=paint.stroke_miter_limit??10;$('miter-limit-row').hidden=(paint.stroke_join??'round')!=='miter';
   $('stroke-section').hidden = false; $('stroke-width').value = shape.stroke_width ?? 2;$('vector-edit-controls').hidden=!vectorTools.includes(shape.kind);
@@ -303,16 +305,14 @@ function drawShape(shape, target=ctx) {
   const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radii(shape));
   ctx.save();if(shape.kind==='image')ctx.clip(outline);
   if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);fill(()=>ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh));}else{ctx.fillStyle='#e5e7eb';fill(()=>ctx.fillRect(shape.x,shape.y,shape.width,shape.height));}}
-  else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)fill(()=>ctx.fill(path));if(a.stroke_enabled)stroke(()=>drawVectorStroke(ctx,shape,path)); }
+  else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)fill(()=>ctx.fill(path));if(a.stroke_enabled)stroke(()=>shape.closed?drawAlignedStroke(ctx,shape,{stroke:c=>c.stroke(path),fill:c=>c.fill(path)}):drawVectorStroke(ctx,shape,path)); }
   else if (shape.kind === 'text') {
-    ctx.save(); ctx.beginPath(); ctx.rect(shape.x, shape.y, shape.width, shape.height); ctx.clip();
-    const layout = textLayout(shape);
-    ctx.font = fontCss(layout.style); ctx.textBaseline = 'top'; ctx.textAlign = layout.style.align;
-    layout.lines.forEach(line => {if(a.fill_enabled)fill(()=>ctx.fillText(line.text,line.x,line.y));if(a.stroke_enabled)stroke(()=>ctx.strokeText(line.text,line.x,line.y));}); ctx.restore();
+    const layout = textLayout(shape),glyphs=(c,kind)=>{c.save();c.beginPath();c.rect(shape.x,shape.y,shape.width,shape.height);c.clip();c.font=fontCss(layout.style);c.textBaseline='top';c.textAlign=layout.style.align;for(const line of layout.lines)c[kind+'Text'](line.text,line.x,line.y);c.restore();};
+    if(a.fill_enabled)fill(()=>glyphs(ctx,'fill'));if(a.stroke_enabled)stroke(()=>drawAlignedStroke(ctx,shape,{stroke:c=>glyphs(c,'stroke'),fill:c=>glyphs(c,'fill')}));
   } else {
     if(a.fill_enabled)fill(()=>ctx.fill(outline));
   }
-  ctx.restore();if(a.stroke_enabled&&!shape.points?.length&&shape.kind!=='text')stroke(()=>ctx.stroke(outline));
+  ctx.restore();if(a.stroke_enabled&&!shape.points?.length&&shape.kind!=='text')stroke(()=>drawAlignedStroke(ctx,shape,{stroke:c=>c.stroke(outline),fill:c=>c.fill(outline)}));
   ctx.restore();
 }
 function draw() {
@@ -477,7 +477,7 @@ function bind() {
   $('independent-corners').onchange=()=>{const s=current();if(!s)return;const a=appearance(s);update({...s,appearance:{...a,corner_radius:a.corner_radii?.[0]??a.corner_radius,corner_radii:$('independent-corners').checked?Array(4).fill(a.corner_radius):null}});renderProperties();};
   for(let i=0;i<4;i++)$('corner-'+i).onchange=()=>{const s=current();if(!s)return;const a=appearance(s),values=[...(a.corner_radii??Array(4).fill(a.corner_radius))];values[i]=Number($('corner-'+i).value);update({...s,appearance:{...a,corner_radii:values}});renderProperties();};
   for(const end of ['start','end'])$('stroke-'+end).onchange=()=>{const s=current();if(!s)return;const value=$('stroke-'+end).value;update({...s,appearance:{...appearance(s),['stroke_'+end]:value==='default'?null:value}});};
-  for(const [id,key] of [['stroke-dash','stroke_dash'],['stroke-dash-offset','stroke_dash_offset'],['stroke-cap','stroke_cap'],['stroke-join','stroke_join'],['stroke-miter-limit','stroke_miter_limit']])$(id).onchange=()=>{const s=current();if(!s)return;const raw=$(id).value.trim(),value=key==='stroke_dash'?(raw?raw.split(/[\s,]+/).map(Number):[]):['stroke_dash_offset','stroke_miter_limit'].includes(key)?Number(raw):raw;update({...s,appearance:{...appearance(s),[key]:value}});renderProperties();};
+  for(const [id,key] of [['stroke-alignment','stroke_alignment'],['stroke-dash','stroke_dash'],['stroke-dash-offset','stroke_dash_offset'],['stroke-cap','stroke_cap'],['stroke-join','stroke_join'],['stroke-miter-limit','stroke_miter_limit']])$(id).onchange=()=>{const s=current();if(!s)return;const raw=$(id).value.trim(),value=key==='stroke_dash'?(raw?raw.split(/[\s,]+/).map(Number):[]):['stroke_dash_offset','stroke_miter_limit'].includes(key)?Number(raw):raw;update({...s,appearance:{...appearance(s),[key]:value}});renderProperties();};
   for(const [id,key] of [['opacity','opacity'],['fill-opacity','fill_opacity'],['stroke-opacity','stroke_opacity'],['image-opacity','fill_opacity'],['corner-radius','corner_radius'],['fill-enabled','fill_enabled'],['stroke-enabled','stroke_enabled'],['stroke-color','stroke_color']])$(id).onchange=()=>{const s=current();if(!s)return;const value=id.endsWith('enabled')?$(id).checked:id==='stroke-color'?$(id).value:Number($(id).value)/(id.endsWith('opacity')?100:1);update({...s,appearance:{...appearance(s),[key]:value}});renderProperties();};
   $('place-image').onclick=()=>{imageReplaceId=0;$('image-file').click();};
   $('replace-image').onclick=()=>{imageReplaceId=current()?.id??0;$('image-file').click();};

@@ -1,4 +1,5 @@
 // Geometry is shared by canvas masks, SVG masks and export/effect bounds.
+export function strokeAlignment(s){return s.points?.length&&!s.closed?'center':s.appearance?.stroke_alignment??'center';}
 export function endpointStyle(s,end){return s.appearance?.[end?'stroke_end':'stroke_start']??(end&&s.kind==='arrow'?'legacy_arrow':'none');}
 export function strokeTips(s){
  if(s.closed||!s.points||s.points.length<2)return [];
@@ -31,7 +32,8 @@ export function strokeTips(s){
 }
 export function strokePadding(s,style=s.appearance??{}){
  const reach=s.points?.length?Math.max(style.stroke_join==='miter'?(style.stroke_miter_limit??10):1,style.stroke_cap==='square'?Math.SQRT2:1):1;
- let pad=(s.stroke_width??2)/2*reach;
+ const alignment=strokeAlignment(s);
+ let pad=(s.stroke_width??2)*(alignment==='inside'?0:alignment==='outside'?1:.5)*reach;
  if(!s.closed&&s.points?.length>1){for(const end of [false,true]){const tip=endpointStyle(s,end);if(tip==='legacy_arrow')pad=Math.max(pad,Math.max(10,(s.stroke_width??2)*4)+(s.stroke_width??2));else if(tip!=='none')pad=Math.max(pad,(s.stroke_width??2)*7);}}
  return pad;
 }
