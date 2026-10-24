@@ -1,7 +1,8 @@
 const label={padding_left:'Left padding',padding_right:'Right padding',padding_top:'Top padding',padding_bottom:'Bottom padding',gap:'Gap',cross_gap:'Row / column gap'};
 export function spacingHandles(frame,shapes){
  const l=frame?.auto_layout;if(!l)return [];
- const x=frame.x,y=frame.y,w=frame.width,h=frame.height,handles=[];
+ const border=l.strokes_included&&frame.appearance?.stroke_enabled&&frame.appearance?.stroke_alignment==='inside'?frame.stroke_width:0;
+ const x=frame.x+border,y=frame.y+border,w=Math.max(0,frame.width-2*border),h=Math.max(0,frame.height-2*border),handles=[];
  const add=(key,axis,sign,cx,cy,area)=>handles.push({key,axis,sign,x:cx,y:cy,area,label:label[key],value:l[key]??l.gap});
  add('padding_left','x',1,x+l.padding_left,y+h/2,{x,y,width:l.padding_left,height:h});
  add('padding_right','x',-1,x+w-l.padding_right,y+h/2,{x:x+w-l.padding_right,y,width:l.padding_right,height:h});

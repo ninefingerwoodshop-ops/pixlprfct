@@ -190,6 +190,8 @@ pub struct AutoLayout {
     pub hug_width: bool,
     pub hug_height: bool,
     #[serde(default)]
+    pub strokes_included: bool,
+    #[serde(default)]
     pub wrap: bool,
     #[serde(default)]
     pub cross_gap: Option<f64>,
@@ -214,6 +216,7 @@ impl Default for AutoLayout {
             justify: "start".into(),
             hug_width: true,
             hug_height: true,
+            strokes_included: true,
             wrap: false,
             cross_gap: None,
             align_content: default_content_align(),

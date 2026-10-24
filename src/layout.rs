@@ -1,5 +1,26 @@
 use crate::{constrain_axis, Document, Shape};
 
+fn inset(s: &Shape) -> f64 {
+    if s.auto_layout.as_ref().is_some_and(|l| l.strokes_included)
+        && s.appearance
+            .as_ref()
+            .is_some_and(|a| a.stroke_enabled && a.stroke_alignment == "inside")
+    {
+        s.stroke_width
+    } else {
+        0.0
+    }
+}
+fn padding(s: &Shape, horizontal: bool) -> f64 {
+    s.auto_layout.as_ref().map_or(0.0, |l| {
+        (if horizontal {
+            l.padding_left + l.padding_right
+        } else {
+            l.padding_top + l.padding_bottom
+        }) + 2.0 * inset(s)
+    })
+}
+
 // Use the existing rows while dragging: removing a child first would move the
 // drop targets underneath the pointer and make wrapped reordering unstable.
 pub(crate) fn drop_before(
@@ -22,9 +43,9 @@ pub(crate) fn drop_before(
         .map(|(i, _)| i)
         .collect();
     let available = if horizontal {
-        frame.width - layout.padding_left - layout.padding_right
+        frame.width - padding(frame, true)
     } else {
-        frame.height - layout.padding_top - layout.padding_bottom
+        frame.height - padding(frame, false)
     };
     let rows = lines(
         &doc.shapes,
@@ -97,10 +118,17 @@ fn fill(s: &Shape, horizontal: bool) -> bool {
 }
 fn limits(s: &Shape, horizontal: bool) -> (f64, f64) {
     let l = &s.layout_item;
+    let floor = padding(s, horizontal).max(1.0);
     if horizontal {
-        (l.min_width.unwrap_or(1.0), l.max_width.unwrap_or(1e6))
+        (
+            l.min_width.unwrap_or(1.0).max(floor),
+            l.max_width.unwrap_or(1e6).max(floor),
+        )
     } else {
-        (l.min_height.unwrap_or(1.0), l.max_height.unwrap_or(1e6))
+        (
+            l.min_height.unwrap_or(1.0).max(floor),
+            l.max_height.unwrap_or(1e6).max(floor),
+        )
     }
 }
 fn bounded(s: &Shape, horizontal: bool, value: f64) -> f64 {
@@ -245,8 +273,8 @@ pub(crate) fn reflow(doc: &mut Document) {
             if in_layout && fill(s, false) {
                 l.hug_height = false;
             }
-            let pw = l.padding_left + l.padding_right;
-            let ph = l.padding_top + l.padding_bottom;
+            let pw = padding(s, true);
+            let ph = padding(s, false);
             let available = if horizontal { w - pw } else { h - ph };
             let rows = lines(shapes, &items, horizontal, l.wrap, available, l.gap);
             let main = items
@@ -285,16 +313,17 @@ pub(crate) fn reflow(doc: &mut Document) {
         if let Some(l) = shapes[i].auto_layout.clone() {
             let horizontal = l.direction == "horizontal";
             let parent = shapes[i].clone();
+            let border = inset(&parent);
             let items = flow(shapes, children, i);
             let available = if horizontal {
-                parent.width - l.padding_left - l.padding_right
+                parent.width - padding(&parent, true)
             } else {
-                parent.height - l.padding_top - l.padding_bottom
+                parent.height - padding(&parent, false)
             };
             let cross = if horizontal {
-                parent.height - l.padding_top - l.padding_bottom
+                parent.height - padding(&parent, false)
             } else {
-                parent.width - l.padding_left - l.padding_right
+                parent.width - padding(&parent, true)
             };
             let rows = lines(shapes, &items, horizontal, l.wrap, available, l.gap);
             let cg = l.cross_gap.unwrap_or(l.gap);
@@ -354,7 +383,13 @@ pub(crate) fn reflow(doc: &mut Document) {
                     let share = (low + high) / 2.0;
                     let used: f64 = pending
                         .iter()
-                        .map(|&j| bounded(&shapes[line[j]], horizontal, share))
+                        .map(|&j| {
+                            bounded(
+                                &shapes[line[j]],
+                                horizontal,
+                                share + padding(&shapes[line[j]], horizontal),
+                            )
+                        })
                         .sum();
                     if used <= budget {
                         low = share;
@@ -363,7 +398,11 @@ pub(crate) fn reflow(doc: &mut Document) {
                     }
                 }
                 for &j in &pending {
-                    sizes[j] = bounded(&shapes[line[j]], horizontal, low);
+                    sizes[j] = bounded(
+                        &shapes[line[j]],
+                        horizontal,
+                        low + padding(&shapes[line[j]], horizontal),
+                    );
                 }
                 let extra = (available
                     - sizes.iter().sum::<f64>()
@@ -398,15 +437,15 @@ pub(crate) fn reflow(doc: &mut Document) {
                     };
                     let (x, y, w, h) = if horizontal {
                         (
-                            parent.x + l.padding_left + cursor,
-                            parent.y + l.padding_top + row_cursor + offset,
+                            parent.x + border + l.padding_left + cursor,
+                            parent.y + border + l.padding_top + row_cursor + offset,
                             sizes[j],
                             cs,
                         )
                     } else {
                         (
-                            parent.x + l.padding_left + row_cursor + offset,
-                            parent.y + l.padding_top + cursor,
+                            parent.x + border + l.padding_left + row_cursor + offset,
+                            parent.y + border + l.padding_top + cursor,
                             cs,
                             sizes[j],
                         )
