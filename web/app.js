@@ -1,3 +1,4 @@
+import {componentAssets,renderAssets} from './assets.js';
 import {showContextMenu} from './context-menu.js';
 import {installActionPanel} from './action-panel.js';
 import {renderGridControls,renderGridCell,defaultGrid} from './grid-controls.js';
@@ -102,7 +103,7 @@ function refresh(save = true) {
 function update(shape) { safe(() => { editor.update(JSON.stringify(shape)); refresh(); }); }
 function updateMany(shapes) { safe(() => { editor.update_many(JSON.stringify(shapes)); refresh(); }); }
 function frameSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.frame_selection(selectionJson())]);refresh();toast('Selection framed');});}
-function createComponentSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.create_component_selection(selectionJson())]);refresh();document.querySelector('.components-library').open=true;toast('Component created · insert linked copies from Assets');});}
+function createComponentSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.create_component_selection(selectionJson())]);refresh();showAssets();toast('Component created · insert linked copies from Assets');});}
 function toggleSelectionVisibility(){const shapes=selectionShapes();if(!shapes.length)return;const hidden=shapes.some(s=>!s.hidden);gesture=null;updateMany(shapes.map(s=>({...s,hidden})));}
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
 function selectionActions(){
@@ -200,7 +201,20 @@ function renderLayers() {
   else if (!listed.length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'No matching layers'; $('layers').append(hint); }
 }
 function insertInstance(masterId){safe(()=>{const master=doc.shapes.find(s=>s.id===masterId);if(!master)return;const same=master.page_id===doc.active_page;const x=same?master.x+master.width+40:(canvas.clientWidth/2-pan.x)/zoom;const y=same?master.y:(canvas.clientHeight/2-pan.y)/zoom;const id=editor.create_instance(masterId,x,y);setSelection([id]);refresh();fit();toast('Linked instance inserted');});}
+function showFilePanel(){ $('file-panel').hidden=false;$('assets-panel').hidden=true;$('nav-file').classList.add('active');$('nav-assets').classList.remove('active'); }
+function showAssets(){ $('file-panel').hidden=true;$('assets-panel').hidden=false;$('nav-file').classList.remove('active');$('nav-assets').classList.add('active');document.querySelector('.left-panel').classList.add('mobile-open');renderAssetBrowser();$('asset-search').focus(); }
+function goToMain(id){safe(()=>{const main=doc.shapes.find(s=>s.id===id);if(!main)return;editor.select_page(main.page_id);refresh();setSelection([id]);refresh(false);showFilePanel();fit(true);});}
+function renderAssetBrowser(){
+  if($('assets-panel').hidden)return;
+  const page=$('asset-page').value;
+  $('asset-page').replaceChildren(...[{id:'',name:'All pages'},...doc.pages].map(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name;return o;}));
+  $('asset-page').value=doc.pages.some(p=>String(p.id)===page)?page:'';
+  const assets=componentAssets(doc,$('asset-search').value,$('asset-page').value);
+  $('asset-results').textContent=assets.length+' '+(assets.length===1?'component':'components');
+  renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:insertInstance,goMain:goToMain,preview:id=>{const shapes=exportShapes(doc.shapes,[id],'selection');return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgDocument(shapes,exportBounds(shapes),1,null,textLayout));}});
+}
 function renderComponents(){
+  renderAssetBrowser();
   const grouped=new Set((doc.component_sets??[]).flatMap(s=>s.variants.map(v=>v.component_id)));
   const masters=doc.shapes.filter(s=>s.component?.type==='master'&&!grouped.has(s.id));
   const assets=[...(doc.component_sets??[]).map(s=>({id:s.variants[0].component_id,name:s.name,count:s.variants.length})),...masters];$('component-count').textContent=assets.length;
@@ -481,7 +495,7 @@ function placeSvg(payload,location=null){
 function bind() {
   $('toggle-lock').onclick=toggleSelectionLock;
   $('create-component').onclick=createComponentSelection;
-  $('nav-assets').onclick=()=>{const panel=document.querySelector('.components-library');panel.open=true;panel.scrollIntoView({block:'nearest'});panel.querySelector('summary').focus();};
+  $('nav-assets').onclick=showAssets;$('assets-close').onclick=showFilePanel;$('asset-search').oninput=renderAssetBrowser;$('asset-page').onchange=renderAssetBrowser;
   $('insert-instance').onclick=()=>insertInstance(selected);
   $('manage-variants').onclick=()=>editVariantSet(doc,selected,set=>{editor.save_component_set(JSON.stringify(set));refresh();},id=>{editor.remove_component_set(id);refresh();});
   $('add-variant').onclick=()=>safe(()=>{setSelection([editor.duplicate_variant(selected)]);refresh();fit();toast('Variant added. Edit its properties in Edit variant set.');});
@@ -546,14 +560,14 @@ function bind() {
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-help']) $(id).onclick = showShortcuts;
   const toolActions=[['select','Move','V'],['scale','Scale','K'],['hand','Hand / pan','H'],['frame','Frame','F'],['rectangle','Rectangle','R'],['ellipse','Ellipse','O'],['line','Line','L'],['arrow','Arrow','Shift L'],['polygon','Polygon',''],['star','Star',''],['pen','Pen','P'],['pencil','Pencil','Shift P'],['text','Text','T']].map(([tool,label,shortcut])=>({label,shortcut,category:'Drawing',run:()=>{setTool(tool);canvas.focus();}}));
-  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&!b.closest('[hidden]');},run:()=>$(id).click()}));
+  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&![...document.querySelectorAll('[hidden]')].some(el=>el.id!=='file-panel'&&el.contains(b));},run:()=>$(id).click()}));
   commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
-  const showSearch = () => { $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
+  const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
   $('search-toggle').onclick = showSearch; $('nav-search').onclick = showSearch;
-  $('nav-file').onclick = () => { document.querySelector('.left-panel').classList.toggle('mobile-open'); $('search-panel').hidden = true; $('layer-search').value = ''; renderLayers(); };
+  $('nav-file').onclick = () => { const fromAssets=!$('assets-panel').hidden;showFilePanel(); const panel=document.querySelector('.left-panel');if(fromAssets)panel.classList.add('mobile-open');else panel.classList.toggle('mobile-open'); $('search-panel').hidden = true; $('layer-search').value = ''; renderLayers(); };
   $('layer-search').oninput = renderLayers;
   document.querySelectorAll('.menu-panel button').forEach(button => button.addEventListener('click', () => document.querySelector('.file-menu').open = false));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('.file-menu')) document.querySelector('.file-menu').open = false; });

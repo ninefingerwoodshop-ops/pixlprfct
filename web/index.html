@@ -19,7 +19,7 @@
   <main>
     <aside class="left-panel">
       <div class="file-heading"><input id="document-name" aria-label="Document name" value="Untitled design" maxlength="256"><span class="file-chevron">⌄</span><span class="file-location">Drafts <span>Local file</span></span></div>
-      <div class="file-tabs"><span class="selected-tab">File</span><span class="app-name">PixlPrfct</span><button id="search-toggle" aria-label="Search layers" title="Search layers" data-icon="search"></button></div>
+      <div id="file-panel"><div class="file-tabs"><span class="selected-tab">File</span><span class="app-name">PixlPrfct</span><button id="search-toggle" aria-label="Search layers" title="Search layers" data-icon="search"></button></div>
       <div id="search-panel" hidden><input id="layer-search" type="search" placeholder="Find a layer…" aria-label="Find a layer"></div>
       <div class="panel-heading"><strong>Pages</strong><button id="add-page" class="add-page" title="Add a new page" aria-label="Add a new page">+ New page</button></div>
       <div id="pages" aria-label="Pages"></div>
@@ -27,7 +27,7 @@
       <div class="section-label">Layers <span id="layer-count">0</span></div>
       <details class="components-library"><summary>Components <span id="component-count">0</span></summary><div id="components-list"></div></details>
       <div id="layers" aria-label="Layers"></div>
-      <div class="left-footer"><span class="engine-dot"></span><span id="save-status">Stored on this device</span><span id="engine-status" class="sr-only">Starting Rust engine…</span></div>
+      </div><section id="assets-panel" aria-label="Assets browser" hidden><div class="panel-heading"><strong>Assets</strong><button id="assets-close" aria-label="Back to layers">Layers</button></div><p class="assets-source">Components in this file</p><input id="asset-search" type="search" placeholder="Search components…" aria-label="Search components"><select id="asset-page" aria-label="Filter components by page"><option value="">All pages</option></select><p id="asset-results" role="status"></p><div id="asset-cards"></div></section><div class="left-footer"><span class="engine-dot"></span><span id="save-status">Stored on this device</span><span id="engine-status" class="sr-only">Starting Rust engine…</span></div>
     </aside>
     <div id="sidebar-resize" role="separator" aria-label="Resize layers panel" aria-orientation="vertical" tabindex="0" aria-valuemin="200" aria-valuemax="400" aria-valuenow="240"></div>
     <section id="workspace" aria-label="Design canvas workspace">
