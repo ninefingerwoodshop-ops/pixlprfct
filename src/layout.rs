@@ -45,7 +45,7 @@ fn distribution(mode: &str, count: usize, spare: f64) -> (f64, f64) {
     }
 }
 
-fn inset(s: &Shape) -> f64 {
+pub(crate) fn inset(s: &Shape) -> f64 {
     if s.auto_layout.as_ref().is_some_and(|l| l.strokes_included)
         && s.appearance
             .as_ref()
@@ -56,7 +56,7 @@ fn inset(s: &Shape) -> f64 {
         0.0
     }
 }
-fn padding(s: &Shape, horizontal: bool) -> f64 {
+pub(crate) fn padding(s: &Shape, horizontal: bool) -> f64 {
     s.auto_layout.as_ref().map_or(0.0, |l| {
         (if horizontal {
             l.padding_left + l.padding_right
@@ -322,6 +322,29 @@ pub(crate) fn reflow(doc: &mut Document) {
         let (x, y) = (s.x, s.y);
         let (mut w, mut h) = (bounded(s, true, s.width), bounded(s, false, s.height));
         if let Some(mut l) = s.auto_layout.clone() {
+            if l.direction == "grid" {
+                let items = flow(shapes, children, i);
+                let in_layout = !s.layout_item.absolute
+                    && shapes
+                        .iter()
+                        .any(|p| p.id == s.parent_id && p.auto_layout.is_some());
+                if items.iter().any(|&c| fill(&shapes[c], true)) || in_layout && fill(s, true) {
+                    l.hug_width = false;
+                }
+                if items.iter().any(|&c| fill(&shapes[c], false)) || in_layout && fill(s, false) {
+                    l.hug_height = false;
+                }
+                let mut frame = s.clone();
+                frame.width = w;
+                frame.height = h;
+                frame.auto_layout = Some(l.clone());
+                let plan = crate::grid::plan(shapes, &frame, &items, l.hug_width, l.hug_height);
+                w = bounded(s, true, plan.width);
+                h = bounded(s, false, plan.height);
+                shapes[i].auto_layout = Some(l);
+                geometry(shapes, children, i, x, y, w, h);
+                return;
+            }
             let horizontal = l.direction == "horizontal";
             let items = flow(shapes, children, i);
             if (l.wrap && horizontal)
@@ -388,6 +411,17 @@ pub(crate) fn reflow(doc: &mut Document) {
     }
     fn arrange(shapes: &mut [Shape], children: &[Vec<usize>], i: usize) {
         if let Some(l) = shapes[i].auto_layout.clone() {
+            if l.direction == "grid" {
+                let items = flow(shapes, children, i);
+                let plan = crate::grid::plan(shapes, &shapes[i], &items, false, false);
+                for (&c, p) in items.iter().zip(plan.placements) {
+                    geometry(shapes, children, c, p.x, p.y, p.width, p.height);
+                }
+                for &c in &children[i] {
+                    arrange(shapes, children, c);
+                }
+                return;
+            }
             let horizontal = l.direction == "horizontal";
             let parent = shapes[i].clone();
             let border = inset(&parent);

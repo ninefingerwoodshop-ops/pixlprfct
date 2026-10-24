@@ -74,6 +74,7 @@ fn subfields(field: &str) -> &'static [&'static str] {
         ],
         "constraints" => &["horizontal", "vertical"],
         "layout_item" => &[
+            "grid_cell",
             "fill_width",
             "fill_height",
             "absolute",
@@ -83,6 +84,7 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "max_height",
         ],
         "auto_layout" => &[
+            "grid",
             "direction",
             "wrap",
             "cross_gap",

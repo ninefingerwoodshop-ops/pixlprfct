@@ -8,6 +8,7 @@ export function spacingHandles(frame,shapes){
  add('padding_right','x',-1,x+w-l.padding_right,y+h/2,{x:x+w-l.padding_right,y,width:l.padding_right,height:h});
  add('padding_top','y',1,x+w/2,y+l.padding_top,{x,y,width:w,height:l.padding_top});
  add('padding_bottom','y',-1,x+w/2,y+h-l.padding_bottom,{x,y:y+h-l.padding_bottom,width:w,height:l.padding_bottom});
+ if(l.direction==='grid')return handles;
  const horizontal=l.direction==='horizontal',main=horizontal?'x':'y',cross=horizontal?'y':'x',size=horizontal?'width':'height',crossSize=horizontal?'height':'width';
  const items=shapes.filter(s=>s.parent_id===frame.id&&!s.hidden&&!s.layout_item?.absolute),rows=[];
  const available=horizontal?w-l.padding_left-l.padding_right:h-l.padding_top-l.padding_bottom,gap=['between','around','evenly'].includes(l.justify)?0:l.gap;

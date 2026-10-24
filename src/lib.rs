@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+mod grid;
 mod guide_styles;
 mod path_join;
 mod path_split;
@@ -69,6 +70,8 @@ pub struct Shape {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct LayoutItem {
+    #[serde(default)]
+    pub grid_cell: Option<grid::GridCell>,
     pub fill_width: bool,
     pub fill_height: bool,
     pub absolute: bool,
@@ -182,6 +185,8 @@ fn default_overlay_position() -> String {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AutoLayout {
+    #[serde(default)]
+    pub grid: Option<grid::GridLayout>,
     pub direction: String,
     pub gap: f64,
     pub padding_top: f64,
@@ -216,6 +221,7 @@ fn default_canvas_stacking() -> String {
 impl Default for AutoLayout {
     fn default() -> Self {
         Self {
+            grid: None,
             direction: "horizontal".into(),
             gap: 16.0,
             padding_top: 16.0,
@@ -686,7 +692,7 @@ fn validate(document: &Document) -> Result<(), String> {
         }
         if let Some(l) = &shape.auto_layout {
             if shape.kind != "frame"
-                || !["horizontal", "vertical"].contains(&l.direction.as_str())
+                || !["horizontal", "vertical", "grid"].contains(&l.direction.as_str())
                 || !["first", "last"].contains(&l.canvas_stacking.as_str())
                 || !["start", "center", "end"].contains(&l.align.as_str())
                 || !["start", "center", "end", "between", "around", "evenly"]
@@ -943,6 +949,7 @@ fn validate(document: &Document) -> Result<(), String> {
         }
     }
     component_properties::validate_properties(document)?;
+    grid::validate(&document.shapes)?;
     Ok(())
 }
 
@@ -1895,7 +1902,7 @@ impl Editor {
         };
         staged.update_many(json)?;
         staged.reparent_many(&serde_json::to_string(&ids).unwrap(), parent)?;
-        if let Some(_layout) = staged
+        if let Some(layout) = staged
             .document
             .shapes
             .iter()
@@ -1910,7 +1917,35 @@ impl Editor {
                 let x = roots.iter().map(|s| s.x + s.width / 2.0).sum::<f64>() / roots.len() as f64;
                 let y =
                     roots.iter().map(|s| s.y + s.height / 2.0).sum::<f64>() / roots.len() as f64;
-                let target = layout::drop_before(&self.document, parent, &ids, x, y);
+                let target = if layout.direction == "grid" {
+                    // Reserve dropped cells before the remaining siblings so a
+                    // previously pinned child cannot displace the dragged one.
+                    for root in &roots {
+                        if let Some((column, row)) = grid::drop_cell(
+                            &self.document,
+                            parent,
+                            root.x + root.width / 2.0,
+                            root.y + root.height / 2.0,
+                        ) {
+                            if let Some(s) =
+                                staged.document.shapes.iter_mut().find(|s| s.id == root.id)
+                            {
+                                let cell =
+                                    s.layout_item.grid_cell.get_or_insert_with(Default::default);
+                                cell.column = Some(column);
+                                cell.row = Some(row);
+                            }
+                        }
+                    }
+                    staged
+                        .document
+                        .shapes
+                        .iter()
+                        .find(|s| s.parent_id == parent && !ids.contains(&s.id))
+                        .map(|s| s.id)
+                } else {
+                    layout::drop_before(&self.document, parent, &ids, x, y)
+                };
                 let root_ids: Vec<_> = roots.iter().map(|s| s.id).collect();
                 let moving: Vec<_> = staged
                     .document
@@ -2287,6 +2322,36 @@ impl Editor {
             .first()
             .copied()
             .unwrap_or(0)
+    }
+
+    pub fn grid_layout(&self, id: u32) -> Result<String, String> {
+        let frame = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| {
+                s.id == id
+                    && s.auto_layout
+                        .as_ref()
+                        .is_some_and(|l| l.direction == "grid")
+            })
+            .ok_or("Select a grid auto-layout frame")?;
+        let items: Vec<_> = self
+            .document
+            .shapes
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.parent_id == id && !s.hidden && !s.layout_item.absolute)
+            .map(|(i, _)| i)
+            .collect();
+        serde_json::to_string(&grid::plan(
+            &self.document.shapes,
+            frame,
+            &items,
+            false,
+            false,
+        ))
+        .map_err(|e| e.to_string())
     }
     pub fn prototype_hits(&self, root: u32, x: f64, y: f64) -> String {
         let ids = self.prototype_hit_ids(root, x, y);
