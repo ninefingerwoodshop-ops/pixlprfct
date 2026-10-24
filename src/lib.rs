@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+mod arrangement;
 mod grid;
 mod guide_styles;
 mod path_join;

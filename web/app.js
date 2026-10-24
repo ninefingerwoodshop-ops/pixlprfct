@@ -104,6 +104,7 @@ function update(shape) { safe(() => { editor.update(JSON.stringify(shape)); refr
 function updateMany(shapes) { safe(() => { editor.update_many(JSON.stringify(shapes)); refresh(); }); }
 function frameSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.frame_selection(selectionJson())]);refresh();toast('Selection framed');});}
 function createComponentSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.create_component_selection(selectionJson())]);refresh();showAssets();toast('Component created · insert linked copies from Assets');});}
+function arrangeSelection(direction){safe(()=>{if(!selectedIds.size)return;editor.arrange_many(selectionJson(),direction);refresh();});}
 function toggleSelectionVisibility(){const shapes=selectionShapes();if(!shapes.length)return;const hidden=shapes.some(s=>!s.hidden);gesture=null;updateMany(shapes.map(s=>({...s,hidden})));}
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
 function selectionActions(){
@@ -122,7 +123,7 @@ function selectionActions(){
     {label:'Rename layer',shortcut:'Ctrl/⌘ R',enabled:!!shape,run:renameSelection},
     {label:shapes.every(s=>s.hidden)?'Show selection':'Hide selection',shortcut:'Ctrl/⌘ Shift H',run:toggleSelectionVisibility},
     {label:shapes.every(s=>s.locked)?'Unlock selection':'Lock selection',shortcut:'Ctrl/⌘ Shift L',enabled:shapes.some(s=>!inheritedLock(s)),run:toggleSelectionLock},
-    button('forward','Bring forward'),button('backward','Send backward'),
+    {label:'Bring to front',shortcut:']',run:()=>arrangeSelection('front')},{label:'Send to back',shortcut:'[',run:()=>arrangeSelection('back')},{label:'Bring forward',shortcut:'Ctrl/⌘ ]',run:()=>arrangeSelection('forward')},{label:'Send backward',shortcut:'Ctrl/⌘ [',run:()=>arrangeSelection('backward')},
     {label:'Duplicate',shortcut:'Ctrl/⌘ D',run:duplicateSelection},
     {label:'Delete',shortcut:'Delete',run:deleteSelection}
   ];
@@ -563,6 +564,7 @@ function bind() {
   const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&![...document.querySelectorAll('[hidden]')].some(el=>el.id!=='file-panel'&&el.contains(b));},run:()=>$(id).click()}));
   commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
+  commands.push(...[['front','Bring to front',']'],['back','Send to back','['],['forward','Bring forward','Ctrl/⌘ ]'],['backward','Send backward','Ctrl/⌘ [']].map(([direction,label,shortcut])=>({label,shortcut,category:'Layers',enabled:()=>selectedIds.size>0,unavailable:'Select layers',run:()=>arrangeSelection(direction)})));
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
   const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
@@ -618,8 +620,8 @@ function bind() {
   $('visible').onchange = () => current() && update({ ...current(), hidden: !$('visible').checked });
   $('duplicate').onclick = duplicateSelection;
   $('delete').onclick = deleteSelection;
-  $('forward').onclick = () => safe(() => { if (current()) { editor.reorder(selected, 1); refresh(); } });
-  $('backward').onclick = () => safe(() => { if (current()) { editor.reorder(selected, -1); refresh(); } });
+  $('forward').onclick = () => arrangeSelection('forward');
+  $('backward').onclick = () => arrangeSelection('backward');
   $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
   $('export').onclick=()=>{$('export-selection-option').disabled=!selectedIds.size;$('export-scope').value=selectedIds.size?'selection':'page';exportSummary();$('export-dialog').showModal();};
   for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background']){$(id).onchange=exportSummary;$(id).oninput=exportSummary;}
@@ -759,6 +761,7 @@ function bind() {
     if (document.querySelector('dialog[open]')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(!event.altKey&&!event.shiftKey&&['[',']'].includes(key)){event.preventDefault();arrangeSelection(key===']'?(mod?'forward':'front'):(mod?'backward':'back'));return;}
     if(mod&&event.shiftKey&&key==='h'){event.preventDefault();toggleSelectionVisibility();return;}
     if(mod&&!event.shiftKey&&!event.altKey&&key==='r'){event.preventDefault();renameSelection();return;}
     if(mod&&event.shiftKey&&key==='l'){event.preventDefault();toggleSelectionLock();return;}

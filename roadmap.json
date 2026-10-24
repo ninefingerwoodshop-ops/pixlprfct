@@ -81,7 +81,8 @@
     "searchable Tools and actions command panel with Ctrl/Command K, drawing tools, component/layout/layer/page/file commands, selection availability explanations, keyboard navigation and Escape preserving selection",
     "Frame selection from context menu, command search and Ctrl/Command Alt G, with transparent tight bounds, preserved linked instances and child geometry, ancestry deduplication and atomic undo",
     "Selection-aware layer context menu with rename, visibility, locking, stacking, grouping, auto-layout removal and component-instance commands; keyboard navigation, viewport positioning, focus restoration and corrected Place image shortcut",
-    "Dedicated local Assets panel with component SVG previews, name/page/variant-value search, page filtering, variant selection, linked insertion, main-component navigation and incremental result batches"
+    "Dedicated local Assets panel with component SVG previews, name/page/variant-value search, page filtering, variant selection, linked insertion, main-component navigation and incremental result batches",
+    "Atomic multi-layer forward/backward/front/back arrangement with stable selected order, indivisible flat groups, ancestor selection deduplication, independent parent/page order, component propagation, menu/search access and bracket shortcuts"
   ],
   "remaining": [
     "Figma workflow audit: shared asset libraries, comprehensive context menus and tool discovery; nested component creation",
