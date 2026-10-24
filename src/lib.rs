@@ -92,6 +92,22 @@ pub struct Prototype {
     pub close_on_outside: bool,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: String,
+    #[serde(default = "default_transition")]
+    pub transition: String,
+    #[serde(default = "default_duration")]
+    pub duration: u32,
+    #[serde(default = "default_easing")]
+    pub easing: String,
+}
+
+fn default_transition() -> String {
+    "instant".into()
+}
+fn default_duration() -> u32 {
+    300
+}
+fn default_easing() -> String {
+    "ease-in-out".into()
 }
 
 fn default_overlay_position() -> String {
@@ -429,6 +445,22 @@ fn validate(document: &Document) -> Result<(), String> {
             );
         }
         if let Some(p) = &shape.prototype {
+            if ![
+                "instant",
+                "dissolve",
+                "slide-left",
+                "slide-right",
+                "slide-up",
+                "slide-down",
+            ]
+            .contains(&p.transition.as_str())
+                || p.duration > 10_000
+                || !["linear", "ease-in", "ease-out", "ease-in-out"].contains(&p.easing.as_str())
+                || (["overlay", "close"].contains(&p.action.as_str())
+                    && p.transition.starts_with("slide-"))
+            {
+                return Err("Invalid prototype transition, duration or easing".into());
+            }
             if !["navigate", "back", "overlay", "close"].contains(&p.action.as_str())
                 || (["navigate", "overlay"].contains(&p.action.as_str())
                     && !document
