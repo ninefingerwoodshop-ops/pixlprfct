@@ -1,6 +1,6 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
-import { bounds, marqueeSelection, layerRange } from './selection.js';
+import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup } from './selection.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons } from './icons.js';
@@ -19,6 +19,9 @@ function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) |
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
 function selectionJson() { return JSON.stringify([...selectedIds]); }
 const pageViews = new Map();
+const collapsedGroups=new Set();
+function groupSelection() { safe(()=>{const ids=expandGroups(pageShapes(),[...selectedIds]); editor.group_many(JSON.stringify(ids));setSelection(ids);refresh();});}
+function ungroupSelection() {safe(()=>{editor.ungroup_many(selectionJson());refresh();});}
 function pageShapes() { return doc?.shapes.filter(s => s.page_id === doc.active_page) || []; }
 function activePage() { return doc?.pages.find(p => p.id === doc.active_page); }
 
@@ -75,8 +78,8 @@ function renderPages() {
 function renderLayers() {
   $('layer-count').textContent = pageShapes().length;
   const query = $('layer-search').value.trim().toLocaleLowerCase();
-  const listed = pageShapes().reverse().filter(s => s.name.toLocaleLowerCase().includes(query));
-  $('layers').replaceChildren(...listed.map(shape => {
+  const listed = pageShapes().reverse().filter(s => (s.name+' '+(s.group_name||'')).toLocaleLowerCase().includes(query));
+  const layerButton = shape => {
     const button = document.createElement('button');
     button.className = 'layer' + (selectedIds.has(shape.id) ? ' active' : '');
     button.setAttribute('aria-pressed', String(selectedIds.has(shape.id)));
@@ -91,21 +94,41 @@ function renderLayers() {
       refresh(false);
     };
     return button;
-  }));
+  };
+  const rows=[],seen=new Set();
+  for(const shape of listed) {
+    if(!shape.group_id) {rows.push(layerButton(shape));continue;}
+    if(seen.has(shape.group_id)) continue;seen.add(shape.group_id);
+    const members=pageShapes().filter(s=>s.group_id===shape.group_id), group=document.createElement('div');group.className='layer-group';
+    const row=document.createElement('div');row.className='group-row';
+    const toggle=document.createElement('button');const open=!!query||!collapsedGroups.has(shape.group_id);
+    toggle.textContent=open?'⌄':'›';toggle.setAttribute('aria-label',open?'Collapse '+shape.group_name:'Expand '+shape.group_name);toggle.setAttribute('aria-expanded',String(open));
+    toggle.onclick=()=>{collapsedGroups.has(shape.group_id)?collapsedGroups.delete(shape.group_id):collapsedGroups.add(shape.group_id);renderLayers();};
+    const select=document.createElement('button');select.className='group-title';select.textContent=shape.group_name;select.setAttribute('aria-pressed',String(members.every(s=>selectedIds.has(s.id))));
+    select.onclick=event=>{const ids=new Set(event.shiftKey?[...selectedIds]:[]);const remove=event.shiftKey&&members.every(s=>ids.has(s.id));members.forEach(s=>remove?ids.delete(s.id):ids.add(s.id));setSelection([...ids]);refresh(false);};
+    row.append(toggle,select);group.append(row);
+    if(open) {const children=document.createElement('div');children.className='group-children';children.append(...listed.filter(s=>s.group_id===shape.group_id).map(layerButton));group.append(children);}
+    rows.push(group);
+  }
+  $('layers').replaceChildren(...rows);
   if (!pageShapes().length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'A fresh page. Pick a tool below and click the canvas to start.'; $('layers').append(hint); }
   else if (!listed.length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'No matching layers'; $('layers').append(hint); }
 }
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
+  const groupId=selectedGroup(pageShapes(),[...selectedIds]);
+  $('group-actions').hidden=!shapes.length; $('group-layers').disabled=shapes.length<2||!!groupId; $('ungroup-layers').disabled=!shapes.some(s=>s.group_id);
+  $('group-name-row').hidden=!groupId;if(groupId)$('group-name').value=shapes[0].group_name;
+  document.querySelectorAll('[data-align]').forEach(button=>button.disabled=shapes.some(s=>s.group_id));
   $('scale-panel').hidden=tool!=='scale'||!shapes.length;
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;
   $('selection-caption').textContent = shapes.length > 1 ? `${shapes.length} layers` : shape ? shape.kind : 'Page';
   if (shapes.length > 1) {
-    const box = bounds(shapes); $('multi-title').textContent = `${shapes.length} layers selected`;
+    const box = bounds(shapes); $('multi-title').textContent = groupId ? `${shapes[0].group_name} · ${shapes.length} layers` : `${shapes.length} layers selected`;
     $('multi-size').textContent = `${Math.round(box.width)} × ${Math.round(box.height)}`;
     const mixed = shapes.some(s => s.fill !== shapes[0].fill);
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
-    document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3);
+    document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
   if (!shape) return;
   $('stroke-section').hidden = !vectorTools.includes(shape.kind); $('stroke-width').value = shape.stroke_width ?? 2;
@@ -218,6 +241,8 @@ function finishPen(closed) {
 }
 function bind() {
   installIcons();
+  $('group-layers').onclick=groupSelection; $('ungroup-layers').onclick=ungroupSelection;
+  $('group-name').onchange=()=>safe(()=>{const id=selectedGroup(pageShapes(),[...selectedIds]);if(id){editor.rename_group(id,$('group-name').value);refresh();}});
   $('apply-scale').onclick=()=>safe(()=>{const shapes=selectionShapes(),box=bounds(shapes);if(box) updateMany(scaleShapes(shapes,box,Number($('scale-percent').value)/100));});
   $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
   $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingPath=editingPath?0:current().id; $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
@@ -295,7 +320,7 @@ function bind() {
       if(penPoints.length<4096) { penPoints.push(p); gesture={type:'pen-handle',index:penPoints.length-1}; } draw(); return;
     }
     if(tool==='scale') {
-      if(!selectedIds.size) {const hit=editor.hit_test(p.x,p.y);if(hit)setSelection([hit]);}
+      if(!selectedIds.size) {const hit=editor.hit_test(p.x,p.y);if(hit)setSelection(expandGroups(pageShapes(),[hit]));}
       const originals=selectionShapes(),box=bounds(originals); if(!box) {toast('Select layers to scale first');return;}
       gesture={type:'scale',start:p,origin:{x:box.x,y:box.y},originals,previews:originals}; renderLayers();renderProperties();return;
     }
@@ -319,13 +344,14 @@ function bind() {
     }
     const hit = editor.hit_test(p.x, p.y);
     if (event.shiftKey && hit) {
-      const ids = new Set(selectedIds); ids.has(hit) ? ids.delete(hit) : ids.add(hit); setSelection([...ids]); refresh(false); return;
+      const ids = new Set(selectedIds), hits=event.ctrlKey||event.metaKey?[hit]:expandGroups(pageShapes(),[hit]),remove=hits.every(id=>ids.has(id)); hits.forEach(id=>remove?ids.delete(id):ids.add(id)); setSelection([...ids]); refresh(false); return;
     }
     if (!hit) {
       const base = event.shiftKey ? [...selectedIds] : [];
       setSelection(base); refresh(false); gesture = {type:'marquee',start:p,end:p,base}; return;
     }
-    if (!selectedIds.has(hit)) setSelection([hit]);
+    if (event.ctrlKey||event.metaKey) setSelection([hit]);
+    else if (!selectedIds.has(hit)) setSelection(expandGroups(pageShapes(),[hit]));
     layerAnchor = hit; refresh(false);
     gesture = {type:'move',start:p,originals:selectionShapes().map(s=>({...s})),previews:selectionShapes().map(s=>({...s}))};
   });
@@ -354,7 +380,7 @@ function bind() {
     }
     if (gesture.type === 'marquee') {
       gesture.end = p;
-      setSelection([...new Set([...gesture.base,...marqueeSelection(pageShapes(),gesture.start,p)])]);
+      setSelection([...new Set([...gesture.base,...expandGroups(pageShapes(),marqueeSelection(pageShapes(),gesture.start,p))])]);
       renderLayers(); renderProperties(); draw(); return;
     }
     if (gesture.type === 'move') {
@@ -391,8 +417,9 @@ function bind() {
     if ($('page-dialog').open || $('shortcuts-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(mod && key==='g') {event.preventDefault(); if(selectedIds.size)(event.shiftKey?ungroupSelection:groupSelection)();return;}
     if (mod && key === 'a') { event.preventDefault(); setSelection(pageShapes().filter(s=>!s.hidden).map(s=>s.id)); refresh(false); return; }
-    if (event.altKey && !mod && selectedIds.size > 1 && ['a','d','w','s'].includes(key)) { event.preventDefault(); safe(() => { editor.align_many(selectionJson(),{a:'left',d:'right',w:'top',s:'bottom'}[key]); refresh(); }); return; }
+    if (event.altKey && !mod && selectedIds.size > 1 && ['a','d','w','s'].includes(key)) { event.preventDefault(); if(!selectionShapes().some(s=>s.group_id)) safe(() => { editor.align_many(selectionJson(),{a:'left',d:'right',w:'top',s:'bottom'}[key]); refresh(); }); return; }
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }
     if (event.code === 'Space' && !event.target.closest('button,summary')) { event.preventDefault(); space = true; return; }
     if(key==='enter' && tool==='pen') {event.preventDefault(); finishPen(false); return;}

@@ -12,3 +12,12 @@ export function layerRange(shapes, anchor, target) {
   const a = shapes.findIndex(s => s.id === anchor), b = shapes.findIndex(s => s.id === target);
   return a < 0 || b < 0 ? [target] : shapes.slice(Math.min(a, b), Math.max(a, b) + 1).map(s => s.id);
 }
+export function expandGroups(shapes, ids) {
+  const selected=new Set(ids),groups=new Set(shapes.filter(s=>selected.has(s.id)&&s.group_id).map(s=>s.group_id));
+  return shapes.filter(s=>selected.has(s.id)||(s.group_id&&groups.has(s.group_id))).map(s=>s.id);
+}
+export function selectedGroup(shapes,ids) {
+  const selected=new Set(ids),members=shapes.filter(s=>selected.has(s.id));
+  const group=members[0]?.group_id;
+  return group&&members.every(s=>s.group_id===group)&&shapes.filter(s=>s.group_id===group).length===members.length?group:0;
+}

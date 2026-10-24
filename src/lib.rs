@@ -6,6 +6,10 @@ pub struct Shape {
     pub id: u32,
     #[serde(default = "first_page")]
     pub page_id: u32,
+    #[serde(default)]
+    pub group_id: u32,
+    #[serde(default)]
+    pub group_name: String,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -155,7 +159,22 @@ fn validate(document: &Document) -> Result<(), String> {
     if !pages.contains(&document.active_page) {
         return Err("Active page not found".into());
     }
+    let mut groups = std::collections::HashMap::new();
     for shape in &document.shapes {
+        if shape.group_id == u32::MAX
+            || shape.group_name.len() > 256
+            || (shape.group_id > 0 && shape.group_name.trim().is_empty())
+        {
+            return Err("Invalid group".into());
+        }
+        if shape.group_id > 0 {
+            let value = (shape.page_id, shape.group_name.as_str());
+            if let Some(previous) = groups.insert(shape.group_id, value) {
+                if previous != value {
+                    return Err("Group members must share a page and name".into());
+                }
+            }
+        }
         if let Some(style) = &shape.typography {
             if !style.font_size.is_finite()
                 || !(1.0..=512.0).contains(&style.font_size)
@@ -318,9 +337,15 @@ impl Editor {
         self.next_page_id = self
             .next_page_id
             .max(document.pages.iter().map(|p| p.id).max().unwrap_or(1) + 1);
-        self.next_id = self
-            .next_id
-            .max(document.shapes.iter().map(|s| s.id).max().unwrap_or(0) + 1);
+        self.next_id = self.next_id.max(
+            document
+                .shapes
+                .iter()
+                .map(|s| s.id.max(s.group_id))
+                .max()
+                .unwrap_or(0)
+                + 1,
+        );
         self.commit(document)
     }
 
@@ -338,6 +363,8 @@ impl Editor {
         document.shapes.push(Shape {
             id,
             page_id: document.active_page,
+            group_id: 0,
+            group_name: String::new(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -369,6 +396,8 @@ impl Editor {
         let mut shape: Shape = serde_json::from_str(json).map_err(|e| e.to_string())?;
         shape.id = self.next_id;
         shape.page_id = self.document.active_page;
+        shape.group_id = 0;
+        shape.group_name.clear();
         let id = shape.id;
         let mut document = self.document.clone();
         document.shapes.push(shape);
@@ -421,11 +450,15 @@ impl Editor {
             .ok_or("Shape ID limit reached")?;
         let mut document = self.document.clone();
         let mut created = vec![];
+        let mut copied_groups = std::collections::HashMap::new();
         // Copy in document order, independent of the order of selection clicks.
         for shape in &self.document.shapes {
             if ids.contains(&shape.id) {
                 let mut copy = shape.clone();
                 copy.id = self.next_id + created.len() as u32;
+                if copy.group_id > 0 {
+                    copy.group_id = *copied_groups.entry(copy.group_id).or_insert(copy.id);
+                }
                 copy.x += 24.0;
                 copy.y += 24.0;
                 created.push(copy.id);
@@ -435,6 +468,84 @@ impl Editor {
         self.commit(document)?;
         self.next_id = next_id;
         Ok(serde_json::to_string(&created).unwrap())
+    }
+
+    pub fn group_many(&mut self, json: &str) -> Result<u32, String> {
+        let ids = self.selection_ids(json)?;
+        if ids.len() < 2 {
+            return Err("Select at least two layers to group".into());
+        }
+        if self.next_id == u32::MAX {
+            return Err("Group ID limit reached".into());
+        }
+        let group = self.next_id;
+        let mut document = self.document.clone();
+        for shape in document.shapes.iter_mut().filter(|s| ids.contains(&s.id)) {
+            shape.group_id = group;
+            shape.group_name = format!("Group {}", group);
+        }
+        // A group occupies one contiguous paint stack at its topmost member.
+        let top = document
+            .shapes
+            .iter()
+            .rposition(|s| ids.contains(&s.id))
+            .unwrap();
+        let slot = document.shapes[..=top]
+            .iter()
+            .filter(|s| !ids.contains(&s.id))
+            .count();
+        let members: Vec<Shape> = document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .cloned()
+            .collect();
+        document.shapes.retain(|s| !ids.contains(&s.id));
+        document.shapes.splice(slot..slot, members);
+        self.commit(document)?;
+        self.next_id += 1;
+        Ok(group)
+    }
+
+    pub fn ungroup_many(&mut self, json: &str) -> Result<(), String> {
+        let ids = self.selection_ids(json)?;
+        let groups: Vec<u32> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id) && s.group_id > 0)
+            .map(|s| s.group_id)
+            .collect();
+        let mut document = self.document.clone();
+        for shape in document
+            .shapes
+            .iter_mut()
+            .filter(|s| s.page_id == document.active_page && groups.contains(&s.group_id))
+        {
+            shape.group_id = 0;
+            shape.group_name.clear();
+        }
+        self.commit(document)
+    }
+
+    pub fn rename_group(&mut self, id: u32, name: &str) -> Result<(), String> {
+        if id == 0 || name.trim().is_empty() || name.len() > 256 {
+            return Err("Enter a group name between 1 and 256 characters".into());
+        }
+        let mut document = self.document.clone();
+        let mut found = false;
+        for shape in document
+            .shapes
+            .iter_mut()
+            .filter(|s| s.page_id == document.active_page && s.group_id == id)
+        {
+            shape.group_name = name.trim().into();
+            found = true;
+        }
+        if !found {
+            return Err("Group not found".into());
+        }
+        self.commit(document)
     }
 
     pub fn align_many(&mut self, json: &str, alignment: &str) -> Result<(), String> {
@@ -532,6 +643,8 @@ impl Editor {
             .clone();
         shape.id = self.next_id;
         shape.x += 24.0;
+        shape.group_id = 0;
+        shape.group_name.clear();
         shape.y += 24.0;
         let id = shape.id;
         let mut document = self.document.clone();
