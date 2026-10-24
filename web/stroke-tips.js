@@ -24,7 +24,8 @@ export function strokeTips(s){
    else continue;
    d=points.map((v,k)=>(k?'L':'M')+at(...v).join(' ')).join(' ')+(closed?' Z':'');
   }
-  result.push({d,closed});
+  const cut=['triangle','diamond'].includes(kind)?[[-w,-w],[w,-w],[w,w],[-w,w]].map((v,k)=>(k?'L':'M')+at(...v).join(' ')).join(' ')+' Z':null;
+  result.push({d,closed,cut});
  }
  return result;
 }

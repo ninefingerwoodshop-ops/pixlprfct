@@ -45,7 +45,7 @@ export function vectorSvg(shape) {
  if(!tips.length||a.stroke_enabled===false)return `<path d="${d}" ${paintAttributes(shape)}/>`;
  const pad=strokePadding(shape),box=`x="${shape.x-pad}" y="${shape.y-pad}" width="${shape.width+pad*2}" height="${shape.height+pad*2}"`;
  const strokeOnly={...shape,appearance:{...a,fill_enabled:false,stroke_enabled:true,stroke_color:'#ffffff',stroke_cap:'butt',stroke_gradient:null,stroke_opacity:1}};
- const mask=`<mask id="tips-${shape.id}" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" ${box}><path d="${d}" ${paintAttributes(strokeOnly)}/>${tips.map(t=>`<path d="${t.d}" fill="${t.closed?'white':'none'}" stroke="${t.closed?'none':'white'}" stroke-width="${shape.stroke_width??2}" stroke-linecap="${a.stroke_cap??'round'}" stroke-linejoin="round"/>`).join('')}</mask>`;
+ const mask=`<mask id="tips-${shape.id}" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" ${box}><path d="${d}" ${paintAttributes(strokeOnly)}/>${tips.filter(t=>t.cut).map(t=>`<path d="${t.cut}" fill="black"/>`).join('')}${tips.map(t=>`<path d="${t.d}" fill="${t.closed?'white':'none'}" stroke="${t.closed?'none':'white'}" stroke-width="${shape.stroke_width??2}" stroke-linecap="${a.stroke_cap??'round'}" stroke-linejoin="round"/>`).join('')}</mask>`;
  const fill=`<path d="${d}" ${paintAttributes({...shape,appearance:{...a,fill_enabled:a.fill_enabled??!!shape.closed,stroke_enabled:false}})}/>`;
  return `${fill}<defs>${mask}</defs><rect ${box} mask="url(#tips-${shape.id})" fill="${a.stroke_gradient?`url(#stroke-gradient-${shape.id})`:a.stroke_color??shape.fill}" opacity="${a.stroke_opacity??1}"/>`;
 }
