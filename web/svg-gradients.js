@@ -33,7 +33,7 @@ export function gradientResolver(tree,viewport,color){
   const stops=children.length?children.map(n=>({attrs:n.attrs,style:styles.get(n)})):parent.stops.map(stop=>{const own={...styles.get(node)},css=declarations(stop.attrs);for(const key of ['color','stop-color','stop-opacity','color-interpolation'])if(css[key]??stop.attrs[key])own[key]=css[key]??stop.attrs[key];return{attrs:stop.attrs,style:own};});
   return {attrs:{...parent.attrs,...node.attrs},stops,style:styles.get(node)};
  };
- return (paint,shape,paths,matrix)=>{
+ return (paint,shape,paths,matrix,localViewport=viewport)=>{
   const ref=paint.trim().match(/^url\(\s*['"]?#([^\s'")]+)['"]?\s*\)$/);if(!ref)throw new Error('SVG gradient fill must reference a local gradient');
   const def=resolve(ref[1]),a=def.attrs;
   if((a.spreadMethod??'pad')!=='pad')throw new Error('Repeating/reflected SVG gradients are not supported yet');
@@ -44,7 +44,7 @@ export function gradientResolver(tree,viewport,color){
   if(!stops.length)stops=[{position:0,color:'#000000',opacity:0},{position:1,color:'#000000',opacity:0}];
   if(stops.length===1)stops=[{...stops[0],position:0},{...stops[0],position:1}];
   const units=a.gradientUnits??'objectBoundingBox';if(!['objectBoundingBox','userSpaceOnUse'].includes(units))throw new Error('Invalid SVG gradient units');
-  const coordinate=(value,axis,fallback)=>{if(value==null)value=fallback;if(units==='objectBoundingBox')return amount(value);if(String(value).trim().endsWith('%'))return amount(value)*viewport[axis];const n=Number(String(value).replace(/px$/,''));if(!Number.isFinite(n))throw new Error('Unsupported SVG gradient coordinate');return n;};
+  const coordinate=(value,axis,fallback)=>{if(value==null)value=fallback;if(units==='objectBoundingBox')return amount(value);if(String(value).trim().endsWith('%'))return amount(value)*localViewport[axis];const n=Number(String(value).replace(/px$/,''));if(!Number.isFinite(n))throw new Error('Unsupported SVG gradient coordinate');return n;};
   const start={x:coordinate(a.x1,0,'0%'),y:coordinate(a.y1,1,'0%')},end={x:coordinate(a.x2,0,'100%'),y:coordinate(a.y2,1,'0%')},vx=end.x-start.x,vy=end.y-start.y,len=vx*vx+vy*vy;
   if(len<1e-20){const last=stops.at(-1);return{kind:'linear',start:[0,0],end:[1,0],stops:[{...last,position:0},{...last,position:1}]};}
   let basis=matrix;if(units==='objectBoundingBox'){const b=pathBounds(paths);if(b.width<=0||b.height<=0)throw new Error('SVG bounding-box gradients require nonzero geometry');basis=multiply(basis,[b.width,0,0,b.height,b.x,b.y]);}
