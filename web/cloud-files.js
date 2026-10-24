@@ -1,4 +1,5 @@
 import {CloudSession,cloudRequest} from './cloud-session.js';
+import {openCloudHistory} from './cloud-history.js';
 export function cloudFiles({snapshot,load,status,toast}){
  let store;try{store=sessionStorage;}catch{}
  const session=new CloudSession({snapshot,status,storage:store}),dialog=document.createElement('dialog');dialog.className='cloud-dialog';dialog.setAttribute('aria-label','Cloud files');
@@ -28,7 +29,8 @@ export function cloudFiles({snapshot,load,status,toast}){
  const retry=button('Save / retry',async()=>{await session.flush();await refresh();});
  const reload=button('Open latest cloud version',async()=>{if(!session.active)throw new Error('The current design is a local file.');if(session.pending)try{await session.pending;}catch{}const file=await cloudRequest('/'+session.active.id);if(file.deleted_at)throw new Error('Restore this file from Trash first.');try{localStorage.setItem('pixlprfct.conflict-copy',snapshot());}catch{throw new Error('Download your current design before loading the latest version; recovery storage is full.');}useFile(file);dialog.close();toast('Latest cloud version opened; previous local edits kept in recovery');});
  const recover=button('Recover previous local edits',async()=>{const body=localStorage.getItem('pixlprfct.conflict-copy')??localStorage.getItem('pixlprfct.local-draft');if(!body)throw new Error('No previous local copy is available.');await session.flush();load(body);session.detach();dialog.close();});
- const toggle=button('Show Trash',async()=>{trash=!trash;toggle.textContent=trash?'Show files':'Show Trash';await refresh();});actions.append(create,saveCopy,retry,reload,recover,toggle);
+ const history=button('Version history',()=>openCloudHistory({session,useFile,closeFiles:()=>dialog.close(),toast}));
+ const toggle=button('Show Trash',async()=>{trash=!trash;toggle.textContent=trash?'Show files':'Show Trash';await refresh();});actions.append(create,saveCopy,retry,history,reload,recover,toggle);
  const trigger=document.getElementById('cloud-files');trigger.onclick=()=>{dialog.showModal();run(refresh);};
  window.addEventListener('online',()=>{if(session.error?.status!==409)session.flush().catch(()=>{});});
  window.addEventListener('pagehide',()=>session.remember());

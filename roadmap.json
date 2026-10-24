@@ -62,7 +62,8 @@
     "layer blur of composed frames and children with padded paint bounds, unchanged editing geometry, component overrides, scaling, SVG filters and pixel-verified PNG output",
     "editable SVG radial gradient fills with affine ellipse transforms, object bounds and user-space percentage radii, local references, focal position/radius controls, canvas editing, SVG export and analytically pixel-verified PNG output",
     "independent linear/radial stroke gradients with focal geometry, inspector and canvas handle/stop editing, component overrides, SVG import/export and pixel-verified raster coverage outside path bounds",
-    "private per-user D1 cloud documents with platform sign-in, file browser, autosave, revision-checked writes, cross-session reopening, conflict copy/reload recovery, local draft preservation and recoverable trash"
+    "private per-user D1 cloud documents with platform sign-in, file browser, autosave, revision-checked writes, cross-session reopening, conflict copy/reload recovery, local draft preservation and recoverable trash",
+    "named cloud version checkpoints with immutable snapshots, paginated history, ownership isolation, revision-checked transactional restoration, automatic pre-restore backups and open-version-as-copy"
   ],
   "remaining": [
     "Additional frame layout controls",
@@ -73,7 +74,7 @@
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
     "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
-    "Cloud file pagination, sharing, team permissions, version history and real-time collaboration",
+    "Cloud file pagination, sharing, team permissions, automatic periodic version history and real-time collaboration",
     "PDF export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope"
   ],
