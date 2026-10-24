@@ -43,12 +43,13 @@
     "JPEG page/selection export with adjustable quality, opaque backgrounds, resolution scaling and bounded raster memory",
     "batch SVG/PNG/JPEG export of selected roots or top-level frames to ZIP with unique filenames, sequential rendering, progress and size limits",
     "Rust vector path splitting and closed-path opening at anchors with cubic preservation, separate bounds, inherited settings and atomic history",
-    "Rust nearest-endpoint path joining with orientation/handle preservation, coincident-anchor merging, straight bridges and atomic history"
+    "Rust nearest-endpoint path joining with orientation/handle preservation, coincident-anchor merging, straight bridges and atomic history",
+    "atomic paste into multiple selected frames with independent subtree/group/prototype remapping, auto-layout integration and component synchronization"
   ],
   "remaining": [
     "Additional frame layout controls, guide snapping and reusable guide styles",
     "Nested groups and complete tree reordering",
-    "SVG import, external vector clipboard interoperability, multi-frame paste",
+    "SVG import and external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and effects",
     "Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",

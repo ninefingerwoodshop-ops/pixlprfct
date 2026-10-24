@@ -1136,6 +1136,89 @@ impl Editor {
         Ok(serde_json::to_string(&roots).unwrap())
     }
 
+    pub fn paste_into_frames(&mut self, json: &str, selection: &str) -> Result<String, String> {
+        let ids = self.selection_ids(selection)?;
+        let targets: Vec<Shape> = ids
+            .iter()
+            .map(|id| {
+                self.document
+                    .shapes
+                    .iter()
+                    .find(|s| s.id == *id)
+                    .unwrap()
+                    .clone()
+            })
+            .collect();
+        for frame in &targets {
+            if frame.kind != "frame" {
+                return Err("Select only destination frames".into());
+            }
+            let mut node = Some(frame);
+            while let Some(s) = node {
+                if s.locked {
+                    return Err("Unlock every destination frame and its parents".into());
+                }
+                node = self.document.shapes.iter().find(|p| p.id == s.parent_id);
+            }
+        }
+        let mut template = Editor::new();
+        template.paste_layers(json, 0.0, 0.0, 0)?;
+        let shapes = &template.document.shapes;
+        if self.document.shapes.len() + shapes.len() * targets.len() > 10_000 {
+            return Err("Document layer limit reached".into());
+        }
+        let left = shapes
+            .iter()
+            .filter(|s| s.parent_id == 0)
+            .map(|s| s.x)
+            .fold(f64::INFINITY, f64::min);
+        let top = shapes
+            .iter()
+            .filter(|s| s.parent_id == 0)
+            .map(|s| s.y)
+            .fold(f64::INFINITY, f64::min);
+        let mut document = self.document.clone();
+        let mut next = self.next_id;
+        let mut roots = vec![];
+        for target in targets {
+            let end = next
+                .checked_add(shapes.len() as u32)
+                .ok_or("Shape ID limit reached")?;
+            let mapping: std::collections::HashMap<u32, u32> = shapes
+                .iter()
+                .enumerate()
+                .map(|(i, s)| (s.id, next + i as u32))
+                .collect();
+            let mut groups = std::collections::HashMap::new();
+            for source in shapes {
+                let mut s = source.clone();
+                s.id = mapping[&source.id];
+                s.page_id = document.active_page;
+                s.x += target.x + 16.0 - left;
+                s.y += target.y + 16.0 - top;
+                if s.parent_id == 0 {
+                    s.parent_id = target.id;
+                    roots.push(s.id);
+                } else {
+                    s.parent_id = mapping[&s.parent_id];
+                }
+                if s.group_id > 0 {
+                    s.group_id = *groups.entry(s.group_id).or_insert(s.id);
+                }
+                if let Some(p) = &mut s.prototype {
+                    if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
+                        p.target = mapping[&p.target];
+                    }
+                }
+                document.shapes.push(s);
+            }
+            next = end;
+        }
+        self.commit(document)?;
+        self.next_id = self.next_id.max(next);
+        Ok(serde_json::to_string(&roots).unwrap())
+    }
+
     pub fn paste_replace(&mut self, json: &str, selection: &str) -> Result<String, String> {
         let selected = self.selection_ids(selection)?;
         let removed = self.descendants(&selected);
