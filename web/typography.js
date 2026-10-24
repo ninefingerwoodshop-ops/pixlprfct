@@ -1,11 +1,12 @@
 export function textStyle(shape) {
   const style = shape.typography || { font_size: Math.max(10, Math.min(72, shape.height * .66)), font_family: 'Manrope', font_weight: 600, align: 'left', line_height: 1.2, wrap: false };
-  return {...style, sizing:style.sizing||'fixed', wrap:style.sizing==='width'?false:style.sizing==='height'?true:style.wrap};
+  return {...style, sizing:style.sizing||'fixed', wrap:style.sizing==='width'?shape.layout_item?.max_width!=null:style.sizing==='height'?true:style.wrap};
 }
 
 export function textSize(shape, measure) {
   const style=textStyle(shape);
-  const width=style.sizing==='width'?Math.max(1,Math.ceil(Math.max(...shape.text.replace(/\r\n?/g,'\n').split('\n').map(measure)))):shape.width;
+  const natural=style.sizing==='width'?Math.max(1,Math.ceil(Math.max(...shape.text.replace(/\r\n?/g,'\n').split('\n').map(measure)))):shape.width;
+  const width=Math.min(shape.layout_item?.max_width??1e6,Math.max(shape.layout_item?.min_width??1,natural));
   return [width,Math.max(1,Math.ceil(layoutText({...shape,width},measure).height))];
 }
 

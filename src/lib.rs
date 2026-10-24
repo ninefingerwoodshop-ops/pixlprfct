@@ -54,6 +54,14 @@ pub struct LayoutItem {
     pub fill_width: bool,
     pub fill_height: bool,
     pub absolute: bool,
+    #[serde(default)]
+    pub min_width: Option<f64>,
+    #[serde(default)]
+    pub max_width: Option<f64>,
+    #[serde(default)]
+    pub min_height: Option<f64>,
+    #[serde(default)]
+    pub max_height: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -68,6 +76,16 @@ pub struct AutoLayout {
     pub justify: String,
     pub hug_width: bool,
     pub hug_height: bool,
+    #[serde(default)]
+    pub wrap: bool,
+    #[serde(default)]
+    pub cross_gap: Option<f64>,
+    #[serde(default = "default_content_align")]
+    pub align_content: String,
+}
+
+fn default_content_align() -> String {
+    "start".into()
 }
 
 impl Default for AutoLayout {
@@ -83,6 +101,9 @@ impl Default for AutoLayout {
             justify: "start".into(),
             hug_width: true,
             hug_height: true,
+            wrap: false,
+            cross_gap: None,
+            align_content: default_content_align(),
         }
     }
 }
@@ -330,11 +351,30 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        for (min, max) in [
+            (shape.layout_item.min_width, shape.layout_item.max_width),
+            (shape.layout_item.min_height, shape.layout_item.max_height),
+        ] {
+            if min
+                .into_iter()
+                .chain(max)
+                .any(|v| !v.is_finite() || !(1.0..=1_000_000.0).contains(&v))
+                || matches!((min,max),(Some(a),Some(b)) if a>b)
+            {
+                return Err(
+                    "Size limits must be positive, with minimum no larger than maximum".into(),
+                );
+            }
+        }
         if let Some(l) = &shape.auto_layout {
             if shape.kind != "frame"
                 || !["horizontal", "vertical"].contains(&l.direction.as_str())
                 || !["start", "center", "end"].contains(&l.align.as_str())
                 || !["start", "center", "end", "between"].contains(&l.justify.as_str())
+                || !["start", "center", "end", "between", "stretch"]
+                    .contains(&l.align_content.as_str())
+                || l.cross_gap
+                    .is_some_and(|v| !v.is_finite() || !(0.0..=100_000.0).contains(&v))
                 || ![
                     l.gap,
                     l.padding_top,

@@ -1,7 +1,71 @@
 use crate::{constrain_axis, Document, Shape};
-
-// Layout has two acyclic passes: measure hugged frames bottom-up, then allocate
-// fill space and place children top-down. Fill disables hugging on the same axis.
+fn size(s: &Shape, horizontal: bool) -> f64 {
+    if horizontal {
+        s.width
+    } else {
+        s.height
+    }
+}
+fn fill(s: &Shape, horizontal: bool) -> bool {
+    if horizontal {
+        s.layout_item.fill_width
+    } else {
+        s.layout_item.fill_height
+    }
+}
+fn limits(s: &Shape, horizontal: bool) -> (f64, f64) {
+    let l = &s.layout_item;
+    if horizontal {
+        (l.min_width.unwrap_or(1.0), l.max_width.unwrap_or(1e6))
+    } else {
+        (l.min_height.unwrap_or(1.0), l.max_height.unwrap_or(1e6))
+    }
+}
+fn bounded(s: &Shape, horizontal: bool, value: f64) -> f64 {
+    let (min, max) = limits(s, horizontal);
+    value.clamp(min, max)
+}
+fn basis(s: &Shape, h: bool) -> f64 {
+    if fill(s, h) {
+        limits(s, h).0
+    } else {
+        bounded(s, h, size(s, h))
+    }
+}
+fn lines(
+    shapes: &[Shape],
+    items: &[usize],
+    h: bool,
+    wrap: bool,
+    available: f64,
+    gap: f64,
+) -> Vec<Vec<usize>> {
+    let mut result = vec![];
+    let mut line = vec![];
+    let mut used = 0.0;
+    for &c in items {
+        let n = basis(&shapes[c], h);
+        if wrap && !line.is_empty() && used + gap + n > available + 1e-7 {
+            result.push(line);
+            line = vec![];
+            used = 0.0;
+        }
+        if !line.is_empty() {
+            used += gap;
+        }
+        used += n;
+        line.push(c);
+    }
+    if !line.is_empty() {
+        result.push(line);
+    }
+    result
+}
+fn cross_size(shapes: &[Shape], line: &[usize], h: bool) -> f64 {
+    line.iter()
+        .map(|&c| basis(&shapes[c], !h))
+        .fold(0.0, f64::max)
+}
 pub(crate) fn reflow(doc: &mut Document) {
     let lookup: std::collections::HashMap<u32, usize> = doc
         .shapes
@@ -68,56 +132,78 @@ pub(crate) fn reflow(doc: &mut Document) {
             .filter(|&c| !shapes[c].hidden && !shapes[c].layout_item.absolute)
             .collect()
     }
+
     fn measure(shapes: &mut [Shape], children: &[Vec<usize>], i: usize) {
         for &c in &children[i] {
             measure(shapes, children, c);
         }
-        let Some(mut l) = shapes[i].auto_layout.clone() else {
-            return;
-        };
-        let items = flow(shapes, children, i);
-        if items.iter().any(|&c| shapes[c].layout_item.fill_width) {
-            l.hug_width = false;
-        }
-        if items.iter().any(|&c| shapes[c].layout_item.fill_height) {
-            l.hug_height = false;
-        }
-        let in_layout = !shapes[i].layout_item.absolute
-            && shapes
-                .iter()
-                .any(|p| p.id == shapes[i].parent_id && p.auto_layout.is_some());
-        if in_layout && shapes[i].layout_item.fill_width {
-            l.hug_width = false;
-        }
-        if in_layout && shapes[i].layout_item.fill_height {
-            l.hug_height = false;
-        }
-        let horizontal = l.direction == "horizontal";
-        let sum_w: f64 = items.iter().map(|&c| shapes[c].width).sum();
-        let sum_h: f64 = items.iter().map(|&c| shapes[c].height).sum();
-        let max_w = items.iter().map(|&c| shapes[c].width).fold(0.0, f64::max);
-        let max_h = items.iter().map(|&c| shapes[c].height).fold(0.0, f64::max);
-        let gaps = l.gap * items.len().saturating_sub(1) as f64;
         let s = &shapes[i];
-        let w = if l.hug_width {
-            (if horizontal { sum_w + gaps } else { max_w }) + l.padding_left + l.padding_right
-        } else {
-            s.width.max(l.padding_left + l.padding_right)
-        };
-        let h = if l.hug_height {
-            (if horizontal { max_h } else { sum_h + gaps }) + l.padding_top + l.padding_bottom
-        } else {
-            s.height.max(l.padding_top + l.padding_bottom)
-        };
         let (x, y) = (s.x, s.y);
-        shapes[i].auto_layout = Some(l);
-        geometry(shapes, children, i, x, y, w.max(1.0), h.max(1.0));
+        let (mut w, mut h) = (bounded(s, true, s.width), bounded(s, false, s.height));
+        if let Some(mut l) = s.auto_layout.clone() {
+            let horizontal = l.direction == "horizontal";
+            let items = flow(shapes, children, i);
+            if (l.wrap && horizontal)
+                || items.iter().any(|&c| fill(&shapes[c], true)) && (!l.wrap || horizontal)
+            {
+                l.hug_width = false;
+            }
+            if (l.wrap && !horizontal)
+                || items.iter().any(|&c| fill(&shapes[c], false)) && (!l.wrap || !horizontal)
+            {
+                l.hug_height = false;
+            }
+            let in_layout = !s.layout_item.absolute
+                && shapes
+                    .iter()
+                    .any(|p| p.id == s.parent_id && p.auto_layout.is_some());
+            if in_layout && fill(s, true) {
+                l.hug_width = false;
+            }
+            if in_layout && fill(s, false) {
+                l.hug_height = false;
+            }
+            let pw = l.padding_left + l.padding_right;
+            let ph = l.padding_top + l.padding_bottom;
+            let available = if horizontal { w - pw } else { h - ph };
+            let rows = lines(shapes, &items, horizontal, l.wrap, available, l.gap);
+            let main = items
+                .iter()
+                .map(|&c| size(&shapes[c], horizontal))
+                .sum::<f64>()
+                + l.gap * items.len().saturating_sub(1) as f64;
+            let cross = if l.wrap {
+                rows.iter()
+                    .map(|r| cross_size(shapes, r, horizontal))
+                    .sum::<f64>()
+                    + l.cross_gap.unwrap_or(l.gap) * rows.len().saturating_sub(1) as f64
+            } else {
+                items
+                    .iter()
+                    .map(|&c| size(&shapes[c], !horizontal))
+                    .fold(0.0, f64::max)
+            };
+            if l.hug_width {
+                w = if horizontal { main + pw } else { cross + pw };
+            } else {
+                w = w.max(pw);
+            }
+            if l.hug_height {
+                h = if horizontal { cross + ph } else { main + ph };
+            } else {
+                h = h.max(ph);
+            }
+            shapes[i].auto_layout = Some(l);
+        }
+        w = bounded(&shapes[i], true, w);
+        h = bounded(&shapes[i], false, h);
+        geometry(shapes, children, i, x, y, w, h);
     }
     fn arrange(shapes: &mut [Shape], children: &[Vec<usize>], i: usize) {
         if let Some(l) = shapes[i].auto_layout.clone() {
             let horizontal = l.direction == "horizontal";
-            let items = flow(shapes, children, i);
             let parent = shapes[i].clone();
+            let items = flow(shapes, children, i);
             let available = if horizontal {
                 parent.width - l.padding_left - l.padding_right
             } else {
@@ -128,94 +214,150 @@ pub(crate) fn reflow(doc: &mut Document) {
             } else {
                 parent.width - l.padding_left - l.padding_right
             };
-            let fill = |s: &Shape| {
-                if horizontal {
-                    s.layout_item.fill_width
-                } else {
-                    s.layout_item.fill_height
-                }
-            };
-            let count = items.iter().filter(|&&c| fill(&shapes[c])).count();
-            let fixed: f64 = items
+            let rows = lines(shapes, &items, horizontal, l.wrap, available, l.gap);
+            let cg = l.cross_gap.unwrap_or(l.gap);
+            let heights: Vec<f64> = rows
                 .iter()
-                .filter(|&&c| !fill(&shapes[c]))
-                .map(|&c| {
-                    if horizontal {
-                        shapes[c].width
+                .map(|r| {
+                    if l.wrap {
+                        cross_size(shapes, r, horizontal)
                     } else {
-                        shapes[c].height
+                        cross
                     }
                 })
-                .sum();
-            let filled = ((available - fixed - l.gap * items.len().saturating_sub(1) as f64)
-                / count.max(1) as f64)
-                .max(1.0);
-            let occupied =
-                fixed + filled * count as f64 + l.gap * items.len().saturating_sub(1) as f64;
-            let spare = (available - occupied).max(0.0);
-            let gap = if l.justify == "between" && items.len() > 1 {
-                l.gap + spare / (items.len() - 1) as f64
+                .collect();
+            let spare =
+                (cross - heights.iter().sum::<f64>() - cg * rows.len().saturating_sub(1) as f64)
+                    .max(0.0);
+            let stretch = if l.wrap && l.align_content == "stretch" {
+                spare / rows.len().max(1) as f64
             } else {
-                l.gap
+                0.0
             };
-            let mut cursor = match l.justify.as_str() {
-                "center" => spare / 2.0,
-                "end" => spare,
-                _ => 0.0,
+            let row_gap = cg
+                + if l.wrap && l.align_content == "between" && rows.len() > 1 {
+                    spare / (rows.len() - 1) as f64
+                } else {
+                    0.0
+                };
+            let mut row_cursor = if l.wrap {
+                match l.align_content.as_str() {
+                    "center" => spare / 2.0,
+                    "end" => spare,
+                    _ => 0.0,
+                }
+            } else {
+                0.0
             };
-            for c in items {
-                let s = &shapes[c];
-                let main = if fill(s) {
-                    filled
-                } else if horizontal {
-                    s.width
-                } else {
-                    s.height
-                };
-                let cross_fill = if horizontal {
-                    s.layout_item.fill_height
-                } else {
-                    s.layout_item.fill_width
-                };
-                let cs = if cross_fill {
-                    cross.max(1.0)
-                } else if horizontal {
-                    s.height
-                } else {
-                    s.width
-                };
-                let offset = match l.align.as_str() {
-                    "center" => (cross - cs) / 2.0,
-                    "end" => cross - cs,
+            for (row, line) in rows.iter().enumerate() {
+                let row_cross = heights[row] + stretch;
+                let mut sizes: Vec<f64> = line
+                    .iter()
+                    .map(|&c| basis(&shapes[c], horizontal))
+                    .collect();
+                let pending: Vec<usize> = (0..line.len())
+                    .filter(|&j| fill(&shapes[line[j]], horizontal))
+                    .collect();
+                let budget = available
+                    - l.gap * line.len().saturating_sub(1) as f64
+                    - line
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, &c)| !fill(&shapes[c], horizontal))
+                        .map(|(j, _)| sizes[j])
+                        .sum::<f64>();
+                // Solve the common fill size with independent minimum/maximum bounds.
+                let (mut low, mut high) = (0.0, 1e6);
+                for _ in 0..64 {
+                    let share = (low + high) / 2.0;
+                    let used: f64 = pending
+                        .iter()
+                        .map(|&j| bounded(&shapes[line[j]], horizontal, share))
+                        .sum();
+                    if used <= budget {
+                        low = share;
+                    } else {
+                        high = share;
+                    }
+                }
+                for &j in &pending {
+                    sizes[j] = bounded(&shapes[line[j]], horizontal, low);
+                }
+                let extra = (available
+                    - sizes.iter().sum::<f64>()
+                    - l.gap * line.len().saturating_sub(1) as f64)
+                    .max(0.0);
+                let gap = l.gap
+                    + if l.justify == "between" && line.len() > 1 {
+                        extra / (line.len() - 1) as f64
+                    } else {
+                        0.0
+                    };
+                let mut cursor = match l.justify.as_str() {
+                    "center" => extra / 2.0,
+                    "end" => extra,
                     _ => 0.0,
                 };
-                let (x, y, w, h) = if horizontal {
-                    (
-                        parent.x + l.padding_left + cursor,
-                        parent.y + l.padding_top + offset,
-                        main,
-                        cs,
-                    )
-                } else {
-                    (
-                        parent.x + l.padding_left + offset,
-                        parent.y + l.padding_top + cursor,
-                        cs,
-                        main,
-                    )
-                };
-                geometry(shapes, children, c, x, y, w, h);
-                cursor += main + gap;
+                for (j, &c) in line.iter().enumerate() {
+                    let s = &shapes[c];
+                    let cs = bounded(
+                        s,
+                        !horizontal,
+                        if fill(s, !horizontal) {
+                            row_cross
+                        } else {
+                            size(s, !horizontal)
+                        },
+                    );
+                    let offset = match l.align.as_str() {
+                        "center" => (row_cross - cs) / 2.0,
+                        "end" => row_cross - cs,
+                        _ => 0.0,
+                    };
+                    let (x, y, w, h) = if horizontal {
+                        (
+                            parent.x + l.padding_left + cursor,
+                            parent.y + l.padding_top + row_cursor + offset,
+                            sizes[j],
+                            cs,
+                        )
+                    } else {
+                        (
+                            parent.x + l.padding_left + row_cursor + offset,
+                            parent.y + l.padding_top + cursor,
+                            cs,
+                            sizes[j],
+                        )
+                    };
+                    geometry(shapes, children, c, x, y, w, h);
+                    cursor += sizes[j] + gap;
+                }
+                row_cursor += row_cross + row_gap;
             }
         }
         for &c in &children[i] {
             arrange(shapes, children, c);
         }
     }
-    for &root in &roots {
-        measure(&mut doc.shapes, &children, root);
-    }
-    for &root in &roots {
-        arrange(&mut doc.shapes, &children, root);
+    for _ in 0..128 {
+        let before: Vec<_> = doc
+            .shapes
+            .iter()
+            .map(|s| (s.x, s.y, s.width, s.height))
+            .collect();
+        for &r in &roots {
+            measure(&mut doc.shapes, &children, r);
+        }
+        for &r in &roots {
+            arrange(&mut doc.shapes, &children, r);
+        }
+        if doc
+            .shapes
+            .iter()
+            .zip(before)
+            .all(|(s, b)| (s.x, s.y, s.width, s.height) == b)
+        {
+            break;
+        }
     }
 }
