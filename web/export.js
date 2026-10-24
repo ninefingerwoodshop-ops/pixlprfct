@@ -29,7 +29,7 @@ export function rasterSettings(format,background,quality=90){
 export function svgDocument(shapes,box,scale,background,textLayout){
  const size=exportSize(box,scale,'svg');
  const paint=s=>{
-  if(s.kind==='image')return `<clipPath id="image-clip-${s.id}">${roundedSvg(s)}</clipPath><g clip-path="url(#image-clip-${s.id})">${imageSvg(s)}</g>${roundedSvg(s,paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}}))}`;
+  if(s.kind==='image')return `<clipPath id="image-clip-${s.id}">${roundedSvg(s)}</clipPath><g clip-path="url(#image-clip-${s.id})" opacity="${appearance(s).fill_opacity??1}">${imageSvg(s)}</g>${roundedSvg(s,paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}}))}`;
   if(s.points?.length)return vectorSvg(s);
   if(s.kind==='ellipse')return `<ellipse cx="${s.x+s.width/2}" cy="${s.y+s.height/2}" rx="${s.width/2}" ry="${s.height/2}" ${paintAttributes(s)}/>`;
   if(s.kind==='text')return textSvg(s,textLayout(s));

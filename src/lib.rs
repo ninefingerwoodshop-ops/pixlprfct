@@ -186,6 +186,10 @@ pub struct Appearance {
     #[serde(default)]
     pub corner_radii: Option<[f64; 4]>,
     pub fill_enabled: bool,
+    #[serde(default = "opaque_paint")]
+    pub fill_opacity: f64,
+    #[serde(default = "opaque_paint")]
+    pub stroke_opacity: f64,
     pub stroke_enabled: bool,
     pub stroke_color: String,
     #[serde(default)]
@@ -198,6 +202,10 @@ pub struct Appearance {
     pub stroke_join: String,
     #[serde(default = "default_miter_limit")]
     pub stroke_miter_limit: f64,
+}
+
+fn opaque_paint() -> f64 {
+    1.0
 }
 
 fn default_miter_limit() -> f64 {
@@ -585,7 +593,10 @@ fn validate(document: &Document) -> Result<(), String> {
                     return Err("Invalid gradient geometry or color stops".into());
                 }
             }
-            if !a.opacity.is_finite()
+            if [a.fill_opacity, a.stroke_opacity]
+                .iter()
+                .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
+                || !a.opacity.is_finite()
                 || !(0.0..=1.0).contains(&a.opacity)
                 || !a.corner_radius.is_finite()
                 || !(0.0..=1_000_000.0).contains(&a.corner_radius)
