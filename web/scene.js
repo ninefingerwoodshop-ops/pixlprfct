@@ -1,5 +1,5 @@
 import {visibleInTree,lockedInTree} from './selection.js';
-import {appearance,radius,roundedContains} from './appearance.js';
+import {appearance,roundedSvg,roundedContains} from './appearance.js';
 export function clippingFrames(shape,shapes) {
   const frames=[];let parent=shape.parent_id;
   while(parent) {const node=shapes.find(s=>s.id===parent);if(!node)break;if(node.clip_content)frames.push(node);parent=node.parent_id;}
@@ -16,7 +16,7 @@ export function frameAt(shapes,point) {
   return [...shapes].reverse().find(s=>s.kind==='frame'&&s.component?.type!=='instance'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
 }
 export function clipDefinitions(shapes) {
-  return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath>`).join('')}</defs>`;
+  return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse">${roundedSvg(s)}</clipPath>`).join('')}</defs>`;
 }
 export function clipSvg(shape,shapes,content) {
   return clippingFrames(shape,shapes).reduce((body,frame)=>`<g clip-path="url(#frame-clip-${frame.id})">${body}</g>`,content);

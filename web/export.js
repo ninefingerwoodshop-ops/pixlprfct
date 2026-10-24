@@ -1,6 +1,6 @@
 import {descendants,visibleInTree,bounds} from './selection.js';
 import {paintBounds,clipDefinitions} from './scene.js';
-import {appearance,radius,paintAttributes,sceneSvg} from './appearance.js';
+import {appearance,roundedSvg,paintAttributes,sceneSvg} from './appearance.js';
 import {imageSvg} from './images.js';
 import {vectorSvg} from './vectors.js';
 import {textSvg} from './typography.js';
@@ -22,11 +22,11 @@ export function exportSize(box,scale,format,shapes=[]){
 export function svgDocument(shapes,box,scale,background,textLayout){
  const size=exportSize(box,scale,'svg');
  const paint=s=>{
-  if(s.kind==='image')return `<clipPath id="image-clip-${s.id}"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath><g clip-path="url(#image-clip-${s.id})">${imageSvg(s)}</g><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}" ${paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}})}/>`;
+  if(s.kind==='image')return `<clipPath id="image-clip-${s.id}">${roundedSvg(s)}</clipPath><g clip-path="url(#image-clip-${s.id})">${imageSvg(s)}</g>${roundedSvg(s,paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}}))}`;
   if(s.points?.length)return vectorSvg(s);
   if(s.kind==='ellipse')return `<ellipse cx="${s.x+s.width/2}" cy="${s.y+s.height/2}" rx="${s.width/2}" ry="${s.height/2}" ${paintAttributes(s)}/>`;
   if(s.kind==='text')return textSvg(s,textLayout(s));
-  return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}" ${paintAttributes(s)}/>`;
+  return roundedSvg(s,paintAttributes(s));
  };
  if(background&&!/^#[0-9a-f]{6}$/i.test(background))throw new Error('Invalid export background');
  const backdrop=background?`<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${background}"/>`:'';

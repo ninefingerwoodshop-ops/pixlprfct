@@ -30,13 +30,14 @@
     "instance swapping by matching main-layer names/kinds/hierarchy, granular typography/appearance/layout overrides, individual override reset and legacy compatibility",
     "named component variant sets, multi-property editing and validation, variant duplication, property-based instance selection, sparse combination matching and grouped library assets",
     "exposed text/visibility component properties, multiple layer bindings, direct instance controls, individual reset, semantic property preservation across swaps and definition duplication",
-    "horizontal/vertical auto-layout wrapping, independent cross gaps, line distribution, bounded fill allocation, layer min/max sizes and max-width text wrapping"
+    "horizontal/vertical auto-layout wrapping, independent cross gaps, line distribution, bounded fill allocation, layer min/max sizes and max-width text wrapping",
+    "independent four-corner radii with shared normalization, canvas/PNG/SVG geometry, frame/image clipping, hit testing, scaling and component overrides"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
     "Nested groups and complete tree reordering",
     "SVG import, external vector clipboard interoperability, paste-to-replace and multi-frame paste",
-    "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, advanced gradients and effects",
+    "Rotation, corner smoothing, multiple paints, stroke alignment/dashes, advanced gradients and effects",
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",

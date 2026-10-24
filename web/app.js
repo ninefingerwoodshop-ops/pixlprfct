@@ -11,7 +11,7 @@ import {imageLayout,imageSvg,readImage} from './images.js';
 import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-edit.js';
 import {exportShapes,exportBounds,exportSize,svgDocument} from './export.js';
 import {LAYER_MIME,layerPayload,pasteOffset} from './clipboard.js';
-import {appearance,radius,paintAttributes,drawScene,sceneSvg} from './appearance.js';
+import {appearance,radii,paintAttributes,drawScene,sceneSvg} from './appearance.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons } from './icons.js';
@@ -181,7 +181,7 @@ function renderComponentProperties(shape){
     $('swap-component').value=c.master;
     const paths=(c.overrides??[]).filter(p=>c.master!==c.source||(p!=='x'&&p!=='y'));
     $('override-count').textContent=paths.length;
-    const labels={typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',stroke_color:'Stroke color',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
+    const labels={typography:'Text',appearance:'Appearance',constraints:'Constraints',layout_item:'Layout sizing',auto_layout:'Auto layout',font_size:'Font size',font_family:'Font family',font_weight:'Font weight',align:'Alignment',line_height:'Line spacing',corner_radius:'Corner radius',corner_radii:'Independent corners',stroke_color:'Stroke color',fill_enabled:'Fill enabled',stroke_enabled:'Stroke enabled',fill_width:'Fill width',fill_height:'Fill height',absolute:'Ignore auto layout'};
     const rows=paths.map(path=>{const row=document.createElement('div');row.className='override-row';const label=document.createElement('span');label.textContent=path.split('.').map(p=>labels[p]??p.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase())).join(' · ');const b=document.createElement('button');b.textContent='Reset';b.setAttribute('aria-label','Reset '+label.textContent+' override');b.onclick=()=>safe(()=>{editor.reset_override(shape.id,path);refresh();});row.append(label,b);return row;});
     if(!rows.length){const p=document.createElement('p');p.textContent='This layer inherits its component properties.';rows.push(p);}
     $('override-list').replaceChildren(...rows);
@@ -236,6 +236,7 @@ function renderProperties() {
   for(const key of ['min_width','max_width','min_height','max_height'])$('limit-'+key).value=shape.layout_item?.[key]??'';
   $('image-section').hidden=shape.kind!=='image';
   const paint=appearance(shape);$('opacity').value=Math.round(paint.opacity*100);$('corner-radius').value=paint.corner_radius;$('radius-row').hidden=!['rectangle','frame','image'].includes(shape.kind);$('fill-enabled').checked=paint.fill_enabled;$('stroke-enabled').checked=paint.stroke_enabled;$('stroke-color').value=paint.stroke_color;
+  const rounded=['rectangle','frame','image'].includes(shape.kind);$('independent-corners').parentElement.hidden=!rounded;$('independent-corners').checked=!!paint.corner_radii;$('corner-values').hidden=!rounded||!paint.corner_radii;$('corner-radius').disabled=!!paint.corner_radii;for(let i=0;i<4;i++)$('corner-'+i).value=paint.corner_radii?.[i]??paint.corner_radius;
   $('paint-label').parentElement.hidden=shape.kind==='image';
   if(shape.image){$('image-mode').value=shape.image.mode;$('image-zoom').value=shape.image.zoom;$('image-x').value=Math.round(shape.image.offset_x*100);$('image-y').value=Math.round(shape.image.offset_y*100);$('image-crop-fields').hidden=shape.image.mode==='fit';}
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
@@ -264,7 +265,7 @@ function drawShape(shape, target=ctx) {
   const ctx=target,a=appearance(shape);
   if (shape.hidden) return;
   ctx.fillStyle = a.fill_enabled&&shape.kind!=='image'?canvasFill(ctx,shape):shape.fill;ctx.strokeStyle=a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap='round';ctx.lineJoin='round';
-  const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radius(shape));
+  const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radii(shape));
   ctx.save();if(shape.kind==='image')ctx.clip(outline);
   if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh);}else{ctx.fillStyle='#e5e7eb';ctx.fillRect(shape.x,shape.y,shape.width,shape.height);}}
   else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)ctx.fill(path);if(a.stroke_enabled)ctx.stroke(path); }
@@ -288,7 +289,7 @@ function draw() {
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
   if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{scene=JSON.parse(editor.preview_update_many(JSON.stringify(previews))).shapes.filter(s=>s.page_id===doc.active_page);}catch{scene=pageShapes();}}
   drawScene(scene,ctx,drawShape);
-  if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radius(frame));ctx.clip();}drawShape(preview);ctx.restore();}
+  if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radii(frame));ctx.clip();}drawShape(preview);ctx.restore();}
   if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
   if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
   const visibleSelection = selectionShapes().filter(s => visibleInTree(s,pageShapes())).map(s => previews.find(p => p.id === s.id) || s);
@@ -402,6 +403,8 @@ function bind() {
   $('layout-direction').onchange=()=>{const s=current();if(s)update({...s,auto_layout:$('layout-direction').value==='none'?null:{...layoutDefaults,...s.auto_layout,direction:$('layout-direction').value}});};
   for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap'])$('layout-'+key).onchange=()=>{const s=current();if(s?.auto_layout){const el=$('layout-'+key),value=(key.startsWith('hug')||key==='wrap')?el.checked:['align','justify','align_content'].includes(key)?el.value:key==='cross_gap'&&el.value===''?null:Number(el.value);update({...s,auto_layout:{...s.auto_layout,[key]:value}});renderProperties();}};
   for(const key of ['fill_width','fill_height','absolute'])$('layout-item-'+key).onchange=()=>{const s=current();if(s)update({...s,layout_item:{fill_width:false,fill_height:false,absolute:false,...s.layout_item,[key]:$('layout-item-'+key).checked}});};
+  $('independent-corners').onchange=()=>{const s=current();if(!s)return;const a=appearance(s);update({...s,appearance:{...a,corner_radius:a.corner_radii?.[0]??a.corner_radius,corner_radii:$('independent-corners').checked?Array(4).fill(a.corner_radius):null}});renderProperties();};
+  for(let i=0;i<4;i++)$('corner-'+i).onchange=()=>{const s=current();if(!s)return;const a=appearance(s),values=[...(a.corner_radii??Array(4).fill(a.corner_radius))];values[i]=Number($('corner-'+i).value);update({...s,appearance:{...a,corner_radii:values}});renderProperties();};
   for(const [id,key] of [['opacity','opacity'],['corner-radius','corner_radius'],['fill-enabled','fill_enabled'],['stroke-enabled','stroke_enabled'],['stroke-color','stroke_color']])$(id).onchange=()=>{const s=current();if(!s)return;const value=id.endsWith('enabled')?$(id).checked:id==='stroke-color'?$(id).value:Number($(id).value)/(id==='opacity'?100:1);update({...s,appearance:{...appearance(s),[key]:value}});renderProperties();};
   $('place-image').onclick=()=>{imageReplaceId=0;$('image-file').click();};
   $('replace-image').onclick=()=>{imageReplaceId=current()?.id??0;$('image-file').click();};

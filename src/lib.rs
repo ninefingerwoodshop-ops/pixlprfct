@@ -114,6 +114,8 @@ pub struct Appearance {
     pub gradient: Option<Gradient>,
     pub opacity: f64,
     pub corner_radius: f64,
+    #[serde(default)]
+    pub corner_radii: Option<[f64; 4]>,
     pub fill_enabled: bool,
     pub stroke_enabled: bool,
     pub stroke_color: String,
@@ -138,15 +140,36 @@ fn in_rounded_rect(s: &Shape, x: f64, y: f64) -> bool {
     if x < s.x || x > s.x + s.width || y < s.y || y > s.y + s.height {
         return false;
     }
-    let radius = s
+    let r = s
         .appearance
         .as_ref()
-        .map_or(0.0, |a| a.corner_radius)
-        .min(s.width / 2.0)
-        .min(s.height / 2.0);
-    let cx = x.clamp(s.x + radius, s.x + s.width - radius);
-    let cy = y.clamp(s.y + radius, s.y + s.height - radius);
-    (x - cx).hypot(y - cy) <= radius
+        .map_or([0.0; 4], |a| a.corner_radii.unwrap_or([a.corner_radius; 4]));
+    let scale = 1.0_f64
+        .min(s.width / (r[0] + r[1]))
+        .min(s.width / (r[3] + r[2]))
+        .min(s.height / (r[0] + r[3]))
+        .min(s.height / (r[1] + r[2]));
+    let r = r.map(|v| v * scale);
+    for (radius, cx, cy, left, top) in [
+        (r[0], s.x + r[0], s.y + r[0], true, true),
+        (r[1], s.x + s.width - r[1], s.y + r[1], false, true),
+        (
+            r[2],
+            s.x + s.width - r[2],
+            s.y + s.height - r[2],
+            false,
+            false,
+        ),
+        (r[3], s.x + r[3], s.y + s.height - r[3], true, false),
+    ] {
+        if (if left { x < cx } else { x > cx })
+            && (if top { y < cy } else { y > cy })
+            && (x - cx).hypot(y - cy) > radius
+        {
+            return false;
+        }
+    }
+    true
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -415,6 +438,10 @@ fn validate(document: &Document) -> Result<(), String> {
                 || !(0.0..=1.0).contains(&a.opacity)
                 || !a.corner_radius.is_finite()
                 || !(0.0..=1_000_000.0).contains(&a.corner_radius)
+                || a.corner_radii.is_some_and(|r| {
+                    r.iter()
+                        .any(|v| !v.is_finite() || !(0.0..=1_000_000.0).contains(v))
+                })
                 || a.stroke_color.len() != 7
                 || !a.stroke_color.starts_with('#')
                 || !a.stroke_color[1..].bytes().all(|c| c.is_ascii_hexdigit())
