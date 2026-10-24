@@ -1,12 +1,14 @@
 import {appearance} from './appearance.js';
 import {defaultGradient,insertGradientStop} from './gradients.js';
-export function renderGradientControls(container,shape,update) {
+export function renderGradientControls(container,shape,update,options={}) {
  container.replaceChildren();const a=appearance(shape),g=a.gradient;
  const label=(name,input)=>{const l=document.createElement('label');l.append(document.createTextNode(name),input);return l;};
  const select=document.createElement('select');select.id='fill-type';select.setAttribute('aria-label','Fill type');
  for(const [value,name] of [['solid','Solid'],['linear','Linear gradient'],['radial','Radial gradient']]){const o=document.createElement('option');o.value=value;o.textContent=name;select.append(o);}select.value=g?.kind??'solid';
  select.onchange=()=>update({...shape,appearance:{...a,gradient:select.value==='solid'?null:g?{...g,kind:select.value}:defaultGradient(shape.fill,select.value)}});
  container.append(label('Fill type',select));if(!g)return;
+ const editCanvas=document.createElement('button');editCanvas.id='edit-gradient';editCanvas.className='wide-button';editCanvas.textContent=options.editing?'Done editing gradient':'Edit gradient on canvas';editCanvas.setAttribute('aria-pressed',String(!!options.editing));editCanvas.onclick=options.toggle;container.append(editCanvas);
+ if(options.editing){const help=document.createElement('p');help.textContent='Drag square endpoints or circular color stops. Double-click the line to add a stop. Shift snaps direction or stop position. Enter finishes; Escape cancels a drag.';container.append(help);}
  const change=gradient=>update({...shape,appearance:{...a,gradient}});
  const number=(name,value,min,max,step,onchange)=>{const input=document.createElement('input');input.type='number';input.value=value;input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',name);input.onchange=()=>onchange(Number(input.value));return label(name,input);};
  const geometry=document.createElement('div');geometry.className='gradient-geometry';
@@ -14,7 +16,7 @@ export function renderGradientControls(container,shape,update) {
  container.append(geometry);
  const stops=document.createElement('div');stops.className='gradient-stops';
  g.stops.forEach((stop,index)=>{
-  const row=document.createElement('div');row.className='gradient-stop';
+  const row=document.createElement('div');row.className='gradient-stop';if(options.active?.part==='stop'&&options.active.index===index)row.classList.add('active');
   const edit=patch=>change({...g,stops:g.stops.map((s,i)=>i===index?{...s,...patch}:s).sort((a,b)=>a.position-b.position)});
   const color=document.createElement('input');color.type='color';color.value=stop.color;color.setAttribute('aria-label',`Stop ${index+1} color`);color.onchange=()=>edit({color:color.value});
   const hex=document.createElement('input');hex.type='text';hex.value=stop.color;hex.maxLength=7;hex.setAttribute('aria-label',`Stop ${index+1} hex`);hex.onchange=()=>edit({color:hex.value.startsWith('#')?hex.value:'#'+hex.value});

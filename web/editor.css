@@ -35,3 +35,4 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 .gradient-colors{grid-column:1/-1;display:flex;align-items:center;gap:8px}
 .gradient-colors input[type=color]{width:28px;height:28px;flex-shrink:0;border:0;padding:0;background:none}
 .gradient-stop button{grid-column:1/-1;font-size:11px;text-align:left}
+.gradient-stop.active{background:#e5f3ff;border-radius:5px;outline:1px solid #0d99ff;padding:8px}

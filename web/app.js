@@ -1,5 +1,6 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import {canvasFill} from './gradients.js';
+import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradientStopAt,drawGradientHandles} from './gradient-edit.js';
 import {renderGradientControls} from './gradient-controls.js';
 import { textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
@@ -28,7 +29,8 @@ let activeNode=-1;
 let lastPasted='',pasteCount=0,pasteInPlace=false;
 let exportBusy=false;
 let selectedIds = new Set(), layerAnchor = 0;
-function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} }
+let editingGradient=0,activeGradient=null;
+function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} if(ids.length!==1||ids[0]!==editingGradient){editingGradient=0;activeGradient=null;} }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
 function selectionJson() { return JSON.stringify([...selectedIds]); }
 const pageViews = new Map();
@@ -143,6 +145,8 @@ function renderLayers() {
 }
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
+  if(!shape?.appearance?.gradient||!visibleInTree(shape,pageShapes())){editingGradient=0;activeGradient=null;}
+  if(activeGradient?.part==='stop'&&activeGradient.index>=shape?.appearance?.gradient?.stops.length)activeGradient=null;
   $('node-actions').hidden=!editingPath||!shape?.points?.length;
   if(activeNode>=(shape?.points?.length??0))activeNode=-1;
   $('node-caption').textContent=activeNode<0?'Select an anchor':`Anchor ${activeNode+1} of ${shape.points.length}`;
@@ -182,7 +186,7 @@ function renderProperties() {
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
   $('stroke-section').hidden = false; $('stroke-width').value = shape.stroke_width ?? 2;$('vector-edit-controls').hidden=!vectorTools.includes(shape.kind);
   $('paint-label').textContent = 'Fill';
-  renderGradientControls($('gradient-controls'),shape,update);
+  renderGradientControls($('gradient-controls'),shape,s=>{activeGradient=null;update(s);},{editing:editingGradient===shape.id,active:activeGradient,toggle:()=>{const was=editingGradient===shape.id;setTool('select');editingGradient=was?0:shape.id;activeGradient=null;renderProperties();draw();}});
   $('solid-fill-controls').hidden=!!paint.gradient;
   $('shape-name').value = shape.name; $('shape-kind').textContent = shape.kind;
   for (const key of ['x', 'y', 'width', 'height']) $(key).value = Math.round(shape[key] * 100) / 100;
@@ -234,7 +238,7 @@ function draw() {
   if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
   const visibleSelection = selectionShapes().filter(s => visibleInTree(s,pageShapes())).map(s => previews.find(p => p.id === s.id) || s);
   const shape = bounds(visibleSelection);
-  if (shape && !editingPath) {
+  if (shape && !editingPath && !editingGradient) {
     ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom;
     for (const item of visibleSelection) ctx.strokeRect(item.x, item.y, item.width, item.height);
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -246,6 +250,7 @@ function draw() {
     const box = bounds([{x:gesture.start.x,y:gesture.start.y,width:0,height:0},{x:gesture.end.x,y:gesture.end.y,width:0,height:0}]);
     ctx.fillStyle = '#0d99ff18'; ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom; ctx.fillRect(box.x,box.y,box.width,box.height); ctx.strokeRect(box.x,box.y,box.width,box.height);
   }
+  if(editingGradient&&current()?.appearance?.gradient)drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:current(),zoom,activeGradient);
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
 }
 function drawAnchors(points) {
@@ -274,7 +279,7 @@ function zoomAt(factor, x = canvas.clientWidth / 2, y = canvas.clientHeight / 2)
 }
 function point(event) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left - pan.x) / zoom, y: (event.clientY - rect.top - pan.y) / zoom }; }
 function setTool(value) {
-  penPoints=[]; gesture=null; editingPath=0;
+  penPoints=[]; gesture=null; editingPath=0;editingGradient=0;activeGradient=null;
   document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   tool = value; document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
   renderProperties();
@@ -353,7 +358,7 @@ function bind() {
   $('group-name').onchange=()=>safe(()=>{const id=selectedGroup(pageShapes(),[...selectedIds]);if(id){editor.rename_group(id,$('group-name').value);refresh();}});
   $('apply-scale').onclick=()=>safe(()=>{const shapes=transformedSelection(),box=bounds(selectionShapes());if(box) updateMany(scaleShapes(shapes,box,Number($('scale-percent').value)/100));});
   $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
-  $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingPath=editingPath?0:current().id;activeNode=-1;renderProperties(); $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
+  $('edit-path').onclick=()=>{if(current()?.points?.length){if(tool!=='select')setTool('select');editingGradient=0;activeGradient=null;editingPath=editingPath?0:current().id;activeNode=-1;renderProperties(); $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
   document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) document.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-tools','nav-help']) $(id).onclick = showShortcuts;
@@ -383,6 +388,7 @@ function bind() {
   $('fit-text').onclick = () => { if (current()?.kind === 'text') update({ ...current(), height: Math.ceil(textLayout(current()).height) }); };
   canvas.ondblclick = event => {
     if(tool!=='select') return;
+    if(editingGradient&&current()?.appearance?.gradient){const hit=gradientPosition(current(),point(event));if(hit.distance<10/zoom){const result=addGradientStopAt(current(),hit.t);if(result){activeGradient=result.active;update(result.shape);}else toast('Gradients support up to 16 color stops');}return;}
     if(editingPath&&current()?.points?.length){const p=point(event),shape=current();if(anchors(shape).some(a=>Math.hypot(a.x-p.x,a.y-p.y)<8/zoom))return;const hit=nearestSegment(shape,p);if(hit&&hit.distance<10/zoom)safe(()=>{const changed=insertAnchor(shape,hit.segment,hit.t);activeNode=hit.segment+1;update(changed);});return;}
     const p = point(event), hit = editor.hit_test(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
@@ -438,6 +444,7 @@ function bind() {
     }
     if (tool !== 'select') { setSelection([]); gesture={type:'create',kind:tool,start:p,points:[p],preview:tool==='pencil'?fromPoints(tool,[p,p]):drawnShape(tool,p,p)}; renderProperties(); draw(); return; }
     const shape = current();
+    if(editingGradient&&shape?.appearance?.gradient){const hit=gradientHit(shape,p,zoom);if(hit){activeGradient=hit;gesture={type:'gradient',handle:hit,original:shape,preview:shape};renderProperties();draw();return;}if(gradientPosition(shape,p).distance<10/zoom){activeGradient=null;draw();return;}editingGradient=0;activeGradient=null;renderProperties();}
     if(editingPath && shape?.points?.length) {
       const nodes=anchors(shape);
       for(let i=0;i<nodes.length;i++) {
@@ -472,6 +479,7 @@ function bind() {
     if (!gesture) return;
     if (gesture.type === 'pan') { pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; draw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
+    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey);gesture.preview=result.shape;activeGradient=result.active;draw();return;}
     if(gesture.type==='scale') {
       const dx=gesture.start.x-gesture.origin.x,dy=gesture.start.y-gesture.origin.y;
       let factor=Math.max(.01,((p.x-gesture.origin.x)*dx+(p.y-gesture.origin.y)*dy)/Math.max(1,dx*dx+dy*dy));
@@ -524,7 +532,7 @@ function bind() {
     gesture = null;
     if(moved&&parent!==null) safe(()=>{editor.move_into(JSON.stringify(previews),parent);refresh();});
     else if (previews) updateMany(previews); else if (preview) update(preview); else draw(); };
-  const cancelGesture = () => { if (gesture?.type === 'marquee') setSelection(gesture.base); gesture = null; renderLayers(); renderProperties(); draw(); };
+  const cancelGesture = () => { if (gesture?.type === 'marquee') setSelection(gesture.base);if(gesture?.type==='gradient')activeGradient=null; gesture = null; renderLayers(); renderProperties(); draw(); };
   canvas.onpointercancel = cancelGesture;
   canvas.onlostpointercapture = () => { if (gesture) cancelGesture(); };
   canvas.addEventListener('wheel', event => {
@@ -536,6 +544,12 @@ function bind() {
     if ($('page-dialog').open || $('shortcuts-dialog').open || $('export-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(editingGradient&&!mod){
+      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=gradientHandles(current(),zoom),index=handles.findIndex(h=>h.part===activeGradient?.part&&(h.part!=='stop'||h.index===activeGradient.index));activeGradient=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length];renderProperties();draw();return;}
+      if(key==='enter'||key==='escape'){event.preventDefault();const preview=gesture?.type==='gradient'?gesture.preview:null;if(key==='escape'&&preview){gesture=null;activeGradient=null;}else{gesture=null;editingGradient=0;activeGradient=null;if(key==='enter'&&preview)update(preview);}renderProperties();draw();return;}
+      if(['delete','backspace'].includes(key)){event.preventDefault();const s=current(),g=s?.appearance?.gradient;if(activeGradient?.part==='stop'&&g.stops.length>2){const index=activeGradient.index;activeGradient=null;update({...s,appearance:{...s.appearance,gradient:{...g,stops:g.stops.filter((_,i)=>i!==index)}}});}else toast('Select a color stop to remove; keep at least two stops');return;}
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current();if(activeGradient){const h=gradientHandles(s,zoom).find(h=>h.part===activeGradient.part&&(h.part!=='stop'||h.index===activeGradient.index)),step=event.shiftKey?10:1;let p={x:h.x,y:h.y};if(h.part==='stop'){const g=s.appearance.gradient,t=Math.max(0,Math.min(1,g.stops[h.index].position+(['ArrowLeft','ArrowDown'].includes(event.key)?-step:step)/100));p={x:s.x+(g.start[0]+(g.end[0]-g.start[0])*t)*s.width,y:s.y+(g.start[1]+(g.end[1]-g.start[1])*t)*s.height};}else{p.x+=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;p.y+=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;}const result=moveGradientHandle(s,h,p);activeGradient=result.active;update(result.shape);}return;}
+    }
     if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}
     if(editingPath&&!mod&&['delete','backspace'].includes(key)){event.preventDefault();if(activeNode>=0)$('delete-node').click();else toast('Select an anchor to delete, or press Enter to finish editing');return;}
     if(editingPath&&activeNode>=0&&!mod&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current(),nodes=anchors(s),a=nodes[activeNode],amount=event.shiftKey?10:1,dx=event.key==='ArrowLeft'?-amount:event.key==='ArrowRight'?amount:0,dy=event.key==='ArrowUp'?-amount:event.key==='ArrowDown'?amount:0;a.x+=dx;a.y+=dy;a.in.x+=dx;a.in.y+=dy;a.out.x+=dx;a.out.y+=dy;update(reshape(s,nodes));return;}
