@@ -13,7 +13,7 @@ export function paintBounds(shape,shapes) {
   return right>left&&bottom>top?{...shape,x:left,y:top,width:right-left,height:bottom-top}:null;
 }
 export function frameAt(shapes,point) {
-  return [...shapes].reverse().find(s=>s.kind==='frame'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
+  return [...shapes].reverse().find(s=>s.kind==='frame'&&s.component?.type!=='instance'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
 }
 export function clipDefinitions(shapes) {
   return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath>`).join('')}</defs>`;
@@ -26,6 +26,7 @@ export function dropParent(shapes,previews,selectedIds) {
   // A direct edit of one group member must not move its unselected siblings into another frame.
   if(previews.some(s=>s.group_id&&shapes.some(other=>other.group_id===s.group_id&&!moved.has(other.id))))return null;
   const roots=previews.filter(s=>selected.has(s.id)&&!moved.has(s.parent_id));
+  if(roots.some(s=>s.component?.type==='instance'&&s.component.master!==s.component.source))return null;
   if(!roots.length)return null;
   const left=Math.min(...roots.map(s=>s.x)),top=Math.min(...roots.map(s=>s.y));
   const right=Math.max(...roots.map(s=>s.x+s.width)),bottom=Math.max(...roots.map(s=>s.y+s.height));

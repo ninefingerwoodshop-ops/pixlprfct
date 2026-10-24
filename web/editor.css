@@ -43,3 +43,12 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 .layer-entry:hover .layer-lock,.layer-lock:focus-visible,.layer-lock.locked{opacity:1}
 .layer-lock:disabled{opacity:.45;cursor:default}
 #lock-status{font-size:10px;line-height:1.5;color:#777;margin:6px 0 0}
+:root { --component-color: #8053da; }
+.components-library {padding:10px 12px;border-bottom:1px solid var(--border,#e8e8e8);flex-shrink:0;}
+.components-library summary {font-size:12px;font-weight:600;cursor:pointer;display:list-item;}
+.components-library summary span {float:right;color:#888;}
+#components-list {max-height:180px;overflow:auto;margin-top:8px;}
+#components-list p {font-size:11px;color:#777;line-height:1.5;}
+.component-asset {display:block;width:100%;text-align:left;padding:8px;border-radius:5px;color:var(--component-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.component-asset:hover {background:#f2edfc;}
+.component-glyph, #component-heading {color:var(--component-color);}

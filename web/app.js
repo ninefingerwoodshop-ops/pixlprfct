@@ -66,7 +66,7 @@ function refresh(save = true) {
   const usedImages=new Set(doc.shapes.filter(s=>s.image).map(s=>s.image.data_url));for(const key of imageCache.keys())if(!usedImages.has(key))imageCache.delete(key);
   const changedPage = previousPage !== doc.active_page;
   if (changedPage) { setSelection([]); layerAnchor = 0; gesture = null; penPoints = []; }
-  renderPages(); renderLayers(); renderProperties();
+  renderPages(); renderLayers(); renderComponents(); renderProperties();
   if (changedPage) {
     const view = pageViews.get(doc.active_page);
     if (view) { zoom = view.zoom; pan = { ...view.pan }; } else fit();
@@ -107,6 +107,7 @@ function renderLayers() {
     button.className = 'layer' + (selectedIds.has(shape.id) ? ' active' : '');
     button.setAttribute('aria-pressed', String(selectedIds.has(shape.id)));
     const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(shape.kind);
+    if(shape.component){glyph.textContent=shape.component.type==='master'?'◆':'◇';glyph.classList.add('component-glyph');}
     const name = document.createElement('span'); name.className = 'layer-name'; name.textContent = shape.name;
     button.append(glyph, name);
     if (shape.hidden) { const mark = document.createElement('span'); mark.className = 'hidden-mark'; mark.textContent = 'Hidden'; button.append(mark); }
@@ -147,8 +148,28 @@ function renderLayers() {
   if (!pageShapes().length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'A fresh page. Pick a tool below and click the canvas to start.'; $('layers').append(hint); }
   else if (!listed.length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'No matching layers'; $('layers').append(hint); }
 }
+function insertInstance(masterId){safe(()=>{const master=doc.shapes.find(s=>s.id===masterId);if(!master)return;const same=master.page_id===doc.active_page;const x=same?master.x+master.width+40:(canvas.clientWidth/2-pan.x)/zoom;const y=same?master.y:(canvas.clientHeight/2-pan.y)/zoom;const id=editor.create_instance(masterId,x,y);setSelection([id]);refresh();fit();toast('Linked instance inserted');});}
+function renderComponents(){
+  const masters=doc.shapes.filter(s=>s.component?.type==='master');$('component-count').textContent=masters.length;
+  const rows=masters.map(s=>{const b=document.createElement('button');b.className='component-asset';b.textContent='◆ '+s.name;b.title='Insert instance of '+s.name;b.setAttribute('aria-label',b.title);b.onclick=()=>insertInstance(s.id);return b;});
+  if(!rows.length){const hint=document.createElement('p');hint.textContent='Select a frame and choose Create component.';rows.push(hint);}
+  $('components-list').replaceChildren(...rows);
+}
+function renderComponentProperties(shape){
+  const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master';
+  $('component-panel').hidden=!shape||(!c&&shape.kind!=='frame');
+  $('component-heading').textContent=master?'◆ Main component':linked?'◇ Instance':'Component';
+  $('create-component').hidden=!!c;$('insert-instance').hidden=!master;
+  for(const id of ['go-main','reset-instance','detach-instance'])$(id).hidden=!linked;
+  let root=shape;
+  while(root?.component?.type==='instance'&&root.component.master!==root.component.source)root=doc.shapes.find(s=>s.id===root.parent_id);
+  const count=linked?descendants(doc.shapes,[root.id]).reduce((n,s)=>n+(s.component?.overrides?.filter(f=>s.id!==root.id||(f!=='x'&&f!=='y')).length??0),0):0;
+  $('reset-instance').disabled=!count;
+  $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · ${count} overrides. Detach to add, remove, or reorder layers.`:'Reuse this frame and its layers as linked instances.';
+}
 function renderProperties() {
   const shapes = selectionShapes(), shape = current();
+  renderComponentProperties(shape);
   const lockTargets=shapes.filter(s=>!inheritedLock(s));$('lock-panel').hidden=!shapes.length;$('toggle-lock').disabled=!lockTargets.length;$('toggle-lock').textContent=lockTargets.length?(lockTargets.every(s=>s.locked)?'Unlock selection':'Lock selection'):'Locked by parent';$('lock-status').textContent=shapes.some(s=>lockedInTree(s,pageShapes()))?'Locked layers cannot be edited on the canvas. Use the inspector or unlock their parent.':'Ctrl/Cmd Shift L';
   if(!canvasEditable()){editingGradient=0;activeGradient=null;editingPath=0;activeNode=-1;}
   if(!shape?.appearance?.gradient||!visibleInTree(shape,pageShapes())){editingGradient=0;activeGradient=null;}
@@ -162,6 +183,7 @@ function renderProperties() {
   $('parent-panel').hidden=!shapes.length||(!shapes.some(s=>s.parent_id)&&!pageShapes().some(s=>s.kind==='frame'&&!excluded.has(s.id)));
   $('parent-frame').replaceChildren(...[{id:0,name:'Page (no parent)'},...pageShapes().filter(s=>s.kind==='frame'&&!excluded.has(s.id))].map(s=>{const option=document.createElement('option');option.value=s.id;option.textContent=s.name;return option;}));
   $('parent-frame').value=shapes[0]?.parent_id??0;
+  $('move-to-frame').disabled=shapes.some(s=>s.component?.type==='instance'&&s.component.master!==s.component.source);
   const layoutParent=shape&&pageShapes().find(s=>s.id===shape.parent_id)?.auto_layout;
   $('layout-child-panel').hidden=!layoutParent||!shape;
   if(shape){for(const key of ['fill_width','fill_height','absolute'])$('layout-item-'+key).checked=!!shape.layout_item?.[key];}
@@ -329,6 +351,11 @@ async function placeImage(file,location=null,replaceId=0) {
 }
 function bind() {
   $('toggle-lock').onclick=toggleSelectionLock;
+  $('create-component').onclick=()=>safe(()=>{editor.create_component(selected);refresh();toast('Main component created');});
+  $('insert-instance').onclick=()=>insertInstance(selected);
+  $('detach-instance').onclick=()=>safe(()=>{editor.detach_instance(selected);refresh();toast('Instance detached');});
+  $('reset-instance').onclick=()=>safe(()=>{editor.reset_instance(selected);refresh();toast('Instance overrides reset');});
+  $('go-main').onclick=()=>safe(()=>{const master=doc.shapes.find(s=>s.id===current()?.component?.master);if(!master)return;editor.select_page(master.page_id);refresh();setSelection([master.id]);refresh(false);fit();});
   installIcons();
   $('export-dialog').addEventListener('cancel',event=>{if(exportBusy)event.preventDefault();});
   $('paste-over').onclick=async()=>{let text;try{text=await navigator.clipboard.readText();}catch{pasteInPlace=true;toast('Press Ctrl/Cmd V to paste over the selection');return;}safe(()=>{if(!pasteLayerText(text,true))toast('Copy PixlPrfct layers first');});};

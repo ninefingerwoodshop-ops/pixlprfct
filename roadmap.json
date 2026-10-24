@@ -25,7 +25,8 @@
     "automatic text width/height with browser font measurement, Rust layout convergence, nested hug/fill integration and atomic history",
     "linear/radial gradient fills with multiple color/opacity stops, normalized geometry and PNG/SVG support",
     "on-canvas gradient endpoint/stop dragging, interpolated insertion, keyboard editing, snapping and undo",
-    "persistent layer locking, inherited frame locks, layer-list/selection controls and canvas interaction protection"
+    "persistent layer locking, inherited frame locks, layer-list/selection controls and canvas interaction protection",
+    "reusable frame components, linked instances across pages, property overrides/reset, detach, component library and atomic propagation/history"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
@@ -34,7 +35,7 @@
     "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, advanced gradients and effects",
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout wrapping/grid, min/max sizing, group layout units and on-canvas spacing controls",
-    "Components, instances, variants, reusable styles and variables",
+    "Nested components, variants, instance swapping, granular style overrides, reusable styles and variables",
     "Prototyping interactions and presentation mode",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
     "PDF/JPEG and batch export, accessibility and performance validation",

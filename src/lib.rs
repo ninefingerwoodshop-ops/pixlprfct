@@ -36,6 +36,8 @@ pub struct Shape {
     #[serde(default)]
     pub locked: bool,
     #[serde(default)]
+    pub component: Option<components::Component>,
+    #[serde(default)]
     pub typography: Option<Typography>,
     #[serde(default)]
     pub points: Vec<[f64; 2]>,
@@ -636,8 +638,15 @@ impl Editor {
         Ok(ids)
     }
 
-    fn commit(&mut self, mut document: Document) -> Result<(), String> {
+    fn commit(&mut self, document: Document) -> Result<(), String> {
         validate(&document)?;
+        components::protect_structure(&self.document, &document)?;
+        self.commit_document(document)
+    }
+
+    fn commit_document(&mut self, mut document: Document) -> Result<(), String> {
+        validate(&document)?;
+        components::validate_links(&document)?;
         if serde_json::to_string(&document)
             .map_err(|e| e.to_string())?
             .len()
@@ -655,7 +664,30 @@ impl Editor {
         append(0, &document.shapes, &mut ordered);
         document.shapes = ordered;
         self.reflow_text(&mut document)?;
+        let base = self.next_id.max(
+            document
+                .shapes
+                .iter()
+                .map(|s| s.id.max(s.group_id))
+                .max()
+                .unwrap_or(0)
+                .saturating_add(1),
+        );
+        let mut next = base;
+        components::sync(&mut document, &mut next)?;
+        self.reflow_text(&mut document)?;
         validate(&document)?;
+        components::validate_links(&document)?;
+        if serde_json::to_string(&document)
+            .map_err(|e| e.to_string())?
+            .len()
+            > 5_000_000
+        {
+            return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
+        }
+        if next > base {
+            self.next_id = next;
+        }
         if document != self.document {
             self.undo.push(self.document.clone());
             if self.undo.len() > 100 {
@@ -706,7 +738,11 @@ impl Editor {
     pub fn refresh_text_layout(&mut self) -> Result<(), String> {
         let mut document = self.document.clone();
         self.reflow_text(&mut document)?;
+        let mut next = self.next_id;
+        components::sync(&mut document, &mut next)?;
+        self.reflow_text(&mut document)?;
         validate(&document)?;
+        self.next_id = next;
         self.document = document;
         Ok(())
     }
@@ -720,6 +756,7 @@ impl Editor {
             .filter(|s| ids.contains(&s.id))
             .map(|s| {
                 let mut copy = s.clone();
+                copy.component = None;
                 if !ids.contains(&copy.parent_id) {
                     copy.parent_id = 0;
                 }
@@ -759,6 +796,7 @@ impl Editor {
         }
         for s in &mut payload.shapes {
             s.page_id = 1;
+            s.component = None;
         }
         validate(&Document {
             version: 2,
@@ -797,7 +835,7 @@ impl Editor {
             document.shapes.push(s);
         }
         self.commit(document)?;
-        self.next_id = next;
+        self.next_id = self.next_id.max(next);
         Ok(serde_json::to_string(&roots).unwrap())
     }
 
@@ -837,7 +875,7 @@ impl Editor {
                 .unwrap_or(0)
                 + 1,
         );
-        self.commit(document)
+        self.commit_document(document)
     }
 
     pub fn add(&mut self, kind: &str, x: f64, y: f64) -> Result<u32, String> {
@@ -873,6 +911,7 @@ impl Editor {
             text: "Your next big idea".into(),
             hidden: false,
             locked: false,
+            component: None,
             points: vec![],
             handles: vec![],
             closed: false,
@@ -915,11 +954,15 @@ impl Editor {
         let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
         self.selection_ids(&serde_json::to_string(&ids).unwrap())?;
         let mut document = self.document.clone();
-        for shape in shapes {
+        for mut shape in shapes {
             if shape.page_id != document.active_page {
                 return Err("Cannot move a layer to another page through a selection edit".into());
             }
             let id = shape.id;
+            components::record_overrides(
+                document.shapes.iter().find(|s| s.id == id).unwrap(),
+                &mut shape,
+            )?;
             *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
         }
         validate(&document)?;
@@ -1024,7 +1067,7 @@ impl Editor {
             }
         }
         self.commit(document)?;
-        self.next_id = next_id;
+        self.next_id = self.next_id.max(next_id);
         Ok(serde_json::to_string(&created).unwrap())
     }
 
@@ -1099,7 +1142,9 @@ impl Editor {
                 staged.document.shapes.splice(index..index, moving);
             }
         }
-        self.commit(staged.document)
+        self.commit(staged.document)?;
+        self.next_id = self.next_id.max(staged.next_id);
+        Ok(())
     }
 
     pub fn auto_layout_selection(&mut self, json: &str) -> Result<u32, String> {
@@ -1175,7 +1220,7 @@ impl Editor {
             shape.parent_id = frame_id;
         }
         self.commit(staged.document)?;
-        self.next_id = staged.next_id;
+        self.next_id = self.next_id.max(staged.next_id);
         Ok(frame_id)
     }
 
@@ -1660,5 +1705,6 @@ mod tests {
         assert_eq!(editor.hit_test(80.0, 60.0), front);
     }
 }
+mod components;
 mod layout;
 use layout::reflow;
