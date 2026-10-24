@@ -23,6 +23,8 @@ pub struct Shape {
     #[serde(default)]
     pub auto_layout: Option<AutoLayout>,
     #[serde(default)]
+    pub layout_grids: Vec<LayoutGrid>,
+    #[serde(default)]
     pub layout_item: LayoutItem,
     pub kind: String,
     pub name: String,
@@ -62,6 +64,19 @@ pub struct LayoutItem {
     pub min_height: Option<f64>,
     #[serde(default)]
     pub max_height: Option<f64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct LayoutGrid {
+    pub kind: String,
+    pub size: f64,
+    pub count: u32,
+    pub gutter: f64,
+    pub margin: f64,
+    pub alignment: String,
+    pub color: String,
+    pub opacity: f64,
+    pub visible: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -386,6 +401,28 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        if shape.layout_grids.len() > 8 || (!shape.layout_grids.is_empty() && shape.kind != "frame")
+        {
+            return Err("Layout guides require a frame and allow at most eight grids".into());
+        }
+        for grid in &shape.layout_grids {
+            if !["grid", "columns", "rows"].contains(&grid.kind.as_str())
+                || !["stretch", "start", "center", "end"].contains(&grid.alignment.as_str())
+                || !grid.size.is_finite()
+                || !(1.0..=1_000_000.0).contains(&grid.size)
+                || !(1..=256).contains(&grid.count)
+                || [grid.gutter, grid.margin]
+                    .iter()
+                    .any(|v| !v.is_finite() || !(0.0..=1_000_000.0).contains(v))
+                || !grid.opacity.is_finite()
+                || !(0.0..=1.0).contains(&grid.opacity)
+                || grid.color.len() != 7
+                || !grid.color.starts_with('#')
+                || !grid.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+            {
+                return Err("Invalid layout guide settings".into());
+            }
+        }
         for (min, max) in [
             (shape.layout_item.min_width, shape.layout_item.max_width),
             (shape.layout_item.min_height, shape.layout_item.max_height),
@@ -1000,6 +1037,7 @@ impl Editor {
             constraints: Constraints::default(),
             appearance: None,
             auto_layout: None,
+            layout_grids: vec![],
             layout_item: LayoutItem::default(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),

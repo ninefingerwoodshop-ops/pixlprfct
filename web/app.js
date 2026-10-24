@@ -1,3 +1,4 @@
+import {drawLayoutGuides,renderGuideControls} from './layout-guides.js';
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import {componentSet,renderVariantProperties,editVariantSet} from './variants.js';
 import {renderComponentProperties as renderExposedProperties,editComponentProperty} from './component-properties.js';
@@ -22,6 +23,7 @@ const measureCtx = document.createElement('canvas').getContext('2d');
 function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
 const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
+let guidesVisible=true;
 let toastTimer, savingTimer, recoveryBlocked = false;
 const imageCache=new Map();
 let imageReplaceId=0,imageLoading=false;
@@ -230,6 +232,7 @@ function renderProperties() {
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
+  renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();});
   if (!shape) return;
   $('auto-layout-panel').hidden=shape.kind!=='frame';$('layout-direction').value=shape.auto_layout?.direction??'none';$('layout-settings').hidden=!shape.auto_layout;
   if(shape.auto_layout)for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap']){const el=$('layout-'+key);if((key.startsWith('hug')||key==='wrap'))el.checked=shape.auto_layout[key];else el.value=shape.auto_layout[key]??'';}
@@ -292,6 +295,7 @@ function draw() {
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
   if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{scene=JSON.parse(editor.preview_update_many(JSON.stringify(previews))).shapes.filter(s=>s.page_id===doc.active_page);}catch{scene=pageShapes();}}
   drawScene(scene,ctx,drawShape);
+  if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
   if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radii(frame));ctx.clip();}drawShape(preview);ctx.restore();}
   if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
   if(editingPath && current()?.points?.length) drawAnchors(anchors(gesture?.preview??current()));
@@ -629,6 +633,7 @@ function bind() {
     if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}
     if(editingPath&&!mod&&['delete','backspace'].includes(key)){event.preventDefault();if(activeNode>=0)$('delete-node').click();else toast('Select an anchor to delete, or press Enter to finish editing');return;}
     if(editingPath&&activeNode>=0&&!mod&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current(),nodes=anchors(s),a=nodes[activeNode],amount=event.shiftKey?10:1,dx=event.key==='ArrowLeft'?-amount:event.key==='ArrowRight'?amount:0,dy=event.key==='ArrowUp'?-amount:event.key==='ArrowDown'?amount:0;a.x+=dx;a.y+=dy;a.in.x+=dx;a.in.y+=dy;a.out.x+=dx;a.out.y+=dy;update(reshape(s,nodes));return;}
+    if(!mod&&event.shiftKey&&key==='g'){event.preventDefault();guidesVisible=!guidesVisible;renderProperties();draw();toast(guidesVisible?'Layout guides shown':'Layout guides hidden');return;}
     if(!mod&&event.shiftKey&&key==='a'&&selectedIds.size){event.preventDefault();$('add-auto-layout').click();return;}
     if(mod && event.shiftKey && key==='k'){event.preventDefault();$('place-image').click();return;}
     if(mod && key==='g') {event.preventDefault(); if(selectedIds.size)(event.shiftKey?ungroupSelection:groupSelection)();return;}
