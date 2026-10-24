@@ -119,6 +119,18 @@ pub struct Appearance {
     pub fill_enabled: bool,
     pub stroke_enabled: bool,
     pub stroke_color: String,
+    #[serde(default)]
+    pub stroke_dash: Vec<f64>,
+    #[serde(default)]
+    pub stroke_dash_offset: f64,
+    #[serde(default = "default_round")]
+    pub stroke_cap: String,
+    #[serde(default = "default_round")]
+    pub stroke_join: String,
+}
+
+fn default_round() -> String {
+    "round".into()
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -445,6 +457,15 @@ fn validate(document: &Document) -> Result<(), String> {
                 || a.stroke_color.len() != 7
                 || !a.stroke_color.starts_with('#')
                 || !a.stroke_color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+                || a.stroke_dash.len() > 16
+                || a.stroke_dash
+                    .iter()
+                    .any(|v| !v.is_finite() || !(0.0..=100_000.0).contains(v))
+                || (!a.stroke_dash.is_empty() && a.stroke_dash.iter().sum::<f64>() == 0.0)
+                || !a.stroke_dash_offset.is_finite()
+                || a.stroke_dash_offset.abs() > 1_000_000.0
+                || !["butt", "round", "square"].contains(&a.stroke_cap.as_str())
+                || !["miter", "round", "bevel"].contains(&a.stroke_join.as_str())
             {
                 return Err("Invalid appearance settings".into());
             }

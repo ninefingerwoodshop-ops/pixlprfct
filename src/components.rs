@@ -54,6 +54,10 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "fill_enabled",
             "stroke_enabled",
             "stroke_color",
+            "stroke_dash",
+            "stroke_dash_offset",
+            "stroke_cap",
+            "stroke_join",
         ],
         "constraints" => &["horizontal", "vertical"],
         "layout_item" => &[
@@ -95,7 +99,7 @@ fn valid_override(path: &str) -> bool {
 fn effective_value(s: &Shape) -> serde_json::Value {
     let mut value = serde_json::to_value(s).unwrap();
     if s.appearance.is_none() {
-        value["appearance"] = serde_json::json!({"gradient":null,"opacity":1.0,"corner_radius":0.0,"corner_radii":null,"fill_enabled":s.points.is_empty()||s.closed,"stroke_enabled":!s.points.is_empty(),"stroke_color":if s.points.is_empty(){"#000000"}else{&s.fill}});
+        value["appearance"] = serde_json::json!({"gradient":null,"opacity":1.0,"corner_radius":0.0,"corner_radii":null,"stroke_dash":[],"stroke_dash_offset":0.0,"stroke_cap":"round","stroke_join":"round","fill_enabled":s.points.is_empty()||s.closed,"stroke_enabled":!s.points.is_empty(),"stroke_color":if s.points.is_empty(){"#000000"}else{&s.fill}});
     }
     if s.typography.is_none() {
         value["typography"] = serde_json::to_value(Typography::default()).unwrap();
