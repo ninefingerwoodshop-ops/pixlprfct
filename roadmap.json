@@ -66,7 +66,8 @@
     "named cloud version checkpoints with immutable snapshots, paginated history, ownership isolation, revision-checked transactional restoration, automatic pre-restore backups and open-version-as-copy",
     "transactional automatic backups of prior cloud saves at five-minute intervals, literal-name file search and cursor pagination across active files and Trash",
     "private immutable object storage for cloud document bodies above 1.5 MB with backward-compatible inline reads, object-backed history/restore, failure preservation and verified 2.56 MB browser round trip",
-    "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; Bézier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export"
+    "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; Bézier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
+    "on-canvas auto-layout padding, main-gap and wrapped cross-gap handles with Rust descendant preview, linked opposite padding, keyboard adjustment, zoom-aware hit targets, clipping and atomic undo"
   ],
   "remaining": [
     "Additional frame layout controls",
@@ -74,7 +75,7 @@
     "Broader SVG import: compound/even-odd fills, repeating gradients and radial focal circles larger than the outer circle, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, stroke alignment, advanced gradients and background blur",
     "Boolean operations and slice export",
-    "Auto layout grid, group layout units and on-canvas spacing controls",
+    "Auto layout grid and group layout units",
     "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
     "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
     "Cloud sharing, team permissions and real-time collaboration",
