@@ -14,6 +14,8 @@ pub struct Shape {
     pub parent_id: u32,
     #[serde(default)]
     pub clip_content: bool,
+    #[serde(default)]
+    pub image: Option<RasterImage>,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -33,6 +35,17 @@ pub struct Shape {
     pub closed: bool,
     #[serde(default = "default_stroke")]
     pub stroke_width: f64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RasterImage {
+    pub data_url: String,
+    pub width: u32,
+    pub height: u32,
+    pub mode: String,
+    pub zoom: f64,
+    pub offset_x: f64,
+    pub offset_y: f64,
 }
 
 fn default_stroke() -> f64 {
@@ -214,6 +227,39 @@ fn validate(document: &Document) -> Result<(), String> {
         if !ids.insert(shape.id) || shape.id == 0 || shape.id == u32::MAX {
             return Err("Invalid or duplicate shape ID".into());
         }
+        if shape.kind == "image" && shape.image.is_none() {
+            return Err("Image data is required".into());
+        }
+        if let Some(image) = &shape.image {
+            let prefix = [
+                "data:image/png;base64,",
+                "data:image/jpeg;base64,",
+                "data:image/webp;base64,",
+            ]
+            .iter()
+            .find(|p| image.data_url.starts_with(**p))
+            .ok_or("Unsupported image format")?;
+            let encoded = &image.data_url[prefix.len()..];
+            if image.width == 0
+                || image.height == 0
+                || image.width > 8192
+                || image.height > 8192
+                || encoded.is_empty()
+                || encoded.len() > 2_000_000
+                || encoded.len() % 4 != 0
+                || !encoded
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || b"+/=".contains(&c))
+                || !["fill", "fit"].contains(&image.mode.as_str())
+                || !image.zoom.is_finite()
+                || !(1.0..=10.0).contains(&image.zoom)
+                || ![image.offset_x, image.offset_y]
+                    .iter()
+                    .all(|v| v.is_finite() && (0.0..=1.0).contains(v))
+            {
+                return Err("Invalid image data or crop settings".into());
+            }
+        }
         let vector =
             ["line", "arrow", "polygon", "star", "pen", "pencil"].contains(&shape.kind.as_str());
         if (!shape.handles.is_empty() && shape.handles.len() != shape.points.len())
@@ -239,6 +285,7 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Invalid vector geometry or stroke width".into());
         }
         if ![
+            "image",
             "rectangle",
             "ellipse",
             "frame",
@@ -309,6 +356,13 @@ impl Editor {
 
     fn commit(&mut self, mut document: Document) -> Result<(), String> {
         validate(&document)?;
+        if serde_json::to_string(&document)
+            .map_err(|e| e.to_string())?
+            .len()
+            > 5_000_000
+        {
+            return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
+        }
         fn append(parent: u32, source: &[Shape], out: &mut Vec<Shape>) {
             for s in source.iter().filter(|s| s.parent_id == parent) {
                 out.push(s.clone());
@@ -416,6 +470,7 @@ impl Editor {
             group_name: String::new(),
             parent_id: 0,
             clip_content: false,
+            image: None,
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,

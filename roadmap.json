@@ -14,12 +14,13 @@
     "SVG export",
     "undo/redo",
     "frame clipping across canvas, selection and SVG",
-    "automatic containment and atomic drag reparenting"
+    "automatic containment and atomic drag reparenting",
+    "embedded raster images, fill/fit cropping, replacement, file/drop/paste import"
   ],
   "remaining": [
     "Frame resize constraints and additional layout controls",
     "Nested groups and complete tree reordering",
-    "Image placement and cropping, SVG import, clipboard interoperability",
+    "SVG import and vector clipboard interoperability",
     "Rotation, corner radii, independent fills and strokes, opacity, gradients and effects",
     "Vector node insertion/deletion, Boolean operations, pencil smoothing and slice export",
     "Auto layout, spacing, padding, sizing and responsive layout behavior",

@@ -2,6 +2,7 @@ import init, { Editor } from './pkg/pixlprfct_core.js';
 import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
+import {imageLayout,imageSvg,readImage} from './images.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons } from './icons.js';
@@ -13,6 +14,8 @@ function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return
 const KEY = 'pixlprfct.document.v1';
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 let toastTimer, savingTimer, recoveryBlocked = false;
+const imageCache=new Map();
+let imageReplaceId=0,imageLoading=false;
 let penPoints = [];
 let editingPath = 0;
 let selectedIds = new Set(), layerAnchor = 0;
@@ -45,6 +48,7 @@ function refresh(save = true) {
   const previousPage = doc?.active_page;
   if (previousPage) pageViews.set(previousPage, { zoom, pan: { ...pan } });
   snapshot();
+  const usedImages=new Set(doc.shapes.filter(s=>s.image).map(s=>s.image.data_url));for(const key of imageCache.keys())if(!usedImages.has(key))imageCache.delete(key);
   const changedPage = previousPage !== doc.active_page;
   if (changedPage) { setSelection([]); layerAnchor = 0; gesture = null; penPoints = []; }
   renderPages(); renderLayers(); renderProperties();
@@ -149,6 +153,9 @@ function renderProperties() {
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
   if (!shape) return;
+  $('image-section').hidden=shape.kind!=='image';
+  $('paint-label').parentElement.hidden=shape.kind==='image';
+  if(shape.image){$('image-mode').value=shape.image.mode;$('image-zoom').value=shape.image.zoom;$('image-x').value=Math.round(shape.image.offset_x*100);$('image-y').value=Math.round(shape.image.offset_y*100);$('image-crop-fields').hidden=shape.image.mode==='fit';}
   $('frame-section').hidden=shape.kind!=='frame';$('clip-content').checked=!!shape.clip_content;
   $('stroke-section').hidden = !vectorTools.includes(shape.kind); $('stroke-width').value = shape.stroke_width ?? 2;
   $('paint-label').textContent = shape.points?.length && !shape.closed ? 'Stroke color' : 'Fill';
@@ -167,7 +174,8 @@ function renderProperties() {
 function drawShape(shape) {
   if (shape.hidden) return;
   ctx.fillStyle = shape.fill;
-  if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); ctx.strokeStyle=shape.fill; ctx.lineWidth=shape.stroke_width??2; ctx.lineCap='round'; ctx.lineJoin='round'; if(shape.closed) ctx.fill(path); ctx.stroke(path); }
+  if(shape.kind==='image'&&shape.image){const data=shape.image.data_url;let entry=imageCache.get(data);if(!entry){const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);bitmap.onload=()=>{entry.ready=true;draw();};bitmap.onerror=()=>{entry.failed=true;toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;}if(entry.ready){const p=imageLayout(shape);ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh);}else{ctx.fillStyle='#e5e7eb';ctx.fillRect(shape.x,shape.y,shape.width,shape.height);}}
+  else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); ctx.strokeStyle=shape.fill; ctx.lineWidth=shape.stroke_width??2; ctx.lineCap='round'; ctx.lineJoin='round'; if(shape.closed) ctx.fill(path); ctx.stroke(path); }
   else if (shape.kind === 'ellipse') { ctx.beginPath(); ctx.ellipse(shape.x + shape.width / 2, shape.y + shape.height / 2, shape.width / 2, shape.height / 2, 0, 0, Math.PI * 2); ctx.fill(); }
   else if (shape.kind === 'text') {
     ctx.save(); ctx.beginPath(); ctx.rect(shape.x, shape.y, shape.width, shape.height); ctx.clip();
@@ -246,6 +254,7 @@ async function exportSvg() {
   const shapes = pageShapes().filter(s => visibleInTree(s,pageShapes())); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
   const box=bounds(shapes.map(s=>paintBounds(s,pageShapes())).filter(Boolean));if(!box){toast('Nothing visible to export');return;}const {x,y,width:w,height:h}=box;
   const renderSvg=s=>{
+    if(s.kind==='image')return imageSvg(s);
     if (s.points?.length) return vectorSvg(s);
     if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" fill="${s.fill}"/>`;
     if (s.kind === 'text') return textSvg(s, textLayout(s));
@@ -258,8 +267,25 @@ function finishPen(closed) {
   if(penPoints.length<2) return;
   safe(()=>{ const id=insertAt(fromPoints('pen',penPoints,closed),penPoints[0]); penPoints=[]; setSelection([id]); setTool('select'); refresh(); });
 }
+async function placeImage(file,location=null,replaceId=0) {
+  if(imageLoading){toast('An image is already loading');return;}imageLoading=true;const page=doc.active_page;
+  try {
+    const raster=await readImage(file);if(doc.active_page!==page)throw new Error('Page changed during import. Place the image again.');
+    if(replaceId){const target=pageShapes().find(s=>s.id===replaceId&&s.kind==='image');if(!target)throw new Error('The target image no longer exists');editor.update(JSON.stringify({...target,image:raster}));setSelection([replaceId]);}
+    else {const scale=Math.min(1,480/raster.width,360/raster.height),width=raster.width*scale,height=raster.height*scale;const start=location??{x:(canvas.clientWidth/2-pan.x)/zoom-width/2,y:(canvas.clientHeight/2-pan.y)/zoom-height/2};setSelection([insertAt({id:0,kind:'image',name:file.name.slice(0,80)||'Image',x:start.x,y:start.y,width,height,fill:'#ffffff',text:'',hidden:false,image:raster},start)]);}
+    setTool('select');refresh();toast('Image placed');
+  } catch(error){toast(String(error));}finally{imageLoading=false;}
+}
 function bind() {
   installIcons();
+  $('place-image').onclick=()=>{imageReplaceId=0;$('image-file').click();};
+  $('replace-image').onclick=()=>{imageReplaceId=current()?.id??0;$('image-file').click();};
+  $('image-file').onchange=()=>{const file=$('image-file').files[0],replace=imageReplaceId;$('image-file').value='';if(file)placeImage(file,null,replace);};
+  for(const [id,key] of [['image-mode','mode'],['image-zoom','zoom'],['image-x','offset_x'],['image-y','offset_y']])$(id).onchange=()=>{const shape=current();if(!shape?.image)return;const value=key==='mode'?$(id).value:Number($(id).value)/(key.startsWith('offset')?100:1);update({...shape,image:{...shape.image,[key]:value}});renderProperties();};
+  $('reset-crop').onclick=()=>{const s=current();if(s?.image)update({...s,image:{...s.image,zoom:1,offset_x:.5,offset_y:.5}});};
+  canvas.ondragover=event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';};
+  canvas.ondrop=event=>{event.preventDefault();const file=event.dataTransfer.files[0];if(file)placeImage(file,point(event));};
+  window.addEventListener('paste',event=>{if(event.target.closest('input,textarea,select,[contenteditable]'))return;const item=[...event.clipboardData.items].find(i=>i.kind==='file'&&i.type.startsWith('image/'));if(item){event.preventDefault();const file=item.getAsFile();if(file)placeImage(file);}});
   $('clip-content').onchange=()=>{if(current()?.kind==='frame')update({...current(),clip_content:$('clip-content').checked});};
   $('move-to-frame').onclick=()=>safe(()=>{editor.reparent_many(selectionJson(),Number($('parent-frame').value));refresh();});
   $('group-layers').onclick=groupSelection; $('ungroup-layers').onclick=ungroupSelection;
@@ -443,6 +469,7 @@ function bind() {
     if ($('page-dialog').open || $('shortcuts-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(mod && event.shiftKey && key==='k'){event.preventDefault();$('place-image').click();return;}
     if(mod && key==='g') {event.preventDefault(); if(selectedIds.size)(event.shiftKey?ungroupSelection:groupSelection)();return;}
     if (mod && key === 'a') { event.preventDefault(); setSelection(pageShapes().filter(s=>visibleInTree(s,pageShapes())).map(s=>s.id)); refresh(false); return; }
     if (event.altKey && !mod && selectedIds.size > 1 && ['a','d','w','s'].includes(key)) { event.preventDefault(); if(!selectionShapes().some(s=>s.group_id)) safe(() => { editor.align_many(selectionJson(),{a:'left',d:'right',w:'top',s:'bottom'}[key]); refresh(); }); return; }

@@ -15,3 +15,5 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 .toolbox .tool-options button{font-size:12px}
 
 .group-row{display:flex;align-items:center;margin:2px 8px;border-radius:5px;background:#fafafa}.group-row button{border:0;background:transparent;padding:8px;color:inherit;text-align:left;font:inherit;cursor:pointer}.group-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.group-title[aria-pressed="true"]{background:#e5f3ff;color:#007be5}.group-children{padding-left:16px;border-left:1px solid #eee;margin-left:12px}#group-name{width:100%;margin:8px 0}
+
+#image-section label{display:block;margin:10px 0}#image-section input,#image-section select{display:block;width:100%;margin-top:5px}
