@@ -32,7 +32,7 @@ let imageReplaceId=0,imageLoading=false;
 let penPoints = [];
 let editingPath = 0;
 let activeNode=-1;
-let lastPasted='',pasteCount=0,pasteInPlace=false;
+let lastPasted='',pasteCount=0,pasteInPlace=false,pasteReplace=false;
 let exportBusy=false;
 let selectedIds = new Set(), layerAnchor = 0;
 let editingGradient=0,activeGradient=null;
@@ -356,8 +356,9 @@ function setTool(value) {
   $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
-function pasteLayerText(text,overSelection=false){
+function pasteLayerText(text,overSelection=false,replace=false){
   const payload=layerPayload(text);if(!payload)return false;
+  if(replace){setSelection(JSON.parse(editor.paste_replace(text,selectionJson())));refresh();toast('Selection replaced');return true;}
   const count=text===lastPasted?pasteCount+1:1,target=overSelection?current():current()?.kind==='frame'?current():null,offset=pasteOffset(payload,target,overSelection,count);
   setSelection(JSON.parse(editor.paste_layers(text,offset.x,offset.y,overSelection?(target?.parent_id??0):(target?.id??0))));lastPasted=text;pasteCount=count;refresh();toast('Layers pasted');return true;
 }
@@ -402,6 +403,7 @@ function bind() {
   $('go-main').onclick=()=>safe(()=>{const master=doc.shapes.find(s=>s.id===current()?.component?.master);if(!master)return;editor.select_page(master.page_id);refresh();setSelection([master.id]);refresh(false);fit();});
   installIcons();
   $('export-dialog').addEventListener('cancel',event=>{if(exportBusy)event.preventDefault();});
+  $('paste-replace').onclick=async()=>{if(!selectedIds.size){toast('Select layers to replace');return;}let text;try{text=await navigator.clipboard.readText();}catch{pasteReplace=true;toast('Press Ctrl/Cmd V to replace the selection');return;}safe(()=>{if(!pasteLayerText(text,false,true))toast('Copy PixlPrfct layers first');});};
   $('paste-over').onclick=async()=>{let text;try{text=await navigator.clipboard.readText();}catch{pasteInPlace=true;toast('Press Ctrl/Cmd V to paste over the selection');return;}safe(()=>{if(!pasteLayerText(text,true))toast('Copy PixlPrfct layers first');});};
   for(const kind of ['copy','cut'])window.addEventListener(kind,event=>{
     if(event.target.closest('input,textarea,select,[contenteditable]')||!selectedIds.size||!event.clipboardData)return;
@@ -430,8 +432,9 @@ function bind() {
   canvas.ondrop=event=>{event.preventDefault();const file=event.dataTransfer.files[0];if(file)placeImage(file,point(event));};
   window.addEventListener('paste',event=>{
     if(event.target.closest('input,textarea,select,[contenteditable]')||!event.clipboardData)return;
-    const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace;pasteInPlace=false;
-    if(payload){event.preventDefault();safe(()=>pasteLayerText(text,inPlace));return;}
+    const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace,replace=pasteReplace;pasteInPlace=false;pasteReplace=false;
+    if(payload){event.preventDefault();safe(()=>pasteLayerText(text,inPlace,replace));return;}
+    if(replace){event.preventDefault();toast('Copy PixlPrfct layers first');return;}
     const item=[...event.clipboardData.items].find(i=>i.kind==='file'&&i.type.startsWith('image/'));if(item){event.preventDefault();const file=item.getAsFile();if(file)placeImage(file);return;}
     if(text){event.preventDefault();safe(()=>{if(new TextEncoder().encode(text).length>10000)throw new Error('Text layers are limited to 10 KB');const start={x:(canvas.clientWidth/2-pan.x)/zoom-200,y:(canvas.clientHeight/2-pan.y)/zoom-20};const shape={id:0,kind:'text',name:text.split('\n')[0].slice(0,80)||'Pasted text',...start,width:400,height:24,fill:'#1e1e1e',text,hidden:false,typography:{sizing:'height',font_family:'Manrope',font_size:16,font_weight:400,line_height:1.4,align:'left',wrap:true}};shape.height=Math.max(1,Math.ceil(textLayout(shape).height));setSelection([insertAt(shape,start)]);refresh();toast('Text pasted');});}
   });
@@ -640,6 +643,7 @@ function bind() {
       if(['delete','backspace'].includes(key)){event.preventDefault();const s=current(),g=s?.appearance?.gradient;if(activeGradient?.part==='stop'&&g.stops.length>2){const index=activeGradient.index;activeGradient=null;update({...s,appearance:{...s.appearance,gradient:{...g,stops:g.stops.filter((_,i)=>i!==index)}}});}else toast('Select a color stop to remove; keep at least two stops');return;}
       if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current();if(activeGradient){const h=gradientHandles(s,zoom).find(h=>h.part===activeGradient.part&&(h.part!=='stop'||h.index===activeGradient.index)),step=event.shiftKey?10:1;let p={x:h.x,y:h.y};if(h.part==='stop'){const g=s.appearance.gradient,t=Math.max(0,Math.min(1,g.stops[h.index].position+(['ArrowLeft','ArrowDown'].includes(event.key)?-step:step)/100));p={x:s.x+(g.start[0]+(g.end[0]-g.start[0])*t)*s.width,y:s.y+(g.start[1]+(g.end[1]-g.start[1])*t)*s.height};}else{p.x+=event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0;p.y+=event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0;}const result=moveGradientHandle(s,h,p);activeGradient=result.active;update(result.shape);}return;}
     }
+    if(mod&&event.shiftKey&&key==='r'){event.preventDefault();$('paste-replace').click();return;}
     if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}
     if(editingPath&&!mod&&['delete','backspace'].includes(key)){event.preventDefault();if(activeNode>=0)$('delete-node').click();else toast('Select an anchor to delete, or press Enter to finish editing');return;}
     if(editingPath&&activeNode>=0&&!mod&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current(),nodes=anchors(s),a=nodes[activeNode],amount=event.shiftKey?10:1,dx=event.key==='ArrowLeft'?-amount:event.key==='ArrowRight'?amount:0,dy=event.key==='ArrowUp'?-amount:event.key==='ArrowDown'?amount:0;a.x+=dx;a.y+=dy;a.in.x+=dx;a.in.y+=dy;a.out.x+=dx;a.out.y+=dy;update(reshape(s,nodes));return;}

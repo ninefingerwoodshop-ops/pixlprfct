@@ -37,12 +37,13 @@
     "persistent click-to-navigate/back prototype links, cross-page frame targets, cropped presentation player, history/restart/frame chooser, hotspot hints and keyboard-accessible interactions",
     "stacked prototype overlays with center/corner placement, close actions, outside-click dismissal, modal input isolation and navigation/history integration, custom backdrop color/opacity and manual viewport-relative offsets, swap-overlay replacement preserving placement/backdrop/dismissal and stack depth",
     "named prototype flow starting points, presentation flow switching/reset, same-page canvas connection wires and drag-to-connect with atomic undo",
-    "instant, dissolve and directional slide prototype transitions with duration/easing, reduced-motion support and clean cancellation"
+    "instant, dissolve and directional slide prototype transitions with duration/easing, reduced-motion support and clean cancellation",
+    "atomic paste-to-replace across selected destinations with parent/stack/layout preservation, subtree replacement, internal-link remapping and undo"
   ],
   "remaining": [
     "Additional frame layout controls, guide snapping and reusable guide styles",
     "Nested groups and complete tree reordering",
-    "SVG import, external vector clipboard interoperability, paste-to-replace and multi-frame paste",
+    "SVG import, external vector clipboard interoperability, multi-frame paste",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and effects",
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",

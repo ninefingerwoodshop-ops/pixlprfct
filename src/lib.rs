@@ -1134,6 +1134,95 @@ impl Editor {
         Ok(serde_json::to_string(&roots).unwrap())
     }
 
+    pub fn paste_replace(&mut self, json: &str, selection: &str) -> Result<String, String> {
+        let selected = self.selection_ids(selection)?;
+        let removed = self.descendants(&selected);
+        let targets: Vec<Shape> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| selected.contains(&s.id) && !removed.contains(&s.parent_id))
+            .cloned()
+            .collect();
+        for target in &targets {
+            let mut node = Some(target);
+            while let Some(s) = node {
+                if s.locked {
+                    return Err("Cannot replace a locked layer".into());
+                }
+                node = self.document.shapes.iter().find(|p| p.id == s.parent_id);
+            }
+        }
+        // Validate and normalize the portable payload before allocating any document IDs.
+        let mut template = Editor::new();
+        template.paste_layers(json, 0.0, 0.0, 0)?;
+        let shapes = &template.document.shapes;
+        let left = shapes
+            .iter()
+            .filter(|s| s.parent_id == 0)
+            .map(|s| s.x)
+            .fold(f64::INFINITY, f64::min);
+        let top = shapes
+            .iter()
+            .filter(|s| s.parent_id == 0)
+            .map(|s| s.y)
+            .fold(f64::INFINITY, f64::min);
+        if self.document.shapes.len() - removed.len() + shapes.len() * targets.len() > 10_000 {
+            return Err("Document layer limit reached".into());
+        }
+        let mut document = self.document.clone();
+        document.shapes.clear();
+        let mut next = self.next_id;
+        let mut roots = vec![];
+        for original in &self.document.shapes {
+            if let Some(target) = targets.iter().find(|s| s.id == original.id) {
+                let end = next
+                    .checked_add(shapes.len() as u32)
+                    .ok_or("Shape ID limit reached")?;
+                let ids: std::collections::HashMap<u32, u32> = shapes
+                    .iter()
+                    .enumerate()
+                    .map(|(i, s)| (s.id, next + i as u32))
+                    .collect();
+                let mut groups = std::collections::HashMap::new();
+                for source in shapes {
+                    let mut s = source.clone();
+                    s.id = ids[&source.id];
+                    s.page_id = target.page_id;
+                    s.x += target.x - left;
+                    s.y += target.y - top;
+                    if source.parent_id == 0 {
+                        s.parent_id = target.parent_id;
+                        s.layout_item = target.layout_item.clone();
+                        s.constraints = target.constraints.clone();
+                        roots.push(s.id);
+                    } else {
+                        s.parent_id = ids[&source.parent_id];
+                    }
+                    if s.group_id > 0 {
+                        s.group_id = *groups.entry(s.group_id).or_insert(s.id);
+                    }
+                    if source.parent_id == 0 && target.group_id > 0 {
+                        s.group_id = target.group_id;
+                        s.group_name = target.group_name.clone();
+                    }
+                    if let Some(p) = &mut s.prototype {
+                        if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
+                            p.target = ids[&p.target];
+                        }
+                    }
+                    document.shapes.push(s);
+                }
+                next = end;
+            } else if !removed.contains(&original.id) {
+                document.shapes.push(original.clone());
+            }
+        }
+        self.commit(document)?;
+        self.next_id = self.next_id.max(next);
+        Ok(serde_json::to_string(&roots).unwrap())
+    }
+
     pub fn load(&mut self, json: &str) -> Result<(), String> {
         if json.len() > 5_000_000 {
             return Err("Document exceeds 5 MB".into());
