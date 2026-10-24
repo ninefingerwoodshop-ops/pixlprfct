@@ -1,3 +1,4 @@
+import {snapGuides,drawSnapGuides} from './guide-snap.js';
 import {inspectorRenderer} from './inspector-focus.js';
 import {exportJobs,zipFiles} from './batch-export.js';
 import {rasterSettings} from './export.js';
@@ -326,6 +327,7 @@ function draw() {
   }
   if(editingGradient&&current()?.appearance?.gradient)drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:current(),zoom,activeGradient);
   if(prototypeConnections&&!editingPath&&!editingGradient)drawConnections(ctx,scene,current(),zoom,gesture,tool==='select'&&canvasEditable());
+  if(guidesVisible)drawSnapGuides(ctx,gesture?.snapLines,zoom);
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
 }
 function drawAnchors(points) {
@@ -361,7 +363,7 @@ function setTool(value) {
   renderProperties();
   draw();
   canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'default' : 'crosshair';
-  $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Smoothing preserves sharp corners · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
+  $('hint').textContent = tool === 'select' ? 'Drag to snap to visible layout guides · Alt bypasses snapping · Shift locks an axis' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Smoothing preserves sharp corners · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 function pasteLayerText(text,overSelection=false,replace=false,frames=false){
@@ -618,13 +620,17 @@ function bind() {
     if (gesture.type === 'move') {
       let dx = snap(p.x - gesture.start.x), dy = snap(p.y - gesture.start.y);
       if (event.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
+      gesture.snapLines=[];
+      if(guidesVisible&&!event.altKey){const roots=gesture.originals.filter(s=>selectedIds.has(s.id)),box=bounds(roots),excluded=new Set(gesture.originals.map(s=>s.id));if(box){const axes=event.shiftKey?(Math.abs(dx)>Math.abs(dy)?{x:true,y:false}:{x:false,y:true}):{x:true,y:true};const result=snapGuides(pageShapes(),{...box,x:box.x+dx,y:box.y+dy},excluded,zoom,axes);dx+=result.dx;dy+=result.dy;gesture.snapLines=result.lines;}}
       gesture.previews = gesture.originals.map(s => ({...s,x:s.x+dx,y:s.y+dy}));
     }
     else {
+      let resizePoint={x:snap(p.x),y:snap(p.y)};gesture.snapLines=[];
+      if(guidesVisible&&!event.altKey){const result=snapGuides(pageShapes(),{...resizePoint,width:0,height:0},new Set(transformedSelection().map(s=>s.id)),zoom);resizePoint={x:resizePoint.x+result.dx,y:resizePoint.y+result.dy};gesture.snapLines=result.lines;}
       const right = original.x + original.width, bottom = original.y + original.height;
-      const x = gesture.cx ? original.x : Math.min(right - 1, snap(p.x));
-      const y = gesture.cy ? original.y : Math.min(bottom - 1, snap(p.y));
-      gesture.preview = { ...original, x, y, width: gesture.cx ? Math.max(1, snap(p.x) - x) : right - x, height: gesture.cy ? Math.max(1, snap(p.y) - y) : bottom - y };
+      const x = gesture.cx ? original.x : Math.min(right - 1, resizePoint.x);
+      const y = gesture.cy ? original.y : Math.min(bottom - 1, resizePoint.y);
+      gesture.preview = { ...original, x, y, width: gesture.cx ? Math.max(1, resizePoint.x - x) : right - x, height: gesture.cy ? Math.max(1, resizePoint.y - y) : bottom - y };
       gesture.preview=resizeText(gesture.preview,!!gesture.cx,!!gesture.cy);
     }
     draw();
