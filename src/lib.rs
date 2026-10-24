@@ -239,6 +239,13 @@ pub struct Document {
     pub active_page: u32,
 }
 
+#[derive(Serialize, Deserialize)]
+struct LayerClipboard {
+    format: String,
+    version: u32,
+    shapes: Vec<Shape>,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Page {
     pub id: u32,
@@ -553,6 +560,96 @@ impl Editor {
 
     pub fn snapshot(&self) -> String {
         serde_json::to_string(&self.document).unwrap()
+    }
+
+    pub fn copy_layers(&self, json: &str) -> Result<String, String> {
+        let ids = self.descendants(&self.selection_ids(json)?);
+        let shapes = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .map(|s| {
+                let mut copy = s.clone();
+                if !ids.contains(&copy.parent_id) {
+                    copy.parent_id = 0;
+                }
+                copy.page_id = 1;
+                copy
+            })
+            .collect();
+        serde_json::to_string(&LayerClipboard {
+            format: "pixlprfct.layers".into(),
+            version: 1,
+            shapes,
+        })
+        .map_err(|e| e.to_string())
+    }
+
+    pub fn paste_layers(
+        &mut self,
+        json: &str,
+        dx: f64,
+        dy: f64,
+        parent: u32,
+    ) -> Result<String, String> {
+        if json.len() > 5_000_000 || !dx.is_finite() || !dy.is_finite() {
+            return Err("Invalid clipboard size or position".into());
+        }
+        let mut payload: LayerClipboard = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if payload.format != "pixlprfct.layers" || payload.version != 1 || payload.shapes.is_empty()
+        {
+            return Err("Unsupported layer clipboard".into());
+        }
+        if parent != 0
+            && !self.document.shapes.iter().any(|s| {
+                s.id == parent && s.kind == "frame" && s.page_id == self.document.active_page
+            })
+        {
+            return Err("Paste target must be a frame on this page".into());
+        }
+        for s in &mut payload.shapes {
+            s.page_id = 1;
+        }
+        validate(&Document {
+            version: 2,
+            name: String::new(),
+            shapes: payload.shapes.clone(),
+            pages: default_pages(),
+            active_page: 1,
+        })?;
+        let next = self
+            .next_id
+            .checked_add(payload.shapes.len() as u32)
+            .ok_or("Shape ID limit reached")?;
+        let ids: std::collections::HashMap<u32, u32> = payload
+            .shapes
+            .iter()
+            .enumerate()
+            .map(|(i, s)| (s.id, self.next_id + i as u32))
+            .collect();
+        let mut groups = std::collections::HashMap::new();
+        let mut roots = vec![];
+        let mut document = self.document.clone();
+        for mut s in payload.shapes {
+            s.id = ids[&s.id];
+            s.page_id = document.active_page;
+            if s.parent_id == 0 {
+                s.parent_id = parent;
+                roots.push(s.id);
+            } else {
+                s.parent_id = ids[&s.parent_id];
+            }
+            if s.group_id > 0 {
+                s.group_id = *groups.entry(s.group_id).or_insert(s.id);
+            }
+            s.x += dx;
+            s.y += dy;
+            document.shapes.push(s);
+        }
+        self.commit(document)?;
+        self.next_id = next;
+        Ok(serde_json::to_string(&roots).unwrap())
     }
 
     pub fn load(&mut self, json: &str) -> Result<(), String> {

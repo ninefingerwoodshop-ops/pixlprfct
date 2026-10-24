@@ -4,6 +4,7 @@ import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, desc
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
 import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-edit.js';
+import {LAYER_MIME,layerPayload,pasteOffset} from './clipboard.js';
 import {appearance,radius,paintAttributes,drawScene,sceneSvg} from './appearance.js';
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
@@ -21,6 +22,7 @@ let imageReplaceId=0,imageLoading=false;
 let penPoints = [];
 let editingPath = 0;
 let activeNode=-1;
+let lastPasted='',pasteCount=0,pasteInPlace=false;
 let selectedIds = new Set(), layerAnchor = 0;
 function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
@@ -270,6 +272,11 @@ function setTool(value) {
   $('hint').textContent = tool === 'select' ? 'Shift-click to multi-select · Drag empty canvas to select an area' : tool === 'hand' ? 'Drag to pan the canvas' : tool === 'scale' ? 'Drag from the lower-right of your selection to scale · Shift snaps to 10% steps' : tool === 'pen' ? 'Click for corners · Drag for curves · Click first point to close · Enter to finish' : tool === 'pencil' ? 'Drag to draw freehand · Escape to cancel' : 'Drag to draw · Shift to constrain · Alt to draw from center';
 }
 function download(name, body, type) { const url = URL.createObjectURL(new Blob([body], { type })); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+function pasteLayerText(text,overSelection=false){
+  const payload=layerPayload(text);if(!payload)return false;
+  const count=text===lastPasted?pasteCount+1:1,target=overSelection?current():current()?.kind==='frame'?current():null,offset=pasteOffset(payload,target,overSelection,count);
+  setSelection(JSON.parse(editor.paste_layers(text,offset.x,offset.y,overSelection?(target?.parent_id??0):(target?.id??0))));lastPasted=text;pasteCount=count;refresh();toast('Layers pasted');return true;
+}
 async function exportSvg() {
   await document.fonts.ready;
   const shapes = pageShapes().filter(s => visibleInTree(s,pageShapes())); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
@@ -299,6 +306,11 @@ async function placeImage(file,location=null,replaceId=0) {
 }
 function bind() {
   installIcons();
+  $('paste-over').onclick=async()=>{let text;try{text=await navigator.clipboard.readText();}catch{pasteInPlace=true;toast('Press Ctrl/Cmd V to paste over the selection');return;}safe(()=>{if(!pasteLayerText(text,true))toast('Copy PixlPrfct layers first');});};
+  for(const kind of ['copy','cut'])window.addEventListener(kind,event=>{
+    if(event.target.closest('input,textarea,select,[contenteditable]')||!selectedIds.size||!event.clipboardData)return;
+    safe(()=>{const payload=editor.copy_layers(selectionJson());event.clipboardData.setData(LAYER_MIME,payload);event.clipboardData.setData('text/plain',payload);event.preventDefault();if(kind==='cut')deleteSelection();toast(kind==='cut'?'Layers cut':'Layers copied');});
+  });
   $('delete-node').onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0){const changed=deleteAnchor(current(),activeNode);activeNode=-1;update(changed);}});
   for(const [id,smooth] of [['smooth-node',true],['corner-node',false]])$(id).onclick=()=>safe(()=>{if(editingPath&&current()&&activeNode>=0)update(convertAnchor(current(),activeNode,smooth));});
   const layoutDefaults={direction:'horizontal',gap:16,padding_top:16,padding_right:16,padding_bottom:16,padding_left:16,align:'start',justify:'start',hug_width:false,hug_height:false};
@@ -314,7 +326,13 @@ function bind() {
   $('reset-crop').onclick=()=>{const s=current();if(s?.image)update({...s,image:{...s.image,zoom:1,offset_x:.5,offset_y:.5}});};
   canvas.ondragover=event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';};
   canvas.ondrop=event=>{event.preventDefault();const file=event.dataTransfer.files[0];if(file)placeImage(file,point(event));};
-  window.addEventListener('paste',event=>{if(event.target.closest('input,textarea,select,[contenteditable]'))return;const item=[...event.clipboardData.items].find(i=>i.kind==='file'&&i.type.startsWith('image/'));if(item){event.preventDefault();const file=item.getAsFile();if(file)placeImage(file);}});
+  window.addEventListener('paste',event=>{
+    if(event.target.closest('input,textarea,select,[contenteditable]')||!event.clipboardData)return;
+    const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace;pasteInPlace=false;
+    if(payload){event.preventDefault();safe(()=>pasteLayerText(text,inPlace));return;}
+    const item=[...event.clipboardData.items].find(i=>i.kind==='file'&&i.type.startsWith('image/'));if(item){event.preventDefault();const file=item.getAsFile();if(file)placeImage(file);return;}
+    if(text){event.preventDefault();safe(()=>{if(new TextEncoder().encode(text).length>10000)throw new Error('Text layers are limited to 10 KB');const start={x:(canvas.clientWidth/2-pan.x)/zoom-200,y:(canvas.clientHeight/2-pan.y)/zoom-20};const shape={id:0,kind:'text',name:text.split('\n')[0].slice(0,80)||'Pasted text',...start,width:400,height:24,fill:'#1e1e1e',text,hidden:false,typography:{font_family:'Manrope',font_size:16,font_weight:400,line_height:1.4,align:'left',wrap:true}};shape.height=Math.max(1,Math.ceil(textLayout(shape).height));setSelection([insertAt(shape,start)]);refresh();toast('Text pasted');});}
+  });
   $('clip-content').onchange=()=>{if(current()?.kind==='frame')update({...current(),clip_content:$('clip-content').checked});};
   $('move-to-frame').onclick=()=>safe(()=>{editor.reparent_many(selectionJson(),Number($('parent-frame').value));refresh();});
   for(const axis of ['horizontal','vertical'])$('constraint-'+axis).onchange=()=>{const value=$('constraint-'+axis).value;if(value)updateMany(selectionShapes().map(s=>({...s,constraints:{horizontal:'min',vertical:'min',...s.constraints,[axis]:value}})));};
@@ -501,6 +519,7 @@ function bind() {
     if ($('page-dialog').open || $('shortcuts-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
+    if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}
     if(editingPath&&!mod&&['delete','backspace'].includes(key)){event.preventDefault();if(activeNode>=0)$('delete-node').click();else toast('Select an anchor to delete, or press Enter to finish editing');return;}
     if(editingPath&&activeNode>=0&&!mod&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const s=current(),nodes=anchors(s),a=nodes[activeNode],amount=event.shiftKey?10:1,dx=event.key==='ArrowLeft'?-amount:event.key==='ArrowRight'?amount:0,dy=event.key==='ArrowUp'?-amount:event.key==='ArrowDown'?amount:0;a.x+=dx;a.y+=dy;a.in.x+=dx;a.in.y+=dy;a.out.x+=dx;a.out.y+=dy;update(reshape(s,nodes));return;}
     if(!mod&&event.shiftKey&&key==='a'&&selectedIds.size){event.preventDefault();$('add-auto-layout').click();return;}
