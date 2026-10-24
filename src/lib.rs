@@ -1842,6 +1842,21 @@ impl Editor {
         Ok(staged.snapshot())
     }
 
+    pub fn preview_layout_update(&self, json: &str, id: u32) -> Result<String, String> {
+        let mut staged = Editor {
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        staged.update_many(json)?;
+        let grid: serde_json::Value =
+            serde_json::from_str(&staged.grid_layout(id)?).map_err(|e| e.to_string())?;
+        Ok(serde_json::json!({"document":staged.document,"grid":grid}).to_string())
+    }
+
     pub fn remove_many(&mut self, json: &str) -> Result<(), String> {
         let ids = self.descendants(&self.selection_ids(json)?);
         let mut document = self.document.clone();

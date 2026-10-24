@@ -320,6 +320,7 @@ function drawShape(shape, target=ctx) {
   ctx.restore();if(a.stroke_enabled&&!shape.points?.length&&shape.kind!=='text')stroke(()=>drawAlignedStroke(ctx,shape,{stroke:c=>c.stroke(outline),fill:c=>c.fill(outline)}));
   ctx.restore();
 }
+function gridPlan(frame){return frame?.auto_layout?.direction==='grid'?JSON.parse(editor.grid_layout(frame.id)):null;}
 function draw() {
   if (!doc) return;
   const w = canvas.clientWidth, h = canvas.clientHeight, dpr = devicePixelRatio || 1;
@@ -328,7 +329,7 @@ function draw() {
   ctx.translate(pan.x, pan.y); ctx.scale(zoom, zoom);
   const previews = gesture?.previews || (gesture?.preview ? [gesture.preview] : []);
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
-  if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{scene=JSON.parse(editor.preview_update_many(JSON.stringify(previews))).shapes.filter(s=>s.page_id===doc.active_page);}catch{scene=pageShapes();}}
+  if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{const result=gesture.original.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify(previews),gesture.original.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify(previews))),grid:null};scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{scene=pageShapes();}}
   if(gesture?.type==='layout-spacing'&&gesture.scene)scene=gesture.scene;
   drawScene(scene,ctx,drawShape);
   if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
@@ -351,7 +352,7 @@ function draw() {
   }
   if(editingGradient&&current()?.appearance?.[gradientField()])drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:current(),zoom,activeGradient,gradientField());
   if(prototypeConnections&&!editingPath&&!editingGradient)drawConnections(ctx,scene,current(),zoom,gesture,tool==='select'&&canvasEditable());
-  if(editingLayout===current()?.id&&tool==='select'&&canvasEditable()){const frame=scene.find(s=>s.id===editingLayout);if(frame&&visibleInTree(frame,scene)){ctx.save();for(const clip of clippingFrames(frame,scene)){ctx.beginPath();ctx.roundRect(clip.x,clip.y,clip.width,clip.height,radii(clip));ctx.clip();}drawSpacing(ctx,frame,scene,zoom,activeSpacing);ctx.restore();}}
+  if(editingLayout===current()?.id&&tool==='select'&&canvasEditable()){const frame=scene.find(s=>s.id===editingLayout);if(frame&&visibleInTree(frame,scene)){ctx.save();for(const clip of clippingFrames(frame,scene)){ctx.beginPath();ctx.roundRect(clip.x,clip.y,clip.width,clip.height,radii(clip));ctx.clip();}drawSpacing(ctx,frame,scene,zoom,activeSpacing,gesture?.grid??gridPlan(frame));ctx.restore();}}
   if(guidesVisible)drawSnapGuides(ctx,gesture?.snapLines,zoom);
   $('zoom-fit').textContent = `${Math.round(zoom * 100)}%`;
 }
@@ -609,7 +610,7 @@ function bind() {
       const segment=nearestSegment(shape,p);if(segment&&segment.distance<10/zoom){activeNode=-1;renderProperties();draw();return;}
       editingPath=0;activeNode=-1;
     }
-    if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom);if(handle){activeSpacing=handle.key;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}}
+    if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}}
     if (shape && !shape.hidden && canvasEditable()) {
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         if (Math.abs(p.x - shape.x - cx * shape.width) < 9 / zoom && Math.abs(p.y - shape.y - cy * shape.height) < 9 / zoom) { gesture = { type: 'resize', start: p, original: { ...shape }, preview: { ...shape }, cx, cy }; return; }
@@ -633,7 +634,7 @@ function bind() {
     if (!gesture) return;
     if (gesture.type === 'pan') { pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; draw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
-    if(gesture.type==='layout-spacing'){const next=changeSpacing(original,gesture.handle,p[gesture.handle.axis]-gesture.start[gesture.handle.axis],event);try{const scene=JSON.parse(editor.preview_update_many(JSON.stringify([next]))).shapes.filter(s=>s.page_id===doc.active_page);gesture.preview=next;gesture.scene=scene;}catch(error){toast(String(error));}draw();return;}
+    if(gesture.type==='layout-spacing'){const next=changeSpacing(original,gesture.handle,p[gesture.handle.axis]-gesture.start[gesture.handle.axis],event);try{const result=next.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify([next]),next.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify([next]))),grid:null};gesture.preview=next;gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch(error){toast(String(error));}draw();return;}
     if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes(),gesture.source.id,p);draw();return;}
     if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey,gradientField());gesture.preview=result.shape;activeGradient=result.active;draw();return;}
     if(gesture.type==='scale') {
@@ -709,8 +710,8 @@ function bind() {
     if(mod&&event.shiftKey&&key==='l'){event.preventDefault();toggleSelectionLock();return;}
     if(editingLayout&&!mod){
       if(key==='escape'||key==='enter'){event.preventDefault();const preview=gesture?.type==='layout-spacing'?gesture.preview:null;gesture=null;if(key==='enter'&&preview)update(preview);if(key==='enter'||!preview){editingLayout=0;activeSpacing=null;}renderProperties();draw();return;}
-      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=spacingHandles(current(),pageShapes()).filter((h,i,a)=>a.findIndex(v=>v.key===h.key)===i),index=handles.findIndex(h=>h.key===activeSpacing);activeSpacing=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length]?.key;draw();return;}
-      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();if(!canvasEditable()||gesture)return;const h=spacingHandles(current(),pageShapes()).find(h=>h.key===activeSpacing);if(h){const delta=(event.key==='ArrowLeft'||event.key==='ArrowUp'?-1:1)*(event.shiftKey?10:1);update(changeSpacing(current(),h,delta,{altKey:event.altKey}));}return;}
+      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=spacingHandles(current(),pageShapes(),gridPlan(current())).filter((h,i,a)=>a.findIndex(v=>v.key===h.key)===i),index=handles.findIndex(h=>h.key===activeSpacing);activeSpacing=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length]?.key;draw();return;}
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();if(!canvasEditable()||gesture)return;const h=spacingHandles(current(),pageShapes(),gridPlan(current())).find(h=>h.key===activeSpacing);if(h){const delta=(event.key==='ArrowLeft'||event.key==='ArrowUp'?-1:1)*(event.shiftKey?10:1);update(changeSpacing(current(),h,delta,{altKey:event.altKey}));}return;}
     }
     if(editingGradient&&!mod){
       if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=gradientHandles(current(),zoom,gradientField()),index=handles.findIndex(h=>h.part===activeGradient?.part&&(h.part!=='stop'||h.index===activeGradient.index));activeGradient=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length];renderProperties();draw();return;}
