@@ -1,6 +1,7 @@
 import {parsePath,parseTransform,multiply,identity,transformPoint} from './svg-path.js';
 import {fromPoints} from './vectors.js';
 import {bounds} from './selection.js';
+import {gradientResolver} from './svg-gradients.js';
 
 const inherited=['fill','stroke','stroke-width','stroke-linecap','stroke-linejoin','stroke-miterlimit','stroke-dasharray','stroke-dashoffset','fill-opacity','stroke-opacity','fill-rule','color','visibility'];
 const allowed=new Set([...inherited,'opacity','display']);
@@ -26,11 +27,12 @@ export function svgLayers(tree,name='SVG artwork'){
  if(view&&(view.length!==4||view.some(v=>!Number.isFinite(v))||view[2]<=0||view[3]<=0))throw new Error('Invalid SVG viewBox');
  const width=length(a.width,view?.[2]??300),height=length(a.height,view?.[3]??150);if(width<=0||height<=0)throw new Error('SVG dimensions must be positive');
  let viewport=identity();if(view){const aspect=a.preserveAspectRatio??'xMidYMid meet';let sx=width/view[2],sy=height/view[3],dx=0,dy=0;if(aspect!=='none'){const m=aspect.match(/^x(Min|Mid|Max)Y(Min|Mid|Max)(?:\s+(meet|slice))?$/);if(!m)throw new Error('Unsupported SVG aspect ratio');sx=sy=m[3]==='slice'?Math.max(sx,sy):Math.min(sx,sy);dx=(width-view[2]*sx)*({Min:0,Mid:.5,Max:1}[m[1]]);dy=(height-view[3]*sy)*({Min:0,Mid:.5,Max:1}[m[2]]);}viewport=[sx,0,0,sy,dx-view[0]*sx,dy-view[1]*sy];}
+ const gradientFill=gradientResolver(tree,[view?.[2]??width,view?.[3]??height],color);
  const shapes=[];let next=1,visited=0;
  const frame=(name,parent,alpha)=>({id:next++,kind:'frame',name:name.slice(0,128),parent_id:parent,x:0,y:0,width:1,height:1,fill:'#ffffff',text:'',hidden:false,clip_content:false,appearance:{opacity:alpha,corner_radius:0,fill_enabled:false,stroke_enabled:false,stroke_color:'#000000'}});
  function walk(node,parent,matrix,style,depth){
   if(++visited>10000||depth>64)throw new Error('SVG structure is too large or deeply nested');
-  const {tag,attrs}=node;if(['title','desc','metadata','defs'].includes(tag))return;
+  const {tag,attrs}=node;if(['title','desc','metadata','defs','linearGradient','radialGradient'].includes(tag))return;
   for(const key of Object.keys(attrs))if(/^on/i.test(key)||['href','xlink:href','filter','clip-path','mask','marker-start','marker-mid','marker-end','vector-effect'].includes(key)&&attrs[key]!=='none')throw new Error('Unsupported SVG attribute: '+key);
   const own=paint(attrs,style);if(own.display==='none')return;
   const m=multiply(matrix,parseTransform(attrs.transform??''));
@@ -41,7 +43,7 @@ export function svgLayers(tree,name='SVG artwork'){
    Object.assign(group,bounds(shapes.slice(start))??{x:0,y:0,width:1,height:1});
    if(depth===0){Object.assign(group,{x:0,y:0,width,height,clip_content:true});}return;
   }
-  const paths=geometry(tag,attrs),fill=color(own.fill,own.color),stroke=color(own.stroke,own.color),alpha=opacity(own.opacity);
+  const paths=geometry(tag,attrs),hasGradient=/^url\(/i.test(own.fill.trim()),fill=hasGradient?'#000000':color(own.fill,own.color),stroke=color(own.stroke,own.color),alpha=opacity(own.opacity);
   if(own['fill-rule']!=='nonzero'&&fill!=='none')throw new Error('Even-odd SVG fills are not supported yet');
   if(paths.length>1&&fill!=='none')throw new Error('Filled compound SVG paths are not supported yet. Separate them before importing.');
   const sx=Math.hypot(m[0],m[1]),sy=Math.hypot(m[2],m[3]);
@@ -50,6 +52,7 @@ export function svgLayers(tree,name='SVG artwork'){
   const dash=own['stroke-dasharray']==='none'?[]:own['stroke-dasharray'].trim().split(/[\s,]+/).map(v=>length(v)*sx);
   for(const path of paths){const points=path.points.map(p=>({...transformPoint(p,m),...(p.in?{in:transformPoint(p.in,m)}:{}),...(p.out?{out:transformPoint(p.out,m)}:{})})),shape=fromPoints('pen',points,path.closed);
    Object.assign(shape,{id:next++,parent_id:parent,name:(attrs.id||tag).slice(0,128),fill:fill==='none'?'#000000':fill,stroke_width:Math.max(.1,weight),hidden:['hidden','collapse'].includes(own.visibility),appearance:{opacity:alpha,fill_opacity:opacity(own['fill-opacity']),stroke_opacity:opacity(own['stroke-opacity']),corner_radius:0,fill_enabled:fill!=='none',stroke_enabled:stroke!=='none'&&weight>0,stroke_color:stroke==='none'?'#000000':stroke,stroke_dash:dash,stroke_dash_offset:length(own['stroke-dashoffset'])*sx,stroke_cap:own['stroke-linecap'],stroke_join:own['stroke-linejoin'],stroke_miter_limit:Number(own['stroke-miterlimit'])}});shapes.push(shape);
+   if(hasGradient)shape.appearance.gradient=gradientFill(own.fill,shape,paths,m);
   }
  }
  walk(tree,0,viewport,defaults,0);if(shapes.length===1)throw new Error('SVG contains no supported visible artwork');

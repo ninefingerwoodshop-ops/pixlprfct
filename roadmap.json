@@ -50,12 +50,13 @@
     "document-level reusable layout-guide styles with linked updates across pages, create/apply/rename/detach/delete controls, component override pairing, clipboard flattening and atomic history",
     "editable SVG file/drop/markup-paste import for solid shapes, single filled paths and multiple stroked subpaths, cubic/quadratic/arc conversion, affine transforms, nested frame groups, viewport clipping and atomic history",
     "editable stroke miter limits with SVG source/default preservation, canvas/raster/SVG parity, conservative export bounds, dimensionless scaling and component overrides",
-    "independent fill/stroke/image paint opacity with gradient-stop multiplication, layer/group compositing, SVG import/export, component overrides and pixel-verified raster output"
+    "independent fill/stroke/image paint opacity with gradient-stop multiplication, layer/group compositing, SVG import/export, component overrides and pixel-verified raster output",
+    "editable SVG linear-gradient fills with geometric object bounds, user-space units, transformed gradient normals, local definition references, stop colors/opacity, and pixel-verified nonuniform geometry"
   ],
   "remaining": [
     "Additional frame layout controls",
     "Nested groups and complete tree reordering",
-    "Broader SVG import: compound/even-odd fills, gradients, masks, clipping paths, text, images, use references, CSS and transformed strokes; external vector clipboard interoperability",
+    "Broader SVG import: compound/even-odd fills, radial/repeating gradients and gradient strokes, masks, clipping paths, text, images, use references, CSS and transformed strokes; external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and effects",
     "Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",
