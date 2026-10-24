@@ -1,5 +1,18 @@
 export function textStyle(shape) {
-  return shape.typography || { font_size: Math.max(10, Math.min(72, shape.height * .66)), font_family: 'Manrope', font_weight: 600, align: 'left', line_height: 1.2, wrap: false };
+  const style = shape.typography || { font_size: Math.max(10, Math.min(72, shape.height * .66)), font_family: 'Manrope', font_weight: 600, align: 'left', line_height: 1.2, wrap: false };
+  return {...style, sizing:style.sizing||'fixed', wrap:style.sizing==='width'?false:style.sizing==='height'?true:style.wrap};
+}
+
+export function textSize(shape, measure) {
+  const style=textStyle(shape);
+  const width=style.sizing==='width'?Math.max(1,Math.ceil(Math.max(...shape.text.replace(/\r\n?/g,'\n').split('\n').map(measure)))):shape.width;
+  return [width,Math.max(1,Math.ceil(layoutText({...shape,width},measure).height))];
+}
+
+export function resizeText(shape, widthChanged, heightChanged) {
+  if(shape.kind!=='text')return shape;
+  const style=textStyle(shape),sizing=heightChanged?'fixed':widthChanged&&style.sizing==='width'?'height':style.sizing;
+  return {...shape,typography:{...style,sizing},layout_item:{...shape.layout_item,fill_width:widthChanged?false:!!shape.layout_item?.fill_width,fill_height:heightChanged?false:!!shape.layout_item?.fill_height,absolute:!!shape.layout_item?.absolute}};
 }
 
 export function fontCss(style) {

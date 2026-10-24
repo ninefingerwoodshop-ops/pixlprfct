@@ -207,6 +207,8 @@ fn path_polyline(shape: &Shape) -> Vec<[f64; 2]> {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Typography {
+    #[serde(default = "fixed_text")]
+    pub sizing: String,
     pub font_size: f64,
     pub font_family: String,
     pub font_weight: u16,
@@ -218,6 +220,7 @@ pub struct Typography {
 impl Default for Typography {
     fn default() -> Self {
         Self {
+            sizing: fixed_text(),
             font_size: 32.0,
             font_family: "Manrope".into(),
             font_weight: 600,
@@ -226,6 +229,10 @@ impl Default for Typography {
             wrap: true,
         }
     }
+}
+
+fn fixed_text() -> String {
+    "fixed".into()
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -264,6 +271,7 @@ fn default_pages() -> Vec<Page> {
 
 #[wasm_bindgen]
 pub struct Editor {
+    text_measurer: Option<js_sys::Function>,
     document: Document,
     undo: Vec<Document>,
     redo: Vec<Document>,
@@ -357,6 +365,7 @@ fn validate(document: &Document) -> Result<(), String> {
         }
         if let Some(style) = &shape.typography {
             if !style.font_size.is_finite()
+                || !["fixed", "width", "height"].contains(&style.sizing.as_str())
                 || !(1.0..=512.0).contains(&style.font_size)
                 || !style.line_height.is_finite()
                 || !(0.5..=4.0).contains(&style.line_height)
@@ -463,6 +472,91 @@ fn validate(document: &Document) -> Result<(), String> {
 }
 
 impl Editor {
+    fn reflow_text(&self, document: &mut Document) -> Result<(), String> {
+        if !document
+            .shapes
+            .iter()
+            .any(|s| s.kind == "text" && s.typography.as_ref().is_some_and(|t| t.sizing != "fixed"))
+        {
+            reflow(document);
+            return Ok(());
+        }
+        let Some(measure) = &self.text_measurer else {
+            reflow(document);
+            return Ok(());
+        };
+        // Width allocation can change wrapped text height, which can change a
+        // hugged ancestor. Iterate to a fixed point, rejecting cyclic sizing.
+        for _ in 0..130 {
+            let before: Vec<_> = document
+                .shapes
+                .iter()
+                .map(|s| (s.x, s.y, s.width, s.height))
+                .collect();
+            let layout_parents: std::collections::HashSet<_> = document
+                .shapes
+                .iter()
+                .filter(|s| s.auto_layout.is_some())
+                .map(|s| s.id)
+                .collect();
+            for s in &mut document.shapes {
+                if s.kind != "text" {
+                    continue;
+                }
+                let in_layout = layout_parents.contains(&s.parent_id) && !s.layout_item.absolute;
+                let Some(style) = &mut s.typography else {
+                    continue;
+                };
+                if in_layout && s.layout_item.fill_height {
+                    style.sizing = "fixed".into();
+                } else if in_layout && s.layout_item.fill_width && style.sizing == "width" {
+                    style.sizing = "height".into();
+                }
+                if style.sizing == "fixed" {
+                    continue;
+                }
+                let sizing = style.sizing.clone();
+                let mut measured = s.clone();
+                // Fill controls its allocated axis; width-auto text becomes
+                // wrapped height-auto text when its parent supplies a width.
+                if in_layout && s.layout_item.fill_width {
+                    measured.typography.as_mut().unwrap().sizing = "height".into();
+                }
+                let result = measure
+                    .call1(
+                        &JsValue::NULL,
+                        &JsValue::from_str(&serde_json::to_string(&measured).unwrap()),
+                    )
+                    .map_err(|_| "Text measurement failed")?;
+                let size: [f64; 2] =
+                    serde_json::from_str(&result.as_string().ok_or("Invalid text measurement")?)
+                        .map_err(|_| "Invalid text measurement")?;
+                if size
+                    .iter()
+                    .any(|v| !v.is_finite() || !(1.0..=1_000_000.0).contains(v))
+                {
+                    return Err("Text exceeds supported dimensions".into());
+                }
+                if sizing == "width" && !(in_layout && s.layout_item.fill_width) {
+                    s.width = size[0];
+                }
+                if !(in_layout && s.layout_item.fill_height) {
+                    s.height = size[1];
+                }
+            }
+            reflow(document);
+            if document.shapes.iter().zip(before).all(|(s, (x, y, w, h))| {
+                (s.x - x).abs() < 0.001
+                    && (s.y - y).abs() < 0.001
+                    && (s.width - w).abs() < 0.001
+                    && (s.height - h).abs() < 0.001
+            }) {
+                return Ok(());
+            }
+        }
+        Err("Text and frame sizing did not converge; use a fixed frame size".into())
+    }
+
     fn descendants(&self, ids: &[u32]) -> Vec<u32> {
         let mut found: std::collections::HashSet<u32> = ids.iter().copied().collect();
         loop {
@@ -519,7 +613,7 @@ impl Editor {
         let mut ordered = vec![];
         append(0, &document.shapes, &mut ordered);
         document.shapes = ordered;
-        reflow(&mut document);
+        self.reflow_text(&mut document)?;
         validate(&document)?;
         if document != self.document {
             self.undo.push(self.document.clone());
@@ -544,6 +638,7 @@ impl Editor {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
+            text_measurer: None,
             document: Document {
                 version: 2,
                 name: "Untitled design".into(),
@@ -560,6 +655,19 @@ impl Editor {
 
     pub fn snapshot(&self) -> String {
         serde_json::to_string(&self.document).unwrap()
+    }
+
+    pub fn set_text_measurer(&mut self, callback: js_sys::Function) {
+        self.text_measurer = Some(callback);
+    }
+
+    // Font availability is environment state, not a user edit.
+    pub fn refresh_text_layout(&mut self) -> Result<(), String> {
+        let mut document = self.document.clone();
+        self.reflow_text(&mut document)?;
+        validate(&document)?;
+        self.document = document;
+        Ok(())
     }
 
     pub fn copy_layers(&self, json: &str) -> Result<String, String> {
@@ -826,6 +934,7 @@ impl Editor {
 
     pub fn preview_update_many(&self, json: &str) -> Result<String, String> {
         let mut staged = Editor {
+            text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -881,6 +990,7 @@ impl Editor {
         let shapes: Vec<Shape> = serde_json::from_str(json).map_err(|e| e.to_string())?;
         let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
         let mut staged = Editor {
+            text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -994,6 +1104,7 @@ impl Editor {
             - y
             + 16.0;
         let mut staged = Editor {
+            text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],

@@ -1,5 +1,5 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
-import { textStyle, fontCss, layoutText, textSvg } from './typography.js';
+import { textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
 import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, descendants, visibleInTree } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
@@ -189,6 +189,7 @@ function renderProperties() {
     $('font-family').value = style.font_family; $('font-size').value = Math.round(style.font_size * 100) / 100;
     $('font-weight').value = style.font_weight; $('line-height').value = style.line_height;
     $('text-align').value = style.align; $('text-wrap').checked = style.wrap;
+    $('text-sizing').value=style.sizing; $('text-wrap').disabled=style.sizing!=='fixed';
     $('text-overflow').hidden = !textLayout(shape).overflow;
   }
 }
@@ -222,7 +223,7 @@ function draw() {
   ctx.translate(pan.x, pan.y); ctx.scale(zoom, zoom);
   const previews = gesture?.previews || (gesture?.preview ? [gesture.preview] : []);
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
-  if(gesture?.type==='resize'&&gesture.original.kind==='frame'){try{scene=JSON.parse(editor.preview_update_many(JSON.stringify(previews))).shapes.filter(s=>s.page_id===doc.active_page);}catch{scene=pageShapes();}}
+  if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{scene=JSON.parse(editor.preview_update_many(JSON.stringify(previews))).shapes.filter(s=>s.page_id===doc.active_page);}catch{scene=pageShapes();}}
   drawScene(scene,ctx,drawShape);
   if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radius(frame));ctx.clip();}drawShape(preview);ctx.restore();}
   if (penPoints.length) { const preview=fromPoints('pen',penPoints); drawShape(preview); drawAnchors(penPoints); }
@@ -339,7 +340,7 @@ function bind() {
     const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace;pasteInPlace=false;
     if(payload){event.preventDefault();safe(()=>pasteLayerText(text,inPlace));return;}
     const item=[...event.clipboardData.items].find(i=>i.kind==='file'&&i.type.startsWith('image/'));if(item){event.preventDefault();const file=item.getAsFile();if(file)placeImage(file);return;}
-    if(text){event.preventDefault();safe(()=>{if(new TextEncoder().encode(text).length>10000)throw new Error('Text layers are limited to 10 KB');const start={x:(canvas.clientWidth/2-pan.x)/zoom-200,y:(canvas.clientHeight/2-pan.y)/zoom-20};const shape={id:0,kind:'text',name:text.split('\n')[0].slice(0,80)||'Pasted text',...start,width:400,height:24,fill:'#1e1e1e',text,hidden:false,typography:{font_family:'Manrope',font_size:16,font_weight:400,line_height:1.4,align:'left',wrap:true}};shape.height=Math.max(1,Math.ceil(textLayout(shape).height));setSelection([insertAt(shape,start)]);refresh();toast('Text pasted');});}
+    if(text){event.preventDefault();safe(()=>{if(new TextEncoder().encode(text).length>10000)throw new Error('Text layers are limited to 10 KB');const start={x:(canvas.clientWidth/2-pan.x)/zoom-200,y:(canvas.clientHeight/2-pan.y)/zoom-20};const shape={id:0,kind:'text',name:text.split('\n')[0].slice(0,80)||'Pasted text',...start,width:400,height:24,fill:'#1e1e1e',text,hidden:false,typography:{sizing:'height',font_family:'Manrope',font_size:16,font_weight:400,line_height:1.4,align:'left',wrap:true}};shape.height=Math.max(1,Math.ceil(textLayout(shape).height));setSelection([insertAt(shape,start)]);refresh();toast('Text pasted');});}
   });
   $('clip-content').onchange=()=>{if(current()?.kind==='frame')update({...current(),clip_content:$('clip-content').checked});};
   $('move-to-frame').onclick=()=>safe(()=>{editor.reparent_many(selectionJson(),Number($('parent-frame').value));refresh();});
@@ -369,6 +370,7 @@ function bind() {
   $('multi-fill').onchange = () => updateMany(selectionShapes().map(s => ({...s,fill:$('multi-fill').value})));
   $('multi-duplicate').onclick = duplicateSelection; $('multi-delete').onclick = deleteSelection;
   const styleFields = { 'font-family': 'font_family', 'font-size': 'font_size', 'font-weight': 'font_weight', 'line-height': 'line_height', 'text-align': 'align', 'text-wrap': 'wrap' };
+  $('text-sizing').onchange=()=>{const s=current();if(s?.kind!=='text')return;const sizing=$('text-sizing').value;update({...s,typography:{...textStyle(s),sizing},layout_item:{...s.layout_item,fill_width:sizing==='width'?false:s.layout_item.fill_width,fill_height:sizing!=='fixed'?false:s.layout_item.fill_height}});};
   for (const [id, key] of Object.entries(styleFields)) $(id).onchange = () => {
     const shape = current(); if (shape?.kind !== 'text') return;
     const value = id === 'text-wrap' ? $(id).checked : ['font-size', 'font-weight', 'line-height'].includes(id) ? Number($(id).value) : $(id).value;
@@ -382,7 +384,7 @@ function bind() {
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
     else if(current()?.points?.length) $('edit-path').click();
   };
-  document.fonts.addEventListener('loadingdone', () => { draw(); if (current()?.kind === 'text') $('text-overflow').hidden = !textLayout(current()).overflow; });
+  document.fonts.addEventListener('loadingdone', () => safe(()=>{editor.refresh_text_layout();refresh();}));
   $('add-page').onclick = () => safe(() => { editor.add_page(); refresh(); setTool('select'); toast('New page added — pick a tool to start designing'); });
   $('delete-page').onclick = () => safe(() => { editor.delete_page(doc.active_page); refresh(); toast('Page deleted. Use Undo to restore it.'); });
   $('rename-page').onclick = () => { $('page-name').value = activePage().name; $('page-dialog').showModal(); $('page-name').focus(); $('page-name').select(); };
@@ -398,7 +400,7 @@ function bind() {
   $('document-name').onchange = () => safe(() => { editor.load(JSON.stringify({ ...doc, name: $('document-name').value.trim() || 'Untitled design' })); refresh(); });
   for (const key of ['x', 'y', 'width', 'height', 'fill', 'text']) $(key).onchange = () => {
     if (!current()) return; const value = ['x', 'y', 'width', 'height'].includes(key) ? Number($(key).value) : $(key).value;
-    update({ ...current(), [key]: value }); renderProperties();
+    update(resizeText({ ...current(), [key]: value },key==='width',key==='height')); renderProperties();
   };
   $('shape-name').onchange = () => current() && update({ ...current(), name: $('shape-name').value });
   $('visible').onchange = () => current() && update({ ...current(), hidden: !$('visible').checked });
@@ -420,7 +422,7 @@ function bind() {
     canvas.focus(); canvas.setPointerCapture(event.pointerId);
     const p = point(event);
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
-    if (tool === 'text') { setSelection([insertAt({id:0,kind:'text',name:'Text',x:p.x,y:p.y,width:240,height:56,fill:'#000000',text:'Your next big idea',hidden:false,typography:{font_size:32,font_family:'Manrope',font_weight:600,align:'left',line_height:1.2,wrap:true}},p)]); setTool('select'); refresh(); return; }
+    if (tool === 'text') { setSelection([insertAt({id:0,kind:'text',name:'Text',x:p.x,y:p.y,width:240,height:56,fill:'#000000',text:'Your next big idea',hidden:false,typography:{sizing:'width',font_size:32,font_family:'Manrope',font_weight:600,align:'left',line_height:1.2,wrap:true}},p)]); setTool('select'); refresh(); return; }
     if (tool === 'pen') {
       if(penPoints.length>=2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
       if(penPoints.length<4096) { penPoints.push(p); gesture={type:'pen-handle',index:penPoints.length-1}; } draw(); return;
@@ -500,6 +502,7 @@ function bind() {
       const x = gesture.cx ? original.x : Math.min(right - 1, snap(p.x));
       const y = gesture.cy ? original.y : Math.min(bottom - 1, snap(p.y));
       gesture.preview = { ...original, x, y, width: gesture.cx ? Math.max(1, snap(p.x) - x) : right - x, height: gesture.cy ? Math.max(1, snap(p.y) - y) : bottom - y };
+      gesture.preview=resizeText(gesture.preview,!!gesture.cx,!!gesture.cy);
     }
     draw();
   };
@@ -574,10 +577,11 @@ function seed() {
 }
 try {
   await init(); editor = new Editor();
+  editor.set_text_measurer(json=>{const s=JSON.parse(json);measureCtx.font=fontCss(textStyle(s));return JSON.stringify(textSize(s,value=>measureCtx.measureText(value).width));});
   let stored;
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
   bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
-  await document.fonts.ready; draw();
+  await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }
