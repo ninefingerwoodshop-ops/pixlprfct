@@ -1,4 +1,86 @@
 use crate::{constrain_axis, Document, Shape};
+
+// Use the existing rows while dragging: removing a child first would move the
+// drop targets underneath the pointer and make wrapped reordering unstable.
+pub(crate) fn drop_before(
+    doc: &Document,
+    parent: u32,
+    moving: &[u32],
+    x: f64,
+    y: f64,
+) -> Option<u32> {
+    let frame = doc.shapes.iter().find(|s| s.id == parent)?;
+    let layout = frame.auto_layout.as_ref()?;
+    let horizontal = layout.direction == "horizontal";
+    let main = if horizontal { x } else { y };
+    let cross = if horizontal { y } else { x };
+    let items: Vec<_> = doc
+        .shapes
+        .iter()
+        .enumerate()
+        .filter(|(_, s)| s.parent_id == parent && !s.hidden && !s.layout_item.absolute)
+        .map(|(i, _)| i)
+        .collect();
+    let available = if horizontal {
+        frame.width - layout.padding_left - layout.padding_right
+    } else {
+        frame.height - layout.padding_top - layout.padding_bottom
+    };
+    let rows = lines(
+        &doc.shapes,
+        &items,
+        horizontal,
+        layout.wrap,
+        available,
+        layout.gap,
+    );
+    let row = if layout.wrap {
+        rows.iter()
+            .enumerate()
+            .min_by(|(_, a), (_, b)| {
+                let distance = |line: &Vec<usize>| {
+                    let start = line
+                        .iter()
+                        .map(|&i| {
+                            if horizontal {
+                                doc.shapes[i].y
+                            } else {
+                                doc.shapes[i].x
+                            }
+                        })
+                        .fold(f64::INFINITY, f64::min);
+                    let end = line
+                        .iter()
+                        .map(|&i| {
+                            if horizontal {
+                                doc.shapes[i].y + doc.shapes[i].height
+                            } else {
+                                doc.shapes[i].x + doc.shapes[i].width
+                            }
+                        })
+                        .fold(f64::NEG_INFINITY, f64::max);
+                    (start - cross).max(cross - end).max(0.0)
+                };
+                distance(a).total_cmp(&distance(b))
+            })
+            .map(|(i, _)| i)?
+    } else {
+        0
+    };
+    rows.iter()
+        .enumerate()
+        .skip(row)
+        .flat_map(|(r, line)| line.iter().map(move |&i| (r, i)))
+        .find_map(|(r, i)| {
+            let s = &doc.shapes[i];
+            let center = if horizontal {
+                s.x + s.width / 2.0
+            } else {
+                s.y + s.height / 2.0
+            };
+            (!moving.contains(&s.id) && (r > row || main < center)).then_some(s.id)
+        })
+}
 fn size(s: &Shape, horizontal: bool) -> f64 {
     if horizontal {
         s.width

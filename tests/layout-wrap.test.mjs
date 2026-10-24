@@ -38,3 +38,15 @@ test('auto width text stops at max width and grows vertically with wrapped lines
  edit(e,t,{text:'Hello world hello',typography:{font_size:20,font_family:'Manrope',font_weight:400,align:'left',line_height:1.2,wrap:false,sizing:'width'},layout_item:{max_width:60}});
  assert.deepEqual([get(e,t).width,get(e,t).height],[60,68]);const before=e.snapshot();edit(e,t,{layout_item:{max_width:200}});assert.deepEqual([get(e,t).width,get(e,t).height],[170,20]);e.undo();assert.equal(e.snapshot(),before);e.free();
 });
+test('drag reorder follows the targeted wrapped row or column and restores with undo',()=>{
+ for(const direction of ['horizontal','vertical']){
+  const {e,f,ids:[a,b,c]}=setup();if(direction==='vertical')edit(e,f,{width:240,height:70,auto_layout:{...layout,direction,hug_height:false}});
+  const before=e.snapshot(),target=get(e,c),moving=get(e,a);
+  const drop=direction==='horizontal'?{x:target.x+target.width+20,y:target.y}:{x:target.x,y:target.y+target.height+20};
+  e.move_into(JSON.stringify([{...moving,...drop}]),f);
+  assert.deepEqual(JSON.parse(e.snapshot()).shapes.filter(s=>s.parent_id===f).map(s=>s.id),[b,c,a]);
+  e.undo();assert.equal(e.snapshot(),before);
+  const first=get(e,a);e.move_into(JSON.stringify([{...get(e,c),x:first.x-20,y:first.y-20}]),f);
+  assert.deepEqual(JSON.parse(e.snapshot()).shapes.filter(s=>s.parent_id===f).map(s=>s.id),[c,a,b]);e.free();
+ }
+});

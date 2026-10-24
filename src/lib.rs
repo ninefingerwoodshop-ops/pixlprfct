@@ -1138,7 +1138,7 @@ impl Editor {
         };
         staged.update_many(json)?;
         staged.reparent_many(&serde_json::to_string(&ids).unwrap(), parent)?;
-        if let Some(layout) = staged
+        if let Some(_layout) = staged
             .document
             .shapes
             .iter()
@@ -1150,37 +1150,10 @@ impl Editor {
                 .filter(|s| !ids.contains(&s.parent_id) && !s.layout_item.absolute)
                 .collect();
             if !roots.is_empty() {
-                let horizontal = layout.direction == "horizontal";
-                let position = roots
-                    .iter()
-                    .map(|s| {
-                        if horizontal {
-                            s.x + s.width / 2.0
-                        } else {
-                            s.y + s.height / 2.0
-                        }
-                    })
-                    .sum::<f64>()
-                    / roots.len() as f64;
-                let target = self
-                    .document
-                    .shapes
-                    .iter()
-                    .filter(|s| {
-                        s.parent_id == parent
-                            && !ids.contains(&s.id)
-                            && !s.hidden
-                            && !s.layout_item.absolute
-                    })
-                    .find(|s| {
-                        position
-                            < if horizontal {
-                                s.x + s.width / 2.0
-                            } else {
-                                s.y + s.height / 2.0
-                            }
-                    })
-                    .map(|s| s.id);
+                let x = roots.iter().map(|s| s.x + s.width / 2.0).sum::<f64>() / roots.len() as f64;
+                let y =
+                    roots.iter().map(|s| s.y + s.height / 2.0).sum::<f64>() / roots.len() as f64;
+                let target = layout::drop_before(&self.document, parent, &ids, x, y);
                 let root_ids: Vec<_> = roots.iter().map(|s| s.id).collect();
                 let moving: Vec<_> = staged
                     .document
