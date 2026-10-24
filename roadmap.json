@@ -76,9 +76,11 @@
     "first/last-on-top auto-layout canvas stacking with stable layout/layer order, subtree paint contexts, matching canvas/SVG export and Rust edit/prototype hits, frame drop targeting, component overrides and persistence",
     "grid auto layout with fixed/hug/weighted fractional tracks, minimum/maximum bounds, explicit and automatic rows, row/column spans, cell alignment, nested sizing, cell drops, inspector controls, component overrides, scaling and atomic history",
     "canvas grid track resizing and row/column gutter handles with Rust preview geometry, fixed-size conversion, bounds, automatic-row expansion, keyboard editing, nonnegative gaps and atomic undo",
-    "grid track reordering through inspector and canvas keyboard controls with transitive span-connected blocks, destination span preservation, hidden pinned cells, stable paint order, component propagation, selection tracking and atomic history"
+    "grid track reordering through inspector and canvas keyboard controls with transitive span-connected blocks, destination span preservation, hidden pinned cells, stable paint order, component propagation, selection tracking and atomic history",
+    "component creation from shapes and sibling multi-selections with transparent wrapping, tight bounds, linked instances, Ctrl/Command Alt K, selection context menu and Assets entry point"
   ],
   "remaining": [
+    "Figma workflow audit: full Assets panel and libraries, comprehensive context menus and tool discovery; nested component creation",
     "Additional frame layout controls and per-edge stroke weights",
     "Nested groups and complete tree reordering",
     "Broader SVG import: compound/even-odd fills, repeating gradients and radial focal circles larger than the outer circle, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
