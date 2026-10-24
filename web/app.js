@@ -4,6 +4,7 @@ import { bounds, marqueeSelection, layerRange, expandGroups, selectedGroup, desc
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
 import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-edit.js';
+import {exportShapes,exportBounds,exportSize,svgDocument} from './export.js';
 import {LAYER_MIME,layerPayload,pasteOffset} from './clipboard.js';
 import {appearance,radius,paintAttributes,drawScene,sceneSvg} from './appearance.js';
 import { scaleShapes } from './scaling.js';
@@ -23,6 +24,7 @@ let penPoints = [];
 let editingPath = 0;
 let activeNode=-1;
 let lastPasted='',pasteCount=0,pasteInPlace=false;
+let exportBusy=false;
 let selectedIds = new Set(), layerAnchor = 0;
 function setSelection(ids) { selectedIds = new Set(ids); selected = ids.at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} }
 function selectionShapes() { return pageShapes().filter(s => selectedIds.has(s.id)); }
@@ -190,13 +192,17 @@ function renderProperties() {
     $('text-overflow').hidden = !textLayout(shape).overflow;
   }
 }
+function rasterEntry(data){
+ let entry=imageCache.get(data);if(entry)return entry;const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);
+ entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
+}
 function drawShape(shape, target=ctx) {
   const ctx=target,a=appearance(shape);
   if (shape.hidden) return;
   ctx.fillStyle = shape.fill;ctx.strokeStyle=a.stroke_color;ctx.lineWidth=shape.stroke_width??2;ctx.lineCap='round';ctx.lineJoin='round';
   const outline=new Path2D();if(shape.kind==='ellipse')outline.ellipse(shape.x+shape.width/2,shape.y+shape.height/2,shape.width/2,shape.height/2,0,0,Math.PI*2);else outline.roundRect(shape.x,shape.y,shape.width,shape.height,radius(shape));
   ctx.save();if(shape.kind==='image')ctx.clip(outline);
-  if(shape.kind==='image'&&shape.image){const data=shape.image.data_url;let entry=imageCache.get(data);if(!entry){const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);bitmap.onload=()=>{entry.ready=true;draw();};bitmap.onerror=()=>{entry.failed=true;toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;}if(entry.ready){const p=imageLayout(shape);ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh);}else{ctx.fillStyle='#e5e7eb';ctx.fillRect(shape.x,shape.y,shape.width,shape.height);}}
+  if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh);}else{ctx.fillStyle='#e5e7eb';ctx.fillRect(shape.x,shape.y,shape.width,shape.height);}}
   else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)ctx.fill(path);if(a.stroke_enabled)ctx.stroke(path); }
   else if (shape.kind === 'text') {
     ctx.save(); ctx.beginPath(); ctx.rect(shape.x, shape.y, shape.width, shape.height); ctx.clip();
@@ -277,19 +283,20 @@ function pasteLayerText(text,overSelection=false){
   const count=text===lastPasted?pasteCount+1:1,target=overSelection?current():current()?.kind==='frame'?current():null,offset=pasteOffset(payload,target,overSelection,count);
   setSelection(JSON.parse(editor.paste_layers(text,offset.x,offset.y,overSelection?(target?.parent_id??0):(target?.id??0))));lastPasted=text;pasteCount=count;refresh();toast('Layers pasted');return true;
 }
-async function exportSvg() {
-  await document.fonts.ready;
-  const shapes = pageShapes().filter(s => visibleInTree(s,pageShapes())); if (!shapes.length) { toast('Add something to the canvas first.'); return; }
-  const box=bounds(shapes.map(s=>paintBounds(s,pageShapes())).filter(Boolean));if(!box){toast('Nothing visible to export');return;}const {x,y,width:w,height:h}=box;
-  const renderSvg=s=>{
-    if(s.kind==='image')return `<clipPath id="image-clip-${s.id}"><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}"/></clipPath><g clip-path="url(#image-clip-${s.id})">${imageSvg(s)}</g><rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}" ${paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}})}/>`;
-    if (s.points?.length) return vectorSvg(s);
-    if (s.kind === 'ellipse') return `<ellipse cx="${s.x + s.width / 2}" cy="${s.y + s.height / 2}" rx="${s.width / 2}" ry="${s.height / 2}" ${paintAttributes(s)}/>`;
-    if (s.kind === 'text') return textSvg(s, textLayout(s));
-    return `<rect x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}" rx="${radius(s)}" ${paintAttributes(s)}/>`;
-  };
-  const body=clipDefinitions(shapes)+sceneSvg(shapes,renderSvg);
-  download(`${doc.name || 'design'} - ${activePage().name}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}">${body}</svg>`, 'image/svg+xml'); toast('Current page exported as SVG');
+function exportOptions(){return{format:$('export-format').value,scope:$('export-scope').value,scale:Number($('export-scale').value),background:$('export-transparent').checked?null:$('export-background').value};}
+function exportSummary(){try{const o=exportOptions(),shapes=exportShapes(pageShapes(),[...selectedIds],o.scope),box=exportBounds(shapes),size=exportSize(box,o.scale,o.format,shapes);$('export-summary').textContent=size.width+' × '+size.height+' px · '+shapes.length+' layers';$('export-download').disabled=false;}catch(error){$('export-summary').textContent=String(error);$('export-download').disabled=true;}$('export-background').disabled=$('export-transparent').checked;}
+async function exportArtwork(){
+ if(exportBusy)return;
+ const options=exportOptions(),shapes=structuredClone(exportShapes(pageShapes(),[...selectedIds],options.scope)),box=exportBounds(shapes),size=exportSize(box,options.scale,options.format,shapes);
+ const name=doc.name+' - '+(options.scope==='selection'?(current()?.name??'selection'):activePage().name);
+ exportBusy=true;for(const id of ['export-format','export-scope','export-scale','export-transparent','export-background'])$(id).disabled=true;$('export-download').disabled=true;$('export-cancel').disabled=true;$('export-summary').textContent='Preparing export…';
+ try{await document.fonts.ready;
+  if(options.format==='svg')download(name+'.svg',svgDocument(shapes,box,options.scale,options.background,textLayout),'image/svg+xml');
+  else{const entries=shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url));await Promise.all(entries.map(e=>e.promise));if(entries.some(e=>!e.ready))throw new Error('An embedded image could not be decoded');
+   const surface=new OffscreenCanvas(size.width,size.height),output=surface.getContext('2d');if(options.background){output.fillStyle=options.background;output.fillRect(0,0,size.width,size.height);}output.setTransform(options.scale,0,0,options.scale,-box.x*options.scale,-box.y*options.scale);drawScene(shapes,output,drawShape);download(name+'.png',await surface.convertToBlob({type:'image/png'}),'image/png');
+  }
+  $('export-dialog').close();toast(options.format.toUpperCase()+' exported');
+ }finally{exportBusy=false;for(const id of ['export-format','export-scope','export-scale','export-transparent','export-background'])$(id).disabled=false;$('export-background').disabled=$('export-transparent').checked;$('export-download').disabled=false;$('export-cancel').disabled=false;}
 }
 function finishPen(closed) {
   if(penPoints.length<2) return;
@@ -306,6 +313,7 @@ async function placeImage(file,location=null,replaceId=0) {
 }
 function bind() {
   installIcons();
+  $('export-dialog').addEventListener('cancel',event=>{if(exportBusy)event.preventDefault();});
   $('paste-over').onclick=async()=>{let text;try{text=await navigator.clipboard.readText();}catch{pasteInPlace=true;toast('Press Ctrl/Cmd V to paste over the selection');return;}safe(()=>{if(!pasteLayerText(text,true))toast('Copy PixlPrfct layers first');});};
   for(const kind of ['copy','cut'])window.addEventListener(kind,event=>{
     if(event.target.closest('input,textarea,select,[contenteditable]')||!selectedIds.size||!event.clipboardData)return;
@@ -399,7 +407,9 @@ function bind() {
   $('forward').onclick = () => safe(() => { if (current()) { editor.reorder(selected, 1); refresh(); } });
   $('backward').onclick = () => safe(() => { if (current()) { editor.reorder(selected, -1); refresh(); } });
   $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
-  $('export').onclick = () => exportSvg().catch(error => toast(`Could not export: ${error}`)); $('open').onclick = () => $('file').click();
+  $('export').onclick=()=>{$('export-selection-option').disabled=!selectedIds.size;$('export-scope').value=selectedIds.size?'selection':'page';exportSummary();$('export-dialog').showModal();};
+  for(const id of ['export-format','export-scope','export-scale','export-transparent','export-background'])$(id).onchange=exportSummary;
+  $('export-cancel').onclick=()=>$('export-dialog').close();$('export-download').onclick=()=>exportArtwork().catch(error=>{$('export-summary').textContent=String(error);}); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
     try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); editor.load(text); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
@@ -516,7 +526,7 @@ function bind() {
     else { pan.x -= event.shiftKey ? event.deltaY : event.deltaX; pan.y -= event.shiftKey ? 0 : event.deltaY; draw(); }
   }, { passive: false });
   window.addEventListener('keydown', event => {
-    if ($('page-dialog').open || $('shortcuts-dialog').open) return;
+    if ($('page-dialog').open || $('shortcuts-dialog').open || $('export-dialog').open) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(mod&&key==='v'){pasteInPlace=event.shiftKey||pasteInPlace;return;}

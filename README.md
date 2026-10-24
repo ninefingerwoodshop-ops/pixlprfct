@@ -19,7 +19,7 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 ## First milestone
 
 - Canvas pan/zoom, rectangles, ellipses, text, and visual frame backgrounds.
-- Shape and pen menus with line, arrow, polygon, star, point-by-point pen, and freehand pencil tools. Drag to draw shapes; Shift constrains proportions or line angles, and Alt draws from the center. Vector color and stroke weight are editable, with normalized geometry that survives resizing, history, save/load, and SVG export.
+- Shape and pen menus with line, arrow, polygon, star, point-by-point pen, and freehand pencil tools. Drag to draw shapes; Shift constrains proportions or line angles, and Alt draws from the center. Vector color and stroke weight are editable, with normalized geometry that survives resizing, history, save/load, and PNG/SVG export.
 - Multiple pages: create, rename, switch, and delete with undo. Each page has independent layers and an in-session pan/zoom position.
 - Multi-selection, marquee selection, dragging, single-object corner resizing, arrow-key nudging, and axis-constrained movement while holding Shift.
 - Align to selection bounds, distribute equal gaps, and batch fill, duplicate, delete, and move operations with one undo step per operation.
@@ -68,8 +68,10 @@ Interface references: [current navigation](https://help.figma.com/hc/en-us/artic
 
 Local storage belongs to this browser and origin; use **Save file** for portable backups. Multiple tabs do not merge edits. The desktop application is not implemented yet.
 
-Use **+ New page** in the Pages sidebar to start another canvas. Select a page and use **Rename** or **Delete page** below the list. At least one page must remain. On narrow screens the page picker and page controls appear above the canvas. Save files include every page; SVG export includes only the current page. Version 1 files and existing local designs automatically migrate to Page 1 in the version 2 format. Page navigation does not consume undo history; undo/redo of an edit returns to its saved active page.
+Use **+ New page** in the Pages sidebar to start another canvas. Select a page and use **Rename** or **Delete page** below the list. At least one page must remain. On narrow screens the page picker and page controls appear above the canvas. Save files include every page; artwork export includes the current page or selected layers. Version 1 files and existing local designs automatically migrate to Page 1 in the version 2 format. Page navigation does not consume undo history; undo/redo of an edit returns to its saved active page.
 
 ## Hosting
 
 The `dist/` output is a static website. Serve `.wasm` as `application/wasm`. No backend or secrets are required. Build with `npm run build` before uploading; generated `dist/` and `web/pkg/` are not committed.
+
+Export opens a dialog for PNG or SVG, current page or selection, 0.25–8× scale, and transparent or solid backgrounds. Selection export includes selected frame descendants and their clipping/opacity, independently of unselected ancestors. PNG waits for embedded images and fonts, then uses the same compositing renderer as the canvas. PNG output is limited to 8192 pixels per edge and 16 megapixels; deeply nested translucent frames have an additional memory limit. SVG retains editable vectors and embedded images, but relies on available fonts. PDF, JPEG, slices, and batch export remain pending.

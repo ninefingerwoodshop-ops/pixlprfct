@@ -20,7 +20,8 @@
     "uniform corner radius, composited layer/frame opacity, independent solid fill and centered stroke",
     "horizontal/vertical auto layout, padding, gap, alignment, hug/fill sizing, ignored children and drag reordering",
     "vector anchor insertion/deletion, curve-preserving subdivision, corner/smooth conversion and anchor nudging",
-    "layer copy/cut/paste across pages and files, frame subtree/group remapping, paste over selection and plain-text paste"
+    "layer copy/cut/paste across pages and files, frame subtree/group remapping, paste over selection and plain-text paste",
+    "PNG/SVG page and selection export, resolution scaling, transparent/solid backgrounds and bounded raster memory"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
@@ -32,7 +33,7 @@
     "Components, instances, variants, reusable styles and variables",
     "Prototyping interactions and presentation mode",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
-    "Broader export formats, accessibility and performance validation",
+    "PDF/JPEG and batch export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope"
   ],
   "deferred": [
