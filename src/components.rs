@@ -30,6 +30,7 @@ const FIELDS: &[&str] = &[
     "layout_grids",
     "guide_style",
     "prototype",
+    "additional_interactions",
     "layout_item",
     "constraints",
     "width",
@@ -121,6 +122,10 @@ fn apply_overrides(
     let defaults = effective_value(shape);
     let old = effective_value(previous);
     for path in overrides {
+        if path == "prototype" {
+            value["additional_interactions"] =
+                serde_json::to_value(&previous.additional_interactions).unwrap();
+        }
         if path == "x" || path == "y" {
             continue;
         }
@@ -262,6 +267,15 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
         }
         if a["layout_grids"] != b["layout_grids"] || a["guide_style"] != b["guide_style"] {
             for field in ["layout_grids", "guide_style"] {
+                if !changed.iter().any(|p| p == field) {
+                    changed.push(field.into());
+                }
+            }
+        }
+        if a["prototype"] != b["prototype"]
+            || a["additional_interactions"] != b["additional_interactions"]
+        {
+            for field in ["prototype", "additional_interactions"] {
                 if !changed.iter().any(|p| p == field) {
                     changed.push(field.into());
                 }
@@ -637,7 +651,9 @@ impl Editor {
             return Err("Select an instance layer".into());
         };
         overrides.retain(|p| {
-            p != path
+            !(["prototype", "additional_interactions"].contains(&path)
+                && ["prototype", "additional_interactions"].contains(&p.as_str()))
+                && p != path
                 && !p.starts_with(&format!("{path}."))
                 && !(["layout_grids", "guide_style"].contains(&path)
                     && ["layout_grids", "guide_style"].contains(&p.as_str()))

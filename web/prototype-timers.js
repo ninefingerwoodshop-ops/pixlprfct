@@ -1,7 +1,8 @@
+import {interactionFor} from './prototype-interactions.js';
 import {visibleInTree} from './selection.js';
 
 export function timedInteractions(scene){
- return scene.filter(s=>s.kind==='frame'&&s.prototype?.trigger==='afterdelay'&&visibleInTree(s,scene)).map(s=>({id:s.id,delay:s.prototype.delay??800}));
+ return scene.filter(s=>s.kind==='frame'&&interactionFor(s,'afterdelay')&&visibleInTree(s,scene)).map(s=>({id:s.id,delay:interactionFor(s,'afterdelay').delay??800}));
 }
 
 // A visit owns its timers. Repainting pauses elapsed time without rearming fired

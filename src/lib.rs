@@ -32,6 +32,8 @@ pub struct Shape {
     #[serde(default)]
     pub prototype: Option<Prototype>,
     #[serde(default)]
+    pub additional_interactions: Vec<Prototype>,
+    #[serde(default)]
     pub flow_name: String,
     #[serde(default)]
     pub layout_item: LayoutItem,
@@ -86,6 +88,34 @@ pub struct LayoutGrid {
     pub color: String,
     pub opacity: f64,
     pub visible: bool,
+}
+
+impl Shape {
+    fn interactions(&self) -> impl Iterator<Item = &Prototype> {
+        self.prototype
+            .iter()
+            .chain(self.additional_interactions.iter())
+    }
+    fn interactions_mut(&mut self) -> impl Iterator<Item = &mut Prototype> {
+        self.prototype
+            .iter_mut()
+            .chain(self.additional_interactions.iter_mut())
+    }
+    fn retain_interactions(&mut self, keep: impl Fn(&Prototype) -> bool) {
+        let mut interactions: Vec<_> = self
+            .prototype
+            .take()
+            .into_iter()
+            .chain(self.additional_interactions.drain(..))
+            .filter(keep)
+            .collect();
+        self.prototype = if interactions.is_empty() {
+            None
+        } else {
+            Some(interactions.remove(0))
+        };
+        self.additional_interactions = interactions;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -492,7 +522,16 @@ fn validate(document: &Document) -> Result<(), String> {
                 "Flow starting points require a frame and a name of at most 128 bytes".into(),
             );
         }
-        if let Some(p) = &shape.prototype {
+        if shape.additional_interactions.len() > 3
+            || (shape.prototype.is_none() && !shape.additional_interactions.is_empty())
+        {
+            return Err("Additional interactions require a primary interaction; at most four triggers are supported".into());
+        }
+        let mut triggers = std::collections::HashSet::new();
+        for p in shape.interactions() {
+            if !triggers.insert(&p.trigger) {
+                return Err("Each prototype trigger may occur only once per layer".into());
+            }
             if !["click", "mouseenter", "mouseleave", "afterdelay"].contains(&p.trigger.as_str()) {
                 return Err("Invalid prototype trigger".into());
             }
@@ -922,7 +961,7 @@ impl Editor {
         let mut hit = staged.hit_test(x, y);
         while hit != 0 {
             let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
-            if let Some(p) = &s.prototype {
+            for p in s.interactions() {
                 if let Some(index) = ["click", "mouseenter", "mouseleave"]
                     .iter()
                     .position(|t| *t == p.trigger)
@@ -968,12 +1007,10 @@ impl Editor {
             .map(|s| s.id)
             .collect();
         for s in &mut document.shapes {
-            if s.prototype.as_ref().is_some_and(|p| {
-                ["navigate", "overlay", "swap"].contains(&p.action.as_str())
-                    && removed.contains(&p.target)
-            }) {
-                s.prototype = None;
-            }
+            s.retain_interactions(|p| {
+                !(["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                    && removed.contains(&p.target))
+            });
         }
         variants::prune(&mut document);
         component_properties::prune(&mut document);
@@ -1027,13 +1064,11 @@ impl Editor {
             .map(|s| s.id)
             .collect();
         for s in &mut document.shapes {
-            if s.prototype.as_ref().is_some_and(|p| {
-                ["navigate", "overlay", "swap"].contains(&p.action.as_str())
+            s.retain_interactions(|p| {
+                !(["navigate", "overlay", "swap"].contains(&p.action.as_str())
                     && before_sync.contains(&p.target)
-                    && !after_sync.contains(&p.target)
-            }) {
-                s.prototype = None;
-            }
+                    && !after_sync.contains(&p.target))
+            });
         }
         self.reflow_text(&mut document)?;
         validate(&document)?;
@@ -1121,12 +1156,10 @@ impl Editor {
                 let mut copy = s.clone();
                 copy.component = None;
                 copy.guide_style = 0;
-                if copy.prototype.as_ref().is_some_and(|p| {
-                    ["navigate", "overlay", "swap"].contains(&p.action.as_str())
-                        && !ids.contains(&p.target)
-                }) {
-                    copy.prototype = None;
-                }
+                copy.retain_interactions(|p| {
+                    !(["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                        && !ids.contains(&p.target))
+                });
                 if !ids.contains(&copy.parent_id) {
                     copy.parent_id = 0;
                 }
@@ -1193,7 +1226,7 @@ impl Editor {
         let mut roots = vec![];
         let mut document = self.document.clone();
         for mut s in payload.shapes {
-            if let Some(p) = &mut s.prototype {
+            for p in s.interactions_mut() {
                 if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                     p.target = ids[&p.target];
                 }
@@ -1287,7 +1320,7 @@ impl Editor {
                 if s.group_id > 0 {
                     s.group_id = *groups.entry(s.group_id).or_insert(s.id);
                 }
-                if let Some(p) = &mut s.prototype {
+                for p in s.interactions_mut() {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = mapping[&p.target];
                     }
@@ -1373,7 +1406,7 @@ impl Editor {
                         s.group_id = target.group_id;
                         s.group_name = target.group_name.clone();
                     }
-                    if let Some(p) = &mut s.prototype {
+                    for p in s.interactions_mut() {
                         if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                             p.target = ids[&p.target];
                         }
@@ -1454,6 +1487,7 @@ impl Editor {
             layout_grids: vec![],
             guide_style: 0,
             prototype: None,
+            additional_interactions: vec![],
             flow_name: String::new(),
             layout_item: LayoutItem::default(),
             kind: kind.into(),
@@ -1684,7 +1718,7 @@ impl Editor {
                 let mut copy = shape.clone();
                 copy.id = self.next_id + created.len() as u32;
                 copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
-                if let Some(p) = &mut copy.prototype {
+                for p in copy.interactions_mut() {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
