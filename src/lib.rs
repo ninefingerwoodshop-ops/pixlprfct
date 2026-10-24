@@ -10,6 +10,8 @@ pub struct Shape {
     pub group_id: u32,
     #[serde(default)]
     pub group_name: String,
+    #[serde(default)]
+    pub parent_id: u32,
     pub kind: String,
     pub name: String,
     pub x: f64,
@@ -159,6 +161,22 @@ fn validate(document: &Document) -> Result<(), String> {
     if !pages.contains(&document.active_page) {
         return Err("Active page not found".into());
     }
+    let by_id: std::collections::HashMap<u32, &Shape> =
+        document.shapes.iter().map(|s| (s.id, s)).collect();
+    for shape in &document.shapes {
+        let mut parent = shape.parent_id;
+        let mut seen = std::collections::HashSet::from([shape.id]);
+        while parent != 0 {
+            if !seen.insert(parent) || seen.len() > 128 {
+                return Err("Frame hierarchy contains a cycle or exceeds 128 levels".into());
+            }
+            let ancestor = by_id.get(&parent).ok_or("Parent frame not found")?;
+            if ancestor.kind != "frame" || ancestor.page_id != shape.page_id {
+                return Err("Parent must be a frame on the same page".into());
+            }
+            parent = ancestor.parent_id;
+        }
+    }
     let mut groups = std::collections::HashMap::new();
     for shape in &document.shapes {
         if shape.group_id == u32::MAX
@@ -168,7 +186,7 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Invalid group".into());
         }
         if shape.group_id > 0 {
-            let value = (shape.page_id, shape.group_name.as_str());
+            let value = (shape.page_id, shape.parent_id, shape.group_name.as_str());
             if let Some(previous) = groups.insert(shape.group_id, value) {
                 if previous != value {
                     return Err("Group members must share a page and name".into());
@@ -249,6 +267,26 @@ fn validate(document: &Document) -> Result<(), String> {
 }
 
 impl Editor {
+    fn descendants(&self, ids: &[u32]) -> Vec<u32> {
+        let mut found: std::collections::HashSet<u32> = ids.iter().copied().collect();
+        loop {
+            let before = found.len();
+            for s in &self.document.shapes {
+                if s.parent_id != 0 && found.contains(&s.parent_id) {
+                    found.insert(s.id);
+                }
+            }
+            if found.len() == before {
+                break;
+            }
+        }
+        self.document
+            .shapes
+            .iter()
+            .filter(|s| found.contains(&s.id))
+            .map(|s| s.id)
+            .collect()
+    }
     fn selection_ids(&self, json: &str) -> Result<Vec<u32>, String> {
         let ids: Vec<u32> = serde_json::from_str(json).map_err(|e| e.to_string())?;
         let unique: std::collections::HashSet<u32> = ids.iter().copied().collect();
@@ -267,8 +305,17 @@ impl Editor {
         Ok(ids)
     }
 
-    fn commit(&mut self, document: Document) -> Result<(), String> {
+    fn commit(&mut self, mut document: Document) -> Result<(), String> {
         validate(&document)?;
+        fn append(parent: u32, source: &[Shape], out: &mut Vec<Shape>) {
+            for s in source.iter().filter(|s| s.parent_id == parent) {
+                out.push(s.clone());
+                append(s.id, source, out);
+            }
+        }
+        let mut ordered = vec![];
+        append(0, &document.shapes, &mut ordered);
+        document.shapes = ordered;
         if document != self.document {
             self.undo.push(self.document.clone());
             if self.undo.len() > 100 {
@@ -365,6 +412,7 @@ impl Editor {
             page_id: document.active_page,
             group_id: 0,
             group_name: String::new(),
+            parent_id: 0,
             kind: kind.into(),
             name: format!("{} {}", kind, id),
             x,
@@ -408,16 +456,7 @@ impl Editor {
 
     pub fn update(&mut self, json: &str) -> Result<(), String> {
         let shape: Shape = serde_json::from_str(json).map_err(|e| e.to_string())?;
-        let mut document = self.document.clone();
-        let entry = document
-            .shapes
-            .iter_mut()
-            .find(|s| {
-                s.id == shape.id && s.page_id == document.active_page && shape.page_id == s.page_id
-            })
-            .ok_or("Shape not found")?;
-        *entry = shape;
-        self.commit(document)
+        self.update_many(&serde_json::to_string(&vec![shape]).unwrap())
     }
 
     pub fn update_many(&mut self, json: &str) -> Result<(), String> {
@@ -425,6 +464,23 @@ impl Editor {
         let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
         self.selection_ids(&serde_json::to_string(&ids).unwrap())?;
         let mut document = self.document.clone();
+        for child in document.shapes.iter_mut().filter(|s| !ids.contains(&s.id)) {
+            let mut parent = child.parent_id;
+            while parent != 0 {
+                let old = self
+                    .document
+                    .shapes
+                    .iter()
+                    .find(|s| s.id == parent)
+                    .unwrap();
+                if let Some(changed) = shapes.iter().find(|s| s.id == parent) {
+                    child.x += changed.x - old.x;
+                    child.y += changed.y - old.y;
+                    break;
+                }
+                parent = old.parent_id;
+            }
+        }
         for shape in shapes {
             if shape.page_id != document.active_page {
                 return Err("Cannot move a layer to another page through a selection edit".into());
@@ -436,14 +492,14 @@ impl Editor {
     }
 
     pub fn remove_many(&mut self, json: &str) -> Result<(), String> {
-        let ids = self.selection_ids(json)?;
+        let ids = self.descendants(&self.selection_ids(json)?);
         let mut document = self.document.clone();
         document.shapes.retain(|s| !ids.contains(&s.id));
         self.commit(document)
     }
 
     pub fn duplicate_many(&mut self, json: &str) -> Result<String, String> {
-        let ids = self.selection_ids(json)?;
+        let ids = self.descendants(&self.selection_ids(json)?);
         let next_id = self
             .next_id
             .checked_add(ids.len() as u32)
@@ -451,11 +507,17 @@ impl Editor {
         let mut document = self.document.clone();
         let mut created = vec![];
         let mut copied_groups = std::collections::HashMap::new();
+        let mapping: std::collections::HashMap<u32, u32> = ids
+            .iter()
+            .enumerate()
+            .map(|(i, id)| (*id, self.next_id + i as u32))
+            .collect();
         // Copy in document order, independent of the order of selection clicks.
         for shape in &self.document.shapes {
             if ids.contains(&shape.id) {
                 let mut copy = shape.clone();
                 copy.id = self.next_id + created.len() as u32;
+                copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
                 if copy.group_id > 0 {
                     copy.group_id = *copied_groups.entry(copy.group_id).or_insert(copy.id);
                 }
@@ -468,6 +530,45 @@ impl Editor {
         self.commit(document)?;
         self.next_id = next_id;
         Ok(serde_json::to_string(&created).unwrap())
+    }
+
+    pub fn reparent_many(&mut self, json: &str, parent: u32) -> Result<(), String> {
+        let ids = self.selection_ids(json)?;
+        let mut document = self.document.clone();
+        let groups: Vec<u32> = document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id) && s.group_id > 0)
+            .map(|s| s.group_id)
+            .collect();
+        let moved: Vec<u32> = document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id) || groups.contains(&s.group_id))
+            .map(|s| s.id)
+            .collect();
+        for shape in document.shapes.iter_mut().filter(|s| moved.contains(&s.id)) {
+            // Selected descendants stay attached to a selected ancestor.
+            let mut ancestor = shape.parent_id;
+            let mut nested = false;
+            while ancestor != 0 {
+                if moved.contains(&ancestor) {
+                    nested = true;
+                    break;
+                }
+                ancestor = self
+                    .document
+                    .shapes
+                    .iter()
+                    .find(|s| s.id == ancestor)
+                    .unwrap()
+                    .parent_id;
+            }
+            if !nested {
+                shape.parent_id = parent;
+            }
+        }
+        self.commit(document)
     }
 
     pub fn group_many(&mut self, json: &str) -> Result<u32, String> {
@@ -580,7 +681,12 @@ impl Editor {
                 _ => return Err("Unknown alignment".into()),
             }
         }
-        self.commit(document)
+        let changed: Vec<Shape> = document
+            .shapes
+            .into_iter()
+            .filter(|s| ids.contains(&s.id))
+            .collect();
+        self.update_many(&serde_json::to_string(&changed).unwrap())
     }
 
     pub fn distribute_many(&mut self, json: &str, axis: &str) -> Result<(), String> {
@@ -619,18 +725,29 @@ impl Editor {
             let id = shape.id;
             *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
         }
-        self.commit(document)
+        let changed: Vec<Shape> = document
+            .shapes
+            .into_iter()
+            .filter(|s| ids.contains(&s.id))
+            .collect();
+        self.update_many(&serde_json::to_string(&changed).unwrap())
     }
 
     pub fn remove(&mut self, id: u32) -> Result<(), String> {
-        let mut document = self.document.clone();
-        document
-            .shapes
-            .retain(|s| s.id != id || s.page_id != document.active_page);
-        self.commit(document)
+        self.remove_many(&serde_json::to_string(&vec![id]).unwrap())
     }
 
     pub fn duplicate(&mut self, id: u32) -> Result<u32, String> {
+        if self
+            .document
+            .shapes
+            .iter()
+            .any(|s| s.id == id && s.kind == "frame")
+        {
+            let result = self.duplicate_many(&serde_json::to_string(&vec![id]).unwrap())?;
+            let ids: Vec<u32> = serde_json::from_str(&result).unwrap();
+            return Ok(ids[0]);
+        }
         if self.next_id == u32::MAX {
             return Err("Shape ID limit reached".into());
         }
@@ -656,11 +773,17 @@ impl Editor {
 
     pub fn reorder(&mut self, id: u32, delta: i32) -> Result<(), String> {
         let mut document = self.document.clone();
+        let parent = document
+            .shapes
+            .iter()
+            .find(|s| s.id == id && s.page_id == document.active_page)
+            .ok_or("Shape not found")?
+            .parent_id;
         let indices: Vec<usize> = document
             .shapes
             .iter()
             .enumerate()
-            .filter(|(_, s)| s.page_id == document.active_page)
+            .filter(|(_, s)| s.page_id == document.active_page && s.parent_id == parent)
             .map(|(i, _)| i)
             .collect();
         let index = indices
@@ -689,6 +812,19 @@ impl Editor {
             .find(|s| {
                 if s.page_id != self.document.active_page || s.hidden {
                     return false;
+                }
+                let mut parent = s.parent_id;
+                while parent != 0 {
+                    let ancestor = self
+                        .document
+                        .shapes
+                        .iter()
+                        .find(|s| s.id == parent)
+                        .unwrap();
+                    if ancestor.hidden {
+                        return false;
+                    }
+                    parent = ancestor.parent_id;
                 }
                 if !s.points.is_empty() {
                     let margin = (s.stroke_width / 2.0).max(4.0);

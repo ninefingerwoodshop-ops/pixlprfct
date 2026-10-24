@@ -21,3 +21,13 @@ export function selectedGroup(shapes,ids) {
   const group=members[0]?.group_id;
   return group&&members.every(s=>s.group_id===group)&&shapes.filter(s=>s.group_id===group).length===members.length?group:0;
 }
+export function descendants(shapes,ids) {
+  const found=new Set(ids);
+  let size=-1;while(size!==found.size) {size=found.size;for(const s of shapes)if(s.parent_id&&found.has(s.parent_id))found.add(s.id);}
+  return shapes.filter(s=>found.has(s.id));
+}
+export function visibleInTree(shape,shapes) {
+  let node=shape;
+  while(node) {if(node.hidden)return false;node=shapes.find(s=>s.id===node.parent_id);}
+  return true;
+}
