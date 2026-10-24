@@ -19,7 +19,7 @@ Open http://127.0.0.1:4173. Rebuild after source changes; the local server serve
 ## First milestone
 
 - Canvas pan/zoom, rectangles, ellipses, text, and visual frame backgrounds.
-- Shape and pen menus with line, arrow, polygon, star, point-by-point pen, and freehand pencil tools. Drag to draw shapes; Shift constrains proportions or line angles, and Alt draws from the center. Vector color and stroke weight are editable, with normalized geometry that survives resizing, history, save/load, and PNG/SVG export.
+- Shape and pen menus with line, arrow, polygon, star, point-by-point pen, and freehand pencil tools. Drag to draw shapes; Shift constrains proportions or line angles, and Alt draws from the center. Vector color and stroke weight are editable, with normalized geometry that survives resizing, history, save/load, and PNG/JPEG/SVG export.
 - Multiple pages: create, rename, switch, and delete with undo. Each page has independent layers and an in-session pan/zoom position.
 - Multi-selection, marquee selection, dragging, single-object corner resizing, arrow-key nudging, and axis-constrained movement while holding Shift.
 - Align to selection bounds, distribute equal gaps, and batch fill, duplicate, delete, and move operations with one undo step per operation.
@@ -117,3 +117,5 @@ Name a frame’s **Flow starting point** in Prototype to create a named entry po
 Turn on **Prototype connections** beside Present to see same-page navigation/overlay wires and named flow labels. Select an unlocked layer and drag its blue right-side handle onto a visible frame to connect it. Existing open/swap overlay actions retain their action and settings; other actions become navigation. Drop on empty space or cancel to leave the link unchanged. A completed connection is one undo step. Use the destination selector for other pages and self-links; wires and flow labels are editor-only and do not export.
 
 Select **Pencil** (Shift P) to draw freehand. The canvas smoothing control ranges from 0–100%, defaulting to 50%. At 0%, sampled points are retained; higher values remove redundant points using a zoom-adjusted tolerance. Releasing the stroke fits aligned Bézier handles at gentle turns while retaining sharp corners and endpoints. The resulting path uses the existing vector point/handle editor and persists through files, clipboard, undo, PNG and SVG export. Preview follows the raw pointer samples; smoothing is applied once on release. Strokes are limited to 4096 samples.
+
+JPEG export is available for the current page or selection, with 0.25–8× scale and 1–100% quality (default 90%). JPEG always uses the chosen opaque background, default white; transparency remains available for PNG and SVG. JPEG shares PNG’s 8192-pixel edge, 16-megapixel output and compositing-memory limits. The exporter verifies the returned MIME type before downloading a `.jpg` file.

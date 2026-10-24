@@ -11,13 +11,20 @@ export function exportShapes(page,ids,scope){
 }
 export function exportBounds(shapes){const box=bounds(shapes.map(s=>paintBounds(s,shapes)).filter(Boolean));if(!box)throw new Error('Nothing visible to export');return box;}
 export function exportSize(box,scale,format,shapes=[]){
+ if(!['png','jpeg','svg'].includes(format))throw new Error('Unsupported export format');
  if(!Number.isFinite(scale)||scale<.25||scale>8)throw new Error('Export scale must be between 0.25 and 8');
  const width=Math.max(1,Math.ceil(box.width*scale)),height=Math.max(1,Math.ceil(box.height*scale));
- if(format==='png'){
+ if(format==='png'||format==='jpeg'){
   let depth=0;for(const s of shapes){let n=s,d=appearance(s).opacity<1?1:0;while(n.parent_id){n=shapes.find(p=>p.id===n.parent_id);if(!n)break;if(appearance(n).opacity<1)d++;}depth=Math.max(depth,d);}
-  if(width>8192||height>8192||width*height>16_777_216||width*height*(1+depth)>67_108_864)throw new Error('PNG is too large. Reduce scale or export a smaller selection (8192 px per edge, 16 megapixels maximum).');
+  if(width>8192||height>8192||width*height>16_777_216||width*height*(1+depth)>67_108_864)throw new Error('Raster export is too large. Reduce scale or export a smaller selection (8192 px per edge, 16 megapixels maximum).');
  }
  return{width,height};
+}
+export function rasterSettings(format,background,quality=90){
+ if(!['png','jpeg'].includes(format))throw new Error('Unsupported raster format');
+ if(background&&!/^#[0-9a-f]{6}$/i.test(background))throw new Error('Invalid export background');
+ if(format==='jpeg'&&(!Number.isFinite(quality)||quality<1||quality>100))throw new Error('JPEG quality must be between 1 and 100');
+ return {type:format==='jpeg'?'image/jpeg':'image/png',extension:format==='jpeg'?'jpg':'png',background:format==='jpeg'?(background??'#ffffff'):background,quality:format==='jpeg'?quality/100:undefined};
 }
 export function svgDocument(shapes,box,scale,background,textLayout){
  const size=exportSize(box,scale,'svg');
