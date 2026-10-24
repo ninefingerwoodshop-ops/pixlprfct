@@ -1,5 +1,6 @@
 import init, { Editor } from './pkg/pixlprfct_core.js';
 import {componentSet,renderVariantProperties,editVariantSet} from './variants.js';
+import {renderComponentProperties as renderExposedProperties,editComponentProperty} from './component-properties.js';
 import {canvasFill} from './gradients.js';
 import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradientStopAt,drawGradientHandles} from './gradient-edit.js';
 import {renderGradientControls} from './gradient-controls.js';
@@ -160,6 +161,13 @@ function renderComponents(){
 }
 function renderComponentProperties(shape){
   const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master';
+  $('add-component-property').hidden=!master;
+  renderExposedProperties($('exposed-properties'),doc,shape,{
+    change:(property,value)=>safe(()=>{editor.set_component_property(selected,property,JSON.stringify(value));refresh();}),
+    reset:property=>safe(()=>{editor.reset_component_property(selected,property);refresh();}),
+    edit:property=>editComponentProperty(doc,shape.id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}),
+    remove:property=>safe(()=>{editor.remove_component_property(property);refresh();})
+  });
   $('component-panel').hidden=!shape||(!c&&shape.kind!=='frame');
   $('component-heading').textContent=master?'◆ Main component':linked?'◇ Instance':'Component';
   $('create-component').hidden=!!c;$('insert-instance').hidden=!master;
@@ -373,6 +381,7 @@ function bind() {
   $('insert-instance').onclick=()=>insertInstance(selected);
   $('manage-variants').onclick=()=>editVariantSet(doc,selected,set=>{editor.save_component_set(JSON.stringify(set));refresh();},id=>{editor.remove_component_set(id);refresh();});
   $('add-variant').onclick=()=>safe(()=>{setSelection([editor.duplicate_variant(selected)]);refresh();fit();toast('Variant added. Edit its properties in Edit variant set.');});
+  $('add-component-property').onclick=()=>editComponentProperty(doc,selected,null,p=>{editor.save_component_property(JSON.stringify(p));refresh();});
   $('detach-instance').onclick=()=>safe(()=>{editor.detach_instance(selected);refresh();toast('Instance detached');});
   $('reset-instance').onclick=()=>safe(()=>{editor.reset_instance(selected);refresh();toast('Instance overrides reset');});
   $('swap-component').onchange=()=>safe(()=>{const root=editor.swap_instance(selected,Number($('swap-component').value));setSelection([root]);refresh();toast('Component swapped');});

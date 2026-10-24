@@ -77,3 +77,14 @@ dialog{color:#333;background:white;border:1px solid #ddd;border-radius:12px;widt
 #variant-properties {padding:12px 0;border-bottom:1px solid #eee;margin-bottom:12px;}
 #variant-properties label {display:grid;grid-template-columns:minmax(50px,1fr) minmax(0,1.5fr);align-items:center;gap:8px;margin:8px 0;}
 #variant-properties select {width:100%;min-width:0;}
+.property-dialog {width:min(520px,90vw);}
+.property-dialog>label {margin:12px 0;}
+.property-targets {max-height:280px;overflow:auto;border:1px solid #eee;border-radius:6px;padding:8px;}
+.property-targets label {display:flex;align-items:center;gap:8px;padding:6px;}
+.property-targets input {width:auto;min-width:0;margin:0;}
+.exposed-property {padding:8px 0;border-bottom:1px solid #eee;}
+.exposed-property label {display:block;font-size:11px;}
+.exposed-property textarea {display:block;width:100%;margin-top:6px;resize:vertical;}
+.exposed-property input[type=checkbox] {float:right;}
+.property-actions {display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+.property-actions button {font-size:10px;color:var(--component-color);padding:4px;}

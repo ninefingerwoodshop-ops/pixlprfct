@@ -28,7 +28,8 @@
     "persistent layer locking, inherited frame locks, layer-list/selection controls and canvas interaction protection",
     "reusable frame components, linked instances across pages, property overrides/reset, detach, component library and atomic propagation/history",
     "instance swapping by matching main-layer names/kinds/hierarchy, granular typography/appearance/layout overrides, individual override reset and legacy compatibility",
-    "named component variant sets, multi-property editing and validation, variant duplication, property-based instance selection, sparse combination matching and grouped library assets"
+    "named component variant sets, multi-property editing and validation, variant duplication, property-based instance selection, sparse combination matching and grouped library assets",
+    "exposed text/visibility component properties, multiple layer bindings, direct instance controls, individual reset, semantic property preservation across swaps and definition duplication"
   ],
   "remaining": [
     "Additional frame layout controls and layout grids",
@@ -37,7 +38,7 @@
     "Rotation, independent corner radii, multiple paints, stroke alignment/dashes, advanced gradients and effects",
     "Vector path joining/splitting, Boolean operations, pencil smoothing and slice export",
     "Auto layout wrapping/grid, min/max sizing, group layout units and on-canvas spacing controls",
-    "Nested components, canvas component-set containers, exposed text/boolean/swap properties, reusable styles and variables",
+    "Nested components, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
     "Prototyping interactions and presentation mode",
     "Cloud document storage, authentication, sharing, permissions and collaboration",
     "PDF/JPEG and batch export, accessibility and performance validation",

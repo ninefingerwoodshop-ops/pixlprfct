@@ -267,6 +267,8 @@ pub struct Document {
     pub active_page: u32,
     #[serde(default)]
     pub component_sets: Vec<variants::ComponentSet>,
+    #[serde(default)]
+    pub component_properties: Vec<component_properties::ComponentProperty>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -514,6 +516,7 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Invalid shape data".into());
         }
     }
+    component_properties::validate_properties(document)?;
     Ok(())
 }
 
@@ -643,6 +646,7 @@ impl Editor {
 
     fn commit(&mut self, mut document: Document) -> Result<(), String> {
         variants::prune(&mut document);
+        component_properties::prune(&mut document);
         validate(&document)?;
         components::protect_structure(&self.document, &document)?;
         self.commit_document(document)
@@ -723,6 +727,7 @@ impl Editor {
                 pages: default_pages(),
                 active_page: 1,
                 component_sets: vec![],
+                component_properties: vec![],
             },
             undo: vec![],
             redo: vec![],
@@ -810,6 +815,7 @@ impl Editor {
             pages: default_pages(),
             active_page: 1,
             component_sets: vec![],
+            component_properties: vec![],
         })?;
         let next = self
             .next_id
@@ -972,6 +978,7 @@ impl Editor {
             *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
         }
         validate(&document)?;
+        component_properties::propagate_edits(&self.document, &mut document, &ids)?;
         // The committed scene is parent-first. Explicit edits (including Scale's
         // entire subtree) win; other children inherit their immediate frame's change.
         for i in 0..document.shapes.len() {
@@ -1072,6 +1079,7 @@ impl Editor {
                 document.shapes.push(copy);
             }
         }
+        component_properties::duplicate_definitions(&mut document, &mapping)?;
         self.commit(document)?;
         self.next_id = self.next_id.max(next_id);
         Ok(serde_json::to_string(&created).unwrap())
@@ -1711,6 +1719,7 @@ mod tests {
         assert_eq!(editor.hit_test(80.0, 60.0), front);
     }
 }
+mod component_properties;
 mod components;
 mod layout;
 mod variants;

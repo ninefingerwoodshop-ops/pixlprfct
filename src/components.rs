@@ -563,13 +563,35 @@ impl Editor {
         let slot = doc.shapes.iter().position(|s| s.id == root).unwrap();
         doc.shapes.retain(|s| !ids.contains(&s.id));
         doc.shapes.splice(slot..slot, kept);
+        let mut next = self.next_id.max(
+            doc.shapes
+                .iter()
+                .map(|s| s.id.max(s.group_id))
+                .max()
+                .unwrap_or(0)
+                .saturating_add(1),
+        );
+        sync(&mut doc, &mut next)?;
+        component_properties::transfer_on_swap(&self.document, &mut doc, root, old_master, master)?;
         self.commit_document(doc)?;
+        self.next_id = self.next_id.max(next);
         Ok(root)
     }
 
     pub fn reset_override(&mut self, id: u32, path: &str) -> Result<(), String> {
         if !valid_override(path) {
             return Err("Unknown override property".into());
+        }
+        if let Some(shape) = self.document.shapes.iter().find(|s| s.id == id) {
+            if let Some(Component::Instance { master, source, .. }) = &shape.component {
+                if let Some(p) = self.document.component_properties.iter().find(|p| {
+                    p.component_id == *master
+                        && p.targets.contains(source)
+                        && component_properties::field(p) == path
+                }) {
+                    return self.reset_component_property(id, p.id);
+                }
+            }
         }
         let mut doc = self.document.clone();
         let shape = doc
