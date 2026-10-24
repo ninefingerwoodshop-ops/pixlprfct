@@ -109,7 +109,7 @@ function toggleSelectionVisibility(){const shapes=selectionShapes();if(!shapes.l
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
 function selectionActions(){
   const shapes=selectionShapes(),shape=current();
-  const available={'create-component':!shape?.component,'add-auto-layout':!shape?.auto_layout,'group-layers':shapes.length>1&&!selectedGroup(pageShapes(),[...selectedIds]),'ungroup-layers':shapes.some(s=>s.group_id),'insert-instance':shape?.component?.type==='master','go-main':shape?.component?.type==='instance','reset-instance':shape?.component?.type==='instance','detach-instance':shape?.component?.type==='instance','forward':!!shape,'backward':!!shape};
+  const available={'create-component':!shape?.component||(shape.component.type==='instance'&&shape.component.master===shape.component.source),'add-auto-layout':!shape?.auto_layout,'group-layers':shapes.length>1&&!selectedGroup(pageShapes(),[...selectedIds]),'ungroup-layers':shapes.some(s=>s.group_id),'insert-instance':shape?.component?.type==='master','go-main':shape?.component?.type==='instance','reset-instance':shape?.component?.type==='instance','detach-instance':shape?.component?.type==='instance','forward':!!shape,'backward':!!shape};
   const button=(id,label,shortcut)=>({label,shortcut,enabled:!!available[id],run:()=>$(id).click()});
   return [
     button('create-component','Create component','Ctrl/⌘ Alt K'),
@@ -234,7 +234,7 @@ function renderComponentProperties(shape){
   });
   $('component-panel').hidden=!selectedIds.size;
   $('component-heading').textContent=master?'◆ Main component':linked?'◇ Instance':'Component';
-  $('create-component').hidden=!!c;$('insert-instance').hidden=!master;
+  $('create-component').hidden=master||(linked&&c.master!==c.source);$('create-component').textContent=linked?'Create component around instance':'Create component';$('insert-instance').hidden=!master;
   const variantSet=componentSet(doc,master?shape.id:c?.master);
   $('manage-variants').hidden=!master;$('manage-variants').textContent=variantSet?'Edit variant set':'Create variant set';$('add-variant').hidden=!master||!variantSet;
   renderVariantProperties($('variant-properties'),doc,linked?c.master:0,(property,value)=>safe(()=>{setSelection([editor.set_variant_property(selected,property,value)]);refresh();}));

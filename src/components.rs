@@ -228,8 +228,11 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
         {
             let mut p = s.parent_id;
             while let Some(ancestor) = by_id.get(&p) {
-                if ancestor.component.is_some() {
-                    return Err("Nested components are not supported yet".into());
+                if matches!(ancestor.component, Some(Component::Instance { .. }))
+                    || (s.component == Some(Component::Master)
+                        && ancestor.component == Some(Component::Master))
+                {
+                    return Err("Nested main components are not supported; nest linked instances inside main components instead".into());
                 }
                 p = ancestor.parent_id;
             }
@@ -359,7 +362,34 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
 }
 
 pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
-    let roots: Vec<_> = doc.shapes.iter().filter(|s|matches!(&s.component,Some(Component::Instance{master,source,..}) if master==source)).map(|s|s.id).collect();
+    let pending_roots: Vec<_> = doc.shapes.iter().filter(|s|matches!(&s.component,Some(Component::Instance{master,source,..}) if master==source)).map(|s|s.id).collect();
+    let root_ids: HashSet<_> = pending_roots.iter().copied().collect();
+    let mut pending: Vec<_> = pending_roots
+        .iter()
+        .map(|id| {
+            let shape = doc.shapes.iter().find(|s| s.id == *id).unwrap();
+            let Some(Component::Instance { master, .. }) = shape.component else {
+                unreachable!()
+            };
+            let dependencies: HashSet<_> = subtree(&doc.shapes, master)
+                .iter()
+                .filter(|s| root_ids.contains(&s.id))
+                .map(|s| s.id)
+                .collect();
+            (*id, dependencies)
+        })
+        .collect();
+    let mut roots = Vec::new();
+    let mut resolved = HashSet::new();
+    while !pending.is_empty() {
+        let ready = pending
+            .iter()
+            .position(|(_, deps)| deps.iter().all(|id| resolved.contains(id)))
+            .ok_or("Component reference cycle: an instance cannot contain itself")?;
+        let (id, _) = pending.remove(ready);
+        roots.push(id);
+        resolved.insert(id);
+    }
     for id in roots {
         let old = subtree(&doc.shapes, id);
         let root = &old[0];
@@ -496,7 +526,10 @@ impl Editor {
     pub fn create_component(&mut self, id: u32) -> Result<(), String> {
         let mut doc = self.document.clone();
         let tree = subtree(&doc.shapes, id);
-        if tree.is_empty() || tree.iter().any(|s| s.component.is_some()) {
+        if tree.is_empty()
+            || tree[0].component.is_some()
+            || tree.iter().any(|s| s.component == Some(Component::Master))
+        {
             return Err("Select an ordinary frame to create a component".into());
         }
         let root = doc
@@ -749,7 +782,8 @@ impl Editor {
             })
             .cloned()
             .collect();
-        if component && roots.len() == 1 && roots[0].kind == "frame" {
+        if component && roots.len() == 1 && roots[0].kind == "frame" && roots[0].component.is_none()
+        {
             self.create_component(roots[0].id)?;
             return Ok(roots[0].id);
         }
@@ -763,9 +797,11 @@ impl Editor {
             if component
                 && subtree(&self.document.shapes, root.id)
                     .iter()
-                    .any(|s| s.component.is_some())
+                    .any(|s| s.component == Some(Component::Master))
             {
-                return Err("Nested components are not supported yet".into());
+                return Err(
+                    "Nested main components are not supported; use linked instances".into(),
+                );
             }
             if root.group_id != 0
                 && self
