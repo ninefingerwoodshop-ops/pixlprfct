@@ -4,6 +4,20 @@ export function defaultGradient(color,kind='linear') {
 export function gradientGeometry(s,g) {
  return {start:[s.x+g.start[0]*s.width,s.y+g.start[1]*s.height],end:[s.x+g.end[0]*s.width,s.y+g.end[1]*s.height],radius:Math.hypot(g.end[0]-g.start[0],g.end[1]-g.start[1])};
 }
+export function radialGeometry(g){
+ const radius=Math.hypot(g.end[0]-g.start[0],g.end[1]-g.start[1]),m=g.radial_transform??[1,0,0,1];
+ const focal=[...(g.focal??[0,0])],focalRadius=g.focal_radius??0,distance=Math.hypot(...focal),limit=1-focalRadius;
+ if(distance>limit&&distance){focal[0]*=limit/distance;focal[1]*=limit/distance;}
+ return {matrix:[m[0]*radius,m[1]*radius,m[2]*radius,m[3]*radius,...g.start],focal,focalRadius};
+}
+export function moveGradientPoint(g,key,point){
+ const next={...g,[key]:point};
+ if(g.kind==='radial'&&g.radial_transform){
+  const old=[g.end[0]-g.start[0],g.end[1]-g.start[1]],v=[next.end[0]-next.start[0],next.end[1]-next.start[1]],angle=Math.atan2(v[1],v[0])-Math.atan2(old[1],old[0]),c=Math.cos(angle),s=Math.sin(angle),m=g.radial_transform;
+  next.radial_transform=[c*m[0]-s*m[1],s*m[0]+c*m[1],c*m[2]-s*m[3],s*m[2]+c*m[3]];
+ }
+ return next;
+}
 const radialSurfaces=new Map();let radialPixels=0;
 export function canvasFill(ctx,s) {
  const g=s.appearance?.gradient;if(!g)return s.fill;
@@ -15,7 +29,9 @@ export function canvasFill(ctx,s) {
   const t=ctx.getTransform(),wantedW=Math.max(1,Math.ceil(s.width*Math.hypot(t.a,t.b))),wantedH=Math.max(1,Math.ceil(s.height*Math.hypot(t.c,t.d)));
   const ratio=Math.min(1,8192/wantedW,8192/wantedH,Math.sqrt(16_777_216/(wantedW*wantedH))),w=Math.max(1,Math.ceil(wantedW*ratio)),h=Math.max(1,Math.ceil(wantedH*ratio));
   const key=JSON.stringify([g,w,h]);let surface=radialSurfaces.get(key);
-  if(!surface){surface=new OffscreenCanvas(w,h);const c=surface.getContext('2d');c.scale(w,h);const gradient=c.createRadialGradient(...g.start,0,...g.start,p.radius);addStops(gradient,g);c.fillStyle=gradient;c.fillRect(0,0,1,1);
+  if(!surface){surface=new OffscreenCanvas(w,h);const c=surface.getContext('2d');c.scale(w,h);const radial=radialGeometry(g);c.transform(...radial.matrix);const gradient=c.createRadialGradient(...radial.focal,radial.focalRadius,0,0,1);addStops(gradient,g);c.fillStyle=gradient;
+   // Keep the paint transform while covering the tile in inverse coordinates.
+   const [a,b,cc,d,e,f]=radial.matrix,det=a*d-b*cc;c.beginPath();for(const [i,[x,y]] of [[0,0],[1,0],[1,1],[0,1]].entries()){const px=(d*(x-e)-cc*(y-f))/det,py=(-b*(x-e)+a*(y-f))/det;if(i)c.lineTo(px,py);else c.moveTo(px,py);}c.closePath();c.fill();
    while(radialPixels+w*h>16_777_216&&radialSurfaces.size){const first=radialSurfaces.keys().next().value,old=radialSurfaces.get(first);radialPixels-=old.width*old.height;radialSurfaces.delete(first);}radialSurfaces.set(key,surface);radialPixels+=w*h;
   }
   paint=ctx.createPattern(surface,'no-repeat');paint.setTransform(new DOMMatrix([s.width/w,0,0,s.height/h,s.x,s.y]));return paint;
@@ -29,8 +45,9 @@ function addStops(paint,g){
 export function gradientSvg(s) {
  const g=s.appearance?.gradient;if(!g||!s.appearance.fill_enabled)return '';
  const p=gradientGeometry(s,g),stops=g.stops.map(t=>`<stop offset="${t.position}" stop-color="${t.color}" stop-opacity="${t.opacity}"/>`).join('');
+ const radial=radialGeometry(g);
  const common=`id="gradient-${s.id}" gradientUnits="userSpaceOnUse" color-interpolation="sRGB"`;
- return g.kind==='radial'?`<radialGradient ${common} cx="${g.start[0]}" cy="${g.start[1]}" r="${p.radius}" gradientTransform="translate(${s.x} ${s.y}) scale(${s.width} ${s.height})">${stops}</radialGradient>`:`<linearGradient ${common} x1="${p.start[0]}" y1="${p.start[1]}" x2="${p.end[0]}" y2="${p.end[1]}">${stops}</linearGradient>`;
+ return g.kind==='radial'?`<radialGradient ${common} cx="0" cy="0" r="1" fx="${radial.focal[0]}" fy="${radial.focal[1]}" fr="${radial.focalRadius}" gradientTransform="translate(${s.x} ${s.y}) scale(${s.width} ${s.height}) matrix(${radial.matrix.join(' ')})">${stops}</radialGradient>`:`<linearGradient ${common} x1="${p.start[0]}" y1="${p.start[1]}" x2="${p.end[0]}" y2="${p.end[1]}">${stops}</linearGradient>`;
 }
 export function insertGradientStop(g) {
  if(g.stops.length>=16)return g;

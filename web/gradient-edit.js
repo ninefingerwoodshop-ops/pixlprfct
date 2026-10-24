@@ -1,4 +1,4 @@
-import {gradientGeometry} from './gradients.js';
+import {gradientGeometry,radialGeometry,moveGradientPoint} from './gradients.js';
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 export function gradientHandles(s,zoom=1){
  const g=s.appearance.gradient,p=gradientGeometry(s,g),dx=p.end[0]-p.start[0],dy=p.end[1]-p.start[1],length=Math.hypot(dx,dy),nx=-dy/length*18/zoom,ny=dx/length*18/zoom;
@@ -15,7 +15,7 @@ export function moveGradientHandle(s,handle,p,shift=false){
   const other=handle.part==='start'?'end':'start';let q={...p};
   if(shift){const ox=s.x+g[other][0]*s.width,oy=s.y+g[other][1]*s.height,dx=p.x-ox,dy=p.y-oy,d=Math.hypot(dx,dy),angle=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*Math.PI/4;q={x:ox+Math.cos(angle)*d,y:oy+Math.sin(angle)*d};}
   const next=[clamp((q.x-s.x)/s.width,-10,10),clamp((q.y-s.y)/s.height,-10,10)];
-  if(Math.hypot(next[0]-g[other][0],next[1]-g[other][1])>=.0001)g[handle.part]=next;
+  if(Math.hypot(next[0]-g[other][0],next[1]-g[other][1])>=.0001)Object.assign(g,moveGradientPoint(g,handle.part,next));
  }
  return {shape:{...s,appearance:{...s.appearance,gradient:g}},active};
 }
@@ -29,7 +29,7 @@ export function addGradientStopAt(s,t){
 export function drawGradientHandles(ctx,s,zoom,active){
  const g=s.appearance.gradient,p=gradientGeometry(s,g),handles=gradientHandles(s,zoom);ctx.save();
  ctx.lineWidth=1/zoom;ctx.strokeStyle='#0d99ff';ctx.setLineDash([4/zoom,4/zoom]);ctx.strokeRect(s.x,s.y,s.width,s.height);
- if(g.kind==='radial'){ctx.beginPath();ctx.ellipse(...p.start,p.radius*s.width,p.radius*s.height,0,0,Math.PI*2);ctx.stroke();}ctx.setLineDash([]);
+ if(g.kind==='radial'){ctx.beginPath();const m=radialGeometry(g).matrix;for(let i=0;i<=96;i++){const t=i/96*Math.PI*2,x=s.x+s.width*(m[4]+m[0]*Math.cos(t)+m[2]*Math.sin(t)),y=s.y+s.height*(m[5]+m[1]*Math.cos(t)+m[3]*Math.sin(t));if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);}ctx.stroke();}ctx.setLineDash([]);
  ctx.beginPath();ctx.moveTo(...p.start);ctx.lineTo(...p.end);ctx.lineWidth=3/zoom;ctx.strokeStyle='#fff';ctx.stroke();ctx.lineWidth=1/zoom;ctx.strokeStyle='#0d99ff';ctx.stroke();
  for(const h of handles){const selected=active?.part===h.part&&(h.part!=='stop'||active.index===h.index);ctx.lineWidth=(selected?3:1)/zoom;ctx.fillStyle=h.color??'#fff';ctx.strokeStyle=selected?'#111':'#0d99ff';ctx.beginPath();if(h.part==='stop')ctx.arc(h.x,h.y,5/zoom,0,Math.PI*2);else ctx.rect(h.x-5/zoom,h.y-5/zoom,10/zoom,10/zoom);ctx.fill();ctx.stroke();}
  ctx.restore();

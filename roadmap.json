@@ -59,12 +59,13 @@
     "mouse-down/touch-press and mouse-up/touch-release prototype triggers with independent targets, cross-screen gesture continuation, compatibility-click suppression and canceled/secondary-pointer protection",
     "stacked drop shadows with offsets, blur, positive/negative alpha-mask spread, color/opacity/visibility/order controls, clipped subtree compositing, component overrides, scaling, SVG filters and pixel-verified PNG export",
     "inner shadows with inverse-alpha spread/blur/offset masks, alpha-preserving compositing, mixed shadow stacks, unchanged export bounds, legacy migration, component inheritance and pixel-verified raster output",
-    "layer blur of composed frames and children with padded paint bounds, unchanged editing geometry, component overrides, scaling, SVG filters and pixel-verified PNG output"
+    "layer blur of composed frames and children with padded paint bounds, unchanged editing geometry, component overrides, scaling, SVG filters and pixel-verified PNG output",
+    "editable SVG radial gradient fills with affine ellipse transforms, object bounds and user-space percentage radii, local references, focal position/radius controls, canvas editing, SVG export and analytically pixel-verified PNG output"
   ],
   "remaining": [
     "Additional frame layout controls",
     "Nested groups and complete tree reordering",
-    "Broader SVG import: compound/even-odd fills, radial/repeating gradients and gradient strokes, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
+    "Broader SVG import: compound/even-odd fills, repeating gradients, radial focal circles larger than the outer circle and gradient strokes, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
     "Rotation, corner smoothing, multiple paints, stroke alignment and endpoint decorations, advanced gradients and background blur",
     "Boolean operations and slice export",
     "Auto layout grid, group layout units and on-canvas spacing controls",

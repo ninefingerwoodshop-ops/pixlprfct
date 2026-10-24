@@ -1,5 +1,5 @@
 import {appearance} from './appearance.js';
-import {defaultGradient,insertGradientStop} from './gradients.js';
+import {defaultGradient,insertGradientStop,moveGradientPoint} from './gradients.js';
 export function renderGradientControls(container,shape,update,options={}) {
  container.replaceChildren();const a=appearance(shape),g=a.gradient;
  const label=(name,input)=>{const l=document.createElement('label');l.append(document.createTextNode(name),input);return l;};
@@ -12,7 +12,11 @@ export function renderGradientControls(container,shape,update,options={}) {
  const change=gradient=>update({...shape,appearance:{...a,gradient}});
  const number=(name,value,min,max,step,onchange)=>{const input=document.createElement('input');input.type='number';input.value=value;input.min=min;input.max=max;input.step=step;input.setAttribute('aria-label',name);input.onchange=()=>onchange(Number(input.value));return label(name,input);};
  const geometry=document.createElement('div');geometry.className='gradient-geometry';
- for(const [key,name] of [['start','Start'],['end','End']])for(let axis=0;axis<2;axis++)geometry.append(number(`${name} ${axis?'Y':'X'} (%)`,Math.round(g[key][axis]*10000)/100,-1000,1000,1,value=>{const point=[...g[key]];point[axis]=value/100;change({...g,[key]:point});}));
+ for(const [key,name] of [['start','Start'],['end','End']])for(let axis=0;axis<2;axis++)geometry.append(number(`${name} ${axis?'Y':'X'} (%)`,Math.round(g[key][axis]*10000)/100,-1000,1000,1,value=>{const point=[...g[key]];point[axis]=value/100;change(moveGradientPoint(g,key,point));}));
+ if(g.kind==='radial'){
+  for(let axis=0;axis<2;axis++)geometry.append(number(`Focal ${axis?'Y':'X'} (%)`,(g.focal??[0,0])[axis]*100,-1000,1000,1,value=>{const focal=[...(g.focal??[0,0])];focal[axis]=value/100;change({...g,focal});}));
+  geometry.append(number('Focal radius (%)',(g.focal_radius??0)*100,0,100,1,value=>change({...g,focal_radius:value/100})));
+ }
  container.append(geometry);
  const stops=document.createElement('div');stops.className='gradient-stops';
  g.stops.forEach((stop,index)=>{

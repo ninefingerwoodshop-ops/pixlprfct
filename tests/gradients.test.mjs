@@ -20,7 +20,7 @@ test('gradient canvas coordinates and SVG definitions use matching object-relati
  const s={id:9,parent_id:0,kind:'rectangle',x:10,y:20,width:200,height:100,fill:'#ff0000',appearance:style};const p=gradientGeometry(s,style.gradient);assert.deepEqual(p.start,[10,70]);assert.deepEqual(p.end,[210,70]);
  const stops=[],calls=[];const ctx={createLinearGradient:(...args)=>{calls.push(args);return{addColorStop:(...args)=>stops.push(args)}}};canvasFill(ctx,s);assert.deepEqual(calls[0],[10,70,210,70]);assert.equal(stops.length,2);
  assert.match(paintAttributes(s),/fill="url\(#gradient-9\)"/);const svg=svgDocument([s],exportBounds([s]),1,null,()=>{});assert.match(svg,/<linearGradient id="gradient-9"/);assert.match(svg,/x1="10" y1="70" x2="210" y2="70"/);assert.match(svg,/<g opacity="0.7">/);
- const radial={...s,appearance:{...style,gradient:defaultGradient('#ffffff','radial')}};assert.match(gradientSvg(radial),/cx="0.5" cy="0.5" r="0.5" gradientTransform="translate\(10 20\) scale\(200 100\)"/);
+ const radial={...s,appearance:{...style,gradient:defaultGradient('#ffffff','radial')}};assert.match(gradientSvg(radial),/cx="0" cy="0" r="1" fx="0" fy="0" fr="0" gradientTransform="translate\(10 20\) scale\(200 100\) matrix\(0.5 0 0 0.5 0.5 0.5\)"/);
  assert.equal(gradientSvg({...s,appearance:{...style,fill_enabled:false}}),'');assert.equal(canvasFill({}, {...s,appearance:null}),'#ff0000');
 });
 test('inserting a midpoint stop preserves premultiplied color and hard-stop ordering',()=>{

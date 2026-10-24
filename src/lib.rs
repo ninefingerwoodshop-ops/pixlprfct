@@ -288,6 +288,12 @@ fn default_round() -> String {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Gradient {
     pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub radial_transform: Option<[f64; 4]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub focal: Option<[f64; 2]>,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub focal_radius: f64,
     pub start: [f64; 2],
     pub end: [f64; 2],
     pub stops: Vec<GradientStop>,
@@ -298,6 +304,10 @@ pub struct GradientStop {
     pub position: f64,
     pub color: String,
     pub opacity: f64,
+}
+
+fn is_zero(value: &f64) -> bool {
+    *value == 0.0
 }
 
 fn in_rounded_rect(s: &Shape, x: f64, y: f64) -> bool {
@@ -669,6 +679,17 @@ fn validate(document: &Document) -> Result<(), String> {
         }
         if let Some(a) = &shape.appearance {
             if let Some(g) = &a.gradient {
+                if g.radial_transform.is_some_and(|m| {
+                    m.iter().any(|v| !v.is_finite() || v.abs() > 100000.0)
+                        || (m[0] * m[3] - m[1] * m[2]).abs() < 1e-12
+                }) || g
+                    .focal
+                    .is_some_and(|p| p.iter().any(|v| !v.is_finite() || v.abs() > 10.0))
+                    || !g.focal_radius.is_finite()
+                    || !(0.0..=1.0).contains(&g.focal_radius)
+                {
+                    return Err("Invalid radial gradient transform or focal circle".into());
+                }
                 if !["linear", "radial"].contains(&g.kind.as_str())
                     || g.start
                         .iter()

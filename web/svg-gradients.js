@@ -25,13 +25,13 @@ export function gradientResolver(tree,viewport,color){
  const resolve=(id,seen=new Set())=>{
   if(seen.has(id)||seen.size>64)throw new Error('Cyclic or excessively deep SVG gradient reference');seen.add(id);
   const node=nodes.get(id);if(!node)throw new Error('SVG gradient reference not found: '+id);
-  if(node.tag!=='linearGradient')throw new Error('Only linear SVG gradient fills are supported currently');
+  if(!['linearGradient','radialGradient'].includes(node.tag))throw new Error('SVG paint reference must identify a gradient');
   for(const key of Object.keys(declarations(node.attrs)))if(!['color','stop-color','stop-opacity','color-interpolation'].includes(key))throw new Error('Unsupported SVG gradient style: '+key);
   const href=node.attrs.href??node.attrs['xlink:href'];let parent={attrs:{},stops:[]};
   if(href){if(!/^#[^\s]+$/.test(href))throw new Error('SVG gradient references must be local');parent=resolve(href.slice(1),seen);}
   const children=node.children.filter(n=>!['title','desc','metadata'].includes(n.tag));if(children.some(n=>n.tag!=='stop'))throw new Error('Unsupported SVG gradient child');
   const stops=children.length?children.map(n=>({attrs:n.attrs,style:styles.get(n)})):parent.stops.map(stop=>{const own={...styles.get(node)},css=declarations(stop.attrs);for(const key of ['color','stop-color','stop-opacity','color-interpolation'])if(css[key]??stop.attrs[key])own[key]=css[key]??stop.attrs[key];return{attrs:stop.attrs,style:own};});
-  return {attrs:{...parent.attrs,...node.attrs},stops,style:styles.get(node)};
+  return {kind:node.tag,attrs:{...parent.attrs,...node.attrs},stops,style:styles.get(node)};
  };
  return (paint,shape,paths,matrix,localViewport=viewport)=>{
   const ref=paint.trim().match(/^url\(\s*['"]?#([^\s'")]+)['"]?\s*\)$/);if(!ref)throw new Error('SVG gradient fill must reference a local gradient');
@@ -45,10 +45,23 @@ export function gradientResolver(tree,viewport,color){
   if(stops.length===1)stops=[{...stops[0],position:0},{...stops[0],position:1}];
   const units=a.gradientUnits??'objectBoundingBox';if(!['objectBoundingBox','userSpaceOnUse'].includes(units))throw new Error('Invalid SVG gradient units');
   const coordinate=(value,axis,fallback)=>{if(value==null)value=fallback;if(units==='objectBoundingBox')return amount(value);if(String(value).trim().endsWith('%'))return amount(value)*localViewport[axis];const n=Number(String(value).replace(/px$/,''));if(!Number.isFinite(n))throw new Error('Unsupported SVG gradient coordinate');return n;};
-  const start={x:coordinate(a.x1,0,'0%'),y:coordinate(a.y1,1,'0%')},end={x:coordinate(a.x2,0,'100%'),y:coordinate(a.y2,1,'0%')},vx=end.x-start.x,vy=end.y-start.y,len=vx*vx+vy*vy;
-  if(len<1e-20){const last=stops.at(-1);return{kind:'linear',start:[0,0],end:[1,0],stops:[{...last,position:0},{...last,position:1}]};}
   let basis=matrix;if(units==='objectBoundingBox'){const b=pathBounds(paths);if(b.width<=0||b.height<=0)throw new Error('SVG bounding-box gradients require nonzero geometry');basis=multiply(basis,[b.width,0,0,b.height,b.x,b.y]);}
   basis=multiply(basis,parseTransform(a.gradientTransform??''));const [aa,b,c,d]=basis,det=aa*d-b*c;if(Math.abs(det)<1e-20)throw new Error('Singular SVG gradient transform');
+  if(def.kind==='radialGradient'){
+   const cx=coordinate(a.cx,0,'50%'),cy=coordinate(a.cy,1,'50%');
+   const radius=value=>units==='userSpaceOnUse'&&String(value).trim().endsWith('%')?amount(value)*Math.hypot(...localViewport)/Math.SQRT2:coordinate(value,0,'50%');
+   const r=radius(a.r??'50%'),fr=radius(a.fr??'0');if(r<0||fr<0||fr>r)throw new Error('SVG radial focal radius must be between zero and the outer radius');
+   if(!r){const last=stops.at(-1);return{kind:'radial',start:[.5,.5],end:[1,.5],stops:[{...last,position:0},{...last,position:1}]};}
+   const center=transformPoint({x:cx,y:cy},basis),start=[(center.x-shape.x)/shape.width,(center.y-shape.y)/shape.height];
+   const rx=aa*r/shape.width,ry=b*r/shape.height,scale=Math.hypot(rx,ry);
+   const focal=[(coordinate(a.fx,0,a.cx??'50%')-cx)/r,(coordinate(a.fy,1,a.cy??'50%')-cy)/r];
+   // SVG clamps an external focal circle to the outer circle's boundary.
+   const distance=Math.hypot(...focal),limit=1-fr/r;if(distance>limit&&distance){focal[0]*=limit/distance;focal[1]*=limit/distance;}
+   return{kind:'radial',start,end:[start[0]+rx,start[1]+ry],radial_transform:[rx/scale,ry/scale,c*r/shape.width/scale,d*r/shape.height/scale],focal,focal_radius:fr/r,stops};
+  }
+  const start={x:coordinate(a.x1,0,'0%'),y:coordinate(a.y1,1,'0%')},end={x:coordinate(a.x2,0,'100%'),y:coordinate(a.y2,1,'0%')},vx=end.x-start.x,vy=end.y-start.y,len=vx*vx+vy*vy;
+  if(len<1e-20){const last=stops.at(-1);return{kind:'linear',start:[0,0],end:[1,0],stops:[{...last,position:0},{...last,position:1}]};}
+
   // Transform the gradient normal covector. Transforming endpoints alone is
   // incorrect for nonuniform scales and shears (SVG 2 paint-server geometry).
   const nx=(d*vx-b*vy)/(det*len),ny=(-c*vx+aa*vy)/(det*len),norm=nx*nx+ny*ny;

@@ -37,5 +37,5 @@ test('single stops, offset clamping, zero-length vectors and invalid references 
  const s=svgLayers(tree(gradient({},[stop('80%','red'),stop('20%','blue')]),rect())).shapes[1];assert.deepEqual(s.appearance.gradient.stops.map(s=>s.position),[.8,.8]);
  const single=svgLayers(tree(gradient({},[stop('.4','red','.5')]),rect())).shapes[1];assert.deepEqual(single.appearance.gradient.stops.map(s=>s.opacity),[.5,.5]);
  const zero=svgLayers(tree(gradient({x1:'0',y1:'0',x2:'0',y2:'0'}),rect())).shapes[1];assert.ok(zero.appearance.gradient.stops.every(s=>s.color==='#0000ff'));
- for(const g of [gradient({href:'#g'}),gradient({href:'https://example.com/a.svg#g'}),gradient({spreadMethod:'repeat'}),gradient({gradientTransform:'scale(0)'}),gradient({},Array(17).fill(stop('0','red'))),n('radialGradient',{id:'g'},[])])assert.throws(()=>svgLayers(tree(g,rect())));
+ for(const g of [gradient({href:'#g'}),gradient({href:'https://example.com/a.svg#g'}),gradient({spreadMethod:'repeat'}),gradient({gradientTransform:'scale(0)'}),gradient({},Array(17).fill(stop('0','red')))])assert.throws(()=>svgLayers(tree(g,rect())));
 });
