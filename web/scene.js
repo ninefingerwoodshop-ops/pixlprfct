@@ -1,4 +1,5 @@
 import {strokePadding} from './stroke-tips.js';
+import {paintOrder} from './stacking.js';
 import {visibleInTree,lockedInTree} from './selection.js';
 import {appearance,roundedSvg,roundedContains} from './appearance.js';
 export function clippingFrames(shape,shapes) {
@@ -14,7 +15,7 @@ export function paintBounds(shape,shapes) {
   return right>left&&bottom>top?{...shape,x:left,y:top,width:right-left,height:bottom-top}:null;
 }
 export function frameAt(shapes,point) {
-  return [...shapes].reverse().find(s=>s.kind==='frame'&&s.component?.type!=='instance'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
+  return paintOrder(shapes).reverse().find(s=>s.kind==='frame'&&s.component?.type!=='instance'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
 }
 export function clipDefinitions(shapes) {
   return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse">${roundedSvg(s)}</clipPath>`).join('')}</defs>`;

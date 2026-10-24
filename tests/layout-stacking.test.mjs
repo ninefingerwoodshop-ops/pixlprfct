@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import init,{Editor} from '../web/pkg/pixlprfct_core.js';import {paintOrder} from '../web/stacking.js';import {drawScene,sceneSvg} from '../web/appearance.js';import {frameAt} from '../web/scene.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+const all=e=>JSON.parse(e.snapshot()).shapes,get=(e,id)=>all(e).find(s=>s.id===id),set=(e,id,v)=>e.update(JSON.stringify({...get(e,id),...v}));
+const layout={direction:'horizontal',gap:-80,padding_top:0,padding_right:0,padding_bottom:0,padding_left:0,align:'start',justify:'start',hug_width:true,hug_height:true};
+function setup(kind='rectangle'){const e=new Editor(),f=e.add('frame',0,0),a=e.add(kind,0,0),b=e.add(kind,0,0);for(const id of [a,b])set(e,id,{width:100,height:100,prototype:{action:'back',target:0}});e.reparent_many(JSON.stringify([a,b]),f);set(e,f,{auto_layout:layout});return{e,f,a,b};}
+test('first-on-top changes painting and hits without reordering layout or geometry',()=>{
+ const {e,f,a,b}=setup(),before=all(e).map(s=>[s.id,s.x,s.y,s.width,s.height]);assert.equal(e.hit_test(50,50),b);assert.equal(e.prototype_hit_test(f,50,50),b);set(e,f,{auto_layout:{...layout,canvas_stacking:'first'}});assert.deepEqual(all(e).map(s=>[s.id,s.x,s.y,s.width,s.height]),before);assert.equal(e.hit_test(50,50),a);assert.equal(e.prototype_hit_test(f,50,50),a);assert.deepEqual(paintOrder(all(e)).map(s=>s.id),[f,b,a]);const saved=e.snapshot();assert.throws(()=>set(e,f,{auto_layout:{...layout,canvas_stacking:'invalid'}}));assert.equal(e.snapshot(),saved);e.undo();assert.equal(e.hit_test(50,50),b);e.redo();assert.equal(e.hit_test(50,50),a);const copy=new Editor();copy.load(e.snapshot());assert.equal(copy.prototype_hit_test(f,50,50),a);copy.free();e.free();
+});
+test('canvas and SVG share sibling subtree order; nested frame drop targets match',()=>{
+ const {e,f,a,b}=setup('frame'),ac=e.add('rectangle',0,0),bc=e.add('rectangle',20,0);for(const [c,p] of [[ac,a],[bc,b]]){set(e,c,{width:100,height:100});e.reparent_many(JSON.stringify([c]),p);}set(e,f,{auto_layout:{...layout,canvas_stacking:'first'}});const shapes=all(e),expected=[f,b,bc,a,ac],seen=[],ctx={save(){},restore(){}};drawScene(shapes,ctx,s=>seen.push(s.id));assert.deepEqual(seen,expected);const svg=sceneSvg(shapes,s=>`<layer id="${s.id}"/>`);assert.deepEqual([...svg.matchAll(/<layer id="(\d+)"/g)].map(m=>Number(m[1])),expected);assert.equal(e.hit_test(50,50),ac);assert.equal(frameAt(shapes,{x:50,y:50}),a);e.free();
+});
+test('hidden and locked children retain selection rules while prototype ignores editing locks',()=>{
+ const {e,f,a,b}=setup();set(e,f,{auto_layout:{...layout,canvas_stacking:'first'}});set(e,a,{locked:true});assert.equal(e.hit_test(50,50),b);assert.equal(e.prototype_hit_test(f,50,50),a);set(e,a,{hidden:true});assert.equal(e.prototype_hit_test(f,50,50),b);e.free();
+});
+test('component stacking overrides propagate independently and reset',()=>{
+ const {e,f}=setup();e.create_component(f);const i=e.create_instance(f,300,0);set(e,i,{auto_layout:{...get(e,i).auto_layout,canvas_stacking:'first'}});set(e,f,{auto_layout:{...layout,gap:-50}});assert.equal(get(e,i).auto_layout.canvas_stacking,'first');assert.equal(get(e,i).auto_layout.gap,-50);e.reset_override(i,'auto_layout.canvas_stacking');assert.equal(get(e,i).auto_layout.canvas_stacking,'last');e.free();
+});

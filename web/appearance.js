@@ -36,8 +36,8 @@ export function drawScene(shapes,context,paint) {
  for(const root of children.get(0)??[])visit(root,context);
 }
 export function sceneSvg(shapes,paint){
- const {geometry}=compositeGeometry(shapes,appearance);
- const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=shapes.filter(c=>c.parent_id===s.id).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows),blur=layerBlurFilter(`blur-${s.id}`,geometry.get(s.id)?.output,a.layer_blur);return `<g opacity="${a.opacity}">${blur?`<defs>${blur}</defs><g filter="url(#blur-${s.id})">`:""}${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${paint(s)}${children}${filter?"</g>":""}${blur?"</g>":""}</g>`;};
+ const {geometry,children:childMap}=compositeGeometry(shapes,appearance);
+ const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=(childMap.get(s.id)??[]).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows),blur=layerBlurFilter(`blur-${s.id}`,geometry.get(s.id)?.output,a.layer_blur);return `<g opacity="${a.opacity}">${blur?`<defs>${blur}</defs><g filter="url(#blur-${s.id})">`:""}${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${paint(s)}${children}${filter?"</g>":""}${blur?"</g>":""}</g>`;};
  return shapes.filter(s=>!s.parent_id).map(visit).join('');
 }
 

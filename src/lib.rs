@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 mod guide_styles;
 mod path_join;
 mod path_split;
+mod stacking;
 mod stroke_alignment;
 mod stroke_tips;
 
@@ -195,6 +196,8 @@ pub struct AutoLayout {
     pub strokes_included: bool,
     #[serde(default)]
     pub text_baseline: bool,
+    #[serde(default = "default_canvas_stacking")]
+    pub canvas_stacking: String,
     #[serde(default)]
     pub wrap: bool,
     #[serde(default)]
@@ -205,6 +208,9 @@ pub struct AutoLayout {
 
 fn default_content_align() -> String {
     "start".into()
+}
+fn default_canvas_stacking() -> String {
+    "last".into()
 }
 
 impl Default for AutoLayout {
@@ -222,6 +228,7 @@ impl Default for AutoLayout {
             hug_height: true,
             strokes_included: true,
             text_baseline: false,
+            canvas_stacking: default_canvas_stacking(),
             wrap: false,
             cross_gap: None,
             align_content: default_content_align(),
@@ -680,6 +687,7 @@ fn validate(document: &Document) -> Result<(), String> {
         if let Some(l) = &shape.auto_layout {
             if shape.kind != "frame"
                 || !["horizontal", "vertical"].contains(&l.direction.as_str())
+                || !["first", "last"].contains(&l.canvas_stacking.as_str())
                 || !["start", "center", "end"].contains(&l.align.as_str())
                 || !["start", "center", "end", "between", "around", "evenly"]
                     .contains(&l.justify.as_str())
@@ -2291,9 +2299,8 @@ impl Editor {
     }
 
     pub fn hit_test(&self, x: f64, y: f64) -> u32 {
-        self.document
-            .shapes
-            .iter()
+        stacking::paint_order(&self.document.shapes)
+            .into_iter()
             .rev()
             .find(|s| {
                 if s.page_id != self.document.active_page || s.hidden || s.locked {

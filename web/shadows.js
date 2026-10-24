@@ -1,4 +1,5 @@
 import {strokePadding} from './stroke-tips.js';
+import {paintChildren} from './stacking.js';
 export function visibleShadows(style){return(style?.shadows??[]).filter(s=>s.visible!==false&&s.opacity>0);}
 
 // Gaussian tails are bounded at three standard deviations. Negative spread can
@@ -30,7 +31,7 @@ export function shadowFilter(id,box,shadows){
 const union=(a,b)=>!a?b:!b?a:{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),width:Math.max(a.x+a.width,b.x+b.width)-Math.min(a.x,b.x),height:Math.max(a.y+a.height,b.y+b.height)-Math.min(a.y,b.y)};
 const intersect=(a,b)=>{if(!a)return null;const x=Math.max(a.x,b.x),y=Math.max(a.y,b.y),r=Math.min(a.x+a.width,b.x+b.width),d=Math.min(a.y+a.height,b.y+b.height);return r>x&&d>y?{x,y,width:r-x,height:d-y}:null;};
 export function compositeGeometry(shapes,styleOf){
- const children=new Map(),geometry=new Map();for(const s of shapes){const list=children.get(s.parent_id||0)??[];list.push(s);children.set(s.parent_id||0,list);}
+ const children=paintChildren(shapes),geometry=new Map();
  const visit=s=>{
   const a=styleOf(s);if(s.hidden||a.opacity===0){geometry.set(s.id,{content:null,output:null});return null;}
   const pad=a.stroke_enabled?strokePadding(s,a):0;

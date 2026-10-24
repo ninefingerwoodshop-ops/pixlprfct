@@ -98,6 +98,7 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "hug_height",
             "strokes_included",
             "text_baseline",
+            "canvas_stacking",
         ],
         _ => &[],
     }
