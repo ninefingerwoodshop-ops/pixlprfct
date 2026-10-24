@@ -19,6 +19,10 @@ pub fn split(source: &Shape, index: usize) -> Result<Vec<Shape>, String> {
         if shape.appearance.is_none() {
             shape.appearance=Some(serde_json::from_value(serde_json::json!({"opacity":1,"corner_radius":0,"fill_enabled":source.closed,"stroke_enabled":true,"stroke_color":source.fill})).map_err(|e|e.to_string())?);
         }
+        if let Some(style) = &mut shape.appearance {
+            style.stroke_start = Some(if !source.closed && section[0] == 0 {crate::path_join::endpoint(source, false)} else {"none".into()});
+            style.stroke_end = Some(if !source.closed && *section.last().unwrap() == count-1 {crate::path_join::endpoint(source, true)} else {"none".into()});
+        }
         shape.points=section.iter().map(|i|source.points[*i]).collect();
         shape.handles=if source.handles.is_empty(){vec![]}else{section.iter().map(|i|source.handles[*i]).collect()};
         if !shape.handles.is_empty(){shape.handles[0][0]=shape.points[0];let last=shape.points.len()-1;shape.handles[last][1]=shape.points[last];}

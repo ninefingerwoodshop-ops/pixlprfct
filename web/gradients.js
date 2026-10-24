@@ -1,3 +1,4 @@
+import {strokePadding} from './stroke-tips.js';
 export function defaultGradient(color,kind='linear') {
  return {kind,start:kind==='radial'?[.5,.5]:[0,.5],end:[1,.5],stops:[{position:0,color,opacity:1},{position:1,color:'#7c3aed',opacity:1}]};
 }
@@ -20,13 +21,13 @@ export function moveGradientPoint(g,key,point){
 }
 const radialSurfaces=new Map();let radialPixels=0;
 export function canvasFill(ctx,s,channel='fill') {
- const g=channel==='stroke'?s.appearance?.stroke_gradient:s.appearance?.gradient;if(!g)return channel==='stroke'?s.appearance?.stroke_color:s.fill;
+ const g=channel==='stroke'?s.appearance?.stroke_gradient:s.appearance?.gradient;if(!g)return channel==='stroke'?(s.appearance?.stroke_color??(s.points?.length?s.fill:'#000000')):s.fill;
  const p=gradientGeometry(s,g);let paint;
  if(g.kind==='radial') {
   // CanvasGradient has no independent transform. Paint the ellipse into a
   // device-resolution tile, then map that tile back to the shape's coordinates.
   // This also lets the same fill work for text and arbitrary vector paths.
-  const pad=channel==='stroke'?(s.stroke_width??2)/2*Math.max(s.appearance?.stroke_join==='miter'?(s.appearance.stroke_miter_limit??10):1,s.appearance?.stroke_cap==='square'?Math.SQRT2:1):0,tile={x:s.x-pad,y:s.y-pad,width:s.width+2*pad,height:s.height+2*pad};
+  const pad=channel==='stroke'?strokePadding(s):0,tile={x:s.x-pad,y:s.y-pad,width:s.width+2*pad,height:s.height+2*pad};
   const t=ctx.getTransform(),wantedW=Math.max(1,Math.ceil(tile.width*Math.hypot(t.a,t.b))),wantedH=Math.max(1,Math.ceil(tile.height*Math.hypot(t.c,t.d)));
   const ratio=Math.min(1,8192/wantedW,8192/wantedH,Math.sqrt(16_777_216/(wantedW*wantedH))),w=Math.max(1,Math.ceil(wantedW*ratio)),h=Math.max(1,Math.ceil(wantedH*ratio));
   const key=JSON.stringify([g,w,h,pad/s.width,pad/s.height]);let surface=radialSurfaces.get(key);

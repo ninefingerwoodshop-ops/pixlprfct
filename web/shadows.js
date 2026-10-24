@@ -1,3 +1,4 @@
+import {strokePadding} from './stroke-tips.js';
 export function visibleShadows(style){return(style?.shadows??[]).filter(s=>s.visible!==false&&s.opacity>0);}
 
 // Gaussian tails are bounded at three standard deviations. Negative spread can
@@ -32,7 +33,7 @@ export function compositeGeometry(shapes,styleOf){
  const children=new Map(),geometry=new Map();for(const s of shapes){const list=children.get(s.parent_id||0)??[];list.push(s);children.set(s.parent_id||0,list);}
  const visit=s=>{
   const a=styleOf(s);if(s.hidden||a.opacity===0){geometry.set(s.id,{content:null,output:null});return null;}
-  const reach=s.points?.length?Math.max(a.stroke_join==='miter'?(a.stroke_miter_limit??10):1,a.stroke_cap==='square'?Math.SQRT2:1):1,pad=a.stroke_enabled?(s.stroke_width??2)/2*reach:0;
+  const pad=a.stroke_enabled?strokePadding(s,a):0;
   let content={x:s.x-pad,y:s.y-pad,width:s.width+2*pad,height:s.height+2*pad};
   for(const child of children.get(s.id)??[]){let box=visit(child);if(s.kind==='frame'&&s.clip_content)box=intersect(box,s);content=union(content,box);}
   const output=blurBounds(shadowBounds(content,a.shadows),a.layer_blur??0);geometry.set(s.id,{content,output});return output;

@@ -66,6 +66,8 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "stroke_dash",
             "stroke_dash_offset",
             "stroke_cap",
+            "stroke_start",
+            "stroke_end",
             "stroke_join",
             "stroke_miter_limit",
         ],

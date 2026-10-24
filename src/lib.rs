@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 mod guide_styles;
 mod path_join;
 mod path_split;
+mod stroke_tips;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
@@ -246,6 +247,10 @@ pub struct Appearance {
     pub stroke_dash_offset: f64,
     #[serde(default = "default_round")]
     pub stroke_cap: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_start: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke_end: Option<String>,
     #[serde(default = "default_round")]
     pub stroke_join: String,
     #[serde(default = "default_miter_limit")]
@@ -755,6 +760,19 @@ fn validate(document: &Document) -> Result<(), String> {
                 || !a.stroke_dash_offset.is_finite()
                 || a.stroke_dash_offset.abs() > 1_000_000.0
                 || !["butt", "round", "square"].contains(&a.stroke_cap.as_str())
+                || [&a.stroke_start, &a.stroke_end].iter().any(|v| {
+                    v.as_ref().is_some_and(|v| {
+                        ![
+                            "none",
+                            "line",
+                            "triangle",
+                            "reverse_triangle",
+                            "diamond",
+                            "circle",
+                        ]
+                        .contains(&v.as_str())
+                    })
+                })
                 || !["miter", "round", "bevel"].contains(&a.stroke_join.as_str())
                 || !a.stroke_miter_limit.is_finite()
                 || !(1.0..=1000.0).contains(&a.stroke_miter_limit)
@@ -2259,6 +2277,9 @@ impl Editor {
                     parent = ancestor.parent_id;
                 }
                 if !s.points.is_empty() {
+                    if stroke_tips::hit(s, x, y) {
+                        return true;
+                    }
                     let margin = (s.stroke_width / 2.0).max(4.0);
                     if x < s.x - margin
                         || x > s.x + s.width + margin

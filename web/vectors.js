@@ -38,11 +38,17 @@ export function vectorPath(shape) {
     d+=shape.handles?.length ? ` C${a.out.x} ${a.out.y} ${b.in.x} ${b.in.y} ${b.x} ${b.y}` : ` L${b.x} ${b.y}`;
   }
   if(shape.closed) d+=' Z';
-  if(shape.kind==='arrow'&&points.length>1) {
-    const a=points.at(-2),b=points.at(-1),angle=Math.atan2(b[1]-a[1],b[0]-a[0]),size=Math.min(Math.hypot(b[0]-a[0],b[1]-a[1])*.4,Math.max(10,shape.stroke_width*4));
-    d+=` M${b[0]-Math.cos(angle-.5)*size} ${b[1]-Math.sin(angle-.5)*size} L${b[0]} ${b[1]} L${b[0]-Math.cos(angle+.5)*size} ${b[1]-Math.sin(angle+.5)*size}`;
-  }
   return d;
 }
-export function vectorSvg(shape) { return `<path d="${vectorPath(shape)}" ${paintAttributes(shape)}/>`; }
+export function vectorSvg(shape) {
+ const d=vectorPath(shape),a=shape.appearance??{},tips=strokeTips(shape);
+ if(!tips.length||a.stroke_enabled===false)return `<path d="${d}" ${paintAttributes(shape)}/>`;
+ const pad=strokePadding(shape),box=`x="${shape.x-pad}" y="${shape.y-pad}" width="${shape.width+pad*2}" height="${shape.height+pad*2}"`;
+ const strokeOnly={...shape,appearance:{...a,fill_enabled:false,stroke_enabled:true,stroke_color:'#ffffff',stroke_cap:'butt',stroke_gradient:null,stroke_opacity:1}};
+ const mask=`<mask id="tips-${shape.id}" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" ${box}><path d="${d}" ${paintAttributes(strokeOnly)}/>${tips.map(t=>`<path d="${t.d}" fill="${t.closed?'white':'none'}" stroke="${t.closed?'none':'white'}" stroke-width="${shape.stroke_width??2}" stroke-linecap="${a.stroke_cap??'round'}" stroke-linejoin="round"/>`).join('')}</mask>`;
+ const fill=`<path d="${d}" ${paintAttributes({...shape,appearance:{...a,fill_enabled:a.fill_enabled??!!shape.closed,stroke_enabled:false}})}/>`;
+ return `${fill}<defs>${mask}</defs><rect ${box} mask="url(#tips-${shape.id})" fill="${a.stroke_gradient?`url(#stroke-gradient-${shape.id})`:a.stroke_color??shape.fill}" opacity="${a.stroke_opacity??1}"/>`;
+}
 import {paintAttributes} from './appearance.js';
+
+import {strokeTips,strokePadding} from './stroke-tips.js';

@@ -1,4 +1,23 @@
 use crate::Shape;
+pub fn endpoint(s: &Shape, end: bool) -> String {
+    s.appearance
+        .as_ref()
+        .and_then(|a| {
+            if end {
+                a.stroke_end.clone()
+            } else {
+                a.stroke_start.clone()
+            }
+        })
+        .unwrap_or_else(|| {
+            if end && s.kind == "arrow" {
+                "line"
+            } else {
+                "none"
+            }
+            .into()
+        })
+}
 type Node = [[f64; 2]; 3];
 fn nodes(s: &Shape) -> Vec<Node> {
     s.points
@@ -77,7 +96,14 @@ pub fn join(a: &Shape, b: &Shape) -> Result<Shape, String> {
             .fold(f64::NEG_INFINITY, f64::max),
     ];
     let mut result = a.clone();
-    if result.kind == "line" {
+    if result.appearance.is_none() {
+        result.appearance = Some(serde_json::from_value(serde_json::json!({"opacity":1,"corner_radius":0,"fill_enabled":false,"stroke_enabled":true,"stroke_color":a.fill})).map_err(|e| e.to_string())?);
+    }
+    if let Some(style) = &mut result.appearance {
+        style.stroke_start = Some(endpoint(a, best.0));
+        style.stroke_end = Some(endpoint(b, !best.1));
+    }
+    if result.kind == "line" || result.kind == "arrow" {
         result.kind = "pen".into();
     }
     result.x = min[0];
