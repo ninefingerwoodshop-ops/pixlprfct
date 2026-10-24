@@ -77,7 +77,8 @@
     "grid auto layout with fixed/hug/weighted fractional tracks, minimum/maximum bounds, explicit and automatic rows, row/column spans, cell alignment, nested sizing, cell drops, inspector controls, component overrides, scaling and atomic history",
     "canvas grid track resizing and row/column gutter handles with Rust preview geometry, fixed-size conversion, bounds, automatic-row expansion, keyboard editing, nonnegative gaps and atomic undo",
     "grid track reordering through inspector and canvas keyboard controls with transitive span-connected blocks, destination span preservation, hidden pinned cells, stable paint order, component propagation, selection tracking and atomic history",
-    "component creation from shapes and sibling multi-selections with transparent wrapping, tight bounds, linked instances, Ctrl/Command Alt K, selection context menu and Assets entry point"
+    "component creation from shapes and sibling multi-selections with transparent wrapping, tight bounds, linked instances, Ctrl/Command Alt K, selection context menu and Assets entry point",
+    "searchable Tools and actions command panel with Ctrl/Command K, drawing tools, component/layout/layer/page/file commands, selection availability explanations, keyboard navigation and Escape preserving selection"
   ],
   "remaining": [
     "Figma workflow audit: full Assets panel and libraries, comprehensive context menus and tool discovery; nested component creation",

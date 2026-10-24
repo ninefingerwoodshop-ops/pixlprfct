@@ -205,3 +205,5 @@ Choose **Edit spacing on canvas** for grid padding, row/column gutters, and trac
 ### Create components from a selection
 
 Select a shape, frame, or sibling layers and choose **Create component** in the inspector or right-click menu, or press **Ctrl/Command + Alt + K**. Frames convert in place; other selections receive a transparent component frame around their bounds. Existing layer geometry is preserved, and the operation is one undo step. Select **Assets** in the navigation rail to open the component library and insert linked instances. Nested components and selections spanning different parents are not supported yet.
+
+Choose **Tools** or press **Ctrl/Command + K** to search built-in commands. Search matches command names and categories. Use arrows and Enter to run a command, or Escape to dismiss without changing the selection. Disabled actions explain their selection requirements. This panel exposes implemented editor commands; it is not a third-party plugin marketplace.
