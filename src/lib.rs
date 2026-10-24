@@ -92,6 +92,8 @@ pub struct LayoutGrid {
 pub struct Prototype {
     #[serde(default = "default_trigger")]
     pub trigger: String,
+    #[serde(default = "default_delay")]
+    pub delay: u32,
     pub action: String,
     #[serde(default)]
     pub target: u32,
@@ -117,6 +119,10 @@ pub struct Prototype {
 
 fn default_trigger() -> String {
     "click".into()
+}
+
+fn default_delay() -> u32 {
+    800
 }
 
 fn default_transition() -> String {
@@ -487,8 +493,15 @@ fn validate(document: &Document) -> Result<(), String> {
             );
         }
         if let Some(p) = &shape.prototype {
-            if !["click", "mouseenter", "mouseleave"].contains(&p.trigger.as_str()) {
+            if !["click", "mouseenter", "mouseleave", "afterdelay"].contains(&p.trigger.as_str()) {
                 return Err("Invalid prototype trigger".into());
+            }
+            if !(1..=600_000).contains(&p.delay)
+                || (p.trigger == "afterdelay" && shape.kind != "frame")
+            {
+                return Err(
+                    "Prototype delay must be 1–600000 ms; timed triggers require a frame".into(),
+                );
             }
             if ![
                 "instant",

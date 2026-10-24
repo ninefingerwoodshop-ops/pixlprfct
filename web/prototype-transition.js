@@ -13,6 +13,6 @@ export function canvasTransitions(canvas,area){
  const reduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
  return{get running(){return running;},cancel,capture(config){if(!transitionSpec(config,reduced()))return null;const copy=document.createElement('canvas');copy.width=canvas.width;copy.height=canvas.height;copy.getContext('2d').drawImage(canvas,0,0);copy.style.width=canvas.style.width;copy.style.height=canvas.style.height;copy.style.pointerEvents='none';copy.setAttribute('aria-hidden','true');return copy;},play(copy,config){
   cancel();const spec=transitionSpec(config,reduced());if(!copy||!spec)return;const ticket=epoch;ghost=copy;area.append(copy);running=true;area.setAttribute('aria-busy','true');
-  animations=[canvas.animate(spec.incoming,spec.options),copy.animate(spec.outgoing,spec.options)];Promise.allSettled(animations.map(a=>a.finished)).then(()=>{if(ticket===epoch)cancel();});
+  animations=[canvas.animate(spec.incoming,spec.options),copy.animate(spec.outgoing,spec.options)];return Promise.allSettled(animations.map(a=>a.finished)).then(()=>{if(ticket===epoch)cancel();});
  }};
 }
