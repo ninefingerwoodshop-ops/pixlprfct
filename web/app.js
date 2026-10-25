@@ -1,3 +1,4 @@
+import {installLayerDrop} from './layer-drop.js';
 import {componentEntries,renderSortableComponents} from './component-sort.js';
 import {installRectangleInspector} from './rectangle-inspector.js';
 import {installPaintPopovers} from './paint-popover.js';
@@ -162,6 +163,7 @@ function duplicateSelection() { safe(() => { if (selectedIds.size) { setSelectio
 function deleteSelection() { safe(() => { if (selectedIds.size) { editor.remove_many(selectionJson()); refresh(); } }); }
 function switchPage(id) { safe(() => { editor.select_page(id); refresh(); }); }
 function renderPages() {
+  $('layers-page').textContent=activePage().name+' ⌄';
   $('pages').replaceChildren(...doc.pages.map(page => {
     const button = document.createElement('button');
     button.className = 'page-row' + (page.id === doc.active_page ? ' active' : '');
@@ -184,6 +186,7 @@ function renderLayers() {
   const listed = pageShapes().reverse().filter(s => (s.name+' '+(s.group_name||'')).toLocaleLowerCase().includes(query));
   const layerButton = shape => {
     const button = document.createElement('button');
+    button.draggable=true;button.dataset.layerDrop=shape.id;button.dataset.frame=String(shape.kind==='frame');
     button.className = 'layer' + (selectedIds.has(shape.id) ? ' active' : '');
     button.setAttribute('aria-pressed', String(selectedIds.has(shape.id)));
     const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(shape.kind);
@@ -230,8 +233,14 @@ function renderLayers() {
   else if (!listed.length) { const hint = document.createElement('p'); hint.className = 'empty-layers'; hint.textContent = 'No matching layers'; $('layers').append(hint); }
 }
 function insertInstance(masterId){safe(()=>{const master=doc.shapes.find(s=>s.id===masterId);if(!master)return;const same=master.page_id===doc.active_page;const x=same?master.x+master.width+40:(canvas.clientWidth/2-pan.x)/zoom;const y=same?master.y:(canvas.clientHeight/2-pan.y)/zoom;const id=editor.create_instance(masterId,x,y);setSelection([id]);refresh();fit();toast('Linked instance inserted');});}
-function showFilePanel(){ $('file-panel').hidden=false;$('assets-panel').hidden=true;$('nav-file').classList.add('active');$('nav-assets').classList.remove('active'); }
-function showAssets(){ $('file-panel').hidden=true;$('assets-panel').hidden=false;$('nav-file').classList.remove('active');$('nav-assets').classList.add('active');document.querySelector('.left-panel').classList.add('mobile-open');renderAssetBrowser();$('asset-search').focus(); }
+function showLeftPanel(name){
+  for(const [key,id] of [['layers','file-panel'],['pages','pages-panel'],['assets','assets-panel']]){
+    $(id).hidden=key!==name;const nav=$('nav-'+key);nav.classList.toggle('active',key===name);nav.setAttribute('aria-pressed',String(key===name));
+  }
+  document.querySelector('.left-panel').classList.add('mobile-open');
+}
+function showFilePanel(){showLeftPanel('layers');}
+function showAssets(){showLeftPanel('assets');renderAssetBrowser();$('asset-search').focus();}
 function goToMain(id){safe(()=>{const main=doc.shapes.find(s=>s.id===id);if(!main)return;editor.select_page(main.page_id);refresh();setSelection([id]);refresh(false);showFilePanel();fit(true);});}
 function renderAssetBrowser(){
   if($('assets-panel').hidden)return;
@@ -606,7 +615,7 @@ function bind() {
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-help']) $(id).onclick = showShortcuts;
   const toolActions=[['select','Move','V'],['scale','Scale','K'],['hand','Hand / pan','H'],['frame','Frame','F'],['rectangle','Rectangle','R'],['ellipse','Ellipse','O'],['line','Line','L'],['arrow','Arrow','Shift L'],['polygon','Polygon',''],['star','Star',''],['pen','Pen','P'],['pencil','Pencil','Shift P'],['text','Text','T']].map(([tool,label,shortcut])=>({label,shortcut,category:'Drawing',run:()=>{setTool(tool);canvas.focus();}}));
-  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&![...document.querySelectorAll('[hidden]')].some(el=>el.id!=='file-panel'&&el.contains(b));},run:()=>$(id).click()}));
+  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add auto layout','Layout','Shift A','Select layers without auto layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export','Export artwork','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&![...document.querySelectorAll('[hidden]')].some(el=>!['file-panel','pages-panel','assets-panel'].includes(el.id)&&el.contains(b));},run:()=>$(id).click()}));
   commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
   commands.push(...[['front','Bring to front',']'],['back','Send to back','['],['forward','Bring forward','Ctrl/⌘ ]'],['backward','Send backward','Ctrl/⌘ [']].map(([direction,label,shortcut])=>({label,shortcut,category:'Layers',enabled:()=>selectedIds.size>0,unavailable:'Select layers',run:()=>arrangeSelection(direction)})));
@@ -614,7 +623,10 @@ function bind() {
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
   const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
   $('search-toggle').onclick = showSearch; $('nav-search').onclick = showSearch;
-  $('nav-file').onclick = () => { const fromAssets=!$('assets-panel').hidden;showFilePanel(); const panel=document.querySelector('.left-panel');if(fromAssets)panel.classList.add('mobile-open');else panel.classList.toggle('mobile-open'); $('search-panel').hidden = true; $('layer-search').value = ''; renderLayers(); };
+  $('nav-layers').onclick=showFilePanel;
+  $('nav-pages').onclick=()=>showLeftPanel('pages');
+  $('layers-page').onclick=()=>showLeftPanel('pages');
+  $('pages-show-layers').onclick=showFilePanel;
   $('layer-search').oninput = renderLayers;
   document.querySelectorAll('.menu-panel button').forEach(button => button.addEventListener('click', () => document.querySelector('.file-menu').open = false));
   document.addEventListener('pointerdown', event => { if (!event.target.closest('.file-menu')) document.querySelector('.file-menu').open = false; });
@@ -887,7 +899,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});updateRectangleInspector=installRectangleInspector({current,change:update});updatePaintPopovers=installPaintPopovers({current,change:update,document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});updateRectangleInspector=installRectangleInspector({current,change:update});updatePaintPopovers=installPaintPopovers({current,change:update,document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});installLayerDrop($('layers'),(id,target,position)=>safe(()=>{editor.drop_layer(id,target,position);setSelection([id]);refresh();}));bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
   cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{closeVariables();editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

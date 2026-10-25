@@ -1,3 +1,4 @@
+mod layer_drop;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 mod arrangement;
