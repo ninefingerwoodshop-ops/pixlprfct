@@ -56,7 +56,7 @@ import { icon, installIcons } from './icons.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
-const cssCanvas=mountCssCanvas(canvas);let cssCanvasEnabled=null;
+const cssCanvas=mountCssCanvas(canvas);let cssCanvasEnabled=null,cssGeometry=[];
 const cssActive=()=>cssCanvasEnabled??pageShapes().some(s=>s.appearance?.backdrop_blur>0);
 const canvasHit=(x,y)=>cssActive()?cssCanvas.hit({x,y}):editor.hit_test(x,y);
 const measureCtx = document.createElement('canvas').getContext('2d');
@@ -421,7 +421,7 @@ function draw() {
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
   if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{const result=gesture.original.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify(previews),gesture.original.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify(previews))),grid:null};scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{scene=pageShapes();}}
   if(gesture?.type==='layout-spacing'&&gesture.scene)scene=gesture.scene;
-  if(cssActive())scene=cssCanvas.render(scene,{variables:doc.variables,textLayout},pan,zoom);else{cssCanvas.hide();drawScene(scene,ctx,drawShape);}
+  if(cssActive()){scene=cssCanvas.render(scene,{variables:doc.variables,textLayout},pan,zoom);cssGeometry=scene;}else{cssCanvas.hide();drawScene(scene,ctx,drawShape);}
   $('css-canvas').setAttribute('aria-pressed',String(cssActive()));
   if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
   if(assetDrag?.point){const source=doc.shapes.find(s=>s.id===assetDrag.master),parent=scene.find(s=>s.id===assetDrag.parent);if(source){const p=centeredPlacement(source,assetDrag.point);ctx.save();ctx.strokeStyle='#9747ff';ctx.lineWidth=2/zoom;if(parent)ctx.strokeRect(parent.x,parent.y,parent.width,parent.height);ctx.setLineDash([6/zoom,4/zoom]);ctx.strokeRect(p.x,p.y,source.width,source.height);ctx.restore();}}
@@ -435,7 +435,7 @@ function draw() {
     for (const item of visibleSelection) ctx.strokeRect(item.x, item.y, item.width, item.height);
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
     const size = 6 / zoom;
-    if (visibleSelection.length === 1 && canvasEditable() && !cssActive()) for (const [x, y] of [[shape.x, shape.y], [shape.x + shape.width, shape.y], [shape.x, shape.y + shape.height], [shape.x + shape.width, shape.y + shape.height]]) { ctx.fillStyle = '#fff'; ctx.fillRect(x - size / 2, y - size / 2, size, size); ctx.strokeRect(x - size / 2, y - size / 2, size, size); }
+    if (visibleSelection.length === 1 && canvasEditable()) for (const [x, y] of [[shape.x, shape.y], [shape.x + shape.width, shape.y], [shape.x, shape.y + shape.height], [shape.x + shape.width, shape.y + shape.height]]) { ctx.fillStyle = '#fff'; ctx.fillRect(x - size / 2, y - size / 2, size, size); ctx.strokeRect(x - size / 2, y - size / 2, size, size); }
     ctx.fillStyle = '#0d99ff'; ctx.font = `${10 / zoom}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${Math.round(shape.width)} × ${Math.round(shape.height)}`, shape.x + shape.width / 2, shape.y + shape.height + 10 / zoom); ctx.textAlign = 'left';
   }
   if (gesture?.type === 'marquee') {
@@ -693,7 +693,6 @@ function bind() {
     canvas.focus(); canvas.setPointerCapture(event.pointerId);
     const p = point(event);
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
-    if(cssActive()&&tool!=='select'){toast('Switch off CSS canvas to use drawing tools. You can move layers here or edit them in the inspector.');return;}
     if (tool === 'text') { setSelection([insertAt({id:0,kind:'text',name:'Text',x:p.x,y:p.y,width:240,height:56,fill:'#000000',text:'Your next big idea',hidden:false,typography:{sizing:'width',font_size:32,font_family:'Manrope',font_weight:600,align:'left',line_height:1.2,wrap:true}},p)]); setTool('select'); refresh(); return; }
     if (tool === 'pen') {
       if(penPoints.length>=2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
@@ -722,9 +721,10 @@ function bind() {
       editingPath=0;activeNode=-1;
     }
     if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}}
-    if (shape && !shape.hidden && canvasEditable() && !cssActive()) {
+    if (shape && !shape.hidden && canvasEditable()) {
+      const measured=cssActive()?(cssGeometry.find(s=>s.id===shape.id)??shape):shape;
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-        if (Math.abs(p.x - shape.x - cx * shape.width) < 9 / zoom && Math.abs(p.y - shape.y - cy * shape.height) < 9 / zoom) { gesture = { type: 'resize', start: p, original: { ...shape }, preview: { ...shape }, cx, cy }; return; }
+        if (Math.abs(p.x - measured.x - cx * measured.width) < 9 / zoom && Math.abs(p.y - measured.y - cy * measured.height) < 9 / zoom) { gesture = { type: 'resize', start: p, original: { ...measured }, preview: { ...shape }, cx, cy }; return; }
       }
     }
     const hit = canvasHit(p.x, p.y);
@@ -786,6 +786,7 @@ function bind() {
       const x = gesture.cx ? original.x : Math.min(right - 1, resizePoint.x);
       const y = gesture.cy ? original.y : Math.min(bottom - 1, resizePoint.y);
       gesture.preview = { ...original, x, y, width: gesture.cx ? Math.max(1, resizePoint.x - x) : right - x, height: gesture.cy ? Math.max(1, resizePoint.y - y) : bottom - y };
+      if(cssActive())gesture.preview={...gesture.preview,layout_item:{...original.layout_item,fill_width:false,fill_height:false},...(original.auto_layout?{auto_layout:{...original.auto_layout,hug_width:false,hug_height:false}}:{})};
       if(original.aspect_ratio_locked||event.shiftKey){const candidate=gesture.preview,axis=Math.abs(candidate.width/original.width-1)>=Math.abs(candidate.height/original.height-1)?'width':'height',size=ratioSize(original,axis,candidate[axis]);gesture.preview={...candidate,...size,x:gesture.cx?original.x:right-size.width,y:gesture.cy?original.y:bottom-size.height,layout_item:{...candidate.layout_item,fill_width:false,fill_height:false},...(candidate.auto_layout?{auto_layout:{...candidate.auto_layout,hug_width:false,hug_height:false}}:{})};}
       gesture.preview=resizeText(gesture.preview,!!gesture.cx,!!gesture.cy);
     }
