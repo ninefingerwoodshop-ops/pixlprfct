@@ -172,3 +172,13 @@ input[type="checkbox"]:disabled:checked,input[type="checkbox"]:disabled:indeterm
 #layers-page-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--text,#222)}
 #layers-page .page-switch-chevron{position:absolute;display:block;width:16px;height:16px;right:10px;top:50%;transform:translateY(-50%);color:#666;pointer-events:none}
 #file-panel .file-tabs{justify-content:space-between}
+#shadow-section .glass-material{padding:0 0 14px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.glass-material-button{width:100%;padding:9px 12px!important;border:1px solid #b9d5ef!important;border-radius:6px!important;background:linear-gradient(125deg,#eef7ff,#f6f0ff)!important;color:#245c88!important;font-weight:600!important}
+.glass-material h4{margin:14px 0 10px;font-size:11px}
+.glass-material-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#shadow-section .glass-material-fields label{display:flex;flex-direction:column;align-items:stretch;gap:5px;font-size:10px;margin:0;min-width:0}
+.glass-material-fields input{width:100%;min-width:0;box-sizing:border-box}
+.glass-material p{font-size:10px;line-height:1.5;color:#777;margin-bottom:0}
+.glass-other-effects{position:relative}
+.glass-other-effects .effect-add-menu{top:-5px;right:0}
+.glass-material-fields input[type=color]{height:30px;padding:3px;border:1px solid var(--line);border-radius:5px}

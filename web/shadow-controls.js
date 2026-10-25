@@ -1,5 +1,6 @@
 import {appearance} from './appearance.js';
 import {compactEffects} from './compact-inspector.js';
+import {renderGlassControls} from './glass-controls.js';
 export function renderShadowControls(host,shape,change){
  const openEffects=host.dataset.shape===String(shape?.id)?[...host.querySelectorAll('details.effect-entry[open]')].map(d=>d.dataset.effect):[];host.dataset.shape=shape?.id??'';
  host.replaceChildren();host.hidden=!shape;if(!shape)return;
@@ -21,4 +22,5 @@ export function renderShadowControls(host,shape,change){
  });
  const add=document.createElement('button');add.textContent='Add drop shadow';add.className='wide-button';add.disabled=shadows.length>=8;add.onclick=()=>save([...shadows,{kind:'drop',x:0,y:4,blur:8,spread:0,color:'#000000',opacity:.25,visible:true}]);host.append(add);
  compactEffects(host,shape,change,openEffects);
+ renderGlassControls(host,shape,change);
 }
