@@ -4,6 +4,8 @@ import {installInspectorLayout} from './inspector-layout.js';
 let updateInspectorLayout=()=>{};
 import {installToolbelt} from './toolbelt.js';
 let updateToolbelt=()=>{};
+import {installAutoLayoutInspector} from './auto-layout-inspector.js';
+let updateAutoLayoutInspector=()=>{};
 import {componentAssets,renderAssets} from './assets.js';
 import {showContextMenu} from './context-menu.js';
 import {installActionPanel} from './action-panel.js';
@@ -299,6 +301,7 @@ function renderPropertiesNow() {
   $('parent-frame').value=shapes[0]?.parent_id??0;
   $('move-to-frame').disabled=shapes.some(s=>s.component?.type==='instance'&&s.component.master!==s.component.source);
   const parentShape=shape&&pageShapes().find(s=>s.id===shape.parent_id),layoutParent=parentShape?.auto_layout;
+  updateAutoLayoutInspector(shape,parentShape);
   renderGridCell($('grid-cell-controls'),shape,parentShape,update,layoutParent?.direction==='grid'?JSON.parse(editor.grid_layout(parentShape.id)):null);
   $('layout-child-panel').hidden=!layoutParent||!shape;
   if(shape){for(const key of ['fill_width','fill_height','absolute'])$('layout-item-'+key).checked=!!shape.layout_item?.[key];}
@@ -857,7 +860,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
   cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

@@ -231,3 +231,9 @@ The right panel has separate **Design** and **Prototype** tabs with arrow-key na
 Expand a grid row or column in the inspector and choose **Delete row/column**. All artwork is kept; crossing spans shrink and later cells shift. Occupied cells can reflow, and implicit rows can regenerate to fit artwork. At least one resolved track remains per axis. The operation propagates through components and is a single undo step.
 
 The six **Position** alignment buttons align a single layer to its parent frame and multiple layers to their selection bounds. A moved frame carries its descendants. Top-level single layers and children positioned by auto layout have these controls disabled; absolute children can align to their parent. Alignment is one undo step.
+
+### Compact auto-layout controls
+
+The Layout section now uses a Freeform/Vertical/Horizontal/Grid flow strip. Auto-layout frames expose per-axis Fixed and Hug sizing; children of auto-layout frames also expose Fill container. The alignment box maps visual positions to main/cross-axis alignment, supports arrow keys, and uses X to toggle automatic spacing. Paired horizontal/vertical padding fields update opposite edges in one undo step; expand Individual padding for each edge. Grid tracks and advanced layout settings remain available in disclosures. Controls follow the [Figma horizontal/vertical auto-layout reference](https://help.figma.com/hc/en-us/articles/31289464393751-Use-the-horizontal-and-vertical-flows-in-auto-layout). Exact parity is not yet complete: padding shorthand/scrubbing, all alignment-box shortcuts, and full grid interaction parity remain pending.
+
+Checkboxes retain native form semantics with consistent 14px styling, focus rings, disabled/mixed states, reduced-motion support and native forced-color fallback.

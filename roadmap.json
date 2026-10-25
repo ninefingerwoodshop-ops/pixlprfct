@@ -88,7 +88,8 @@
     "Assets preview drag insertion with live bounds and destination-frame highlighting, selected variants, atomic frame/auto-layout/grid placement, persistent grid-cell overrides and session-scoped drag payloads",
     "Separate keyboard-accessible Design and Prototype inspector tabs, selection-dependent Position/Layout/Appearance/Typography/Fill/Stroke/Effects ordering, compact fields, advanced disclosures, grouped Move tools and split Shape/Creation toolbar controls",
     "Individual grid track deletion preserving layers, reducing crossing spans, shifting pinned cells, materializing automatic rows, component propagation and atomic undo",
-    "Six Position inspector alignment controls with single-layer parent-frame alignment, descendant translation, auto-layout flow protection and atomic history"
+    "Six Position inspector alignment controls with single-layer parent-frame alignment, descendant translation, auto-layout flow protection and atomic history",
+    "Compact custom checkboxes with checked/mixed/disabled states, keyboard focus and forced-color support; auto-layout flow strip, nine-position alignment control, automatic spacing toggle, per-axis Fixed/Hug/Fill sizing menus and atomic paired padding inputs with advanced disclosures"
   ],
   "remaining": [
     "Exact Figma inspector and toolbar parity: rotation/flips, aspect lock, compact paint rows, multiple paints, styles/variables, complete region/type/comment tools and matching popovers",
