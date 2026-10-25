@@ -29,7 +29,7 @@ Open http://127.0.0.1:5173. The supported Sites runtime serves the editor at `/e
 - Align to selection bounds, distribute equal gaps, and batch fill, duplicate, delete, and move operations with one undo step per operation.
 - Vertical navigation rail, resizable file sidebar, searchable layer list, compact properties inspector, and floating drawing toolbar.
 - Layers, visibility, fill, position, dimensions, duplicate/delete, and layer order.
-- Drag Components rows by their grip to sort the library; the blue line indicates before/after placement. Alt+Up/Down on a grip also reorders. Library order is saved in the document and supports undo/redo independently of canvas stacking.
+- Drag Components rows directly to sort the library; the blue line indicates before/after placement. Alt+Up/Down on a component row also reorders. Library order is saved in the document and supports undo/redo independently of canvas stacking.
 - Rust-backed hit testing, document validation, and 100-step undo/redo.
 - Browser-local autosave, `.pixl` JSON save/load, and SVG export.
 - Text controls for font family, size, weight, alignment, line spacing, wrapping, and fitting the box height to its content. Double-click canvas text to focus the content editor.
