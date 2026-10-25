@@ -1,5 +1,7 @@
 import {appearance} from './appearance.js';
+import {compactEffects} from './compact-inspector.js';
 export function renderShadowControls(host,shape,change){
+ const openEffects=host.dataset.shape===String(shape?.id)?[...host.querySelectorAll('details.effect-entry[open]')].map(d=>d.dataset.effect):[];host.dataset.shape=shape?.id??'';
  host.replaceChildren();host.hidden=!shape;if(!shape)return;
  const heading=document.createElement('h3');heading.textContent='Effects';host.append(heading);const style=appearance(shape),shadows=style.shadows??[];
  const blurLabel=document.createElement('label'),blur=document.createElement('input');blur.type='number';blur.min=0;blur.max=100000;blur.step='any';blur.value=style.layer_blur??0;blur.id=`layer-blur-${shape.id}`;blur.setAttribute('aria-label','Layer blur');blurLabel.append(document.createTextNode('Layer blur'),blur);host.append(blurLabel);blur.onchange=()=>change({...shape,appearance:{...style,layer_blur:Number(blur.value)}});
@@ -18,4 +20,5 @@ export function renderShadowControls(host,shape,change){
   button(`Remove shadow ${index+1}`,false,()=>save(shadows.filter((_,i)=>i!==index)));
  });
  const add=document.createElement('button');add.textContent='Add drop shadow';add.className='wide-button';add.disabled=shadows.length>=8;add.onclick=()=>save([...shadows,{kind:'drop',x:0,y:4,blur:8,spread:0,color:'#000000',opacity:.25,visible:true}]);host.append(add);
+ compactEffects(host,shape,change,openEffects);
 }
