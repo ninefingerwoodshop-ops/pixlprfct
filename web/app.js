@@ -1,4 +1,7 @@
+import {projectFile} from './project-file.js';
 import {codeExportFiles,showCodeExport} from './code-export.js';
+import {installInspectorDropdowns} from './inspector-dropdown.js';
+let syncInspectorDropdowns=()=>{};
 import {installFramePresets,installFrameLabels} from './frame-tools.js';
 import {workspaceWindow} from './workspace-window.js';
 import {installLayerDrop} from './layer-drop.js';
@@ -17,10 +20,11 @@ import {installInspectorLayout} from './inspector-layout.js';
 let updateInspectorLayout=()=>{};
 import {installToolbelt} from './toolbelt.js';
 let updateToolbelt=()=>{};
+import {installLayoutSizing} from './layout-sizing.js';
 import {installAutoLayoutInspector} from './auto-layout-inspector.js';
 import {installVariables} from './variables.js';
 let updateVariables=()=>{};
-let updateAutoLayoutInspector=()=>{};
+let updateAutoLayoutInspector=()=>{};let updateLayoutSizing=()=>{};
 import {componentAssets,renderAssets} from './assets.js';
 import {showContextMenu} from './context-menu.js';
 import {installActionPanel} from './action-panel.js';
@@ -204,8 +208,10 @@ function renderLayers() {
     button.draggable=true;button.dataset.layerDrop=shape.id;button.dataset.frame=String(shape.kind==='frame');
     button.className = 'layer' + (selectedIds.has(shape.id) ? ' active' : '');
     button.setAttribute('aria-pressed', String(selectedIds.has(shape.id)));
-    const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(shape.kind);
-    if(shape.component){glyph.textContent=shape.component.type==='master'?'◆':'◇';glyph.classList.add('component-glyph');}
+    const direction=shape.auto_layout?.direction,layoutIcon=['horizontal','vertical','grid'].includes(direction);
+    const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(layoutIcon?'layout-'+direction:shape.kind);
+    if(layoutIcon){glyph.title=direction==='grid'?'Grid auto layout':direction==='horizontal'?'Horizontal auto layout':'Vertical auto layout';glyph.dataset.layout=direction;}
+    if(shape.component){if(!layoutIcon)glyph.textContent=shape.component.type==='master'?'◆':'◇';glyph.classList.add('component-glyph');glyph.title=[glyph.title,shape.component.type==='master'?'Main component':'Component instance'].filter(Boolean).join(' · ');}
     const name = document.createElement('span'); name.className = 'layer-name'; name.textContent = shape.name;
     button.append(glyph, name);
     if (shape.hidden) { const mark = document.createElement('span'); mark.className = 'hidden-mark'; mark.textContent = 'Hidden'; button.append(mark); }
@@ -318,7 +324,7 @@ function renderComponentProperties(shape){
   $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · ${count} overrides. Detach to add, remove, or reorder layers.`:'Create a reusable component from the selected layers. Ctrl/⌘ Alt K.';
   if(master&&variantSet){const v=variantSet.variants.find(v=>v.component_id===shape.id);$('component-status').textContent=variantSet.name+' · '+variantSet.properties.map((p,i)=>p+': '+v.values[i]).join(', ')+'. Edits update linked instances.';}
 }
-const renderProperties=inspectorRenderer(()=>renderPropertiesNow(),()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
+const renderProperties=inspectorRenderer(()=>{renderPropertiesNow();syncInspectorDropdowns();},()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
 function renderPropertiesNow() {
   updateVariables();
   const shapes = selectionShapes(), shape = current();
@@ -339,7 +345,7 @@ function renderPropertiesNow() {
   $('parent-frame').value=shapes[0]?.parent_id??0;
   $('move-to-frame').disabled=shapes.some(s=>s.component?.type==='instance'&&s.component.master!==s.component.source);
   const parentShape=shape&&pageShapes().find(s=>s.id===shape.parent_id),layoutParent=parentShape?.auto_layout;
-  updateAutoLayoutInspector(shape,parentShape);
+  updateAutoLayoutInspector(shape,parentShape);updateLayoutSizing();
   renderGridCell($('grid-cell-controls'),shape,parentShape,update,layoutParent?.direction==='grid'?JSON.parse(editor.grid_layout(parentShape.id)):null);
   $('layout-child-panel').hidden=!layoutParent||!shape;
   if(shape){for(const key of ['fill_width','fill_height','absolute'])$('layout-item-'+key).checked=!!shape.layout_item?.[key];}
@@ -563,6 +569,7 @@ function placeSvg(payload,location=null){
   setSelection(ids);setTool('select');refresh();toast('SVG imported as editable layers');
 }
 function bind() {
+  syncInspectorDropdowns=installInspectorDropdowns(document.querySelector('.right-panel'));
   $('toggle-lock').onclick=toggleSelectionLock;
   $('create-component').onclick=createComponentSelection;
   $('nav-assets').onclick=showAssets;$('assets-close').onclick=()=>assetsWindow?.close();$('asset-search').oninput=renderAssetBrowser;$('asset-page').onchange=renderAssetBrowser;
@@ -707,17 +714,17 @@ function bind() {
   $('forward').onclick = () => arrangeSelection('forward');
   $('backward').onclick = () => arrangeSelection('backward');
   $('css-canvas').onclick=()=>{cssCanvasEnabled=!cssActive();gesture=null;draw();};
-  const openCodeExport=ids=>showCodeExport(doc,ids,options=>{download('pixlprfct-'+options.target+'.zip',zipFiles(codeExportFiles(doc,{...options,textLayout})),'application/zip');toast(options.target==='html'?'HTML, CSS and JavaScript exported':options.target.toUpperCase()+' '+(options.scope==='project'?'project':'component')+' exported');});
+  const openCodeExport=ids=>showCodeExport(doc,ids,options=>{if(options.target==='pixl'){const file=projectFile(editor.snapshot());download(file.name,file.data,file.type);toast('Editable project exported — share the .pixl file');return;}download('pixlprfct-'+options.target+'.zip',zipFiles(codeExportFiles(doc,{...options,textLayout})),'application/zip');toast(options.target==='html'?'HTML, CSS and JavaScript exported':options.target.toUpperCase()+' '+(options.scope==='project'?'project':'component')+' exported');},()=>$('file').click());
   $('export-css').onclick=()=>openCodeExport([...selectedIds]);
   $('export').onclick=()=>openCodeExport([]);
   $('export-code-option').onclick=()=>{$('export-dialog').close();$('export-css').click();};
-  $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
+  $('save').onclick = () => safe(()=>{const file=projectFile(editor.snapshot());download(file.name,file.data,file.type);toast('Editable project downloaded');});
   $('export-artwork').onclick=()=>{$('export-selection-option').disabled=!selectedIds.size;$('export-scope').value=selectedIds.size?'selection':'page';exportSummary();$('export-dialog').showModal();};
   for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background']){$(id).onchange=exportSummary;$(id).oninput=exportSummary;}
   $('export-cancel').onclick=()=>$('export-dialog').close();$('export-download').onclick=()=>exportArtwork().catch(error=>{$('export-summary').textContent=String(error);}); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
-    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); await cloud?.beforeLocalOpen(); closeVariables(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
+    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); const validation=new Editor();try{validation.load(text);}finally{validation.free();} await cloud?.beforeLocalOpen(); closeVariables(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Editable project opened'); }
     catch (error) { toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
   };
   canvas.oncontextmenu=event=>{const p=point(event);showSelectionMenu(event,canvasHit(p.x,p.y));};
@@ -936,7 +943,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});updateRectangleInspector=installRectangleInspector({current,change:update});updatePaintPopovers=installPaintPopovers({current,change:update,document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});installLayerDrop($('layers'),(id,target,position)=>safe(()=>{editor.drop_layer(id,target,position);setSelection([id]);refresh();}));bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateLayoutSizing=installLayoutSizing({selection:selectionShapes,all:pageShapes,change:updateMany});updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});updateRectangleInspector=installRectangleInspector({current,change:update});updatePaintPopovers=installPaintPopovers({current,change:update,document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});installLayerDrop($('layers'),(id,target,position)=>safe(()=>{editor.drop_layer(id,target,position);setSelection([id]);refresh();}));bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
   cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{closeVariables();editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }
