@@ -1,5 +1,4 @@
 import {installLayerDrop} from './layer-drop.js';
-import {componentEntries,renderSortableComponents} from './component-sort.js';
 import {installRectangleInspector} from './rectangle-inspector.js';
 import {installPaintPopovers} from './paint-popover.js';
 let updateRectangleInspector=()=>{},updatePaintPopovers=()=>{};
@@ -117,7 +116,7 @@ function refresh(save = true) {
   const usedImages=new Set(doc.shapes.filter(s=>s.image).map(s=>s.image.data_url));for(const key of imageCache.keys())if(!usedImages.has(key))imageCache.delete(key);
   const changedPage = previousPage !== doc.active_page;
   if (changedPage) { setSelection([]); layerAnchor = 0; gesture = null; penPoints = []; }
-  renderPages(); renderLayers(); renderComponents(); renderProperties();
+  renderPages(); renderLayers(); renderAssetBrowser(); renderProperties();
   if (changedPage) {
     const view = pageViews.get(doc.active_page);
     if (view) { zoom = view.zoom; pan = { ...view.pan }; } else fit();
@@ -252,11 +251,6 @@ function renderAssetBrowser(){
   const assets=componentAssets(doc,$('asset-search').value,$('asset-page').value);
   $('asset-results').textContent=assets.length+' '+(assets.length===1?'component':'components');
   renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:insertInstance,goMain:goToMain,dragStart:startAssetDrag,dragEnd:clearAssetDrag,preview:id=>{const shapes=exportShapes(doc.shapes,[id],'selection');return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgDocument(shapes,exportBounds(shapes),1,null,textLayout));}});
-}
-function renderComponents(){
-  renderAssetBrowser();
-  const entries=componentEntries(doc);$('component-count').textContent=entries.length;
-  renderSortableComponents($('components-list'),entries,{insert:insertInstance,reorder:order=>safe(()=>{editor.sort_components(JSON.stringify(order));refresh();})});
 }
 function renderComponentProperties(shape){
   const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master',context=instanceContext(doc,shape);
