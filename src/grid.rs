@@ -357,13 +357,12 @@ pub(crate) fn shift_track(
     // also handles overlapping spans transitively, including the destination.
     let mut joined = vec![false; n.saturating_sub(1)];
     let mut connect = |start: usize, span: usize| {
-        for i in start
-            ..start
-                .saturating_add(span)
-                .saturating_sub(1)
-                .min(n.saturating_sub(1))
-        {
-            joined[i] = true;
+        let end = start
+            .saturating_add(span)
+            .saturating_sub(1)
+            .min(n.saturating_sub(1));
+        for item in joined.iter_mut().take(end).skip(start) {
+            *item = true;
         }
     };
     for c in &p.placements {
@@ -387,9 +386,15 @@ pub(crate) fn shift_track(
         }
     }
     let mut groups: Vec<Vec<usize>> = vec![vec![]];
-    for i in 0..n {
+    for (i, is_joined) in joined
+        .iter()
+        .copied()
+        .chain(std::iter::once(true))
+        .enumerate()
+        .take(n)
+    {
         groups.last_mut().unwrap().push(i);
-        if i + 1 < n && !joined[i] {
+        if i + 1 < n && !is_joined {
             groups.push(vec![]);
         }
     }
@@ -620,8 +625,8 @@ pub(crate) fn plan(
                     }
                     break;
                 }
-                pos = if fixed_col.is_some() {
-                    (row + 1) * nc + fixed_col.unwrap()
+                pos = if let Some(column) = fixed_col {
+                    (row + 1) * nc + column
                 } else {
                     pos + 1
                 };

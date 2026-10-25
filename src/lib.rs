@@ -4,12 +4,12 @@ use wasm_bindgen::prelude::*;
 mod arrangement;
 mod grid;
 mod guide_styles;
-mod variables;
 mod path_join;
 mod path_split;
 mod stacking;
 mod stroke_alignment;
 mod stroke_tips;
+mod variables;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
@@ -524,8 +524,12 @@ impl Default for Typography {
 fn fixed_text() -> String {
     "fixed".into()
 }
-fn default_vertical_align() -> String { "top".into() }
-fn default_blend_mode() -> String { "pass-through".into() }
+fn default_vertical_align() -> String {
+    "top".into()
+}
+fn default_blend_mode() -> String {
+    "pass-through".into()
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
@@ -582,7 +586,22 @@ pub struct Editor {
 }
 
 fn validate(document: &Document) -> Result<(), String> {
-    if document.component_order.len()>11000 || document.component_order.iter().collect::<std::collections::HashSet<_>>().len()!=document.component_order.len() || document.component_order.iter().any(|key| { let Some((kind,id))=key.split_once(':') else { return true; }; !["set","component"].contains(&kind) || id.parse::<u32>().map_or(true,|n| n==0) }) {return Err("Invalid component order".into());}
+    if document.component_order.len() > 11000
+        || document
+            .component_order
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            != document.component_order.len()
+        || document.component_order.iter().any(|key| {
+            let Some((kind, id)) = key.split_once(':') else {
+                return true;
+            };
+            !["set", "component"].contains(&kind) || id.parse::<u32>().map_or(true, |n| n == 0)
+        })
+    {
+        return Err("Invalid component order".into());
+    }
     variables::validate_variables(document)?;
     variants::validate_sets(document)?;
     guide_styles::validate_styles(document)?;
@@ -778,7 +797,28 @@ fn validate(document: &Document) -> Result<(), String> {
             if !a.layer_blur.is_finite() || !(0.0..=100_000.0).contains(&a.layer_blur) {
                 return Err("Layer blur must be between 0 and 100000".into());
             }
-            if !["pass-through", "normal", "darken", "multiply", "color-burn", "lighten", "screen", "plus-lighter", "color-dodge", "overlay", "soft-light", "hard-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"].contains(&a.blend_mode.as_str()) {
+            if ![
+                "pass-through",
+                "normal",
+                "darken",
+                "multiply",
+                "color-burn",
+                "lighten",
+                "screen",
+                "plus-lighter",
+                "color-dodge",
+                "overlay",
+                "soft-light",
+                "hard-light",
+                "difference",
+                "exclusion",
+                "hue",
+                "saturation",
+                "color",
+                "luminosity",
+            ]
+            .contains(&a.blend_mode.as_str())
+            {
                 return Err("Unsupported blend mode".into());
             }
             if !a.backdrop_blur.is_finite() || !(0.0..=200.0).contains(&a.backdrop_blur) {
@@ -1400,7 +1440,7 @@ impl Editor {
             pages: default_pages(),
             active_page: 1,
             component_sets: vec![],
-                component_order: vec![],
+            component_order: vec![],
             guide_styles: vec![],
             component_properties: vec![],
         })?;
@@ -2355,12 +2395,35 @@ impl Editor {
 
     pub fn sort_components(&mut self, json: &str) -> Result<(), String> {
         let order: Vec<String> = serde_json::from_str(json).map_err(|e| e.to_string())?;
-        let grouped: std::collections::HashSet<u32> = self.document.component_sets.iter().flat_map(|s| s.variants.iter().map(|v| v.component_id)).collect();
-        let mut valid: std::collections::HashSet<String> = self.document.component_sets.iter().map(|s| format!("set:{}",s.id)).collect();
-        for s in &self.document.shapes { if s.component == Some(components::Component::Master) && !grouped.contains(&s.id) { valid.insert(format!("component:{}",s.id)); } }
-        if order.len()!=valid.len() || order.iter().collect::<std::collections::HashSet<_>>().len()!=order.len() || order.iter().any(|k| !valid.contains(k)) {return Err("Component order must contain every component exactly once".into());}
-        if self.document.component_order == order {return Ok(());}
-        let mut document=self.document.clone();document.component_order=order;self.commit(document)
+        let grouped: std::collections::HashSet<u32> = self
+            .document
+            .component_sets
+            .iter()
+            .flat_map(|s| s.variants.iter().map(|v| v.component_id))
+            .collect();
+        let mut valid: std::collections::HashSet<String> = self
+            .document
+            .component_sets
+            .iter()
+            .map(|s| format!("set:{}", s.id))
+            .collect();
+        for s in &self.document.shapes {
+            if s.component == Some(components::Component::Master) && !grouped.contains(&s.id) {
+                valid.insert(format!("component:{}", s.id));
+            }
+        }
+        if order.len() != valid.len()
+            || order.iter().collect::<std::collections::HashSet<_>>().len() != order.len()
+            || order.iter().any(|k| !valid.contains(k))
+        {
+            return Err("Component order must contain every component exactly once".into());
+        }
+        if self.document.component_order == order {
+            return Ok(());
+        }
+        let mut document = self.document.clone();
+        document.component_order = order;
+        self.commit(document)
     }
 
     pub fn reorder(&mut self, id: u32, delta: i32) -> Result<(), String> {
