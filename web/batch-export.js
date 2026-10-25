@@ -11,7 +11,7 @@ export function exportJobs(page,ids,options,name){
 }
 export function crc32(bytes){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return(crc^0xffffffff)>>>0;}
 export function zipFiles(files){
- if(!files.length||files.length>100)throw new Error('ZIP requires 1–100 files');
+ if(!files.length||files.length>1000)throw new Error('ZIP requires 1–1000 files');
  const encoder=new TextEncoder(),parts=[],directory=[];let offset=0,total=0;
  for(const file of files){const name=encoder.encode(file.name),data=file.data;total+=data.byteLength;if(total>134217728)throw new Error('Batch export exceeds 128 MB. Export fewer layers or reduce scale.');if(name.length>65535||/[\\/]/.test(file.name)||file.name==='..')throw new Error('Invalid ZIP filename');
   const crc=crc32(data),local=new Uint8Array(30+name.length),v=new DataView(local.buffer);v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0x800,true);v.setUint16(12,33,true);v.setUint32(14,crc,true);v.setUint32(18,data.length,true);v.setUint32(22,data.length,true);v.setUint16(26,name.length,true);local.set(name,30);parts.push(local,data);

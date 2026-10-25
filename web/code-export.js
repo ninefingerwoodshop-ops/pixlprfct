@@ -54,7 +54,7 @@ export function showCodeExport(doc,ids,onExport){
  }
  const pageLabel=el('label','code-page-choice','Page'),page=el('select');page.setAttribute('aria-label','Page to export');for(const p of doc.pages){const o=el('option','',p.name);o.value=p.id;page.append(o);}page.value=doc.active_page;pageLabel.append(page);
  const preview=el('div','code-package-preview'),previewTitle=el('div','code-package-heading'),fileList=el('div','code-file-list');previewTitle.append(el('strong','','Your download'),el('span','code-zip-badge','ZIP'));preview.append(previewTitle,fileList);
- const note=el('p','code-export-note','JavaScript is ready for your custom interactions. Prototype actions are not converted yet.');
+ const note=el('p','code-export-note','Add custom interactions in the exported source. Prototype actions are not converted yet.');
  const error=el('p','code-export-error');error.setAttribute('role','alert');error.hidden=true;
  const footer=el('div','code-export-footer'),cancel=el('button','code-export-cancel','Cancel'),download=el('button','primary','Download ZIP');footer.append(cancel,download);
  main.append(intro,targetLabel,el('h4','','Export scope'),scopeGroup,pageLabel,preview,note,error);content.append(main,footer);
