@@ -811,6 +811,19 @@ function bind() {
   const cancelGesture = () => { if (gesture?.type === 'marquee') setSelection(gesture.base);if(gesture?.type==='gradient')activeGradient=null; gesture = null; renderLayers(); renderProperties(); draw(); };
   canvas.onpointercancel = cancelGesture;
   canvas.onlostpointercapture = () => { if (gesture) cancelGesture(); };
+  // Browser zoom shortcuts belong to the stage, even when a panel has focus.
+  document.addEventListener('wheel',event=>{
+    if(!event.ctrlKey&&!event.metaKey)return;
+    event.preventDefault();event.stopPropagation();
+    const rect=canvas.getBoundingClientRect(),overStage=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom;
+    const delta=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?canvas.clientHeight:1);
+    if(overStage)zoomAt(Math.exp(-delta*.001),event.clientX-rect.left,event.clientY-rect.top);else zoomAt(Math.exp(-delta*.001));
+  },{capture:true,passive:false});
+  document.addEventListener('keydown',event=>{
+    if(!(event.ctrlKey||event.metaKey)||event.altKey||!['+','=','-','0'].includes(event.key))return;
+    event.preventDefault();event.stopPropagation();
+    zoomAt(event.key==='0'?1/zoom:event.key==='-'?1/1.2:1.2);
+  },{capture:true});
   canvas.addEventListener('wheel', event => {
     event.preventDefault();
     if (event.ctrlKey || event.metaKey) { const rect = canvas.getBoundingClientRect(); zoomAt(Math.exp(-event.deltaY * .001), event.clientX - rect.left, event.clientY - rect.top); }
