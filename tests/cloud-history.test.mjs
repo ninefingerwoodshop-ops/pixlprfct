@@ -1,0 +1,24 @@
+import {cloudDatabase} from './cloud-db.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';import {documentApi} from '../lib/documents.mjs';import {versionApi} from '../lib/document-versions.mjs';
+const database=cloudDatabase;
+const body=name=>JSON.stringify({version:1,name,shapes:[]});
+const request=(method='GET',owner='alice',revision=1,label=null,data=null,url='https://studio.example/api/versions')=>new Request(url,{method,headers:{'oai-authenticated-user-id':owner,'if-match':String(revision),...(label?{'x-version-label':encodeURIComponent(label)}:{}),...(data?{'content-type':'application/json'}:{})},...(data?{body:data}:{})});
+const create=async db=>(await (await documentApi(request('POST','alice',1,null,body('Original')),db)).json()).id;
+test('named snapshots stay immutable and restore checkpoints the replaced content atomically',async()=>{
+ const db=database();try{const id=await create(db),v=await (await versionApi(request('POST','alice',1,'First draft'),db,id)).json();await documentApi(request('PUT','alice',1,null,body('Changed')),db,id);const old=await (await versionApi(request(),db,id,v.id)).json();assert.equal(JSON.parse(old.body).name,'Original');
+ const restored=await (await versionApi(request('POST','alice',2),db,id,v.id,true)).json();assert.equal(restored.revision,3);assert.equal(JSON.parse(restored.body).name,'Original');const history=await (await versionApi(request(),db,id)).json();assert.equal(history.versions.length,3);const backup=history.versions.find(x=>x.label==='Before restore');assert.equal(JSON.parse((await (await versionApi(request(),db,id,backup.id)).json()).body).name,'Changed');
+ }finally{db.close();}
+});
+test('history authorization, cross-document IDs, stale revisions and trash never permit overwrite',async()=>{
+ const db=database();try{const id=await create(db),other=await create(db),v=await (await versionApi(request('POST','alice',1,'First'),db,id)).json();for(const method of ['GET','POST'])assert.equal((await versionApi(request(method,'bob',1,'Bad'),db,id,v.id,true)).status,404);assert.equal((await versionApi(request(),db,other,v.id)).status,404);
+ await documentApi(request('PUT','alice',1,null,body('Newer')),db,id);assert.equal((await versionApi(request('POST','alice',1),db,id,v.id,true)).status,409);assert.equal((await (await versionApi(request(),db,id)).json()).versions.length,2);assert.equal(JSON.parse((await (await documentApi(request(),db,id)).json()).body).name,'Newer');await documentApi(request('DELETE','alice',2),db,id);assert.equal((await versionApi(request('POST','alice',3,'Trashed'),db,id)).status,409);
+ }finally{db.close();}
+});
+test('history pagination handles tied timestamps without skipping or duplicating records',async()=>{
+ const db=database();try{const id=await create(db);for(let i=0;i<45;i++)await db.prepare('INSERT INTO document_versions(id,document_id,owner,name,body,label,revision,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,'alice','Original',body('Original'),'Version '+i,1,100).run();
+ const page=await (await versionApi(request(),db,id)).json();assert.equal(page.versions.length,40);assert.ok(page.next);const second=await (await versionApi(request('GET','alice',1,null,null,'https://studio.example/api/versions?before='+encodeURIComponent(page.next)),db,id)).json();assert.equal(second.versions.length,5);assert.equal(second.next,null);assert.equal(new Set([...page.versions,...second.versions].map(v=>v.id)).size,45);
+ }finally{db.close();}
+});
+test('invalid labels and cursors are rejected before creating snapshots',async()=>{
+ const db=database();try{const id=await create(db);for(const label of [null,' ', 'x'.repeat(257)])assert.equal((await versionApi(request('POST','alice',1,label),db,id)).status,400);assert.equal((await versionApi(request('GET','alice',1,null,null,'https://studio.example/api/versions?before=bad'),db,id)).status,400);assert.equal((await (await versionApi(request(),db,id)).json()).versions.length,0);}finally{db.close();}
+});

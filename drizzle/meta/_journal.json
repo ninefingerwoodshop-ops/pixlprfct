@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792819539577,
+      "tag": "0000_flaky_phalanx",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792820205713,
+      "tag": "0001_round_ink",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792820544121,
+      "tag": "0002_lying_hemingway",
+      "breakpoints": true
+    }
+  ]
+}

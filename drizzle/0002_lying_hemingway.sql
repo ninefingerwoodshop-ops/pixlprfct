@@ -1,0 +1,1 @@
+ALTER TABLE `document_versions` ADD `kind` text DEFAULT 'named' NOT NULL;

@@ -1,0 +1,131 @@
+{
+  "reference": "https://www.figma.com/design/kstJSCOZwlGQ6FeIzttwD6/Figma-basics",
+  "method": "Read-only selection and menu inspection in the signed-in Figma browser session. No reference artwork changed.",
+  "status": "Incomplete; observed controls are tracked separately from implemented actions.",
+  "observedSelections": {
+    "rectangle": {
+      "layer": "this is it",
+      "common": [
+        "Create component",
+        "Use as mask",
+        "Boolean operations",
+        "Edit object",
+        "alignment",
+        "position",
+        "rotation",
+        "rotate 90 degrees",
+        "flip horizontal/vertical",
+        "dimensions",
+        "aspect lock",
+        "opacity",
+        "blend mode",
+        "individual corners",
+        "fills",
+        "strokes",
+        "effects",
+        "export"
+      ]
+    },
+    "arrow": {
+      "layer": "Vector 132",
+      "additional": [
+        "start/end points",
+        "swap start/end points",
+        "advanced stroke",
+        "corner smoothing"
+      ]
+    },
+    "text": {
+      "layer": "Design your own card here!",
+      "additional": [
+        "Create link",
+        "Apply variable",
+        "auto width/auto height/fixed resizing",
+        "font family/style/size",
+        "line height",
+        "letter spacing",
+        "horizontal and vertical alignment",
+        "type settings"
+      ]
+    },
+    "image": {
+      "layer": "k8-0_fkPHulv-M-unsplash 1",
+      "additional": [
+        "image fill settings",
+        "image opacity",
+        "image visibility/removal"
+      ]
+    },
+    "frame": {
+      "layer": "Homepage",
+      "additional": [
+        "frame presets",
+        "ready for dev",
+        "resize to fit",
+        "toggle auto layout",
+        "flow",
+        "clip content",
+        "selection colors",
+        "layout guides"
+      ]
+    },
+    "instance": {
+      "layer": "Cursor Labels",
+      "additional": [
+        "Color/Position/Stroke variant properties",
+        "apply variable per property",
+        "select matching layers",
+        "detach instance",
+        "reset instance",
+        "reset specific changes",
+        "flatten"
+      ],
+      "autoLayout": [
+        "disabled flow direction",
+        "hug resizing",
+        "alignment matrix",
+        "gap",
+        "individual padding",
+        "clip content"
+      ]
+    }
+  },
+  "addedThisPass": [
+    "18 blend modes persisted in Rust and rendered in Canvas/SVG/CSS",
+    "aspect lock for inspector and corner resizing",
+    "text resizing buttons",
+    "horizontal/vertical text alignment",
+    "arrow endpoint swap",
+    "contextual vector-edit and image-replacement shortcuts"
+  ],
+  "remainingObservedGaps": [
+    "arbitrary-angle rotation and transforms on other layer types",
+    "masks",
+    "Boolean operations and flatten",
+    "plus darker blending",
+    "multiple fill/stroke stacks",
+    "per-side strokes",
+    "corner smoothing",
+    "letter spacing and advanced typography",
+    "text links",
+    "frame presets and resize to fit",
+    "ready-for-dev state",
+    "selection colors",
+    "full variable/style pickers",
+    "exact popover behavior and layout parity"
+  ],
+  "stillToInspect": [
+    "main component and component set",
+    "ellipse/polygon/star specialized controls",
+    "multi-selection and mixed values",
+    "vector edit mode",
+    "full prototype panel",
+    "all nested paint/effect/type menus"
+  ],
+  "addedRectanglePass": [
+    "Rectangle 90-degree rotation and horizontal/vertical reflection with corner and gradient remapping",
+    "Edit object converts rounded rectangles to editable closed Bezier paths",
+    "Aspect lock beside dimensions; blend control in Appearance heading",
+    "Fill/stroke color popovers with hue/saturation/brightness, hex, opacity, page colors, gradients and local variable binding"
+  ]
+}

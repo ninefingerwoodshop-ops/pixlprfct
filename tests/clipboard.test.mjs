@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import init,{Editor} from '../web/pkg/pixlprfct_core.js';
+import {layerPayload,pasteOffset} from '../web/clipboard.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+const shapes=e=>JSON.parse(e.snapshot()).shapes;
+test('clipboard transfers frame trees and groups across documents with fresh identities and atomic history',()=>{
+ const source=new Editor(),f=source.add('frame',10,20),a=source.add('text',20,30),b=source.add('rectangle',30,50);source.reparent_many(JSON.stringify([a,b]),f);source.group_many(JSON.stringify([a,b]));
+ const payload=source.copy_layers(JSON.stringify([f]));const dest=new Editor();dest.add('ellipse',400,400);const before=dest.snapshot();const ids=JSON.parse(dest.paste_layers(payload,100,200,0));assert.equal(ids.length,1);const copied=shapes(dest).filter(s=>s.id!==1);assert.equal(copied.length,3);assert.deepEqual(copied.map(s=>[s.x,s.y]),[[110,220],[120,230],[130,250]]);assert.equal(copied[1].parent_id,copied[0].id);assert.equal(copied[1].group_id,copied[2].group_id);assert.notEqual(copied[0].id,f);
+ dest.undo();assert.equal(dest.snapshot(),before);dest.redo();const again=JSON.parse(dest.paste_layers(payload,0,0,0));assert.notEqual(again[0],ids[0]);const copy=new Editor();copy.load(dest.snapshot());assert.equal(copy.snapshot(),dest.snapshot());source.free();dest.free();copy.free();
+});
+test('copying a child detaches external parent; paste validates the entire payload and target atomically',()=>{
+ const e=new Editor(),f=e.add('frame',0,0),c=e.add('rectangle',20,20);e.reparent_many(JSON.stringify([c]),f);const payload=e.copy_layers(JSON.stringify([c]));assert.equal(JSON.parse(payload).shapes[0].parent_id,0);
+ const page=e.add_page(),target=e.add('frame',100,100),before=e.snapshot();
+ for(const text of [JSON.stringify({...JSON.parse(payload),version:99}),JSON.stringify({...JSON.parse(payload),shapes:[{...JSON.parse(payload).shapes[0],parent_id:999}]}),JSON.stringify({...JSON.parse(payload),shapes:[...JSON.parse(payload).shapes,...JSON.parse(payload).shapes]})]){assert.throws(()=>e.paste_layers(text,0,0,target));assert.equal(e.snapshot(),before);}
+ assert.throws(()=>e.paste_layers(payload,0,0,f));assert.equal(e.snapshot(),before);const roots=JSON.parse(e.paste_layers(payload,100,100,target));const pasted=shapes(e).find(s=>s.id===roots[0]);assert.equal(pasted.page_id,page);assert.equal(pasted.parent_id,target);e.free();
+});
+test('paste positioning supports frame inset, over selection, and repeated canvas offsets',()=>{
+ const payload={format:'pixlprfct.layers',version:1,shapes:[{x:20,y:30,parent_id:0},{x:30,y:40,parent_id:1}]};assert.deepEqual(layerPayload(JSON.stringify(payload)),payload);assert.equal(layerPayload('hello'),null);
+ assert.deepEqual(pasteOffset(payload,{x:100,y:200}),{x:96,y:186});assert.deepEqual(pasteOffset(payload,{x:100,y:200},true),{x:80,y:170});assert.deepEqual(pasteOffset(payload,null,false,3),{x:72,y:72});
+});
