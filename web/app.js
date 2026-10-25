@@ -1,4 +1,6 @@
 import {codeExportFiles,showCodeExport} from './code-export.js';
+import {installInspectorDropdowns} from './inspector-dropdown.js';
+let syncInspectorDropdowns=()=>{};
 import {installFramePresets,installFrameLabels} from './frame-tools.js';
 import {workspaceWindow} from './workspace-window.js';
 import {installLayerDrop} from './layer-drop.js';
@@ -204,8 +206,10 @@ function renderLayers() {
     button.draggable=true;button.dataset.layerDrop=shape.id;button.dataset.frame=String(shape.kind==='frame');
     button.className = 'layer' + (selectedIds.has(shape.id) ? ' active' : '');
     button.setAttribute('aria-pressed', String(selectedIds.has(shape.id)));
-    const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(shape.kind);
-    if(shape.component){glyph.textContent=shape.component.type==='master'?'◆':'◇';glyph.classList.add('component-glyph');}
+    const direction=shape.auto_layout?.direction,layoutIcon=['horizontal','vertical','grid'].includes(direction);
+    const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(layoutIcon?'layout-'+direction:shape.kind);
+    if(layoutIcon){glyph.title=direction==='grid'?'Grid auto layout':direction==='horizontal'?'Horizontal auto layout':'Vertical auto layout';glyph.dataset.layout=direction;}
+    if(shape.component){if(!layoutIcon)glyph.textContent=shape.component.type==='master'?'◆':'◇';glyph.classList.add('component-glyph');glyph.title=[glyph.title,shape.component.type==='master'?'Main component':'Component instance'].filter(Boolean).join(' · ');}
     const name = document.createElement('span'); name.className = 'layer-name'; name.textContent = shape.name;
     button.append(glyph, name);
     if (shape.hidden) { const mark = document.createElement('span'); mark.className = 'hidden-mark'; mark.textContent = 'Hidden'; button.append(mark); }
@@ -318,7 +322,7 @@ function renderComponentProperties(shape){
   $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · ${count} overrides. Detach to add, remove, or reorder layers.`:'Create a reusable component from the selected layers. Ctrl/⌘ Alt K.';
   if(master&&variantSet){const v=variantSet.variants.find(v=>v.component_id===shape.id);$('component-status').textContent=variantSet.name+' · '+variantSet.properties.map((p,i)=>p+': '+v.values[i]).join(', ')+'. Edits update linked instances.';}
 }
-const renderProperties=inspectorRenderer(()=>renderPropertiesNow(),()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
+const renderProperties=inspectorRenderer(()=>{renderPropertiesNow();syncInspectorDropdowns();},()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
 function renderPropertiesNow() {
   updateVariables();
   const shapes = selectionShapes(), shape = current();
@@ -563,6 +567,7 @@ function placeSvg(payload,location=null){
   setSelection(ids);setTool('select');refresh();toast('SVG imported as editable layers');
 }
 function bind() {
+  syncInspectorDropdowns=installInspectorDropdowns(document.querySelector('.right-panel'));
   $('toggle-lock').onclick=toggleSelectionLock;
   $('create-component').onclick=createComponentSelection;
   $('nav-assets').onclick=showAssets;$('assets-close').onclick=()=>assetsWindow?.close();$('asset-search').oninput=renderAssetBrowser;$('asset-page').onchange=renderAssetBrowser;
