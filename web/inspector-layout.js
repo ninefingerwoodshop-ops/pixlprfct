@@ -27,7 +27,7 @@ export function installInspectorLayout() {
  const utilities=details('Layer actions',$('lock-panel'),$('parent-panel'),$('group-actions'),arrange);utilities.id='inspector-layer-actions';design.append(utilities);
  const component=$('component-panel');component.classList.add('component-inspector');properties.insertBefore(component,position);
  design.append($('constraints-panel'),$('scale-panel'),$('node-actions'));
- const exports=make('section','property-section');exports.append(make('h3','','Export'));const exportButton=make('button','wide-button','Export artwork…');exportButton.onclick=()=>$('export').click();exports.append(exportButton);design.append(exports);
+ const exports=make('section','property-section');exports.append(make('h3','','Export'));const exportButton=make('button','wide-button','Export artwork…');exportButton.id='export-artwork';exports.append(exportButton);design.append(exports);
  // Put seldom-used stroke settings behind a disclosure, like the advanced panel.
  const strokeAdvanced=details('Advanced stroke');for(const id of ['stroke-dash','stroke-dash-offset','stroke-cap','stroke-join','stroke-miter-limit'])strokeAdvanced.append($(id).closest('label'));strokeAdvanced.append($('stroke-endpoints'));$('stroke-section').append(strokeAdvanced);
  const componentActions=details('Component actions');for(const id of ['create-component','insert-instance','manage-variants','add-variant','go-nested-main','select-instance-root','push-style-overrides','go-main','reset-instance','detach-instance'])componentActions.append($(id));component.append(componentActions);
