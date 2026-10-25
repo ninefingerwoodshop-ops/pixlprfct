@@ -693,12 +693,7 @@ function bind() {
     canvas.focus(); canvas.setPointerCapture(event.pointerId);
     const p = point(event);
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
-    if(cssActive()){
-      if(tool!=='select'){toast('Switch off CSS canvas to draw or drag. Inspector edits remain live.');return;}
-      const hit=canvasHit(p.x,p.y),ids=hit?(event.ctrlKey||event.metaKey?[hit]:canvasSelection(pageShapes(),[hit])):[];
-      if(event.shiftKey){const next=new Set(selectedIds);for(const id of ids)next.has(id)?next.delete(id):next.add(id);setSelection([...next]);}else setSelection(ids);
-      refresh(false);return;
-    }
+    if(cssActive()&&tool!=='select'){toast('Switch off CSS canvas to use drawing tools. You can move layers here or edit them in the inspector.');return;}
     if (tool === 'text') { setSelection([insertAt({id:0,kind:'text',name:'Text',x:p.x,y:p.y,width:240,height:56,fill:'#000000',text:'Your next big idea',hidden:false,typography:{sizing:'width',font_size:32,font_family:'Manrope',font_weight:600,align:'left',line_height:1.2,wrap:true}},p)]); setTool('select'); refresh(); return; }
     if (tool === 'pen') {
       if(penPoints.length>=2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
@@ -744,7 +739,6 @@ function bind() {
     else if (!selectedIds.has(hit)) setSelection(canvasSelection(pageShapes(),[hit]));
     layerAnchor = hit; refresh(false);
     if(!canvasEditable()){toast('Unlock the selection before moving it on canvas');return;}
-    if(cssActive()){toast('CSS canvas: edit selected layers in the inspector. Switch to Design canvas to drag.');return;}
     gesture = {type:'move',start:p,originals:transformedSelection().map(s=>({...s})),previews:transformedSelection().map(s=>({...s}))};
   });
   canvas.onpointermove = event => {
