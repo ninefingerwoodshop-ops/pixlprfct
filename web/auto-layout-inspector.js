@@ -24,15 +24,12 @@ export function installAutoLayoutInspector(current,change){
  for(const id of ['layout-hug_width','layout-hug_height'])$(id).closest('label').classList.add('layout-legacy');
  settings.prepend($('layout-wrap').closest('label'),arrangement,padding,individual);
  settings.append(advanced);const gridDetails=el('details','layout-grid-tracks');gridDetails.append(el('summary','','Grid rows and columns'));$('grid-frame-controls').before(gridDetails);gridDetails.append($('grid-frame-controls'));
- const sizeRow=el('div','layout-size-modes');$('dimensions-section').querySelector('.property-grid').after(sizeRow);
- for(const [axis,label] of [['width','Width sizing'],['height','Height sizing']]){const select=el('select','');select.id='layout-size-'+axis;select.setAttribute('aria-label',label);select.onchange=()=>{const s=current();if(!s)return;const value=select.value,changes={...s,layout_item:{...s.layout_item,['fill_'+axis]:value==='fill'}};if(s.auto_layout)changes.auto_layout={...s.auto_layout,['hug_'+axis]:value==='hug'};change(changes);};sizeRow.append(select);$('layout-item-fill_'+axis).closest('label').classList.add('layout-legacy');}
  return(shape,parent)=>{
   const l=shape?.auto_layout,auto=['between','around','evenly'].includes(l?.justify);
   const mainAxis=l?.direction==='vertical'?'vertical':'horizontal';gapIcons[0].innerHTML=icon('gap-'+mainAxis);gapIcons[1].innerHTML=icon('gap-'+(mainAxis==='horizontal'?'vertical':'horizontal'));
   for(const b of flow.children)b.setAttribute('aria-pressed',String(b.dataset.flow===(l?.direction??'none')));
   $('dimensions-section').querySelector('h3').textContent=l?'Auto layout':'Layout';flow.hidden=shape?.kind!=='frame';matrix.hidden=!l||l.direction==='grid';gridDetails.hidden=l?.direction!=='grid';automatic.hidden=!l||l.direction==='grid';automatic.setAttribute('aria-pressed',String(auto));
   if(l){const vertical=l.direction==='vertical',x=positions.indexOf(vertical?l.align:l.justify),y=positions.indexOf(vertical?l.justify:l.align);for(const b of matrix.children){const chosen=auto?(vertical?Number(b.dataset.x)===x:Number(b.dataset.y)===y):(Number(b.dataset.x)===x&&Number(b.dataset.y)===y);b.setAttribute('aria-pressed',String(chosen));}for(const [axis,a,b] of [['horizontal','left','right'],['vertical','top','bottom']]){const input=$('paired-padding-'+axis);input.value=l['padding_'+a]===l['padding_'+b]?l['padding_'+a]:'';input.placeholder='Mixed';}}
-  const canFill=!!parent?.auto_layout&&!shape?.layout_item?.absolute,canHug=!!l;sizeRow.hidden=!shape||(!canFill&&!canHug);
-  for(const axis of ['width','height']){const select=$('layout-size-'+axis),options=[['fixed','Fixed '+axis],...(canHug?[['hug','Hug contents']]:[]),...(canFill?[['fill','Fill container']]:[])];select.replaceChildren(...options.map(([value,label])=>{const o=el('option','',label);o.value=value;return o;}));select.value=canFill&&shape?.layout_item?.['fill_'+axis]?'fill':canHug&&l['hug_'+axis]?'hug':'fixed';}
+
  };
 }

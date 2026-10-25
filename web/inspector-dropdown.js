@@ -26,7 +26,7 @@ export function installInspectorDropdowns(root){
     button.onclick=e=>{e.preventDefault();active===entry?close(true):open(entry);};button.onkeydown=e=>{e.stopPropagation();if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();open(entry);if(e.key==='Home')optionButtons()[0]?.focus();if(e.key==='End')optionButtons().at(-1)?.focus();}};
     select.addEventListener('change',sync);
    }
-   const text=select.selectedOptions[0]?.label||'Choose…';if(entry.label.textContent!==text)entry.label.textContent=text;
+   const text=select.selectedOptions[0]?.dataset.shortLabel||select.selectedOptions[0]?.label||'Choose…';if(entry.label.textContent!==text)entry.label.textContent=text;
    if(entry.button.disabled!==select.disabled)entry.button.disabled=select.disabled;
    const hidden=!visible(select);if(entry.button.hidden!==hidden)entry.button.hidden=hidden;
    if(active===entry&&(hidden||select.disabled))close();
