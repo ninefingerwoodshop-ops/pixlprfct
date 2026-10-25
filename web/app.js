@@ -163,8 +163,13 @@ function deleteSelection() { safe(() => { if (selectedIds.size) { editor.remove_
 function switchPage(id) { safe(() => { editor.select_page(id); refresh(); }); }
 function renderPages() {
   $('layers-page-name').textContent=activePage().name;
-  $('layers-page').title=`Current page: ${activePage().name}. Click to switch pages.`;
-  $('layers-page').setAttribute('aria-label',`Current page: ${activePage().name}. Switch pages`);
+  $('layers-page').title=activePage().name;
+  $('layers-page').setAttribute('aria-label','Current page: '+activePage().name);
+  $('page-switch-menu').replaceChildren(...doc.pages.map(page=>{
+    const item=document.createElement('button');item.type='button';item.setAttribute('role','menuitemradio');item.setAttribute('aria-checked',String(page.id===doc.active_page));
+    const name=document.createElement('span');name.textContent=page.name;const check=document.createElement('span');check.className='page-option-check';check.setAttribute('aria-hidden','true');check.innerHTML=page.id===doc.active_page?'<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="m3 8 3 3 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':'';
+    item.append(name,check);item.onclick=()=>{$('layers-page-control').open=false;switchPage(page.id);$('layers-page').focus();};return item;
+  }));
   $('pages').replaceChildren(...doc.pages.map(page => {
     const button = document.createElement('button');
     button.className = 'page-row' + (page.id === doc.active_page ? ' active' : '');
@@ -618,10 +623,17 @@ function bind() {
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
   const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
-  $('search-toggle').onclick = showSearch; $('nav-search').onclick = showSearch;
+  $('search-toggle').onclick = showSearch;
   $('nav-layers').onclick=showFilePanel;
   $('nav-pages').onclick=()=>showLeftPanel('pages');
-  $('layers-page').onclick=()=>showLeftPanel('pages');
+  $('layers-page-control').addEventListener('keydown',event=>{
+    event.stopPropagation();
+    const picker=$('layers-page-control'),items=[...$('page-switch-menu').querySelectorAll('button')];
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();picker.open=false;$('layers-page').focus();return;}
+    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();event.stopPropagation();picker.open=true;const index=items.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:event.key==='ArrowDown'?(index+1)%items.length:(index<0?items.length-1:(index-1+items.length)%items.length);items[next]?.focus();}
+  });
+  document.addEventListener('pointerdown',event=>{if(!event.target.closest('#layers-page-control'))$('layers-page-control').open=false;});
+  $('layers-page-control').addEventListener('focusout',()=>{queueMicrotask(()=>{if(!$('layers-page-control').contains(document.activeElement))$('layers-page-control').open=false;});});
   $('pages-show-layers').onclick=showFilePanel;
   $('layer-search').oninput = renderLayers;
   document.querySelectorAll('.menu-panel button').forEach(button => button.addEventListener('click', () => document.querySelector('.file-menu').open = false));

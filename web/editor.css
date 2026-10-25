@@ -167,10 +167,10 @@ input[type="checkbox"]:disabled:checked,input[type="checkbox"]:disabled:indeterm
 #pages-panel #pages{max-height:none;flex:1;overflow:auto;padding:4px 8px}
 .panel-description{margin:0 16px 12px;font-size:11px;color:var(--muted,#777);line-height:1.5}
 .panel-primary-action{margin:12px;padding:10px;border:1px solid var(--line);border-radius:6px;text-align:left;font-size:11px}
-#layers-page{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:5px;margin:4px 12px 10px;padding:10px 28px 10px 10px;text-align:left;border:1px solid var(--line);border-radius:6px;flex-shrink:0;background:#f7f7f8}
-#layers-page .current-page-label{font-size:10px;font-weight:400;color:#777}
-#layers-page-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--text,#222)}
-#layers-page .page-switch-chevron{position:absolute;display:block;width:16px;height:16px;right:10px;top:50%;transform:translateY(-50%);color:#666;pointer-events:none}
+#layers-page-control{position:relative;margin:4px 12px 10px;flex-shrink:0}
+#layers-page-control .current-page-label{font-size:10px;font-weight:400;color:#777}
+#layers-page-control #layers-page{position:relative;display:flex;flex-direction:column;gap:5px;list-style:none;padding:10px 32px 10px 10px;border:1px solid #e6e6e8;border-radius:7px;background:#f7f7f8;cursor:pointer;transition:background .12s,border-color .12s}
+#layers-page-control .page-switch-chevron{position:absolute;display:block;width:16px;height:16px;right:10px;bottom:13px;color:#666;pointer-events:none}
 #file-panel .file-tabs{justify-content:space-between}
 #shadow-section .glass-material{padding:0 0 14px;margin-bottom:14px;border-bottom:1px solid var(--line)}
 .glass-material-button{width:100%;padding:9px 12px!important;border:1px solid #b9d5ef!important;border-radius:6px!important;background:linear-gradient(125deg,#eef7ff,#f6f0ff)!important;color:#245c88!important;font-weight:600!important}
@@ -182,3 +182,16 @@ input[type="checkbox"]:disabled:checked,input[type="checkbox"]:disabled:indeterm
 .glass-other-effects{position:relative}
 .glass-other-effects .effect-add-menu{top:-5px;right:0}
 .glass-material-fields input[type=color]{height:30px;padding:3px;border:1px solid var(--line);border-radius:5px}
+
+#layers-page::-webkit-details-marker{display:none}
+#layers-page:hover{background:#f0f0f3!important;border-color:#d6d6dc!important}
+#layers-page:focus-visible,#page-switch-menu button:focus-visible{outline:2px solid #0d99ff;outline-offset:2px}
+#layers-page-name{font-size:12px;font-weight:600;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#layers-page-control[open] #layers-page{border-color:#b5dfff;background:#f1f8ff}
+#layers-page-control[open] .page-switch-chevron{transform:rotate(180deg)}
+#page-switch-menu{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:30;padding:5px;background:#fff;border:1px solid #e5e5e9;border-radius:9px;box-shadow:0 8px 28px #0002,0 2px 6px #0001;max-height:280px;overflow:auto}
+#page-switch-menu button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:34px;padding:8px;text-align:left;border:0;border-radius:5px;background:transparent;font-size:11px;color:#333;cursor:pointer}
+#page-switch-menu button>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-switch-menu button:hover,#page-switch-menu button:focus{background:#f0f5fa}
+#page-switch-menu button[aria-checked=true]{background:#eaf5ff;color:#087ac1;font-weight:600}
+.page-option-check{display:flex;flex-shrink:0;width:16px;height:16px}
