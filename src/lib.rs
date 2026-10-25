@@ -540,6 +540,8 @@ pub struct Document {
     #[serde(default)]
     pub component_sets: Vec<variants::ComponentSet>,
     #[serde(default)]
+    pub component_order: Vec<String>,
+    #[serde(default)]
     pub guide_styles: Vec<guide_styles::GuideStyle>,
     #[serde(default)]
     pub component_properties: Vec<component_properties::ComponentProperty>,
@@ -579,6 +581,7 @@ pub struct Editor {
 }
 
 fn validate(document: &Document) -> Result<(), String> {
+    if document.component_order.len()>11000 || document.component_order.iter().collect::<std::collections::HashSet<_>>().len()!=document.component_order.len() || document.component_order.iter().any(|key| { let Some((kind,id))=key.split_once(':') else { return true; }; !["set","component"].contains(&kind) || id.parse::<u32>().map_or(true,|n| n==0) }) {return Err("Invalid component order".into());}
     variables::validate_variables(document)?;
     variants::validate_sets(document)?;
     guide_styles::validate_styles(document)?;
@@ -1295,6 +1298,7 @@ impl Editor {
                 pages: default_pages(),
                 active_page: 1,
                 component_sets: vec![],
+                component_order: vec![],
                 guide_styles: vec![],
                 component_properties: vec![],
             },
@@ -1395,6 +1399,7 @@ impl Editor {
             pages: default_pages(),
             active_page: 1,
             component_sets: vec![],
+                component_order: vec![],
             guide_styles: vec![],
             component_properties: vec![],
         })?;
@@ -2345,6 +2350,16 @@ impl Editor {
         self.commit(document)?;
         self.next_id += 1;
         Ok(id)
+    }
+
+    pub fn sort_components(&mut self, json: &str) -> Result<(), String> {
+        let order: Vec<String> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let grouped: std::collections::HashSet<u32> = self.document.component_sets.iter().flat_map(|s| s.variants.iter().map(|v| v.component_id)).collect();
+        let mut valid: std::collections::HashSet<String> = self.document.component_sets.iter().map(|s| format!("set:{}",s.id)).collect();
+        for s in &self.document.shapes { if s.component == Some(components::Component::Master) && !grouped.contains(&s.id) { valid.insert(format!("component:{}",s.id)); } }
+        if order.len()!=valid.len() || order.iter().collect::<std::collections::HashSet<_>>().len()!=order.len() || order.iter().any(|k| !valid.contains(k)) {return Err("Component order must contain every component exactly once".into());}
+        if self.document.component_order == order {return Ok(());}
+        let mut document=self.document.clone();document.component_order=order;self.commit(document)
     }
 
     pub fn reorder(&mut self, id: u32, delta: i32) -> Result<(), String> {

@@ -1,3 +1,4 @@
+import {componentEntries,renderSortableComponents} from './component-sort.js';
 import {installRectangleInspector} from './rectangle-inspector.js';
 import {installPaintPopovers} from './paint-popover.js';
 let updateRectangleInspector=()=>{},updatePaintPopovers=()=>{};
@@ -243,12 +244,8 @@ function renderAssetBrowser(){
 }
 function renderComponents(){
   renderAssetBrowser();
-  const grouped=new Set((doc.component_sets??[]).flatMap(s=>s.variants.map(v=>v.component_id)));
-  const masters=doc.shapes.filter(s=>s.component?.type==='master'&&!grouped.has(s.id));
-  const assets=[...(doc.component_sets??[]).map(s=>({id:s.variants[0].component_id,name:s.name,count:s.variants.length})),...masters];$('component-count').textContent=assets.length;
-  const rows=assets.map(s=>{const b=document.createElement('button');b.className='component-asset';b.textContent=(s.count?'▦ ':'◆ ')+s.name+(s.count?` · ${s.count} variants`:'');b.title='Insert instance of '+s.name;b.setAttribute('aria-label',b.title);b.onclick=()=>insertInstance(s.id);return b;});
-  if(!rows.length){const hint=document.createElement('p');hint.textContent='Select layers and choose Create component, or press Ctrl/⌘ Alt K.';rows.push(hint);}
-  $('components-list').replaceChildren(...rows);
+  const entries=componentEntries(doc);$('component-count').textContent=entries.length;
+  renderSortableComponents($('components-list'),entries,{insert:insertInstance,reorder:order=>safe(()=>{editor.sort_components(JSON.stringify(order));refresh();})});
 }
 function renderComponentProperties(shape){
   const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master',context=instanceContext(doc,shape);
