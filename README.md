@@ -4,6 +4,8 @@ A browser-first design editor with a reusable Rust document engine compiled to W
 
 The contextual inspector includes 18 blend modes, persistent aspect-ratio locking, text resizing and horizontal/vertical alignment buttons, arrow endpoint swapping, and selection-specific vector/image actions. These properties participate in Rust validation, undo, saved documents, and component overrides. Blend modes render in Canvas, SVG, and HTML/CSS; Plus darker is not yet supported. The selection-by-selection reference survey and remaining gaps are tracked in `inspector-parity.json`.
 
+Selecting a rectangle also exposes 90° rotation, horizontal/vertical flips, and Edit object (conversion to an editable closed Bézier path). Orthogonal transforms preserve asymmetric corner radii and remap gradients. Fill and stroke swatches open nonmodal paint popovers with saturation/brightness and hue controls, hex, opacity, page colors, linear/radial gradients, and local color-variable binding. Free-angle rotation, masks, Boolean operations, paint stacks, and corner smoothing are still pending.
+
 ## Run locally
 
 Requires Rust with the `wasm32-unknown-unknown` target, a native C/C++ linker for Rust tests, and Node.js 24 or newer (the API tests use node:sqlite).

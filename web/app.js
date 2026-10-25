@@ -1,3 +1,6 @@
+import {installRectangleInspector} from './rectangle-inspector.js';
+import {installPaintPopovers} from './paint-popover.js';
+let updateRectangleInspector=()=>{},updatePaintPopovers=()=>{};
 import {mountCssCanvas,cssExport} from './css-renderer.js';
 import {installContextualActions,ratioSize} from './contextual-actions.js';
 let updateContextualActions=()=>{};
@@ -329,7 +332,7 @@ function renderPropertiesNow() {
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;
   updateInspectorLayout(shape,shapes.length);
   updateCompactInspector(shape);
-  updateContextualActions(shape);
+  updateContextualActions(shape);updateRectangleInspector(shape);updatePaintPopovers(shape);
   if (shapes.length > 1) {
     const box = bounds(shapes); $('multi-title').textContent = groupId ? `${shapes[0].group_name} · ${shapes.length} layers` : `${shapes.length} layers selected`;
     $('multi-size').textContent = `${Math.round(box.width)} × ${Math.round(box.height)}`;
@@ -887,7 +890,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});updateRectangleInspector=installRectangleInspector({current,change:update});updatePaintPopovers=installPaintPopovers({current,change:update,document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
   cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{closeVariables();editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }
