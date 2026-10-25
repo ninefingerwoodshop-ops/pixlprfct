@@ -1,8 +1,11 @@
+import {codeExportFiles,showCodeExport} from './code-export.js';
+import {installFramePresets,installFrameLabels} from './frame-tools.js';
+import {workspaceWindow} from './workspace-window.js';
 import {installLayerDrop} from './layer-drop.js';
 import {installRectangleInspector} from './rectangle-inspector.js';
 import {installPaintPopovers} from './paint-popover.js';
 let updateRectangleInspector=()=>{},updatePaintPopovers=()=>{};
-import {mountCssCanvas,cssExport} from './css-renderer.js';
+import {mountCssCanvas} from './css-renderer.js';
 import {installContextualActions,ratioSize} from './contextual-actions.js';
 let updateContextualActions=()=>{};
 import {installCompactInspector,compactGuides} from './compact-inspector.js';
@@ -56,6 +59,12 @@ import { icon, installIcons } from './icons.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
+const showFramePresets=installFramePresets(document.querySelector('.right-panel'),preset=>safe(()=>{
+ const x=Math.round((canvas.clientWidth/2-pan.x)/zoom-preset.width/2),y=Math.round((canvas.clientHeight/2-pan.y)/zoom-preset.height/2);
+ const id=editor.insert(JSON.stringify({id:0,kind:'frame',...preset,x,y,parent_id:0,fill:'#ffffff',text:'',clip_content:true,hidden:false}));
+ setSelection([id]);setTool('select');refresh();fit(true);
+}));
+const renderFrameLabels=installFrameLabels(canvas,{select:id=>{setSelection([id]);refresh(false);},rename:(id,name)=>{const shape=doc.shapes.find(s=>s.id===id);if(shape)update({...shape,name});}});
 const cssCanvas=mountCssCanvas(canvas);let cssCanvasEnabled=null,cssGeometry=[];
 const cssActive=()=>cssCanvasEnabled??pageShapes().some(s=>s.appearance?.backdrop_blur>0);
 const canvasHit=(x,y)=>cssActive()?cssCanvas.hit({x,y}):editor.hit_test(x,y);
@@ -204,8 +213,11 @@ function renderLayers() {
       if (event.shiftKey) setSelection(layerRange(listed, layerAnchor, shape.id));
       else if (event.ctrlKey || event.metaKey) { const ids = new Set(selectedIds); ids.has(shape.id) ? ids.delete(shape.id) : ids.add(shape.id); setSelection([...ids]); layerAnchor = shape.id; }
       else { setSelection([shape.id]); layerAnchor = shape.id; }
-      refresh(false);
+      for(const row of $('layers').querySelectorAll('[data-layer-drop]')){const active=selectedIds.has(Number(row.dataset.layerDrop));row.classList.toggle('active',active);row.setAttribute('aria-pressed',String(active));}
+      for(const row of $('layers').querySelectorAll('[data-group-id]'))row.setAttribute('aria-pressed',String(pageShapes().filter(s=>s.group_id===Number(row.dataset.groupId)).every(s=>selectedIds.has(s.id))));
+      renderProperties();draw();
     };
+    button.ondblclick=()=>{const input=document.createElement('input');input.value=shape.name;input.setAttribute('aria-label','Layer name');button.replaceWith(input);input.focus();input.select();let done=false;const finish=commit=>{if(done)return;done=true;if(commit&&input.value.trim())update({...doc.shapes.find(s=>s.id===shape.id),name:input.value.trim()});else renderLayers();};input.onblur=()=>finish(true);input.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();finish(true);}if(e.key==='Escape'){e.preventDefault();finish(false);}};};
     button.oncontextmenu=event=>showSelectionMenu(event,shape.id);
     const row=document.createElement('div');row.className='layer-entry';row.append(button,layerLockButton(shape));return row;
   };
@@ -227,7 +239,7 @@ function renderLayers() {
     const toggle=document.createElement('button');const open=!!query||!collapsedGroups.has(shape.group_id);
     toggle.textContent=open?'⌄':'›';toggle.setAttribute('aria-label',open?'Collapse '+shape.group_name:'Expand '+shape.group_name);toggle.setAttribute('aria-expanded',String(open));
     toggle.onclick=()=>{collapsedGroups.has(shape.group_id)?collapsedGroups.delete(shape.group_id):collapsedGroups.add(shape.group_id);renderLayers();};
-    const select=document.createElement('button');select.className='group-title';select.textContent=shape.group_name;select.setAttribute('aria-pressed',String(members.every(s=>selectedIds.has(s.id))));
+    const select=document.createElement('button');select.className='group-title';select.dataset.groupId=shape.group_id;select.textContent=shape.group_name;select.setAttribute('aria-pressed',String(members.every(s=>selectedIds.has(s.id))));
     select.onclick=event=>{const ids=new Set(event.shiftKey?[...selectedIds]:[]);const remove=event.shiftKey&&members.every(s=>ids.has(s.id));members.forEach(s=>remove?ids.delete(s.id):ids.add(s.id));setSelection([...ids]);refresh(false);};
     row.append(toggle,select);group.append(row);
     if(open) {const children=document.createElement('div');children.className='group-children';children.append(...listed.filter(s=>s.group_id===shape.group_id).map(frameItem));group.append(children);}
@@ -240,13 +252,17 @@ function renderLayers() {
 }
 function insertInstance(masterId){safe(()=>{const master=doc.shapes.find(s=>s.id===masterId);if(!master)return;const same=master.page_id===doc.active_page;const x=same?master.x+master.width+40:(canvas.clientWidth/2-pan.x)/zoom;const y=same?master.y:(canvas.clientHeight/2-pan.y)/zoom;const id=editor.create_instance(masterId,x,y);setSelection([id]);refresh();fit();toast('Linked instance inserted');});}
 function showLeftPanel(name){
-  for(const [key,id] of [['layers','file-panel'],['pages','pages-panel'],['assets','assets-panel']]){
+  for(const [key,id] of [['layers','file-panel'],['pages','pages-panel']]){
     $(id).hidden=key!==name;const nav=$('nav-'+key);nav.classList.toggle('active',key===name);nav.setAttribute('aria-pressed',String(key===name));
   }
   document.querySelector('.left-panel').classList.add('mobile-open');
 }
 function showFilePanel(){showLeftPanel('layers');}
-function showAssets(){showLeftPanel('assets');renderAssetBrowser();$('asset-search').focus();}
+let assetsWindow;
+function showAssets(){
+ if(!assetsWindow){assetsWindow=workspaceWindow('Assets',$('assets-panel'));assetsWindow.dialog.classList.add('assets-workspace');assetsWindow.dialog.addEventListener('close',()=>{$('assets-panel').hidden=true;$('nav-assets').classList.remove('active');$('nav-assets').setAttribute('aria-pressed','false');});}
+ $('assets-panel').hidden=false;assetsWindow.open();$('nav-assets').classList.add('active');$('nav-assets').setAttribute('aria-pressed','true');renderAssetBrowser();$('asset-search').focus();
+}
 function goToMain(id){safe(()=>{const main=doc.shapes.find(s=>s.id===id);if(!main)return;editor.select_page(main.page_id);refresh();setSelection([id]);refresh(false);showFilePanel();fit(true);});}
 function renderAssetBrowser(){
   if($('assets-panel').hidden)return;
@@ -255,7 +271,7 @@ function renderAssetBrowser(){
   $('asset-page').value=doc.pages.some(p=>String(p.id)===page)?page:'';
   const assets=componentAssets(doc,$('asset-search').value,$('asset-page').value);
   $('asset-results').textContent=assets.length+' '+(assets.length===1?'component':'components');
-  renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:insertInstance,goMain:goToMain,dragStart:startAssetDrag,dragEnd:clearAssetDrag,preview:id=>{const shapes=exportShapes(doc.shapes,[id],'selection');return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgDocument(shapes,exportBounds(shapes),1,null,textLayout));}});
+  renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:id=>{assetsWindow?.close();insertInstance(id);},goMain:id=>{assetsWindow?.close();goToMain(id);},dragStart:startAssetDrag,dragEnd:clearAssetDrag,preview:id=>{const shapes=exportShapes(doc.shapes,[id],'selection');return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgDocument(shapes,exportBounds(shapes),1,null,textLayout));}});
 }
 function renderComponentProperties(shape){
   const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master',context=instanceContext(doc,shape);
@@ -428,6 +444,7 @@ function draw() {
   if(gesture?.type==='layout-spacing'&&gesture.scene)scene=gesture.scene;
   if(cssActive()){scene=cssCanvas.render(scene,{variables:doc.variables,textLayout},pan,zoom);cssGeometry=scene;}else{cssCanvas.hide();drawScene(scene,ctx,drawShape);}
   $('css-canvas').setAttribute('aria-pressed',String(cssActive()));
+  renderFrameLabels(scene,pan,zoom,selectedIds,tool==='select'&&!space);
   if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
   if(assetDrag?.point){const source=doc.shapes.find(s=>s.id===assetDrag.master),parent=scene.find(s=>s.id===assetDrag.parent);if(source){const p=centeredPlacement(source,assetDrag.point);ctx.save();ctx.strokeStyle='#9747ff';ctx.lineWidth=2/zoom;if(parent)ctx.strokeRect(parent.x,parent.y,parent.width,parent.height);ctx.setLineDash([6/zoom,4/zoom]);ctx.strokeRect(p.x,p.y,source.width,source.height);ctx.restore();}}
   if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radii(frame));ctx.clip();}drawShape(preview);ctx.restore();}
@@ -483,6 +500,7 @@ function setTool(value) {
   document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   $('pencil-options').hidden=value!=='pencil';
   tool = value;updateToolbelt(tool); document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+  showFramePresets(tool==='frame');
   renderProperties();
   draw();
   canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'default' : 'crosshair';
@@ -547,7 +565,7 @@ function placeSvg(payload,location=null){
 function bind() {
   $('toggle-lock').onclick=toggleSelectionLock;
   $('create-component').onclick=createComponentSelection;
-  $('nav-assets').onclick=showAssets;$('assets-close').onclick=showFilePanel;$('asset-search').oninput=renderAssetBrowser;$('asset-page').onchange=renderAssetBrowser;
+  $('nav-assets').onclick=showAssets;$('assets-close').onclick=()=>assetsWindow?.close();$('asset-search').oninput=renderAssetBrowser;$('asset-page').onchange=renderAssetBrowser;
   $('insert-instance').onclick=()=>insertInstance(selected);
   $('manage-variants').onclick=()=>editVariantSet(doc,selected,set=>{editor.save_component_set(JSON.stringify(set));refresh();},id=>{editor.remove_component_set(id);refresh();});
   $('add-variant').onclick=()=>safe(()=>{setSelection([editor.duplicate_variant(selected)]);refresh();fit();toast('Variant added. Edit its properties in Edit variant set.');});
@@ -689,7 +707,8 @@ function bind() {
   $('forward').onclick = () => arrangeSelection('forward');
   $('backward').onclick = () => arrangeSelection('backward');
   $('css-canvas').onclick=()=>{cssCanvasEnabled=!cssActive();gesture=null;draw();};
-  $('export-css').onclick=()=>safe(()=>{const shapes=exportShapes(pageShapes(),[...selectedIds],selectedIds.size?'selection':'page');if(!shapes.length)throw new Error('Select artwork or add layers first');const result=cssExport(shapes,{variables:doc.variables,sourceShapes:doc.shapes,textLayout,name:doc.name});const encode=new TextEncoder();const readme='PixlPrfct HTML/CSS export\nOpen index.html in a modern browser. No build step or editor runtime required.\nAuto-layout uses native Flexbox/Grid. Free-position layers retain design coordinates.\nCopy the data-component root and its CSS rules to reuse a component.\nFonts must be installed or supplied by your app. Vector paint stays inline SVG.\nVariables become CSS custom properties using the selected modes. Text/boolean values are resolved at export time.\nBackdrop blur uses real CSS backdrop-filter and needs visible content behind a translucent layer.\n'+result.warnings.join('\n');download('pixlprfct-components.zip',zipFiles([{name:'index.html',data:encode.encode(result.html)},{name:'styles.css',data:encode.encode(result.css)},{name:'README.txt',data:encode.encode(readme)}]),'application/zip');toast('HTML/CSS components exported');});
+  $('export-css').onclick=()=>showCodeExport(doc,[...selectedIds],options=>{download('pixlprfct-'+options.target+'.zip',zipFiles(codeExportFiles(doc,{...options,textLayout})),'application/zip');toast(options.target==='html'?'HTML, CSS and JavaScript exported':options.target.toUpperCase()+' '+(options.scope==='project'?'project':'component')+' exported');});
+  $('export-code-option').onclick=()=>{$('export-dialog').close();$('export-css').click();};
   $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
   $('export').onclick=()=>{$('export-selection-option').disabled=!selectedIds.size;$('export-scope').value=selectedIds.size?'selection':'page';exportSummary();$('export-dialog').showModal();};
   for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background']){$(id).onchange=exportSummary;$(id).oninput=exportSummary;}
