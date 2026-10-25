@@ -1,4 +1,12 @@
 const paths = {
+  'layout-none':'M3 4h6v6H3Zm12-1h6v6h-6ZM9 15h6v6H9Z',
+  'layout-horizontal':'M3 5h5v14H3Zm13 0h5v14h-5M10 12h4m-2-2 2 2-2 2',
+  'layout-vertical':'M5 3h14v5H5Zm0 13h14v5H5ZM12 10v4m-2-2 2 2 2-2',
+  'layout-grid':'M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z',
+  'padding-horizontal':'M3 4v16M21 4v16M8 6h8v12H8ZM3 12h5m8 0h5',
+  'padding-vertical':'M4 3h16M4 21h16M6 8h12v8H6ZM12 3v5m0 8v5',
+  'gap-horizontal':'M3 5h4v14H3Zm14 0h4v14h-4M10 7v10M14 7v10M10 12h4',
+  'gap-vertical':'M5 3h14v4H5Zm0 14h14v4H5ZM7 10h10M7 14h10M12 10v4',
   image:'M3 3h18v18H3ZM3 17l6-6 4 4 3-3 5 5M15 7h.01',
   scale:'M3 10V3h7M3 3l7 7M14 3h7v18H3v-7M10 10h7v7h-7Z',
   line:'M4 20 20 4',arrow:'M4 20 20 4M9 4h11v11',polygon:'m12 3 10 18H2Z',star:'m12 2 3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1Z',pen:'m4 20 3-11 10-6 4 4-6 10-11 3Zm0 0 7-7m0-3a2 2 0 1 0 0 4 2 2 0 1 0 0-4',pencil:'m4 16 12-12 4 4L8 20H4Zm10-10 4 4',
