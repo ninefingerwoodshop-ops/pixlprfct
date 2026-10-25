@@ -13,6 +13,8 @@ pub enum Component {
     },
 }
 const FIELDS: &[&str] = &[
+    "variable_bindings",
+    "variable_modes",
     "name",
     "text",
     "fill",
@@ -114,7 +116,7 @@ fn valid_override(path: &str) -> bool {
 }
 // Legacy paint defaults must be compared by appearance, not by whether the
 // optional object was serialized. Otherwise changing opacity also overrides fill.
-fn effective_value(s: &Shape) -> serde_json::Value {
+pub(crate) fn effective_value(s: &Shape) -> serde_json::Value {
     let mut value = serde_json::to_value(s).unwrap();
     if s.appearance.is_none() {
         value["appearance"] = serde_json::json!({"layer_blur":0.0,"shadows":[],"gradient":null,"stroke_gradient":null,"opacity":1.0,"fill_opacity":1.0,"stroke_opacity":1.0,"corner_radius":0.0,"corner_radii":null,"stroke_dash":[],"stroke_dash_offset":0.0,"stroke_cap":"round","stroke_alignment":"center","stroke_join":"round","stroke_miter_limit":10.0,"fill_enabled":s.points.is_empty()||s.closed,"stroke_enabled":!s.points.is_empty(),"stroke_color":if s.points.is_empty(){"#000000"}else{&s.fill}});
@@ -242,6 +244,7 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
 }
 
 pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
+    variables::detach_edited(old, new);
     if new.guide_style == old.guide_style && new.layout_grids != old.layout_grids {
         new.guide_style = 0;
     }

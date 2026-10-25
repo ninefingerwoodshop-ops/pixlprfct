@@ -1,4 +1,5 @@
 const paths = {
+  variables:'m12 3 9 5v8l-9 5-9-5V8Zm0 0v18M3 8l9 5 9-5',
   'layout-none':'M3 4h6v6H3Zm12-1h6v6h-6ZM9 15h6v6H9Z',
   'layout-horizontal':'M3 5h5v14H3Zm13 0h5v14h-5M10 12h4m-2-2 2 2-2 2',
   'layout-vertical':'M5 3h14v5H5Zm0 13h14v5H5ZM12 10v4m-2-2 2 2 2-2',

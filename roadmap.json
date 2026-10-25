@@ -89,10 +89,12 @@
     "Separate keyboard-accessible Design and Prototype inspector tabs, selection-dependent Position/Layout/Appearance/Typography/Fill/Stroke/Effects ordering, compact fields, advanced disclosures, grouped Move tools and split Shape/Creation toolbar controls",
     "Individual grid track deletion preserving layers, reducing crossing spans, shifting pinned cells, materializing automatic rows, component propagation and atomic undo",
     "Six Position inspector alignment controls with single-layer parent-frame alignment, descendant translation, auto-layout flow protection and atomic history",
-    "Compact custom checkboxes with checked/mixed/disabled states, keyboard focus and forced-color support; auto-layout flow strip, nine-position alignment control, automatic spacing toggle, per-axis Fixed/Hug/Fill sizing menus and atomic paired padding inputs with advanced disclosures"
+    "Compact custom checkboxes with checked/mixed/disabled states, keyboard focus and forced-color support; auto-layout flow strip, nine-position alignment control, automatic spacing toggle, per-axis Fixed/Hug/Fill sizing menus and atomic paired padding inputs with advanced disclosures",
+    "Hand-drawn SVG auto-layout flow, gap and padding icons with orientation-aware spacing indicators",
+    "Local typed variables (color/number/string/boolean), collections, mode columns/defaults, aliases with cycle/type validation, inherited layer mode overrides, property bindings, direct-edit detachment, component propagation, atomic undo and file/cloud persistence"
   ],
   "remaining": [
-    "Exact Figma inspector and toolbar parity: rotation/flips, aspect lock, compact paint rows, multiple paints, styles/variables, complete region/type/comment tools and matching popovers",
+    "Exact Figma inspector and toolbar parity: rotation/flips, aspect lock, compact paint rows, multiple paints, styles and complete variable parity, complete region/type/comment tools and matching popovers",
     "Figma workflow audit: shared asset libraries, comprehensive context menus and tool discovery; nested instance-swap overrides",
     "Additional frame layout controls and per-edge stroke weights",
     "Nested groups and complete tree reordering",
@@ -100,12 +102,13 @@
     "Rotation, corner smoothing, multiple paints, advanced gradients and background blur",
     "Boolean operations and slice export",
     "Direct drag grid track reordering and multi-track selection; group layout units",
-    "Nested instance-swap overrides, canvas component-set containers, exposed instance-swap properties, reusable styles and variables",
+    "Nested instance-swap overrides, canvas component-set containers, exposed instance-swap properties, reusable styles, shared variable libraries and complete variable integration",
     "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
     "Cloud sharing, team permissions and real-time collaboration",
     "PDF export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope",
-    "Cloud storage quotas and cleanup of unreferenced uploads"
+    "Cloud storage quotas and cleanup of unreferenced uploads",
+    "Variable extensions: shared libraries, scopes, descriptions/code syntax, RGBA colors, bound component properties and prototype variable actions; inline property pickers and variable search"
   ],
   "deferred": [
     "Desktop application: browser version is the current priority"

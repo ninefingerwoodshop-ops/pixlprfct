@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 mod arrangement;
 mod grid;
 mod guide_styles;
+mod variables;
 mod path_join;
 mod path_split;
 mod stacking;
@@ -11,6 +12,10 @@ mod stroke_tips;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
+    #[serde(default)]
+    pub variable_bindings: std::collections::BTreeMap<String, u32>,
+    #[serde(default)]
+    pub variable_modes: std::collections::BTreeMap<u32, u32>,
     pub id: u32,
     #[serde(default = "first_page")]
     pub page_id: u32,
@@ -512,6 +517,8 @@ fn fixed_text() -> String {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
+    #[serde(default)]
+    pub variables: variables::Variables,
     pub version: u32,
     pub name: String,
     pub shapes: Vec<Shape>,
@@ -561,6 +568,7 @@ pub struct Editor {
 }
 
 fn validate(document: &Document) -> Result<(), String> {
+    variables::validate_variables(document)?;
     variants::validate_sets(document)?;
     guide_styles::validate_styles(document)?;
     if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
@@ -1172,6 +1180,8 @@ impl Editor {
 
     fn commit_document(&mut self, mut document: Document) -> Result<(), String> {
         validate(&document)?;
+        variables::resolve(&mut document)?;
+        validate(&document)?;
         components::validate_links(&document)?;
         if serde_json::to_string(&document)
             .map_err(|e| e.to_string())?
@@ -1208,6 +1218,7 @@ impl Editor {
             .collect();
         components::sync(&mut document, &mut next)?;
         guide_styles::resolve(&mut document);
+        variables::resolve(&mut document)?;
         let after_sync: std::collections::HashSet<_> = document
             .shapes
             .iter()
@@ -1259,6 +1270,7 @@ impl Editor {
         Self {
             text_measurer: None,
             document: Document {
+                variables: variables::Variables::default(),
                 version: 2,
                 name: "Untitled design".into(),
                 shapes: vec![],
@@ -1307,6 +1319,8 @@ impl Editor {
                 let mut copy = s.clone();
                 copy.component = None;
                 copy.guide_style = 0;
+                copy.variable_bindings.clear();
+                copy.variable_modes.clear();
                 copy.retain_interactions(|p| {
                     !(["navigate", "overlay", "swap"].contains(&p.action.as_str())
                         && !ids.contains(&p.target))
@@ -1352,8 +1366,11 @@ impl Editor {
             s.page_id = 1;
             s.component = None;
             s.guide_style = 0;
+            s.variable_bindings.clear();
+            s.variable_modes.clear();
         }
         validate(&Document {
+            variables: variables::Variables::default(),
             version: 2,
             name: String::new(),
             shapes: payload.shapes.clone(),
@@ -1625,6 +1642,8 @@ impl Editor {
             _ => (160.0, 120.0, "#d9d9d9"),
         };
         document.shapes.push(Shape {
+            variable_bindings: Default::default(),
+            variable_modes: Default::default(),
             id,
             page_id: document.active_page,
             group_id: 0,
