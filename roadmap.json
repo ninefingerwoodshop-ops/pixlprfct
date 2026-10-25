@@ -91,7 +91,10 @@
     "Six Position inspector alignment controls with single-layer parent-frame alignment, descendant translation, auto-layout flow protection and atomic history",
     "Compact custom checkboxes with checked/mixed/disabled states, keyboard focus and forced-color support; auto-layout flow strip, nine-position alignment control, automatic spacing toggle, per-axis Fixed/Hug/Fill sizing menus and atomic paired padding inputs with advanced disclosures",
     "Hand-drawn SVG auto-layout flow, gap and padding icons with orientation-aware spacing indicators",
-    "Local typed variables (color/number/string/boolean), collections, mode columns/defaults, aliases with cycle/type validation, inherited layer mode overrides, property bindings, direct-edit detachment, component propagation, atomic undo and file/cloud persistence"
+    "Local typed variables (color/number/string/boolean), collections, mode columns/defaults, aliases with cycle/type validation, inherited layer mode overrides, property bindings, direct-edit detachment, component propagation, atomic undo and file/cloud persistence",
+    "Reference-matched Variables page/floating workspace with nonmodal dragging, eight-edge resizing, geometry restoration, collapsible sidebar, direct edit commits, group/value search, type filtering, multi-selection duplication/deletion, mode context actions and searchable alias selection/detachment",
+    "shared browser CSS canvas and HTML/CSS ZIP export with native flex/grid, current-mode CSS variables and SVG vector paint",
+    "real CSS backdrop-filter glass material with editable blur, fill opacity, border and shadow; Rust persistence, component overrides and history"
   ],
   "remaining": [
     "Exact Figma inspector and toolbar parity: rotation/flips, aspect lock, compact paint rows, multiple paints, styles and complete variable parity, complete region/type/comment tools and matching popovers",
@@ -108,7 +111,7 @@
     "PDF export, accessibility and performance validation",
     "Comprehensive workflow parity review against the agreed Figma replacement scope",
     "Cloud storage quotas and cleanup of unreferenced uploads",
-    "Variable extensions: shared libraries, scopes, descriptions/code syntax, RGBA colors, bound component properties and prototype variable actions; inline property pickers and variable search"
+    "Variable extensions: shared libraries, scopes, descriptions/code syntax, RGBA colors, bound component properties and prototype variable actions; inline property pickers, import/export, and full variable metadata/bulk editing"
   ],
   "deferred": [
     "Desktop application: browser version is the current priority"

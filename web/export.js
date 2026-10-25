@@ -14,6 +14,7 @@ export function exportShapes(page,ids,scope){
 }
 export function exportBounds(shapes){const box=compositeGeometry(shapes,appearance).bounds;if(!box)throw new Error('Nothing visible to export');return box;}
 export function exportSize(box,scale,format,shapes=[]){
+  if(shapes.some(s=>s.appearance?.backdrop_blur>0))throw new Error('Background blur requires HTML/CSS export (File menu). Image and SVG export do not capture the browser backdrop.');
  if(!['png','jpeg','svg'].includes(format))throw new Error('Unsupported export format');
  if(!Number.isFinite(scale)||scale<.25||scale>8)throw new Error('Export scale must be between 0.25 and 8');
  const width=Math.max(1,Math.ceil(box.width*scale)),height=Math.max(1,Math.ceil(box.height*scale));

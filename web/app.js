@@ -1,3 +1,5 @@
+import {mountCssCanvas,cssExport} from './css-renderer.js';
+import {closeVariables} from './variable-manager.js';
 import {ASSET_MIME,assetDragPayload,readAssetDrag,centeredPlacement} from './asset-drag.js';
 import {instanceContext} from './instance-context.js';
 import {installInspectorLayout} from './inspector-layout.js';
@@ -46,6 +48,9 @@ import { icon, installIcons } from './icons.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
+const cssCanvas=mountCssCanvas(canvas);let cssCanvasEnabled=null;
+const cssActive=()=>cssCanvasEnabled??pageShapes().some(s=>s.appearance?.backdrop_blur>0);
+const canvasHit=(x,y)=>cssActive()?cssCanvas.hit({x,y}):editor.hit_test(x,y);
 const measureCtx = document.createElement('canvas').getContext('2d');
 function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
 const KEY = 'pixlprfct.document.v1';
@@ -326,7 +331,7 @@ function renderPropertiesNow() {
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3 || shapes.some(s=>s.group_id));
   }
-  renderShadowControls($('shadow-section'),shape,update);
+  renderShadowControls($('shadow-section'),shape,next=>{if(next.appearance?.backdrop_blur>0)cssCanvasEnabled=true;update(next);});
   renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype);
   renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();},{
     styles:doc.guide_styles??[],
@@ -404,7 +409,8 @@ function draw() {
   let scene=pageShapes().map(shape=>previews.find(s=>s.id===shape.id)||shape);
   if(gesture?.type==='resize'&&['frame','text'].includes(gesture.original.kind)){try{const result=gesture.original.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify(previews),gesture.original.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify(previews))),grid:null};scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{scene=pageShapes();}}
   if(gesture?.type==='layout-spacing'&&gesture.scene)scene=gesture.scene;
-  drawScene(scene,ctx,drawShape);
+  if(cssActive())scene=cssCanvas.render(scene,{variables:doc.variables,textLayout},pan,zoom);else{cssCanvas.hide();drawScene(scene,ctx,drawShape);}
+  $('css-canvas').setAttribute('aria-pressed',String(cssActive()));
   if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
   if(assetDrag?.point){const source=doc.shapes.find(s=>s.id===assetDrag.master),parent=scene.find(s=>s.id===assetDrag.parent);if(source){const p=centeredPlacement(source,assetDrag.point);ctx.save();ctx.strokeStyle='#9747ff';ctx.lineWidth=2/zoom;if(parent)ctx.strokeRect(parent.x,parent.y,parent.width,parent.height);ctx.setLineDash([6/zoom,4/zoom]);ctx.strokeRect(p.x,p.y,source.width,source.height);ctx.restore();}}
   if (gesture?.type==='create') {ctx.save();const preview={...gesture.preview,parent_id:frameAt(pageShapes(),gesture.start)};for(const frame of clippingFrames(preview,scene)){ctx.beginPath();ctx.roundRect(frame.x,frame.y,frame.width,frame.height,radii(frame));ctx.clip();}drawShape(preview);ctx.restore();}
@@ -417,7 +423,7 @@ function draw() {
     for (const item of visibleSelection) ctx.strokeRect(item.x, item.y, item.width, item.height);
     ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
     const size = 6 / zoom;
-    if (visibleSelection.length === 1 && canvasEditable()) for (const [x, y] of [[shape.x, shape.y], [shape.x + shape.width, shape.y], [shape.x, shape.y + shape.height], [shape.x + shape.width, shape.y + shape.height]]) { ctx.fillStyle = '#fff'; ctx.fillRect(x - size / 2, y - size / 2, size, size); ctx.strokeRect(x - size / 2, y - size / 2, size, size); }
+    if (visibleSelection.length === 1 && canvasEditable() && !cssActive()) for (const [x, y] of [[shape.x, shape.y], [shape.x + shape.width, shape.y], [shape.x, shape.y + shape.height], [shape.x + shape.width, shape.y + shape.height]]) { ctx.fillStyle = '#fff'; ctx.fillRect(x - size / 2, y - size / 2, size, size); ctx.strokeRect(x - size / 2, y - size / 2, size, size); }
     ctx.fillStyle = '#0d99ff'; ctx.font = `${10 / zoom}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${Math.round(shape.width)} × ${Math.round(shape.height)}`, shape.x + shape.width / 2, shape.y + shape.height + 10 / zoom); ctx.textAlign = 'left';
   }
   if (gesture?.type === 'marquee') {
@@ -626,7 +632,7 @@ function bind() {
     if(tool!=='select') return;
     if(editingGradient&&current()?.appearance?.[gradientField()]){const hit=gradientPosition(current(),point(event),gradientField());if(hit.distance<10/zoom){const result=addGradientStopAt(current(),hit.t,gradientField());if(result){activeGradient=result.active;update(result.shape);}else toast('Gradients support up to 16 color stops');}return;}
     if(editingPath&&current()?.points?.length){const p=point(event),shape=current();if(anchors(shape).some(a=>Math.hypot(a.x-p.x,a.y-p.y)<8/zoom))return;const hit=nearestSegment(shape,p);if(hit&&hit.distance<10/zoom)safe(()=>{const changed=insertAnchor(shape,hit.segment,hit.t);activeNode=hit.segment+1;update(changed);});return;}
-    const p = point(event), hit = editor.hit_test(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
+    const p = point(event), hit = canvasHit(p.x, p.y); setSelection(hit ? [hit] : []); refresh(false);
     if (current()?.kind === 'text') { $('text').focus(); $('text').select(); $('text').scrollIntoView({ block: 'nearest' }); }
     else if(current()?.points?.length) $('edit-path').click();
   };
@@ -654,21 +660,29 @@ function bind() {
   $('delete').onclick = deleteSelection;
   $('forward').onclick = () => arrangeSelection('forward');
   $('backward').onclick = () => arrangeSelection('backward');
+  $('css-canvas').onclick=()=>{cssCanvasEnabled=!cssActive();gesture=null;draw();};
+  $('export-css').onclick=()=>safe(()=>{const shapes=exportShapes(pageShapes(),[...selectedIds],selectedIds.size?'selection':'page');if(!shapes.length)throw new Error('Select artwork or add layers first');const result=cssExport(shapes,{variables:doc.variables,sourceShapes:doc.shapes,textLayout,name:doc.name});const encode=new TextEncoder();const readme='PixlPrfct HTML/CSS export\nOpen index.html in a modern browser. No build step or editor runtime required.\nAuto-layout uses native Flexbox/Grid. Free-position layers retain design coordinates.\nCopy the data-component root and its CSS rules to reuse a component.\nFonts must be installed or supplied by your app. Vector paint stays inline SVG.\nVariables become CSS custom properties using the selected modes. Text/boolean values are resolved at export time.\nBackdrop blur uses real CSS backdrop-filter and needs visible content behind a translucent layer.\n'+result.warnings.join('\n');download('pixlprfct-components.zip',zipFiles([{name:'index.html',data:encode.encode(result.html)},{name:'styles.css',data:encode.encode(result.css)},{name:'README.txt',data:encode.encode(readme)}]),'application/zip');toast('HTML/CSS components exported');});
   $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
   $('export').onclick=()=>{$('export-selection-option').disabled=!selectedIds.size;$('export-scope').value=selectedIds.size?'selection':'page';exportSummary();$('export-dialog').showModal();};
   for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background']){$(id).onchange=exportSummary;$(id).oninput=exportSummary;}
   $('export-cancel').onclick=()=>$('export-dialog').close();$('export-download').onclick=()=>exportArtwork().catch(error=>{$('export-summary').textContent=String(error);}); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
-    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); await cloud?.beforeLocalOpen(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
+    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); await cloud?.beforeLocalOpen(); closeVariables(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
     catch (error) { toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
   };
-  canvas.oncontextmenu=event=>{const p=point(event);showSelectionMenu(event,editor.hit_test(p.x,p.y));};
+  canvas.oncontextmenu=event=>{const p=point(event);showSelectionMenu(event,canvasHit(p.x,p.y));};
   canvas.onpointerdown = event => safe(() => {
     if (!editor || (event.button !== 0 && event.button !== 1)) return;
     canvas.focus(); canvas.setPointerCapture(event.pointerId);
     const p = point(event);
     if (tool === 'hand' || space || event.button === 1) { gesture = { type: 'pan', x: event.clientX, y: event.clientY, pan: { ...pan } }; return; }
+    if(cssActive()){
+      if(tool!=='select'){toast('Switch off CSS canvas to draw or drag. Inspector edits remain live.');return;}
+      const hit=canvasHit(p.x,p.y),ids=hit?(event.ctrlKey||event.metaKey?[hit]:canvasSelection(pageShapes(),[hit])):[];
+      if(event.shiftKey){const next=new Set(selectedIds);for(const id of ids)next.has(id)?next.delete(id):next.add(id);setSelection([...next]);}else setSelection(ids);
+      refresh(false);return;
+    }
     if (tool === 'text') { setSelection([insertAt({id:0,kind:'text',name:'Text',x:p.x,y:p.y,width:240,height:56,fill:'#000000',text:'Your next big idea',hidden:false,typography:{sizing:'width',font_size:32,font_family:'Manrope',font_weight:600,align:'left',line_height:1.2,wrap:true}},p)]); setTool('select'); refresh(); return; }
     if (tool === 'pen') {
       if(penPoints.length>=2 && Math.hypot(p.x-penPoints[0].x,p.y-penPoints[0].y)<10/zoom) { finishPen(true); return; }
@@ -676,7 +690,7 @@ function bind() {
     }
     if(tool==='scale') {
       if(!canvasEditable()){toast('Unlock the selection before scaling on canvas');return;}
-      if(!selectedIds.size) {const hit=editor.hit_test(p.x,p.y);if(hit)setSelection(canvasSelection(pageShapes(),[hit]));}
+      if(!selectedIds.size) {const hit=canvasHit(p.x,p.y);if(hit)setSelection(canvasSelection(pageShapes(),[hit]));}
       const originals=transformedSelection(),box=bounds(selectionShapes()); if(!box) {toast('Select layers to scale first');return;}
       gesture={type:'scale',start:p,origin:{x:box.x,y:box.y},originals,previews:originals}; renderLayers();renderProperties();return;
     }
@@ -697,12 +711,12 @@ function bind() {
       editingPath=0;activeNode=-1;
     }
     if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}}
-    if (shape && !shape.hidden && canvasEditable()) {
+    if (shape && !shape.hidden && canvasEditable() && !cssActive()) {
       for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         if (Math.abs(p.x - shape.x - cx * shape.width) < 9 / zoom && Math.abs(p.y - shape.y - cy * shape.height) < 9 / zoom) { gesture = { type: 'resize', start: p, original: { ...shape }, preview: { ...shape }, cx, cy }; return; }
       }
     }
-    const hit = editor.hit_test(p.x, p.y);
+    const hit = canvasHit(p.x, p.y);
     if (event.shiftKey && hit) {
       const ids = new Set(selectedIds), hits=event.ctrlKey||event.metaKey?[hit]:canvasSelection(pageShapes(),[hit]),remove=hits.every(id=>ids.has(id)); hits.forEach(id=>remove?ids.delete(id):ids.add(id)); setSelection([...ids]); refresh(false); return;
     }
@@ -714,6 +728,7 @@ function bind() {
     else if (!selectedIds.has(hit)) setSelection(canvasSelection(pageShapes(),[hit]));
     layerAnchor = hit; refresh(false);
     if(!canvasEditable()){toast('Unlock the selection before moving it on canvas');return;}
+    if(cssActive()){toast('CSS canvas: edit selected layers in the inspector. Switch to Design canvas to drag.');return;}
     gesture = {type:'move',start:p,originals:transformedSelection().map(s=>({...s})),previews:transformedSelection().map(s=>({...s}))};
   });
   canvas.onpointermove = event => {
@@ -790,7 +805,7 @@ function bind() {
     else { pan.x -= event.shiftKey ? event.deltaY : event.deltaX; pan.y -= event.shiftKey ? 0 : event.deltaY; draw(); }
   }, { passive: false });
   window.addEventListener('keydown', event => {
-    if (document.querySelector('dialog[open]')) return;
+    if (document.querySelector('dialog[open]:not(.variables-dialog)') || event.target.closest('.variables-dialog')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(!event.altKey&&!event.shiftKey&&['[',']'].includes(key)){event.preventDefault();arrangeSelection(key===']'?(mod?'forward':'front'):(mod?'backward':'back'));return;}
@@ -863,7 +878,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
-  cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{closeVariables();editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

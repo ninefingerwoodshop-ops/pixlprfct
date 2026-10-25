@@ -1,4 +1,11 @@
 const paths = {
+  plus:'M12 5v14M5 12h14',
+  unlink:'m3 3 18 18M10 6l2-2a5 5 0 0 1 7 7l-2 2M14 18l-2 2a5 5 0 0 1-7-7l2-2',
+  'variable-color':'M12 3a9 9 0 1 0 9 9c0-5-4-9-9-9Zm0 0v18M3 12h18',
+  'window-expand':'M8 3H3v5m0-5 7 7M16 3h5v5m0-5-7 7M3 16v5h5m-5 0 7-7m11 2v5h-5m5 0-7-7',
+  'window-restore':'m3 3 6 6M4 9h5V4m12 17-6-6m5 0h-5v5',
+  'panel-left':'M3 4h18v16H3ZM9 4v16',
+  close:'m6 6 12 12M6 18 18 6',
   variables:'m12 3 9 5v8l-9 5-9-5V8Zm0 0v18M3 8l9 5 9-5',
   'layout-none':'M3 4h6v6H3Zm12-1h6v6h-6ZM9 15h6v6H9Z',
   'layout-horizontal':'M3 5h5v14H3Zm13 0h5v14h-5M10 12h4m-2-2 2 2-2 2',

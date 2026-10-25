@@ -251,6 +251,8 @@ impl Default for AutoLayout {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Appearance {
     #[serde(default)]
+    pub backdrop_blur: f64,
+    #[serde(default)]
     pub layer_blur: f64,
     #[serde(default)]
     pub shadows: Vec<DropShadow>,
@@ -762,6 +764,9 @@ fn validate(document: &Document) -> Result<(), String> {
             }
             if !a.layer_blur.is_finite() || !(0.0..=100_000.0).contains(&a.layer_blur) {
                 return Err("Layer blur must be between 0 and 100000".into());
+            }
+            if !a.backdrop_blur.is_finite() || !(0.0..=200.0).contains(&a.backdrop_blur) {
+                return Err("Background blur must be between 0 and 200".into());
             }
             if a.shadows.len() > 8
                 || a.shadows.iter().any(|shadow| {
