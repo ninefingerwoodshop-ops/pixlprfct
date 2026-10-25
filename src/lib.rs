@@ -13,6 +13,8 @@ mod stroke_tips;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
     #[serde(default)]
+    pub aspect_ratio_locked: bool,
+    #[serde(default)]
     pub variable_bindings: std::collections::BTreeMap<String, u32>,
     #[serde(default)]
     pub variable_modes: std::collections::BTreeMap<u32, u32>,
@@ -250,6 +252,8 @@ impl Default for AutoLayout {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Appearance {
+    #[serde(default = "default_blend_mode")]
+    pub blend_mode: String,
     #[serde(default)]
     pub backdrop_blur: f64,
     #[serde(default)]
@@ -489,6 +493,8 @@ fn path_polyline(shape: &Shape) -> Vec<[f64; 2]> {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Typography {
+    #[serde(default = "default_vertical_align")]
+    pub vertical_align: String,
     #[serde(default = "fixed_text")]
     pub sizing: String,
     pub font_size: f64,
@@ -503,6 +509,7 @@ impl Default for Typography {
     fn default() -> Self {
         Self {
             sizing: fixed_text(),
+            vertical_align: default_vertical_align(),
             font_size: 32.0,
             font_family: "Manrope".into(),
             font_weight: 600,
@@ -516,6 +523,8 @@ impl Default for Typography {
 fn fixed_text() -> String {
     "fixed".into()
 }
+fn default_vertical_align() -> String { "top".into() }
+fn default_blend_mode() -> String { "pass-through".into() }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
@@ -765,6 +774,9 @@ fn validate(document: &Document) -> Result<(), String> {
             if !a.layer_blur.is_finite() || !(0.0..=100_000.0).contains(&a.layer_blur) {
                 return Err("Layer blur must be between 0 and 100000".into());
             }
+            if !["pass-through", "normal", "darken", "multiply", "color-burn", "lighten", "screen", "plus-lighter", "color-dodge", "overlay", "soft-light", "hard-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"].contains(&a.blend_mode.as_str()) {
+                return Err("Unsupported blend mode".into());
+            }
             if !a.backdrop_blur.is_finite() || !(0.0..=200.0).contains(&a.backdrop_blur) {
                 return Err("Background blur must be between 0 and 200".into());
             }
@@ -867,6 +879,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 || !["Manrope", "DM Sans", "Georgia", "monospace"]
                     .contains(&style.font_family.as_str())
                 || !["left", "center", "right"].contains(&style.align.as_str())
+                || !["top", "center", "bottom"].contains(&style.vertical_align.as_str())
             {
                 return Err("Invalid typography settings".into());
             }
@@ -1647,6 +1660,7 @@ impl Editor {
             _ => (160.0, 120.0, "#d9d9d9"),
         };
         document.shapes.push(Shape {
+            aspect_ratio_locked: false,
             variable_bindings: Default::default(),
             variable_modes: Default::default(),
             id,

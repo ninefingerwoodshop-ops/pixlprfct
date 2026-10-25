@@ -2,6 +2,8 @@
 
 A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor now follows the structure and interaction conventions of the current Figma Design UI, while retaining the PixlPrfct name. This is an early, single-user prototype, not a complete Figma replacement.
 
+The contextual inspector includes 18 blend modes, persistent aspect-ratio locking, text resizing and horizontal/vertical alignment buttons, arrow endpoint swapping, and selection-specific vector/image actions. These properties participate in Rust validation, undo, saved documents, and component overrides. Blend modes render in Canvas, SVG, and HTML/CSS; Plus darker is not yet supported. The selection-by-selection reference survey and remaining gaps are tracked in `inspector-parity.json`.
+
 ## Run locally
 
 Requires Rust with the `wasm32-unknown-unknown` target, a native C/C++ linker for Rust tests, and Node.js 24 or newer (the API tests use node:sqlite).

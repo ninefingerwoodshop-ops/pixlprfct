@@ -28,6 +28,7 @@ const FIELDS: &[&str] = &[
     "handles",
     "closed",
     "clip_content",
+    "aspect_ratio_locked",
     "auto_layout",
     "layout_grids",
     "guide_style",
@@ -49,6 +50,7 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "font_family",
             "font_weight",
             "align",
+            "vertical_align",
             "line_height",
             "wrap",
         ],
@@ -56,6 +58,7 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "shadows",
             "layer_blur",
             "backdrop_blur",
+            "blend_mode",
             "gradient",
             "stroke_gradient",
             "opacity",
@@ -120,7 +123,7 @@ fn valid_override(path: &str) -> bool {
 pub(crate) fn effective_value(s: &Shape) -> serde_json::Value {
     let mut value = serde_json::to_value(s).unwrap();
     if s.appearance.is_none() {
-        value["appearance"] = serde_json::json!({"backdrop_blur":0.0,"layer_blur":0.0,"shadows":[],"gradient":null,"stroke_gradient":null,"opacity":1.0,"fill_opacity":1.0,"stroke_opacity":1.0,"corner_radius":0.0,"corner_radii":null,"stroke_dash":[],"stroke_dash_offset":0.0,"stroke_cap":"round","stroke_alignment":"center","stroke_join":"round","stroke_miter_limit":10.0,"fill_enabled":s.points.is_empty()||s.closed,"stroke_enabled":!s.points.is_empty(),"stroke_color":if s.points.is_empty(){"#000000"}else{&s.fill}});
+        value["appearance"] = serde_json::json!({"blend_mode":"pass-through","backdrop_blur":0.0,"layer_blur":0.0,"shadows":[],"gradient":null,"stroke_gradient":null,"opacity":1.0,"fill_opacity":1.0,"stroke_opacity":1.0,"corner_radius":0.0,"corner_radii":null,"stroke_dash":[],"stroke_dash_offset":0.0,"stroke_cap":"round","stroke_alignment":"center","stroke_join":"round","stroke_miter_limit":10.0,"fill_enabled":s.points.is_empty()||s.closed,"stroke_enabled":!s.points.is_empty(),"stroke_color":if s.points.is_empty(){"#000000"}else{&s.fill}});
     }
     if s.typography.is_none() {
         value["typography"] = serde_json::to_value(Typography::default()).unwrap();

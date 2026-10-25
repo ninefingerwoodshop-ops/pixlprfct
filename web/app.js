@@ -1,4 +1,6 @@
 import {mountCssCanvas,cssExport} from './css-renderer.js';
+import {installContextualActions,ratioSize} from './contextual-actions.js';
+let updateContextualActions=()=>{};
 import {installCompactInspector,compactGuides} from './compact-inspector.js';
 let updateCompactInspector=()=>{};
 import {closeVariables} from './variable-manager.js';
@@ -327,6 +329,7 @@ function renderPropertiesNow() {
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;
   updateInspectorLayout(shape,shapes.length);
   updateCompactInspector(shape);
+  updateContextualActions(shape);
   if (shapes.length > 1) {
     const box = bounds(shapes); $('multi-title').textContent = groupId ? `${shapes[0].group_name} · ${shapes.length} layers` : `${shapes.length} layers selected`;
     $('multi-size').textContent = `${Math.round(box.width)} × ${Math.round(box.height)}`;
@@ -656,7 +659,8 @@ function bind() {
   $('document-name').onchange = () => safe(() => { editor.load(JSON.stringify({ ...doc, name: $('document-name').value.trim() || 'Untitled design' })); refresh(); });
   for (const key of ['x', 'y', 'width', 'height', 'fill', 'text']) $(key).onchange = () => {
     if (!current()) return; const value = ['x', 'y', 'width', 'height'].includes(key) ? Number($(key).value) : $(key).value;
-    update(resizeText({ ...current(), [key]: value },key==='width',key==='height')); renderProperties();
+    const s=current(),locked=s.aspect_ratio_locked&&['width','height'].includes(key),size=locked?ratioSize(s,key,value):{[key]:value};
+    update(resizeText({...s,...size,...(locked?{layout_item:{...s.layout_item,fill_width:false,fill_height:false},...(s.auto_layout?{auto_layout:{...s.auto_layout,hug_width:false,hug_height:false}}:{})}:{})},locked||key==='width',locked||key==='height')); renderProperties();
   };
   $('shape-name').onchange = () => current() && update({ ...current(), name: $('shape-name').value });
   $('visible').onchange = () => current() && update({ ...current(), hidden: !$('visible').checked });
@@ -780,6 +784,7 @@ function bind() {
       const x = gesture.cx ? original.x : Math.min(right - 1, resizePoint.x);
       const y = gesture.cy ? original.y : Math.min(bottom - 1, resizePoint.y);
       gesture.preview = { ...original, x, y, width: gesture.cx ? Math.max(1, resizePoint.x - x) : right - x, height: gesture.cy ? Math.max(1, resizePoint.y - y) : bottom - y };
+      if(original.aspect_ratio_locked||event.shiftKey){const candidate=gesture.preview,axis=Math.abs(candidate.width/original.width-1)>=Math.abs(candidate.height/original.height-1)?'width':'height',size=ratioSize(original,axis,candidate[axis]);gesture.preview={...candidate,...size,x:gesture.cx?original.x:right-size.width,y:gesture.cy?original.y:bottom-size.height,layout_item:{...candidate.layout_item,fill_width:false,fill_height:false},...(candidate.auto_layout?{auto_layout:{...candidate.auto_layout,hug_width:false,hug_height:false}}:{})};}
       gesture.preview=resizeText(gesture.preview,!!gesture.cx,!!gesture.cy);
     }
     draw();
@@ -882,7 +887,7 @@ try {
   try { stored = localStorage.getItem(KEY); } catch {}
   if (stored) { try { editor.load(stored); editor.clear_history(); } catch { recoveryBlocked = true; seed(); toast('Saved data could not be loaded. It has been preserved; use Open to recover a file.'); } }
   else seed();
-  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
+  updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt();updateAutoLayoutInspector=installAutoLayoutInspector(current,update);updateVariables=installVariables({document:()=>doc,current,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update);updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});bind(); refresh(false); fit(); $('engine-status').textContent = 'Rust engine connected';
   cloud=cloudFiles({snapshot:()=>editor.snapshot(),load:body=>{closeVariables();editor.load(body);editor.clear_history();setSelection([]);gesture=null;recoveryBlocked=false;pageViews.clear();doc=null;refresh(false);fit();},status:text=>{$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});cloud.restore();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
 } catch (error) { $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

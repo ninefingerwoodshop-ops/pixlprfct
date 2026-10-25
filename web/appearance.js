@@ -24,20 +24,20 @@ export function drawScene(shapes,context,paint) {
  const visit=(s,target)=>{
   if(s.hidden)return;const a=appearance(s);if(a.opacity===0)return;
   const content=c=>{paint(s,c);c.save();if(s.kind==='frame'&&s.clip_content){c.beginPath();c.roundRect(s.x,s.y,s.width,s.height,radii(s));c.clip();}for(const child of children.get(s.id)??[])visit(child,c);c.restore();};
-  const shadows=visibleShadows(a);if(a.opacity===1&&!shadows.length&&!a.layer_blur){content(target);return;}
+   const blend=a.blend_mode??'pass-through',shadows=visibleShadows(a);if(blend==='pass-through'&&a.opacity===1&&!shadows.length&&!a.layer_blur){content(target);return;}
   const box=geometry.get(s.id)?.content;if(!box)return;const density=Math.hypot(target.getTransform().a,target.getTransform().b),size=effectSurfaceSize(box,density),surface=new OffscreenCanvas(size.width,size.height),layer=surface.getContext('2d');layer.setTransform(size.scale,0,0,size.scale,-box.x*size.scale,-box.y*size.scale);content(layer);
   const sourceBox={...box,width:size.width/size.scale,height:size.height/size.scale};
   for(const shadow of [...shadows].reverse().filter(s=>s.kind==='inner'))drawShadow(layer,surface,sourceBox,shadow);
   const compose=c=>{for(const shadow of [...shadows].reverse().filter(s=>s.kind!=='inner'))drawShadow(c,surface,sourceBox,shadow);c.drawImage(surface,sourceBox.x,sourceBox.y,sourceBox.width,sourceBox.height);};
-  target.save();target.globalAlpha*=a.opacity;
-  if(a.layer_blur||(shadows.length&&a.opacity<1)){const output=geometry.get(s.id).output,outSize=effectSurfaceSize(output,density),combined=new OffscreenCanvas(outSize.width,outSize.height),c=combined.getContext('2d');c.setTransform(outSize.scale,0,0,outSize.scale,-output.x*outSize.scale,-output.y*outSize.scale);compose(c);if(a.layer_blur)target.filter=`blur(${a.layer_blur*density/2}px)`;target.drawImage(combined,output.x,output.y,outSize.width/outSize.scale,outSize.height/outSize.scale);}else compose(target);
+   target.save();target.globalAlpha*=a.opacity;target.globalCompositeOperation=blend==='plus-lighter'?'lighter':['normal','pass-through'].includes(blend)?'source-over':blend;
+  if(a.layer_blur||(shadows.length&&(a.opacity<1||blend!=='pass-through'))){const output=geometry.get(s.id).output,outSize=effectSurfaceSize(output,density),combined=new OffscreenCanvas(outSize.width,outSize.height),c=combined.getContext('2d');c.setTransform(outSize.scale,0,0,outSize.scale,-output.x*outSize.scale,-output.y*outSize.scale);compose(c);if(a.layer_blur)target.filter=`blur(${a.layer_blur*density/2}px)`;target.drawImage(combined,output.x,output.y,outSize.width/outSize.scale,outSize.height/outSize.scale);}else compose(target);
   target.restore();
  };
  for(const root of children.get(0)??[])visit(root,context);
 }
 export function sceneSvg(shapes,paint){
  const {geometry,children:childMap}=compositeGeometry(shapes,appearance);
- const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=(childMap.get(s.id)??[]).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows),blur=layerBlurFilter(`blur-${s.id}`,geometry.get(s.id)?.output,a.layer_blur);return `<g opacity="${a.opacity}">${blur?`<defs>${blur}</defs><g filter="url(#blur-${s.id})">`:""}${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${paint(s)}${children}${filter?"</g>":""}${blur?"</g>":""}</g>`;};
+ const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=(childMap.get(s.id)??[]).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows),blur=layerBlurFilter(`blur-${s.id}`,geometry.get(s.id)?.output,a.layer_blur);return `<g opacity="${a.opacity}"${a.blend_mode&&a.blend_mode!=='pass-through'?` style="isolation:isolate;mix-blend-mode:${a.blend_mode}"`:''}>${blur?`<defs>${blur}</defs><g filter="url(#blur-${s.id})">`:""}${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${paint(s)}${children}${filter?"</g>":""}${blur?"</g>":""}</g>`;};
  return shapes.filter(s=>!s.parent_id).map(visit).join('');
 }
 

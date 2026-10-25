@@ -53,10 +53,11 @@ export function layoutText(shape, measure) {
   const step = style.font_size * style.line_height;
   const height = Math.max(style.font_size, (lines.length - 1) * step + style.font_size);
   const fraction = style.align === 'center' ? .5 : style.align === 'right' ? 1 : 0;
+  const verticalOffset=Math.max(0,shape.height-height)*(style.vertical_align==='center'?.5:style.vertical_align==='bottom'?1:0);
   return {
     style, height,
     overflow: height > shape.height + .01 || lines.some(line => measure(line) > shape.width + .01),
-    lines: lines.map((text, index) => ({ text, x: shape.x + fraction * shape.width, y: shape.y + index * step })),
+    lines: lines.map((text, index) => ({ text, x: shape.x + fraction * shape.width, y: shape.y + verticalOffset + index * step })),
   };
 }
 
