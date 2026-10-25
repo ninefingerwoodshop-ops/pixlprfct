@@ -163,7 +163,9 @@ function duplicateSelection() { safe(() => { if (selectedIds.size) { setSelectio
 function deleteSelection() { safe(() => { if (selectedIds.size) { editor.remove_many(selectionJson()); refresh(); } }); }
 function switchPage(id) { safe(() => { editor.select_page(id); refresh(); }); }
 function renderPages() {
-  $('layers-page').textContent=activePage().name+' ⌄';
+  $('layers-page-name').textContent=activePage().name;
+  $('layers-page').title=`Current page: ${activePage().name}. Click to switch pages.`;
+  $('layers-page').setAttribute('aria-label',`Current page: ${activePage().name}. Switch pages`);
   $('pages').replaceChildren(...doc.pages.map(page => {
     const button = document.createElement('button');
     button.className = 'page-row' + (page.id === doc.active_page ? ' active' : '');
