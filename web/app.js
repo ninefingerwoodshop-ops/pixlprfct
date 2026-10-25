@@ -1,3 +1,4 @@
+import {projectFile} from './project-file.js';
 import {codeExportFiles,showCodeExport} from './code-export.js';
 import {installInspectorDropdowns} from './inspector-dropdown.js';
 let syncInspectorDropdowns=()=>{};
@@ -713,17 +714,17 @@ function bind() {
   $('forward').onclick = () => arrangeSelection('forward');
   $('backward').onclick = () => arrangeSelection('backward');
   $('css-canvas').onclick=()=>{cssCanvasEnabled=!cssActive();gesture=null;draw();};
-  const openCodeExport=ids=>showCodeExport(doc,ids,options=>{download('pixlprfct-'+options.target+'.zip',zipFiles(codeExportFiles(doc,{...options,textLayout})),'application/zip');toast(options.target==='html'?'HTML, CSS and JavaScript exported':options.target.toUpperCase()+' '+(options.scope==='project'?'project':'component')+' exported');});
+  const openCodeExport=ids=>showCodeExport(doc,ids,options=>{if(options.target==='pixl'){const file=projectFile(editor.snapshot());download(file.name,file.data,file.type);toast('Editable project exported — share the .pixl file');return;}download('pixlprfct-'+options.target+'.zip',zipFiles(codeExportFiles(doc,{...options,textLayout})),'application/zip');toast(options.target==='html'?'HTML, CSS and JavaScript exported':options.target.toUpperCase()+' '+(options.scope==='project'?'project':'component')+' exported');},()=>$('file').click());
   $('export-css').onclick=()=>openCodeExport([...selectedIds]);
   $('export').onclick=()=>openCodeExport([]);
   $('export-code-option').onclick=()=>{$('export-dialog').close();$('export-css').click();};
-  $('save').onclick = () => { download(`${doc.name || 'design'}.pixl`, editor.snapshot(), 'application/json'); toast('Design file downloaded'); };
+  $('save').onclick = () => safe(()=>{const file=projectFile(editor.snapshot());download(file.name,file.data,file.type);toast('Editable project downloaded');});
   $('export-artwork').onclick=()=>{$('export-selection-option').disabled=!selectedIds.size;$('export-scope').value=selectedIds.size?'selection':'page';exportSummary();$('export-dialog').showModal();};
   for(const id of ['export-format','export-scope','export-scale','export-quality','export-transparent','export-background']){$(id).onchange=exportSummary;$(id).oninput=exportSummary;}
   $('export-cancel').onclick=()=>$('export-dialog').close();$('export-download').onclick=()=>exportArtwork().catch(error=>{$('export-summary').textContent=String(error);}); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
-    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); await cloud?.beforeLocalOpen(); closeVariables(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Design opened'); }
+    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); const text = await file.text(); const validation=new Editor();try{validation.load(text);}finally{validation.free();} await cloud?.beforeLocalOpen(); closeVariables(); editor.load(text); cloud?.localOpened(); setSelection([]); gesture = null; recoveryBlocked = false; pageViews.clear(); doc = null; refresh(); fit(); toast('Editable project opened'); }
     catch (error) { toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
   };
   canvas.oncontextmenu=event=>{const p=point(event);showSelectionMenu(event,canvasHit(p.x,p.y));};
