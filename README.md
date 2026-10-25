@@ -262,3 +262,18 @@ File menu → Export HTML/CSS components downloads index.html, styles.css and us
 This is an initial CSS rendering path, not full CSS authoring or full Figma parity: direct CSS-canvas manipulation, responsive breakpoint/container-query authoring, semantic component APIs, reusable deduplicated component styles and runtime mode switching remain open. Existing raster/SVG exporters reject background blur rather than silently omitting it. CSS and Rust layout can differ, especially intrinsic text sizes and stroke-aware layout.
 
 The right inspector uses compact paint rows (swatch, editable hex, opacity, visibility and removal), paired appearance fields, section add actions, a component shortcut, and collapsible effect/guide settings. Effects can be added, hidden, edited and removed through compact rows. This improves the reference-panel structure; it does not implement missing rotation, masks, blend modes, multi-paint stacks or Boolean operations.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
