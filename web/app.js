@@ -207,7 +207,7 @@ function renderLayers() {
   const buildRows=parent=>{
   const rows=[],seen=new Set();
   const frameItem=shape=>{
-    if(shape.kind!=='frame'||query)return layerButton(shape);
+    if(shape.kind!=='frame'||query||!listed.some(child=>child.parent_id===shape.id))return layerButton(shape);
     const wrap=document.createElement('div'),row=document.createElement('div');row.className='group-row';
     const toggle=document.createElement('button'),open=!collapsedFrames.has(shape.id);toggle.textContent=open?'⌄':'›';toggle.setAttribute('aria-label',(open?'Collapse frame ':'Expand frame ')+shape.name);toggle.setAttribute('aria-expanded',String(open));
     toggle.onclick=()=>{open?collapsedFrames.add(shape.id):collapsedFrames.delete(shape.id);renderLayers();};
