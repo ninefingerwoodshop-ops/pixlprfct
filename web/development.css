@@ -1,0 +1,22 @@
+.inspector-tabs[role=tablist]{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--ui-border,#e5e5e5)}
+.inspector-tabs [role=tab]{flex:1;min-width:0;padding:8px 4px;background:transparent;border:0;border-radius:6px;font:inherit;color:var(--ui-text,#333)}
+.inspector-tabs [aria-selected=true]{background:var(--ui-selected,#e5f3ff);color:var(--ui-accent,#0d99ff)}
+.development-caption{display:block;padding:8px 12px;color:#757575}
+#inspector-design[hidden],#inspector-prototype[hidden],#inspector-development[hidden]{display:none!important}
+.development-section,.development-empty{padding:12px;margin:0;border-bottom:1px solid var(--ui-border,#e5e5e5)}
+.development-section h3{font-size:11px;font-weight:600;margin:0 0 8px}
+.development-section p{font-size:11px;line-height:1.5;color:#757575}
+.snippet-list{display:grid;gap:4px;max-height:200px;overflow:auto;margin-top:8px}
+.snippet-choice{display:flex;justify-content:space-between;align-items:center;text-align:left;padding:8px;border:1px solid var(--ui-border,#e5e5e5);border-radius:6px;background:var(--ui-field,#f5f5f5)}
+.snippet-choice small{color:#757575;font-size:10px}
+.behavior-card{border:1px solid var(--ui-border,#e5e5e5);border-radius:6px;margin-bottom:8px;padding:8px}
+.behavior-card summary{cursor:pointer;font-weight:600;padding:4px 0}
+.behavior-card label{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.behavior-card input[type=checkbox]{align-self:start}
+.right-panel .behavior-code{box-sizing:border-box;width:100%;resize:vertical;min-height:180px;font:12px/1.6 ui-monospace,monospace!important;tab-size:2;padding:8px!important;border:1px solid var(--ui-border,#ddd);border-radius:6px}
+.behavior-error{color:#c62828!important;white-space:pre-wrap}
+.development-status{padding:0 12px;color:#757575}
+.behavior-preview-dialog{width:80vw;height:75vh;max-width:1100px;border:1px solid #ddd;border-radius:12px;padding:16px;box-shadow:0 16px 48px #0003}
+.behavior-preview-dialog::backdrop{background:#0005}
+.behavior-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.behavior-preview-dialog iframe{width:100%;height:calc(100% - 75px);border:1px solid #ddd;border-radius:6px;background:white}

@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import init,{Editor} from '../web/pkg/pixlprfct_core.js';
+import {ensureBaseTextDocument,baseTextVariable} from '../web/base-text.js';
+import {ensureInputBase,inputBaseControl} from '../web/input-base.js';
+import {newControl,controlCss} from '../web/controls.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+test('base text token migrates defaults, updates new text, and respects explicit edits',()=>{
+ const e=new Editor(),old=e.add('text',0,0),custom=e.add('text',200,0);
+ const get=id=>JSON.parse(e.snapshot()).shapes.find(s=>s.id===id);
+ e.update(JSON.stringify({...get(custom),fill:'#ff0000'}));
+ const migrated=ensureBaseTextDocument(JSON.parse(e.snapshot()));e.load(JSON.stringify(migrated));
+ const vars=JSON.parse(e.snapshot()).variables,base=baseTextVariable(vars);base.values[1]='#123456';e.save_variables(JSON.stringify(vars));
+ assert.equal(get(old).fill,'#123456');assert.equal(get(custom).fill,'#ff0000');
+ const fresh=e.add('text',400,0);assert.equal(get(fresh).fill,'#123456');
+ e.update(JSON.stringify({...get(fresh),fill:'#abcdef'}));base.values[1]='#654321';e.save_variables(JSON.stringify(vars));
+ assert.equal(get(fresh).fill,'#abcdef');assert.equal(get(old).fill,'#654321');
+ assert.equal(ensureBaseTextDocument(JSON.parse(e.snapshot())),null);e.free();
+});
+test('starter text aliases base while checkbox marks remain separate',()=>{
+ const doc=ensureBaseTextDocument({variables:{collections:[],values:[]},shapes:[]});
+ const base=baseTextVariable(doc.variables);base.values[1]='#123456';
+ const setup=ensureInputBase(doc.variables,'checkbox');
+ assert.deepEqual(setup.variables.values.find(v=>v.name==='Label / Color').values[1],{alias:base.id});
+ assert.equal(setup.variables.values.find(v=>v.name==='Checkbox / Mark color').values[1],'#ffffff');
+ const c=inputBaseControl({control:{...newControl('checkbox','Text'),base_collection:setup.collection.id},variable_bindings:setup.bindings},setup.variables);
+ assert.equal(c.base_text_color,'#123456');assert.equal(c.states.selected.parts.label.color,'#123456');
+ assert.match(controlCss(c,1),/color:#123456/);
+});

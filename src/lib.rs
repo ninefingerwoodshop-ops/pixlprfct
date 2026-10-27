@@ -1,8 +1,11 @@
 mod layer_drop;
+mod rotation;
+mod starter_defaults;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 mod arrangement;
 mod grid;
+mod groups;
 mod guide_styles;
 mod path_join;
 mod path_split;
@@ -14,6 +17,30 @@ mod variables;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
     #[serde(default)]
+    pub layout_class: String,
+    #[serde(default)]
+    pub layout_class_generated: bool,
+    #[serde(default)]
+    pub layout_media: Vec<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub breakpoint_original: Option<serde_json::Value>,
+    #[serde(default)]
+    pub device_chrome: String,
+    #[serde(default)]
+    pub device_chrome_breakpoints: Option<serde_json::Value>,
+    #[serde(default)]
+    pub device_chrome_hidden: bool,
+    #[serde(default)]
+    pub control: Option<Control>,
+    #[serde(default)]
+    pub control_state: String,
+    #[serde(default)]
+    pub behaviors: Vec<Behavior>,
+    #[serde(default)]
+    pub border_widths: Option<[f64; 4]>,
+    #[serde(default)]
+    pub rotation: f64,
+    #[serde(default)]
     pub aspect_ratio_locked: bool,
     #[serde(default)]
     pub variable_bindings: std::collections::BTreeMap<String, u32>,
@@ -22,10 +49,6 @@ pub struct Shape {
     pub id: u32,
     #[serde(default = "first_page")]
     pub page_id: u32,
-    #[serde(default)]
-    pub group_id: u32,
-    #[serde(default)]
-    pub group_name: String,
     #[serde(default)]
     pub parent_id: u32,
     #[serde(default)]
@@ -77,8 +100,149 @@ pub struct Shape {
     pub stroke_width: f64,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Behavior {
+    pub id: String,
+    pub name: String,
+    pub code: String,
+    pub trigger: String,
+    pub enabled: bool,
+    pub duration: f64,
+    pub distance: f64,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Control {
+    pub dropdown: Option<DropdownControl>,
+    pub selected_values: Vec<String>,
+    pub left_adornment: ControlAdornment,
+    pub right_adornment: ControlAdornment,
+    pub calendar: Option<serde_json::Value>,
+    pub textarea: Option<serde_json::Value>,
+    pub upload: Option<serde_json::Value>,
+    pub number: Option<serde_json::Value>,
+    pub password: Option<serde_json::Value>,
+    pub segmented: Option<serde_json::Value>,
+    pub base_collection: u32,
+    pub starter: bool,
+    pub starter_linked: bool,
+    pub shared_overrides: Vec<String>,
+    pub validation_trigger: String,
+    pub pattern: String,
+    pub min_length: Option<u32>,
+    pub max_length: Option<u32>,
+    pub toggle: bool,
+    pub kind: String,
+    pub label: String,
+    pub label_position: String,
+    pub width_sizing: String,
+    pub name: String,
+    pub value: String,
+    pub placeholder: String,
+    pub helper_message: String,
+    pub hide_helper: bool,
+    pub validation_message: String,
+    pub invalid: bool,
+    pub disabled: bool,
+    pub readonly: bool,
+    pub checked: bool,
+    pub required: bool,
+    pub required_icon: String,
+    pub required_svg: String,
+    pub required_icon_size: f64,
+    pub required_icon_weight: f64,
+    pub required_icon_offset: f64,
+    pub required_icon_color: String,
+    pub multiple: bool,
+    pub min: String,
+    pub max: String,
+    pub step: String,
+    pub accept: String,
+    pub src: String,
+    pub options: Vec<String>,
+    pub states: std::collections::BTreeMap<String, ControlStyle>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DropdownControl {
+    pub preview_open: bool,
+    pub search: bool,
+    pub select_all: bool,
+    pub deselect_all: bool,
+    pub bulk_style: String,
+    pub select_all_label: String,
+    pub deselect_all_label: String,
+    pub checkboxes: bool,
+    pub pills: bool,
+    pub pill_limit: u32,
+    pub menu_width: f64,
+    pub menu_height: f64,
+    pub selected: Vec<String>,
+    pub items: Vec<DropdownItem>,
+}
+impl Default for DropdownControl {
+    fn default() -> Self {
+        Self {
+            preview_open: false,
+            search: true,
+            select_all: true,
+            deselect_all: true,
+            bulk_style: "links".into(),
+            select_all_label: "Select all".into(),
+            deselect_all_label: "Deselect all".into(),
+            checkboxes: true,
+            pills: true,
+            pill_limit: 3,
+            menu_width: 0.0,
+            menu_height: 280.0,
+            selected: Vec::new(),
+            items: Vec::new(),
+        }
+    }
+}
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DropdownItem {
+    pub label: String,
+    pub value: String,
+    pub category: String,
+    pub disabled: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ControlAdornment {
+    pub size: Option<f64>,
+    pub weight: Option<f64>,
+    pub gap: Option<f64>,
+    pub offset: Option<f64>,
+    pub color: String,
+    pub enabled: bool,
+    pub outside: bool,
+    pub icon: String,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ControlStyle {
+    pub parts:
+        std::collections::BTreeMap<String, std::collections::BTreeMap<String, serde_json::Value>>,
+    pub background: String,
+    pub color: String,
+    pub border_color: String,
+    pub opacity: Option<f64>,
+    pub radius: Option<f64>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct LayoutItem {
+    #[serde(default)]
+    pub grid_container: bool,
+    #[serde(default)]
+    pub margin: [f64; 4],
     #[serde(default)]
     pub grid_cell: Option<grid::GridCell>,
     pub fill_width: bool,
@@ -420,6 +584,9 @@ fn constrain_axis(
     parent_size: f64,
     mode: &Constraint,
 ) -> (f64, f64) {
+    if old_size == 0.0 {
+        return (position + origin - old_origin, size);
+    }
     let relative = position - old_origin;
     let delta = parent_size - old_size;
     match mode {
@@ -554,6 +721,10 @@ pub struct Document {
 
 #[derive(Serialize, Deserialize)]
 struct LayerClipboard {
+    #[serde(default)]
+    origin: String,
+    #[serde(default)]
+    components: std::collections::BTreeMap<u32, components::Component>,
     format: String,
     version: u32,
     shapes: Vec<Shape>,
@@ -561,6 +732,8 @@ struct LayerClipboard {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Page {
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub variable_modes: std::collections::BTreeMap<u32, u32>,
     pub id: u32,
     pub name: String,
 }
@@ -570,13 +743,28 @@ fn first_page() -> u32 {
 }
 fn default_pages() -> Vec<Page> {
     vec![Page {
+        variable_modes: Default::default(),
         id: 1,
         name: "Page 1".into(),
     }]
 }
 
+fn clipboard_origin() -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        format!("{}-{}", js_sys::Date::now(), js_sys::Math::random())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            .to_string()
+    }
+}
+
 #[wasm_bindgen]
 pub struct Editor {
+    clipboard_origin: String,
     text_measurer: Option<js_sys::Function>,
     document: Document,
     undo: Vec<Document>,
@@ -891,25 +1079,43 @@ fn validate(document: &Document) -> Result<(), String> {
                 return Err("Frame hierarchy contains a cycle or exceeds 128 levels".into());
             }
             let ancestor = by_id.get(&parent).ok_or("Parent frame not found")?;
-            if ancestor.kind != "frame" || ancestor.page_id != shape.page_id {
-                return Err("Parent must be a frame on the same page".into());
+            if !ancestor.is_container() || ancestor.page_id != shape.page_id {
+                return Err("Parent must be a frame or group on the same page".into());
             }
             parent = ancestor.parent_id;
         }
     }
-    let mut groups = std::collections::HashMap::new();
     for shape in &document.shapes {
-        if shape.group_id == u32::MAX
-            || shape.group_name.len() > 256
-            || (shape.group_id > 0 && shape.group_name.trim().is_empty())
-        {
-            return Err("Invalid group".into());
-        }
-        if shape.group_id > 0 {
-            let value = (shape.page_id, shape.parent_id, shape.group_name.as_str());
-            if let Some(previous) = groups.insert(shape.group_id, value) {
-                if previous != value {
-                    return Err("Group members must share a page and name".into());
+        if let Some(d) = shape.control.as_ref().and_then(|c| c.dropdown.as_ref()) {
+            if ![
+                "none",
+                "links",
+                "buttons",
+                "checkbox",
+                "switch",
+                "toggle_button",
+            ]
+            .contains(&d.bulk_style.as_str())
+                || d.select_all_label.len() > 200
+                || d.deselect_all_label.len() > 200
+                || !d.menu_width.is_finite()
+                || !(0.0..=2000.0).contains(&d.menu_width)
+                || !d.menu_height.is_finite()
+                || !(80.0..=1200.0).contains(&d.menu_height)
+                || d.pill_limit > 30
+                || d.items.len() > 500
+            {
+                return Err("Invalid dropdown settings".into());
+            }
+            let mut values = std::collections::HashSet::new();
+            for item in &d.items {
+                if item.value.is_empty()
+                    || item.value.len() > 1000
+                    || item.label.len() > 1000
+                    || item.category.len() > 200
+                    || !values.insert(&item.value)
+                {
+                    return Err("Dropdown item values must be unique and non-empty".into());
                 }
             }
         }
@@ -919,9 +1125,13 @@ fn validate(document: &Document) -> Result<(), String> {
                 || !(1.0..=512.0).contains(&style.font_size)
                 || !style.line_height.is_finite()
                 || !(0.5..=4.0).contains(&style.line_height)
-                || ![400, 500, 600, 700, 800].contains(&style.font_weight)
-                || !["Manrope", "DM Sans", "Georgia", "monospace"]
-                    .contains(&style.font_family.as_str())
+                || !(100..=900).contains(&style.font_weight)
+                || style.font_family.is_empty()
+                || style.font_family.len() > 100
+                || !style
+                    .font_family
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == ' ' || c == '-')
                 || !["left", "center", "right"].contains(&style.align.as_str())
                 || !["top", "center", "bottom"].contains(&style.vertical_align.as_str())
             {
@@ -979,6 +1189,21 @@ fn validate(document: &Document) -> Result<(), String> {
         {
             return Err("Invalid curve handles".into());
         }
+        if shape.rotation != 0.0 && (shape.layout_item.fill_width || shape.layout_item.fill_height)
+        {
+            return Err("Rotated layers require fixed sizing".into());
+        }
+        if shape.border_widths.is_some_and(|v| {
+            v.iter()
+                .any(|n| !n.is_finite() || *n < 0.0 || *n > 100000.0)
+        }) || shape
+            .layout_item
+            .margin
+            .iter()
+            .any(|n| !n.is_finite() || n.abs() > 100000.0)
+        {
+            return Err("Invalid border widths or margins".into());
+        }
         if !shape.stroke_width.is_finite()
             || !(0.1..=100.0).contains(&shape.stroke_width)
             || shape.points.len() > 4096
@@ -992,6 +1217,7 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Invalid vector geometry or stroke width".into());
         }
         if ![
+            "group",
             "image",
             "rectangle",
             "ellipse",
@@ -1010,11 +1236,11 @@ fn validate(document: &Document) -> Result<(), String> {
             || shape.fill.len() != 7
             || !shape.fill.starts_with('#')
             || !shape.fill[1..].bytes().all(|c| c.is_ascii_hexdigit())
-            || ![shape.x, shape.y, shape.width, shape.height]
+            || ![shape.x, shape.y, shape.width, shape.height, shape.rotation]
                 .iter()
                 .all(|v| v.is_finite() && v.abs() <= 1_000_000.0)
-            || shape.width < 1.0
-            || shape.height < 1.0
+            || shape.width < if shape.kind == "group" { 0.0 } else { 1.0 }
+            || shape.height < if shape.kind == "group" { 0.0 } else { 1.0 }
         {
             return Err("Invalid shape data".into());
         }
@@ -1037,9 +1263,10 @@ impl Editor {
             .map(|s| s.id)
             .collect();
         if !document.shapes.iter().any(|s| {
-            s.kind == "text"
-                && (baseline_parents.contains(&s.parent_id)
-                    || s.typography.as_ref().is_some_and(|t| t.sizing != "fixed"))
+            (s.control.as_ref().is_some_and(|c| c.kind == "button") && s.auto_layout.is_some())
+                || s.kind == "text"
+                    && (baseline_parents.contains(&s.parent_id)
+                        || s.typography.as_ref().is_some_and(|t| t.sizing != "fixed"))
         }) {
             reflow(document);
             return Ok(());
@@ -1063,6 +1290,35 @@ impl Editor {
                 .map(|s| s.id)
                 .collect();
             for s in &mut document.shapes {
+                if s.control.as_ref().is_some_and(|c| c.kind == "button") {
+                    if let Some(layout) = &s.auto_layout {
+                        let result = measure
+                            .call1(
+                                &JsValue::NULL,
+                                &JsValue::from_str(&serde_json::to_string(s).unwrap()),
+                            )
+                            .map_err(|_| "Control measurement failed")?;
+                        let size: Vec<f64> = serde_json::from_str(
+                            &result.as_string().ok_or("Invalid control measurement")?,
+                        )
+                        .map_err(|_| "Invalid control measurement")?;
+                        if size.len() < 2
+                            || size
+                                .iter()
+                                .take(2)
+                                .any(|v| !v.is_finite() || !(1.0..=1_000_000.0).contains(v))
+                        {
+                            return Err("Control exceeds supported dimensions".into());
+                        }
+                        if layout.hug_width && !s.layout_item.fill_width {
+                            s.width = size[0] + layout.padding_left + layout.padding_right;
+                        }
+                        if layout.hug_height && !s.layout_item.fill_height {
+                            s.height = size[1] + layout.padding_top + layout.padding_bottom;
+                        }
+                    }
+                    continue;
+                }
                 if s.kind != "text" {
                     continue;
                 }
@@ -1171,6 +1427,7 @@ impl Editor {
             }
         }
         let staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: None,
             document,
             undo: vec![],
@@ -1233,6 +1490,7 @@ impl Editor {
                     && removed.contains(&p.target))
             });
         }
+        groups::prune_empty(&mut document);
         variants::prune(&mut document);
         component_properties::prune(&mut document);
         validate(&document)?;
@@ -1242,6 +1500,11 @@ impl Editor {
 
     fn commit_document(&mut self, mut document: Document) -> Result<(), String> {
         validate(&document)?;
+        let original_shape_count = document.shapes.len();
+        grid::ensure_containers(&mut document, self.next_id)?;
+        let containers_added = document.shapes.len() > original_shape_count;
+        starter_defaults::sync(&mut document);
+        starter_defaults::sync_dropdown(&mut document);
         variables::resolve(&mut document)?;
         validate(&document)?;
         components::validate_links(&document)?;
@@ -1266,7 +1529,7 @@ impl Editor {
             document
                 .shapes
                 .iter()
-                .map(|s| s.id.max(s.group_id))
+                .map(|s| s.id)
                 .max()
                 .unwrap_or(0)
                 .saturating_add(1),
@@ -1295,6 +1558,78 @@ impl Editor {
             });
         }
         self.reflow_text(&mut document)?;
+        // Reserve custom names before assigning generated names across every page.
+        fn valid_class(name: &str) -> bool {
+            !name.is_empty()
+                && name
+                    .chars()
+                    .next()
+                    .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+                && name
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+                && !name.starts_with("px-")
+                && name != "layout"
+        }
+        fn legacy_class(name: &str) -> bool {
+            name.strip_prefix("layout-").is_some_and(|tail| {
+                !tail.is_empty()
+                    && tail
+                        .split('-')
+                        .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()))
+            })
+        }
+        let mut indices: Vec<_> = (0..document.shapes.len()).collect();
+        indices.sort_by_key(|i| {
+            (
+                document.shapes[*i].layout_class_generated
+                    || !valid_class(&document.shapes[*i].layout_class)
+                    || legacy_class(&document.shapes[*i].layout_class),
+                document.shapes[*i].id,
+            )
+        });
+        let mut used = std::collections::HashSet::new();
+        for i in indices {
+            let shape = &mut document.shapes[i];
+            let generated = shape.layout_class_generated
+                || !valid_class(&shape.layout_class)
+                || legacy_class(&shape.layout_class);
+            let base = if generated {
+                let mut slug = String::new();
+                for c in shape.name.chars() {
+                    if c.is_ascii_alphanumeric() {
+                        slug.push(c.to_ascii_lowercase());
+                    } else if !slug.is_empty() && !slug.ends_with('-') {
+                        slug.push('-');
+                    }
+                }
+                let mut slug = slug.trim_matches('-').to_string();
+                if slug.is_empty() {
+                    slug = "layer".into();
+                }
+                if slug.starts_with("px-")
+                    || slug.chars().next().is_some_and(|c| c.is_ascii_digit())
+                {
+                    slug = format!("layer-{}", slug);
+                }
+                format!("{}-{}", slug, shape.id)
+            } else {
+                shape.layout_class.clone()
+            };
+            let mut candidate = base.clone();
+            let mut n = 1;
+            while used.contains(&candidate) {
+                candidate = if n == 1 {
+                    format!("{}-{}", base, shape.id)
+                } else {
+                    format!("{}-{}-{}", base, shape.id, n)
+                };
+                n += 1;
+            }
+            used.insert(candidate.clone());
+            shape.layout_class = candidate;
+            shape.layout_class_generated = generated;
+        }
         validate(&document)?;
         components::validate_links(&document)?;
         if serde_json::to_string(&document)
@@ -1304,8 +1639,8 @@ impl Editor {
         {
             return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
         }
-        if next > base {
-            self.next_id = next;
+        if next > base || containers_added {
+            self.next_id = self.next_id.max(next);
         }
         if document != self.document {
             self.undo.push(self.document.clone());
@@ -1330,6 +1665,7 @@ impl Editor {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
+            clipboard_origin: clipboard_origin(),
             text_measurer: None,
             document: Document {
                 variables: variables::Variables::default(),
@@ -1385,8 +1721,8 @@ impl Editor {
                 copy.variable_bindings.clear();
                 copy.variable_modes.clear();
                 copy.retain_interactions(|p| {
-                    !(["navigate", "overlay", "swap"].contains(&p.action.as_str())
-                        && !ids.contains(&p.target))
+                    !["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                        || ids.contains(&p.target)
                 });
                 if !ids.contains(&copy.parent_id) {
                     copy.parent_id = 0;
@@ -1396,6 +1732,39 @@ impl Editor {
             })
             .collect();
         serde_json::to_string(&LayerClipboard {
+            origin: self.clipboard_origin.clone(),
+            components: self
+                .document
+                .shapes
+                .iter()
+                .filter(|s| ids.contains(&s.id))
+                .filter_map(|s| {
+                    let mut ancestor = Some(s);
+                    while let Some(node) = ancestor {
+                        if ids.contains(&node.id)
+                            && node.component == Some(components::Component::Master)
+                        {
+                            return Some((
+                                s.id,
+                                components::Component::Instance {
+                                    master: node.id,
+                                    source: s.id,
+                                    overrides: vec![],
+                                },
+                            ));
+                        }
+                        ancestor = self.document.shapes.iter().find(|p| p.id == node.parent_id);
+                    }
+                    match &s.component {
+                        Some(c @ components::Component::Instance { master, source, .. })
+                            if master == source || ids.contains(&s.parent_id) =>
+                        {
+                            Some((s.id, c.clone()))
+                        }
+                        _ => None,
+                    }
+                })
+                .collect(),
             format: "pixlprfct.layers".into(),
             version: 1,
             shapes,
@@ -1420,10 +1789,10 @@ impl Editor {
         }
         if parent != 0
             && !self.document.shapes.iter().any(|s| {
-                s.id == parent && s.kind == "frame" && s.page_id == self.document.active_page
+                s.id == parent && s.is_container() && s.page_id == self.document.active_page
             })
         {
-            return Err("Paste target must be a frame on this page".into());
+            return Err("Paste target must be a frame or group on this page".into());
         }
         for s in &mut payload.shapes {
             s.page_id = 1;
@@ -1454,10 +1823,12 @@ impl Editor {
             .enumerate()
             .map(|(i, s)| (s.id, self.next_id + i as u32))
             .collect();
-        let mut groups = std::collections::HashMap::new();
         let mut roots = vec![];
         let mut document = self.document.clone();
         for mut s in payload.shapes {
+            if payload.origin == self.clipboard_origin {
+                s.component = payload.components.get(&s.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
+            }
             for p in s.interactions_mut() {
                 if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                     p.target = ids[&p.target];
@@ -1470,9 +1841,6 @@ impl Editor {
                 roots.push(s.id);
             } else {
                 s.parent_id = ids[&s.parent_id];
-            }
-            if s.group_id > 0 {
-                s.group_id = *groups.entry(s.group_id).or_insert(s.id);
             }
             s.x += dx;
             s.y += dy;
@@ -1510,6 +1878,12 @@ impl Editor {
         }
         let mut template = Editor::new();
         template.paste_layers(json, 0.0, 0.0, 0)?;
+        let payload: LayerClipboard = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if payload.origin == self.clipboard_origin {
+            for (shape, original) in template.document.shapes.iter_mut().zip(&payload.shapes) {
+                shape.component = payload.components.get(&original.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
+            }
+        }
         let shapes = &template.document.shapes;
         if self.document.shapes.len() + shapes.len() * targets.len() > 10_000 {
             return Err("Document layer limit reached".into());
@@ -1536,7 +1910,6 @@ impl Editor {
                 .enumerate()
                 .map(|(i, s)| (s.id, next + i as u32))
                 .collect();
-            let mut groups = std::collections::HashMap::new();
             for source in shapes {
                 let mut s = source.clone();
                 s.id = mapping[&source.id];
@@ -1548,9 +1921,6 @@ impl Editor {
                     roots.push(s.id);
                 } else {
                     s.parent_id = mapping[&s.parent_id];
-                }
-                if s.group_id > 0 {
-                    s.group_id = *groups.entry(s.group_id).or_insert(s.id);
                 }
                 for p in s.interactions_mut() {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
@@ -1588,6 +1958,12 @@ impl Editor {
         // Validate and normalize the portable payload before allocating any document IDs.
         let mut template = Editor::new();
         template.paste_layers(json, 0.0, 0.0, 0)?;
+        let payload: LayerClipboard = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if payload.origin == self.clipboard_origin {
+            for (shape, original) in template.document.shapes.iter_mut().zip(&payload.shapes) {
+                shape.component = payload.components.get(&original.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
+            }
+        }
         let shapes = &template.document.shapes;
         let left = shapes
             .iter()
@@ -1616,7 +1992,6 @@ impl Editor {
                     .enumerate()
                     .map(|(i, s)| (s.id, next + i as u32))
                     .collect();
-                let mut groups = std::collections::HashMap::new();
                 for source in shapes {
                     let mut s = source.clone();
                     s.id = ids[&source.id];
@@ -1630,13 +2005,6 @@ impl Editor {
                         roots.push(s.id);
                     } else {
                         s.parent_id = ids[&source.parent_id];
-                    }
-                    if s.group_id > 0 {
-                        s.group_id = *groups.entry(s.group_id).or_insert(s.id);
-                    }
-                    if source.parent_id == 0 && target.group_id > 0 {
-                        s.group_id = target.group_id;
-                        s.group_name = target.group_name.clone();
                     }
                     for p in s.interactions_mut() {
                         if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
@@ -1682,16 +2050,25 @@ impl Editor {
         self.next_page_id = self
             .next_page_id
             .max(document.pages.iter().map(|p| p.id).max().unwrap_or(1) + 1);
-        self.next_id = self.next_id.max(
-            document
-                .shapes
-                .iter()
-                .map(|s| s.id.max(s.group_id))
-                .max()
-                .unwrap_or(0)
-                + 1,
-        );
-        self.commit_document(document)
+        self.next_id = self
+            .next_id
+            .max(document.shapes.iter().map(|s| s.id).max().unwrap_or(0) + 1);
+        variables::resolve(&mut document)?;
+        // Upgrade older editable starters once; detached controls stay detached.
+        for shape in &mut document.shapes {
+            if let Some(control) = &mut shape.control {
+                if control.starter && !control.starter_linked {
+                    control.starter_linked = true;
+                    if shape.component.is_none() {
+                        shape.component = Some(components::Component::Master);
+                    }
+                }
+            }
+        }
+        components::restore_detached_button_labels(&mut document, &mut self.next_id)?;
+        self.commit_document(document)?;
+        self.clipboard_origin = clipboard_origin();
+        Ok(())
     }
 
     pub fn add(&mut self, kind: &str, x: f64, y: f64) -> Result<u32, String> {
@@ -1706,15 +2083,44 @@ impl Editor {
             _ => (160.0, 120.0, "#d9d9d9"),
         };
         document.shapes.push(Shape {
+            layout_class: String::new(),
+            layout_class_generated: false,
+            layout_media: Vec::new(),
+            breakpoint_original: None,
+            device_chrome: String::new(),
+            device_chrome_breakpoints: None,
+            device_chrome_hidden: false,
+            control: None,
+            control_state: String::new(),
+            behaviors: Vec::new(),
+            border_widths: None,
+            rotation: 0.0,
             aspect_ratio_locked: false,
-            variable_bindings: Default::default(),
+            variable_bindings: if kind == "text" {
+                self.document
+                    .variables
+                    .values
+                    .iter()
+                    .find(|v| {
+                        v.name == "Text color"
+                            && v.kind == "color"
+                            && self
+                                .document
+                                .variables
+                                .collections
+                                .iter()
+                                .any(|c| c.id == v.collection_id && c.preset == "typography_base")
+                    })
+                    .map(|v| std::collections::BTreeMap::from([("fill".into(), v.id)]))
+                    .unwrap_or_default()
+            } else {
+                Default::default()
+            },
             variable_modes: Default::default(),
             id,
             page_id: document.active_page,
-            group_id: 0,
-            group_name: String::new(),
             parent_id: 0,
-            clip_content: false,
+            clip_content: kind == "frame",
             image: None,
             constraints: Constraints::default(),
             appearance: None,
@@ -1830,13 +2236,52 @@ impl Editor {
         let mut shape: Shape = serde_json::from_str(json).map_err(|e| e.to_string())?;
         shape.id = self.next_id;
         shape.page_id = self.document.active_page;
-        shape.group_id = 0;
-        shape.group_name.clear();
         let id = shape.id;
         let mut document = self.document.clone();
         document.shapes.push(shape);
         self.commit(document)?;
         self.next_id += 1;
+        Ok(id)
+    }
+
+    pub fn reset_starter_overrides(&mut self, id: u32) -> Result<(), String> {
+        let mut document = self.document.clone();
+        let shape = document
+            .shapes
+            .iter_mut()
+            .find(|s| s.id == id)
+            .ok_or("Missing starter")?;
+        if matches!(
+            shape.component,
+            Some(components::Component::Instance { .. })
+        ) {
+            return Err("Reset the main component instead".into());
+        }
+        let control = shape.control.as_mut().ok_or("Missing control")?;
+        control.shared_overrides.clear();
+        self.commit(document)
+    }
+
+    pub fn insert_control_starter(&mut self, json: &str, variables: &str) -> Result<u32, String> {
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        staged.save_variables(variables)?;
+        let id = staged.insert(json)?;
+        if let Some(shape) = staged.document.shapes.iter_mut().find(|s| s.id == id) {
+            if let Some(control) = &mut shape.control {
+                control.starter_linked = true;
+                shape.component = Some(components::Component::Master);
+            }
+        }
+        self.commit(staged.document)?;
+        self.next_id = staged.next_id;
         Ok(id)
     }
 
@@ -1855,6 +2300,10 @@ impl Editor {
                 return Err("Cannot move a layer to another page through a selection edit".into());
             }
             let id = shape.id;
+            starter_defaults::record(
+                document.shapes.iter().find(|s| s.id == id).unwrap(),
+                &mut shape,
+            );
             components::record_overrides(
                 document.shapes.iter().find(|s| s.id == id).unwrap(),
                 &mut shape,
@@ -1862,6 +2311,7 @@ impl Editor {
             *document.shapes.iter_mut().find(|s| s.id == id).unwrap() = shape;
         }
         validate(&document)?;
+        grid::sync_area_size_edits(&self.document, &mut document, &ids);
         component_properties::propagate_edits(&self.document, &mut document, &ids)?;
         // The committed scene is parent-first. Explicit edits (including Scale's
         // entire subtree) win; other children inherit their immediate frame's change.
@@ -1870,16 +2320,25 @@ impl Editor {
             if ids.contains(&child.id) || child.parent_id == 0 {
                 continue;
             }
-            let old = self
-                .document
+            let mut parent = document
                 .shapes
                 .iter()
                 .find(|s| s.id == child.parent_id)
                 .unwrap();
-            let parent = document
+            // Groups do not establish a constraint coordinate system. Use the
+            // enclosing frame unless this edit explicitly transforms a group.
+            while parent.kind == "group" && !ids.contains(&parent.id) {
+                let Some(ancestor) = document.shapes.iter().find(|s| s.id == parent.parent_id)
+                else {
+                    break;
+                };
+                parent = ancestor;
+            }
+            let old = self
+                .document
                 .shapes
                 .iter()
-                .find(|s| s.id == child.parent_id)
+                .find(|s| s.id == parent.id)
                 .unwrap();
             if old.auto_layout.is_some() && !child.layout_item.absolute {
                 let (x, y) = (child.x + parent.x - old.x, child.y + parent.y - old.y);
@@ -1887,6 +2346,17 @@ impl Editor {
                 document.shapes[i].y = y;
                 continue;
             }
+            let group_resize = parent.kind == "group";
+            let horizontal = if group_resize {
+                &crate::Constraint::Scale
+            } else {
+                &child.constraints.horizontal
+            };
+            let vertical = if group_resize {
+                &crate::Constraint::Scale
+            } else {
+                &child.constraints.vertical
+            };
             let (x, width) = constrain_axis(
                 child.x,
                 child.width,
@@ -1894,7 +2364,7 @@ impl Editor {
                 old.width,
                 parent.x,
                 parent.width,
-                &child.constraints.horizontal,
+                horizontal,
             );
             let (y, height) = constrain_axis(
                 child.y,
@@ -1903,9 +2373,14 @@ impl Editor {
                 old.height,
                 parent.y,
                 parent.height,
-                &child.constraints.vertical,
+                vertical,
             );
             let child = &mut document.shapes[i];
+            if group_resize && (child.width != width || child.height != height) {
+                if let Some(style) = &mut child.typography {
+                    style.sizing = "fixed".into();
+                }
+            }
             child.x = x;
             child.y = y;
             child.width = width;
@@ -1914,8 +2389,39 @@ impl Editor {
         self.commit(document)
     }
 
+    // Apply inspector changes across pages as one atomic history entry.
+    pub fn update_across_pages(&mut self, json: &str) -> Result<(), String> {
+        let shapes: Vec<Shape> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if shapes.is_empty() {
+            return Ok(());
+        }
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let mut pages: Vec<u32> = shapes.iter().map(|s| s.page_id).collect();
+        pages.sort_unstable();
+        pages.dedup();
+        for page in pages {
+            if !staged.document.pages.iter().any(|p| p.id == page) {
+                return Err("Page not found".into());
+            }
+            staged.document.active_page = page;
+            let updates: Vec<_> = shapes.iter().filter(|s| s.page_id == page).collect();
+            staged.update_many(&serde_json::to_string(&updates).map_err(|e| e.to_string())?)?;
+        }
+        staged.document.active_page = self.document.active_page;
+        self.commit(staged.document)
+    }
+
     pub fn preview_update_many(&self, json: &str) -> Result<String, String> {
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
@@ -1929,6 +2435,7 @@ impl Editor {
 
     pub fn preview_layout_update(&self, json: &str, id: u32) -> Result<String, String> {
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
@@ -1957,7 +2464,6 @@ impl Editor {
             .ok_or("Shape ID limit reached")?;
         let mut document = self.document.clone();
         let mut created = vec![];
-        let mut copied_groups = std::collections::HashMap::new();
         let mapping: std::collections::HashMap<u32, u32> = ids
             .iter()
             .enumerate()
@@ -1974,9 +2480,6 @@ impl Editor {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
                 }
-                if copy.group_id > 0 {
-                    copy.group_id = *copied_groups.entry(copy.group_id).or_insert(copy.id);
-                }
                 copy.x += 24.0;
                 copy.y += 24.0;
                 created.push(copy.id);
@@ -1989,10 +2492,276 @@ impl Editor {
         Ok(serde_json::to_string(&created).unwrap())
     }
 
+    // Browser-resolved tracks provide exact cells for intrinsic and relative CSS sizing.
+    pub fn move_into_cells(
+        &mut self,
+        json: &str,
+        parent: u32,
+        placements: &str,
+    ) -> Result<(), String> {
+        let cells: Vec<(u32, u32, u32)> =
+            serde_json::from_str(placements).map_err(|e| e.to_string())?;
+        let roots: Vec<Shape> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if cells
+            .iter()
+            .any(|(id, _, _)| !roots.iter().any(|s| s.id == *id))
+        {
+            return Err("Grid targets must belong to dragged layers".into());
+        }
+        if self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == parent)
+            .and_then(|s| s.auto_layout.as_ref())
+            .and_then(|l| l.grid.as_ref())
+            .is_some_and(|g| g.options.masonry)
+        {
+            return self.move_into_before(
+                &serde_json::to_string(&roots.iter().map(|s| s.id).collect::<Vec<_>>()).unwrap(),
+                parent,
+                0,
+            );
+        }
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let use_containers = staged
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == parent)
+            .and_then(|s| s.auto_layout.as_ref())
+            .and_then(|l| l.grid.as_ref())
+            .is_some_and(|g| g.options.cell_containers);
+        if use_containers {
+            for s in &mut staged.document.shapes {
+                if let Some(g) = s.auto_layout.as_mut().and_then(|l| l.grid.as_mut()) {
+                    g.options.cell_containers = false;
+                }
+            }
+        }
+        let frame = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == parent)
+            .ok_or("Grid frame not found")?;
+        let items: Vec<_> = self
+            .document
+            .shapes
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| s.parent_id == parent && !s.hidden && !s.layout_item.absolute)
+            .map(|(i, _)| i)
+            .collect();
+        let mut occupied: Vec<_> = grid::plan(&self.document.shapes, frame, &items, false, false)
+            .placements
+            .into_iter()
+            .filter(|p| !roots.iter().any(|s| s.id == p.id))
+            .collect();
+        staged.move_into(json, parent)?;
+        let mut updates = vec![];
+        for (id, column, row) in cells {
+            let mut s = staged
+                .document
+                .shapes
+                .iter()
+                .find(|s| s.id == id && s.parent_id == parent)
+                .ok_or("Grid child not found")?
+                .clone();
+            let c = s.layout_item.grid_cell.get_or_insert_with(Default::default);
+            c.column = Some(column);
+            c.row = Some(row);
+            c.area = staged
+                .document
+                .shapes
+                .iter()
+                .find(|s| s.id == parent)
+                .and_then(|s| s.auto_layout.as_ref())
+                .and_then(|l| l.grid.as_ref())
+                .and_then(|g| {
+                    g.options.areas.iter().find(|a| {
+                        column >= a.column
+                            && column < a.column + a.column_span
+                            && row >= a.row
+                            && row < a.row + a.row_span
+                    })
+                })
+                .map(|a| a.name.clone())
+                .unwrap_or_default();
+            if !use_containers && !frame.layout_item.grid_container && c.area.is_empty() {
+                let mut candidate = row as usize;
+                while occupied.iter().any(|p| {
+                    (column as usize) < p.column + p.column_span
+                        && p.column < (column + c.column_span) as usize
+                        && candidate < p.row + p.row_span
+                        && p.row < candidate + c.row_span as usize
+                }) {
+                    candidate += 1;
+                    if candidate > 128 {
+                        return Err("No available grid row".into());
+                    }
+                }
+                c.row = Some(candidate as u32);
+                occupied.push(grid::Placement {
+                    id,
+                    column: column as usize,
+                    row: candidate,
+                    column_span: c.column_span as usize,
+                    row_span: c.row_span as usize,
+                    x: 0.0,
+                    y: 0.0,
+                    width: 0.0,
+                    height: 0.0,
+                });
+            }
+            updates.push(s);
+        }
+        staged.update_many(&serde_json::to_string(&updates).map_err(|e| e.to_string())?)?;
+        if use_containers {
+            for s in &mut staged.document.shapes {
+                if let Some(g) = s.auto_layout.as_mut().and_then(|l| l.grid.as_mut()) {
+                    g.options.cell_containers = self
+                        .document
+                        .shapes
+                        .iter()
+                        .find(|old| old.id == s.id)
+                        .and_then(|old| old.auto_layout.as_ref())
+                        .and_then(|l| l.grid.as_ref())
+                        .is_some_and(|old| old.options.cell_containers);
+                }
+            }
+        }
+        self.commit(staged.document)
+    }
+
+    // Canvas insertion uses document order, unlike the reversed layer tree.
+    pub fn move_into_before(&mut self, json: &str, parent: u32, before: u32) -> Result<(), String> {
+        let ids = groups::roots(&self.document.shapes, &self.selection_ids(json)?);
+        if ids.contains(&parent) {
+            return Err("Cannot move a frame inside itself".into());
+        }
+        if before != 0
+            && !self
+                .document
+                .shapes
+                .iter()
+                .any(|s| s.id == before && s.parent_id == parent && !ids.contains(&s.id))
+        {
+            return Err("Invalid insertion target".into());
+        }
+        let ordered: Vec<_> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .map(|s| s.id)
+            .collect();
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        staged.drop_layers(&serde_json::to_string(&ordered).unwrap(), parent, "inside")?;
+        let mut moved = vec![];
+        staged.document.shapes.retain(|s| {
+            if ordered.contains(&s.id) {
+                moved.push(s.clone());
+                false
+            } else {
+                true
+            }
+        });
+        moved.sort_by_key(|s| ordered.iter().position(|id| *id == s.id).unwrap());
+        let index = if before == 0 {
+            staged.document.shapes.len()
+        } else {
+            staged
+                .document
+                .shapes
+                .iter()
+                .position(|s| s.id == before)
+                .ok_or("Insertion target missing")?
+        };
+        staged.document.shapes.splice(index..index, moved);
+        self.commit(staged.document)
+    }
+
+    pub fn preview_grid_drop(
+        &self,
+        json: &str,
+        grid: u32,
+        parent: u32,
+        before: u32,
+        column: u32,
+        row: u32,
+    ) -> Result<String, String> {
+        let ids = groups::roots(&self.document.shapes, &self.selection_ids(json)?);
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        if parent != 0 {
+            staged.move_into_before(&serde_json::to_string(&ids).unwrap(), parent, before)?;
+        } else {
+            let shapes: Vec<_> = self
+                .document
+                .shapes
+                .iter()
+                .filter(|s| ids.contains(&s.id))
+                .cloned()
+                .collect();
+            let cells: Vec<_> = ids.iter().map(|id| (*id, column, row)).collect();
+            staged.move_into_cells(
+                &serde_json::to_string(&shapes).unwrap(),
+                grid,
+                &serde_json::to_string(&cells).unwrap(),
+            )?;
+        }
+        Ok(staged.snapshot())
+    }
+
+    pub fn enable_grid_containers(&mut self) -> Result<(), String> {
+        let mut document = self.document.clone();
+        for s in &mut document.shapes {
+            if s.layout_item.grid_container
+                || matches!(s.component, Some(components::Component::Instance { .. }))
+            {
+                continue;
+            }
+            if let Some(g) = s
+                .auto_layout
+                .as_mut()
+                .filter(|l| l.direction == "grid")
+                .and_then(|l| l.grid.as_mut())
+            {
+                g.options.cell_containers = true;
+            }
+        }
+        self.commit_document(document)
+    }
+
     pub fn move_into(&mut self, json: &str, parent: u32) -> Result<(), String> {
         let shapes: Vec<Shape> = serde_json::from_str(json).map_err(|e| e.to_string())?;
         let ids: Vec<u32> = shapes.iter().map(|s| s.id).collect();
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
@@ -2035,16 +2804,21 @@ impl Editor {
                                     s.layout_item.grid_cell.get_or_insert_with(Default::default);
                                 cell.column = Some(column);
                                 cell.row = Some(row);
+                                cell.area.clear();
                                 components::record_overrides(&previous, s)?;
                             }
                         }
                     }
-                    staged
-                        .document
-                        .shapes
-                        .iter()
-                        .find(|s| s.parent_id == parent && !ids.contains(&s.id))
-                        .map(|s| s.id)
+                    if layout.grid.as_ref().is_some_and(|g| g.options.masonry) {
+                        None
+                    } else {
+                        staged
+                            .document
+                            .shapes
+                            .iter()
+                            .find(|s| s.parent_id == parent && !ids.contains(&s.id))
+                            .map(|s| s.id)
+                    }
                 } else {
                     layout::drop_before(&self.document, parent, &ids, x, y)
                 };
@@ -2069,49 +2843,9 @@ impl Editor {
     }
 
     pub fn auto_layout_selection(&mut self, json: &str) -> Result<u32, String> {
-        let ids = self.selection_ids(json)?;
-        if ids.len() == 1 {
-            let s = self
-                .document
-                .shapes
-                .iter()
-                .find(|s| s.id == ids[0])
-                .unwrap();
-            if s.kind == "frame" {
-                if s.auto_layout.is_some() {
-                    return Ok(ids[0]);
-                }
-                let mut changed = s.clone();
-                changed.auto_layout = Some(AutoLayout::default());
-                self.update(&serde_json::to_string(&changed).unwrap())?;
-                return Ok(ids[0]);
-            }
-        }
-        let selected: Vec<_> = self
-            .document
-            .shapes
-            .iter()
-            .filter(|s| ids.contains(&s.id))
-            .collect();
-        let parent = selected[0].parent_id;
-        if selected.iter().any(|s| s.parent_id != parent) {
-            return Err("Auto layout selection must share a parent frame".into());
-        }
-        let x = selected.iter().map(|s| s.x).fold(f64::INFINITY, f64::min) - 16.0;
-        let y = selected.iter().map(|s| s.y).fold(f64::INFINITY, f64::min) - 16.0;
-        let width = selected
-            .iter()
-            .map(|s| s.x + s.width)
-            .fold(f64::NEG_INFINITY, f64::max)
-            - x
-            + 16.0;
-        let height = selected
-            .iter()
-            .map(|s| s.y + s.height)
-            .fold(f64::NEG_INFINITY, f64::max)
-            - y
-            + 16.0;
+        let ids = groups::roots(&self.document.shapes, &self.selection_ids(json)?);
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
@@ -2119,47 +2853,38 @@ impl Editor {
             next_id: self.next_id,
             next_page_id: self.next_page_id,
         };
-        let id = staged.add("frame", x, y);
-        let frame_id = id?;
-        let frame = staged
+        let existing = ids.len() == 1
+            && self
+                .document
+                .shapes
+                .iter()
+                .any(|s| s.id == ids[0] && s.is_container());
+        let id = if existing {
+            ids[0]
+        } else {
+            staged.frame_selection(&serde_json::to_string(&ids).unwrap())?
+        };
+        if staged
             .document
             .shapes
-            .iter_mut()
-            .find(|s| s.id == frame_id)
-            .unwrap();
-        frame.parent_id = parent;
-        frame.name = "Auto layout".into();
-        frame.width = width;
-        frame.height = height;
-        frame.auto_layout = Some(AutoLayout::default());
-        for shape in staged
-            .document
-            .shapes
-            .iter_mut()
-            .filter(|s| ids.contains(&s.id))
+            .iter()
+            .find(|s| s.id == id)
+            .unwrap()
+            .auto_layout
+            .is_some()
         {
-            shape.parent_id = frame_id;
+            return Ok(id);
         }
+        layout::infer(&mut staged.document, id, !existing && ids.len() == 1);
         self.commit(staged.document)?;
         self.next_id = self.next_id.max(staged.next_id);
-        Ok(frame_id)
+        Ok(id)
     }
 
     pub fn reparent_many(&mut self, json: &str, parent: u32) -> Result<(), String> {
         let ids = self.selection_ids(json)?;
         let mut document = self.document.clone();
-        let groups: Vec<u32> = document
-            .shapes
-            .iter()
-            .filter(|s| ids.contains(&s.id) && s.group_id > 0)
-            .map(|s| s.group_id)
-            .collect();
-        let moved: Vec<u32> = document
-            .shapes
-            .iter()
-            .filter(|s| ids.contains(&s.id) || groups.contains(&s.group_id))
-            .map(|s| s.id)
-            .collect();
+        let moved = ids;
         for shape in document.shapes.iter_mut().filter(|s| moved.contains(&s.id)) {
             // Selected descendants stay attached to a selected ancestor.
             let mut ancestor = shape.parent_id;
@@ -2180,84 +2905,6 @@ impl Editor {
             if !nested {
                 shape.parent_id = parent;
             }
-        }
-        self.commit(document)
-    }
-
-    pub fn group_many(&mut self, json: &str) -> Result<u32, String> {
-        let ids = self.selection_ids(json)?;
-        if ids.len() < 2 {
-            return Err("Select at least two layers to group".into());
-        }
-        if self.next_id == u32::MAX {
-            return Err("Group ID limit reached".into());
-        }
-        let group = self.next_id;
-        let mut document = self.document.clone();
-        for shape in document.shapes.iter_mut().filter(|s| ids.contains(&s.id)) {
-            shape.group_id = group;
-            shape.group_name = format!("Group {}", group);
-        }
-        // A group occupies one contiguous paint stack at its topmost member.
-        let top = document
-            .shapes
-            .iter()
-            .rposition(|s| ids.contains(&s.id))
-            .unwrap();
-        let slot = document.shapes[..=top]
-            .iter()
-            .filter(|s| !ids.contains(&s.id))
-            .count();
-        let members: Vec<Shape> = document
-            .shapes
-            .iter()
-            .filter(|s| ids.contains(&s.id))
-            .cloned()
-            .collect();
-        document.shapes.retain(|s| !ids.contains(&s.id));
-        document.shapes.splice(slot..slot, members);
-        self.commit(document)?;
-        self.next_id += 1;
-        Ok(group)
-    }
-
-    pub fn ungroup_many(&mut self, json: &str) -> Result<(), String> {
-        let ids = self.selection_ids(json)?;
-        let groups: Vec<u32> = self
-            .document
-            .shapes
-            .iter()
-            .filter(|s| ids.contains(&s.id) && s.group_id > 0)
-            .map(|s| s.group_id)
-            .collect();
-        let mut document = self.document.clone();
-        for shape in document
-            .shapes
-            .iter_mut()
-            .filter(|s| s.page_id == document.active_page && groups.contains(&s.group_id))
-        {
-            shape.group_id = 0;
-            shape.group_name.clear();
-        }
-        self.commit(document)
-    }
-
-    pub fn rename_group(&mut self, id: u32, name: &str) -> Result<(), String> {
-        if id == 0 || name.trim().is_empty() || name.len() > 256 {
-            return Err("Enter a group name between 1 and 256 characters".into());
-        }
-        let mut document = self.document.clone();
-        let mut found = false;
-        for shape in document
-            .shapes
-            .iter_mut()
-            .filter(|s| s.page_id == document.active_page && s.group_id == id)
-        {
-            shape.group_name = name.trim().into();
-            found = true;
-        }
-        if !found {
-            return Err("Group not found".into());
         }
         self.commit(document)
     }
@@ -2364,7 +3011,7 @@ impl Editor {
             .document
             .shapes
             .iter()
-            .any(|s| s.id == id && s.kind == "frame")
+            .any(|s| s.id == id && s.is_container())
         {
             let result = self.duplicate_many(&serde_json::to_string(&vec![id]).unwrap())?;
             let ids: Vec<u32> = serde_json::from_str(&result).unwrap();
@@ -2382,8 +3029,6 @@ impl Editor {
             .clone();
         shape.id = self.next_id;
         shape.x += 24.0;
-        shape.group_id = 0;
-        shape.group_name.clear();
         shape.y += 24.0;
         let id = shape.id;
         let mut document = self.document.clone();
@@ -2511,6 +3156,92 @@ impl Editor {
         self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
         Ok(next)
     }
+    pub fn delete_grid_area(&mut self, id: u32, name: &str) -> Result<(), String> {
+        let mut frame = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == id)
+            .ok_or("Grid frame not found")?
+            .clone();
+        let grid = frame
+            .auto_layout
+            .as_mut()
+            .filter(|l| l.direction == "grid")
+            .and_then(|l| l.grid.as_mut())
+            .ok_or("Grid layout required")?;
+        let area = grid
+            .options
+            .areas
+            .iter()
+            .find(|a| a.name == name)
+            .ok_or("Named area not found")?
+            .clone();
+        grid.options.areas.retain(|a| a.name != name);
+        let mut changes = vec![frame];
+        for child in self.document.shapes.iter().filter(|s| {
+            s.parent_id == id
+                && s.layout_item
+                    .grid_cell
+                    .as_ref()
+                    .is_some_and(|c| c.area == name)
+        }) {
+            let mut child = child.clone();
+            let cell = child.layout_item.grid_cell.as_mut().unwrap();
+            cell.area.clear();
+            cell.column = Some(area.column);
+            cell.row = Some(area.row);
+            cell.column_span = area.column_span;
+            cell.row_span = area.row_span;
+            changes.push(child);
+        }
+        self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)
+    }
+
+    pub fn rename_grid_area(
+        &mut self,
+        id: u32,
+        old_name: &str,
+        new_name: &str,
+    ) -> Result<(), String> {
+        let mut frame = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == id)
+            .ok_or("Grid frame not found")?
+            .clone();
+        let grid = frame
+            .auto_layout
+            .as_mut()
+            .filter(|l| l.direction == "grid")
+            .and_then(|l| l.grid.as_mut())
+            .ok_or("Grid layout required")?;
+        let area = grid
+            .options
+            .areas
+            .iter_mut()
+            .find(|a| a.name == old_name)
+            .ok_or("Named area not found")?;
+        if old_name == new_name {
+            return Ok(());
+        }
+        area.name = new_name.to_string();
+        let mut changes = vec![frame];
+        for child in self.document.shapes.iter().filter(|s| {
+            s.parent_id == id
+                && s.layout_item
+                    .grid_cell
+                    .as_ref()
+                    .is_some_and(|c| c.area == old_name)
+        }) {
+            let mut child = child.clone();
+            child.layout_item.grid_cell.as_mut().unwrap().area = new_name.to_string();
+            changes.push(child);
+        }
+        self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)
+    }
+
     pub fn delete_grid_track(&mut self, id: u32, axis: &str, index: usize) -> Result<(), String> {
         let changes = grid::delete_track(&self.document, id, axis, index)?;
         self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)
@@ -2530,9 +3261,14 @@ impl Editor {
             .into_iter()
             .rev()
             .find(|s| {
-                if s.page_id != self.document.active_page || s.hidden || s.locked {
+                if s.page_id != self.document.active_page
+                    || s.hidden
+                    || s.locked
+                    || s.kind == "group"
+                {
                     return false;
                 }
+                let mut ancestors = Vec::new();
                 let mut parent = s.parent_id;
                 while parent != 0 {
                     let ancestor = self
@@ -2541,14 +3277,20 @@ impl Editor {
                         .iter()
                         .find(|s| s.id == parent)
                         .unwrap();
-                    if ancestor.hidden
-                        || ancestor.locked
-                        || (ancestor.clip_content && !in_rounded_rect(ancestor, x, y))
-                    {
-                        return false;
-                    }
+                    ancestors.push(ancestor);
                     parent = ancestor.parent_id;
                 }
+                let (mut x, mut y) = (x, y);
+                for ancestor in ancestors.into_iter().rev() {
+                    if ancestor.hidden || ancestor.locked {
+                        return false;
+                    }
+                    (x, y) = ancestor.unrotate_point(x, y);
+                    if ancestor.clip_content && !in_rounded_rect(ancestor, x, y) {
+                        return false;
+                    }
+                }
+                let (x, y) = s.unrotate_point(x, y);
                 if stroke_alignment::hit(s, x, y) {
                     return true;
                 }
@@ -2621,6 +3363,7 @@ impl Editor {
             number += 1;
         }
         document.pages.push(Page {
+            variable_modes: Default::default(),
             id,
             name: format!("Page {}", number),
         });
@@ -2628,6 +3371,107 @@ impl Editor {
         self.commit(document)?;
         self.next_page_id += 1;
         Ok(id)
+    }
+
+    pub fn duplicate_page(&mut self, id: u32) -> Result<u32, String> {
+        let mut document = self.document.clone();
+        let index = document
+            .pages
+            .iter()
+            .position(|p| p.id == id)
+            .ok_or("Page not found")?;
+        let next_page_id = self
+            .next_page_id
+            .checked_add(1)
+            .ok_or("Page ID limit reached")?;
+        let mut page = document.pages[index].clone();
+        let base = format!("{} copy", page.name);
+        page.name = base.clone();
+        let mut number = 2;
+        while document.pages.iter().any(|p| p.name == page.name) {
+            page.name = format!("{} {}", base, number);
+            number += 1;
+        }
+        page.id = self.next_page_id;
+        let mut copies: Vec<_> = document
+            .shapes
+            .iter()
+            .filter(|s| s.page_id == id)
+            .cloned()
+            .collect();
+        let next_id = self
+            .next_id
+            .checked_add(copies.len() as u32)
+            .ok_or("Shape ID limit reached")?;
+        let mapping: std::collections::HashMap<_, _> = copies
+            .iter()
+            .enumerate()
+            .map(|(i, s)| (s.id, self.next_id + i as u32))
+            .collect();
+        for shape in &mut copies {
+            shape.id = mapping[&shape.id];
+            shape.page_id = page.id;
+            shape.parent_id = *mapping.get(&shape.parent_id).unwrap_or(&shape.parent_id);
+            for interaction in shape.interactions_mut() {
+                if ["navigate", "overlay", "swap"].contains(&interaction.action.as_str()) {
+                    interaction.target = *mapping
+                        .get(&interaction.target)
+                        .unwrap_or(&interaction.target);
+                }
+            }
+        }
+        document.active_page = page.id;
+        document.pages.insert(index + 1, page);
+        document.shapes.extend(copies);
+        component_properties::duplicate_definitions(&mut document, &mapping)?;
+        self.commit(document)?;
+        self.next_id = next_id;
+        self.next_page_id = next_page_id;
+        Ok(next_page_id - 1)
+    }
+
+    pub fn duplicate_page_at(&mut self, id: u32, target: u32, after: bool) -> Result<u32, String> {
+        if !self.document.pages.iter().any(|p| p.id == target) {
+            return Err("Destination page not found".into());
+        }
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let copy = staged.duplicate_page(id)?;
+        staged.reorder_page(copy, target, after)?;
+        self.commit(staged.document)?;
+        self.next_id = staged.next_id;
+        self.next_page_id = staged.next_page_id;
+        Ok(copy)
+    }
+
+    pub fn reorder_page(&mut self, id: u32, target: u32, after: bool) -> Result<(), String> {
+        let mut document = self.document.clone();
+        let source = document
+            .pages
+            .iter()
+            .position(|p| p.id == id)
+            .ok_or("Page not found")?;
+        if !document.pages.iter().any(|p| p.id == target) {
+            return Err("Destination page not found".into());
+        }
+        if id == target {
+            return Ok(());
+        }
+        let page = document.pages.remove(source);
+        let index =
+            document.pages.iter().position(|p| p.id == target).unwrap() + usize::from(after);
+        document.pages.insert(index, page);
+        if document.pages == self.document.pages {
+            return Ok(());
+        }
+        self.commit(document)
     }
 
     pub fn select_page(&mut self, id: u32) -> Result<(), String> {

@@ -14,8 +14,8 @@ test('blur persists through history and clipboard and invalid values reject atom
  for(const bad of [-1,100001,null]){assert.throws(()=>set(e,id,bad));assert.equal(e.snapshot(),saved);}
  set(e,id,0);e.undo();assert.equal(e.snapshot(),saved);const other=new Editor();other.load(saved);const ids=JSON.parse(other.paste_layers(e.copy_layers(JSON.stringify([id])),400,0,0));assert.equal(get(other,ids[0]).appearance.layer_blur,16);e.free();other.free();
 });
-test('blur component overrides reset independently and scale with geometry',()=>{
- const e=new Editor(),id=e.add('frame',0,0);set(e,id,10);e.create_component(id);const i=e.create_instance(id,400,0);set(e,i,20);set(e,id,30);assert.equal(get(e,i).appearance.layer_blur,20);e.reset_override(i,'appearance.layer_blur');assert.equal(get(e,i).appearance.layer_blur,30);assert.equal(scaleShapes([get(e,i)],{x:0,y:0},2)[0].appearance.layer_blur,60);e.free();
+test('blur propagates to instances that reject blur overrides and scales with geometry',()=>{
+ const e=new Editor(),id=e.add('frame',0,0);set(e,id,10);e.create_component(id);const i=e.create_instance(id,400,0);assert.equal(get(e,i).appearance.layer_blur,10);const before=e.snapshot();assert.throws(()=>set(e,i,20),/protected/);assert.equal(e.snapshot(),before);set(e,id,30);assert.equal(get(e,i).appearance.layer_blur,30);assert.equal(scaleShapes([get(e,i)],{x:0,y:0},2)[0].appearance.layer_blur,60);e.free();
 });
 test('frame blur follows child clipping and expands only paint bounds',()=>{
  const a={opacity:1,stroke_enabled:false,layer_blur:10},frame={id:1,parent_id:0,kind:'frame',x:0,y:0,width:100,height:100,clip_content:true,appearance:a},child={...frame,id:2,parent_id:1,kind:'rectangle',x:90,y:20,width:30,height:30};

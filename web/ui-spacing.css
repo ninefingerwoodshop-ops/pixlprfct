@@ -1,0 +1,56 @@
+/* Shared spacing for editor chrome; document layout values stay independent. */
+:root{--ui-space-1:4px;--ui-space-2:8px;--ui-space-3:12px;--ui-space-4:16px;--ui-space-6:24px;--ui-control-height:28px;--ui-icon-button:24px;--ui-section-height:48px}
+.right-panel .property-section{padding:var(--ui-space-3) var(--ui-space-4)}
+.right-panel .inspector-collapsible{--header-action-top:12px}
+.right-panel .property-section h3{margin-bottom:var(--ui-space-3)}
+.right-panel .property-grid,.appearance-pair,.stroke-dimensions,.layout-sizing-controls,.glass-material-fields{gap:var(--ui-space-2)}
+.right-panel .inspector-details{padding:var(--ui-space-3) var(--ui-space-4)}
+.right-panel .property-section>.inspector-details{padding:var(--ui-space-2) 0 0}
+.right-panel .inspector-details>.property-section{padding:var(--ui-space-2) 0}
+.right-panel .property-section .property-section{padding-left:0;padding-right:0}
+.right-panel .variable-section-heading{margin-bottom:var(--ui-space-3)}
+.right-panel :is(input:not([type=checkbox]):not([type=color]),select,.inspector-select-trigger){min-height:var(--ui-control-height)}
+.right-panel :is(.property-grid input,.paint-alpha input){height:var(--ui-control-height)}
+.right-panel .inspector-section-actions,.layer-tree-actions{gap:var(--ui-space-2);padding:var(--ui-space-1) var(--ui-space-3)}
+.right-panel .inspector-section-actions button,.layer-tree-actions button{padding:var(--ui-space-1);min-height:var(--ui-control-height)}
+.left-panel :is(.file-tabs,.panel-heading){padding-left:var(--ui-space-4);padding-right:var(--ui-space-4)}
+.left-panel #search-panel{padding:var(--ui-space-2) var(--ui-space-4)}
+.left-footer{padding:var(--ui-space-3) var(--ui-space-4);gap:var(--ui-space-2)}
+.navigation-rail{gap:var(--ui-space-3);padding-top:var(--ui-space-2);padding-bottom:var(--ui-space-2)}
+.navigation-rail .rail-button{gap:var(--ui-space-1)}
+.toolbox{gap:var(--ui-space-1);padding:var(--ui-space-2)}
+.toolbox>button{width:32px;height:32px;padding:var(--ui-space-2)}
+.toolbox .tool-group>summary{height:32px}
+:is(.selection-menu,.inspector-select-menu,.effect-choices,.tool-options,.variable-type-menu){padding:var(--ui-space-1)}
+:is(.selection-menu,.inspector-select-menu,.effect-choices,.tool-options,.variable-type-menu) button{padding:var(--ui-space-2);min-height:32px}
+.paint-popover-heading,.paint-popover-tabs{padding:var(--ui-space-3) var(--ui-space-4);gap:var(--ui-space-2)}
+.paint-custom,.paint-library{padding:0 var(--ui-space-4) var(--ui-space-4)}
+.paint-popover-fields,.paint-page-colors{gap:var(--ui-space-2)}
+.paint-popover label{margin:var(--ui-space-2) 0}
+.dialog-actions{gap:var(--ui-space-2);margin-top:var(--ui-space-4)}
+dialog:not(.workspace-window):not(.variables-workspace):not(.variables-dialog){padding:var(--ui-space-6)}
+.variables-dialog header,.variables-dialog footer{padding:var(--ui-space-4);gap:var(--ui-space-3)}
+.variables-workspace .variable-window-header{padding:0 var(--ui-space-2) 0 0;gap:0}
+.variables-workspace .variable-searchbar{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-2)}
+.variables-workspace :is(th,td){padding:var(--ui-space-2)}
+
+/* Search controls share the standard control height; horizontal icon insets stay local. */
+:is(.left-panel,dialog,.paint-popover) input[type="search"]{box-sizing:border-box;height:var(--ui-control-height);min-height:var(--ui-control-height);padding-top:0;padding-bottom:0}
+
+/* One single-line field size across editor panels and floating/full-page tools.
+   Canvas controls are authored content and deliberately outside this scope. */
+:is(.left-panel,.right-panel,.paint-popover,dialog:not(.prototype-player)) :is(input:not([type]),input[type=text],input[type=search],input[type=number],input[type=email],input[type=url],input[type=password],input[type=tel],.inspector-select-trigger){
+ box-sizing:border-box;height:var(--ui-control-height)!important;min-height:var(--ui-control-height)!important;max-height:var(--ui-control-height)!important;padding-top:0!important;padding-bottom:0!important;
+}
+/* Layout belongs to the host; the field implementation is always shared. */
+.assets-starter-actions .inspector-select-trigger{width:180px}
+.assets-browser-toolbar .inspector-select-trigger{width:200px;max-width:40%}
+.icon-library-toolbar .inspector-select-trigger{width:130px;flex-shrink:0}
+@container(max-width:600px){.assets-starter-actions .inspector-select-trigger{flex:1}}
+
+.variables-workspace .variable-searchbar .inspector-select-trigger{width:130px;flex:none}
+.variables-workspace td .inspector-select-trigger{display:inline-flex;width:150px;vertical-align:middle}
+:is(.left-panel,.right-panel,.paint-popover,dialog:not(.prototype-player)) input[type=color]{box-sizing:border-box;width:var(--ui-control-height)!important;height:var(--ui-control-height)!important;min-height:var(--ui-control-height)!important;padding:3px!important;border:1px solid transparent!important;border-radius:var(--ui-radius-control);vertical-align:middle}
+:is(.left-panel,.right-panel,.paint-popover,dialog:not(.prototype-player)) input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+:is(.left-panel,.right-panel,.paint-popover,dialog:not(.prototype-player)) input[type=color]::-webkit-color-swatch{border:0;border-radius:2px}
+.variables-workspace td input[type=color]{margin-right:8px}

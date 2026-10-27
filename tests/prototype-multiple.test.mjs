@@ -20,10 +20,10 @@ test('copy, paste and duplicate remap every destination; deleting a target retai
  const duplicated=JSON.parse(e.duplicate_many(JSON.stringify([a,b,c])));assert.deepEqual(interactions(get(e,duplicated[0])).slice(0,2).map(p=>p.target),duplicated.slice(1));
  const before=e.snapshot();e.remove(b);assert.deepEqual(interactions(get(e,a)).map(p=>p.trigger),['mouseenter','mouseleave']);e.undo();assert.equal(e.snapshot(),before);e.free();
 });
-test('component interaction collections inherit together, preserve overrides and reset together',()=>{
+test('component interaction collections inherit together and reject instance edits',()=>{
  const e=new Editor(),a=e.add('frame',0,0);set(e,a,[{trigger:'click',action:'back'},{trigger:'mouseenter',action:'back'}]);e.create_component(a);const i=e.create_instance(a,500,0);assert.equal(interactions(get(e,i)).length,2);
- set(e,i,[{trigger:'click',action:'back'},{trigger:'mouseleave',action:'back'}]);set(e,a,[{trigger:'click',action:'back'},{trigger:'afterdelay',action:'back',delay:1500}]);assert.equal(interactionFor(get(e,i),'mouseleave').action,'back');assert.equal(interactionFor(get(e,i),'afterdelay'),undefined);
- e.reset_override(i,'additional_interactions');assert.equal(interactionFor(get(e,i),'afterdelay').delay,1500);assert.equal(interactionFor(get(e,i),'mouseleave'),undefined);e.free();
+ const before=e.snapshot();assert.throws(()=>set(e,i,[{trigger:'click',action:'back'},{trigger:'mouseleave',action:'back'}]),/protected/);assert.equal(e.snapshot(),before);set(e,a,[{trigger:'click',action:'back'},{trigger:'afterdelay',action:'back',delay:1500}]);
+ assert.equal(interactionFor(get(e,i),'afterdelay').delay,1500);assert.equal(interactionFor(get(e,i),'mouseenter'),undefined);assert.equal(interactionFor(get(e,i),'mouseleave'),undefined);assert.deepEqual(interactions(get(e,i)),interactions(get(e,a)));e.free();
 });
 test('hover dispatch reports the correct trigger when the same layer owns both boundary actions',()=>{
  const h=prototypeHover();h.scope(1);assert.equal(h.move({mouseenter:[7],mouseleave:[7]}),7);assert.equal(h.trigger,'mouseenter');assert.equal(h.move({mouseenter:[7],mouseleave:[7]}),0);assert.equal(h.move({}),7);assert.equal(h.trigger,'mouseleave');h.move({mouseenter:[7],mouseleave:[7]});assert.equal(h.exit(),7);assert.equal(h.trigger,'mouseleave');

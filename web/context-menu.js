@@ -1,17 +1,37 @@
 let closeMenu = () => {};
 
-export function showContextMenu(event, actions, returnFocus) {
+export function contextMenuBounds(point, size, viewport) {
+  const margin = 4, left = (viewport.left ?? 0) + margin, top = (viewport.top ?? 0) + margin;
+  const maxWidth = Math.max(0, viewport.width - margin * 2);
+  const maxHeight = Math.max(0, viewport.height - margin * 2);
+  return {
+    maxWidth, maxHeight,
+    x: Math.max(left, Math.min(point.x, left + maxWidth - Math.min(size.width, maxWidth))),
+    y: Math.max(top, Math.min(point.y, top + maxHeight - Math.min(size.height, maxHeight))),
+  };
+}
+
+export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = document.body, onClose = () => {}} = {}) {
   event.preventDefault();
   closeMenu();
   const menu = document.createElement('div');
   menu.id = 'selection-menu';
   menu.className = 'selection-menu';
   menu.setAttribute('role', 'menu');
-  menu.setAttribute('aria-label', 'Layer actions');
+  menu.setAttribute('aria-label', label);
+  if (heading !== null) {
+    const title = document.createElement('div');
+    title.id = 'selection-menu-heading';
+    title.className = 'selection-menu-heading';
+    title.textContent = heading;
+    menu.append(title);
+    menu.setAttribute('aria-describedby', title.id);
+  }
   const controller = new AbortController();
   const close = (restore = false) => {
     controller.abort();
     menu.remove();
+    onClose();
     if (restore) returnFocus?.focus();
   };
   closeMenu = close;
@@ -19,23 +39,39 @@ export function showContextMenu(event, actions, returnFocus) {
     if (action.visible === false) continue;
     const button = document.createElement('button');
     button.setAttribute('role', 'menuitem');
-    button.textContent = action.label + (action.shortcut ? ' · ' + action.shortcut : '');
+    const name = document.createElement('span');
+    name.textContent = action.label;
+    button.append(name);
+    if (action.shortcut) {
+      const shortcut = document.createElement('kbd');
+      shortcut.textContent = action.shortcut;
+      button.append(shortcut);
+    }
     button.disabled = action.enabled === false;
     if (button.disabled && action.unavailable) button.title = action.unavailable;
     button.onclick = () => { close(true); action.run(); };
     menu.append(button);
   }
-  document.body.append(menu);
+  container.append(menu);
   const position = () => {
-    const rect = menu.getBoundingClientRect();
-    menu.style.left = Math.max(4, Math.min(event.clientX, innerWidth - rect.width - 4)) + 'px';
-    menu.style.top = Math.max(4, Math.min(event.clientY, innerHeight - rect.height - 4)) + 'px';
+    const visual = window.visualViewport;
+    const viewport = {left: visual?.offsetLeft ?? 0, top: visual?.offsetTop ?? 0,
+      width: visual?.width ?? innerWidth, height: visual?.height ?? innerHeight};
+    const point = {x: event.clientX, y: event.clientY};
+    const limits = contextMenuBounds(point, {width: 0, height: 0}, viewport);
+    menu.style.maxWidth = limits.maxWidth + 'px';
+    menu.style.maxHeight = limits.maxHeight + 'px';
+    const bounds = contextMenuBounds(point, menu.getBoundingClientRect(), viewport);
+    menu.style.left = bounds.x + 'px';
+    menu.style.top = bounds.y + 'px';
   };
   position();
   const buttons = () => [...menu.querySelectorAll('button:not(:disabled)')];
   buttons()[0]?.focus();
   document.addEventListener('pointerdown', e => { if (!menu.contains(e.target)) close(); }, {signal:controller.signal});
   window.addEventListener('resize', position, {signal:controller.signal});
+  window.visualViewport?.addEventListener('resize', position, {signal:controller.signal});
+  window.visualViewport?.addEventListener('scroll', position, {signal:controller.signal});
   menu.onkeydown = e => {
     if (['Escape','Tab'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); close(true); return; }
     if (['ArrowDown','ArrowUp','Home','End'].includes(e.key)) {

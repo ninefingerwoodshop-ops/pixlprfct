@@ -1,3 +1,4 @@
+import {visualBounds,sceneToWorld} from './rotation.js';
 import {strokePadding} from './stroke-tips.js';
 import {paintOrder} from './stacking.js';
 import {visibleInTree,lockedInTree} from './selection.js';
@@ -10,7 +11,8 @@ export function clippingFrames(shape,shapes) {
 export function paintBounds(shape,shapes) {
   if(!visibleInTree(shape,shapes))return null;
   const style=appearance(shape),pad=style.stroke_enabled?strokePadding(shape,style):0;
-  let left=shape.x-pad,top=shape.y-pad,right=shape.x+shape.width+pad,bottom=shape.y+shape.height+pad;
+  const box=visualBounds(shape);
+  let left=box.x-pad,top=box.y-pad,right=box.x+box.width+pad,bottom=box.y+box.height+pad;
   for(const frame of clippingFrames(shape,shapes)) {left=Math.max(left,frame.x);top=Math.max(top,frame.y);right=Math.min(right,frame.x+frame.width);bottom=Math.min(bottom,frame.y+frame.height);}
   return right>left&&bottom>top?{...shape,x:left,y:top,width:right-left,height:bottom-top}:null;
 }
@@ -18,7 +20,8 @@ export function frameAt(shapes,point) {
   return paintOrder(shapes).reverse().find(s=>s.kind==='frame'&&s.component?.type!=='instance'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
 }
 export function clipDefinitions(shapes) {
-  return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse">${roundedSvg(s)}</clipPath>`).join('')}</defs>`;
+ shapes=sceneToWorld(shapes);
+  return `<defs>${shapes.filter(s=>s.kind==='frame'&&s.clip_content).map(s=>`<clipPath id="frame-clip-${s.id}" clipPathUnits="userSpaceOnUse">${roundedSvg(s,`transform="rotate(${-(s.rotation??0)} ${s.x} ${s.y})"`)}</clipPath>`).join('')}</defs>`;
 }
 export function clipSvg(shape,shapes,content) {
   return clippingFrames(shape,shapes).reduce((body,frame)=>`<g clip-path="url(#frame-clip-${frame.id})">${body}</g>`,content);
@@ -26,7 +29,7 @@ export function clipSvg(shape,shapes,content) {
 export function dropParent(shapes,previews,selectedIds) {
   const moved=new Set(previews.map(s=>s.id)),selected=new Set(selectedIds);
   // A direct edit of one group member must not move its unselected siblings into another frame.
-  if(previews.some(s=>s.group_id&&shapes.some(other=>other.group_id===s.group_id&&!moved.has(other.id))))return null;
+  if(previews.some(s=>shapes.find(p=>p.id===s.parent_id)?.kind==='group'&&!moved.has(s.parent_id)))return null;
   const roots=previews.filter(s=>selected.has(s.id)&&!moved.has(s.parent_id));
   if(roots.some(s=>s.component?.type==='instance'&&s.component.master!==s.component.source))return null;
   if(!roots.length)return null;

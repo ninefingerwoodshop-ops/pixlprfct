@@ -1,3 +1,4 @@
+import {sceneToWorld} from './rotation.js';
 import {visibleShadows,compositeGeometry,effectSurfaceSize,drawShadow,shadowFilter,layerBlurFilter} from './shadows.js';
 export function appearance(s) {
   return s.appearance??{opacity:1,corner_radius:0,fill_enabled:!s.points?.length||!!s.closed,stroke_enabled:!!s.points?.length,stroke_color:s.points?.length?s.fill:'#000000'};
@@ -20,10 +21,11 @@ export function paintAttributes(s){const a=appearance(s);return `fill="${a.fill_
 // Composite each layer with its descendants before applying opacity. This avoids
 // dark overlaps when a translucent frame contains overlapping children.
 export function drawScene(shapes,context,paint) {
+ shapes=sceneToWorld(shapes);
  const {children,geometry}=compositeGeometry(shapes,appearance);
  const visit=(s,target)=>{
   if(s.hidden)return;const a=appearance(s);if(a.opacity===0)return;
-  const content=c=>{paint(s,c);c.save();if(s.kind==='frame'&&s.clip_content){c.beginPath();c.roundRect(s.x,s.y,s.width,s.height,radii(s));c.clip();}for(const child of children.get(s.id)??[])visit(child,c);c.restore();};
+  const content=c=>{if(s.kind!=='group')paint(s,c);c.save();if(s.kind==='frame'&&s.clip_content){if(s.rotation){c.translate(s.x,s.y);c.rotate(-s.rotation*Math.PI/180);}c.beginPath();c.roundRect(s.rotation?0:s.x,s.rotation?0:s.y,s.width,s.height,radii(s));c.clip();if(s.rotation){c.rotate(s.rotation*Math.PI/180);c.translate(-s.x,-s.y);}}for(const child of children.get(s.id)??[])visit(child,c);c.restore();};
    const blend=a.blend_mode??'pass-through',shadows=visibleShadows(a);if(blend==='pass-through'&&a.opacity===1&&!shadows.length&&!a.layer_blur){content(target);return;}
   const box=geometry.get(s.id)?.content;if(!box)return;const density=Math.hypot(target.getTransform().a,target.getTransform().b),size=effectSurfaceSize(box,density),surface=new OffscreenCanvas(size.width,size.height),layer=surface.getContext('2d');layer.setTransform(size.scale,0,0,size.scale,-box.x*size.scale,-box.y*size.scale);content(layer);
   const sourceBox={...box,width:size.width/size.scale,height:size.height/size.scale};
@@ -36,8 +38,9 @@ export function drawScene(shapes,context,paint) {
  for(const root of children.get(0)??[])visit(root,context);
 }
 export function sceneSvg(shapes,paint){
+ shapes=sceneToWorld(shapes);
  const {geometry,children:childMap}=compositeGeometry(shapes,appearance);
- const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=(childMap.get(s.id)??[]).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows),blur=layerBlurFilter(`blur-${s.id}`,geometry.get(s.id)?.output,a.layer_blur);return `<g opacity="${a.opacity}"${a.blend_mode&&a.blend_mode!=='pass-through'?` style="isolation:isolate;mix-blend-mode:${a.blend_mode}"`:''}>${blur?`<defs>${blur}</defs><g filter="url(#blur-${s.id})">`:""}${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${paint(s)}${children}${filter?"</g>":""}${blur?"</g>":""}</g>`;};
+ const visit=s=>{if(s.hidden)return '';const a=appearance(s);let children=(childMap.get(s.id)??[]).map(visit).join('');if(s.kind==='frame'&&s.clip_content)children=`<g clip-path="url(#frame-clip-${s.id})">${children}</g>`;const filter=shadowFilter(`shadows-${s.id}`,geometry.get(s.id)?.content,a.shadows),blur=layerBlurFilter(`blur-${s.id}`,geometry.get(s.id)?.output,a.layer_blur);return `<g opacity="${a.opacity}"${a.blend_mode&&a.blend_mode!=='pass-through'?` style="isolation:isolate;mix-blend-mode:${a.blend_mode}"`:''}>${blur?`<defs>${blur}</defs><g filter="url(#blur-${s.id})">`:""}${filter?`<defs>${filter}</defs><g filter="url(#shadows-${s.id})">`:""}${s.kind==='group'?'':paint(s)}${children}${filter?"</g>":""}${blur?"</g>":""}</g>`;};
  return shapes.filter(s=>!s.parent_id).map(visit).join('');
 }
 

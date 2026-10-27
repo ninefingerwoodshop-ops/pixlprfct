@@ -27,9 +27,9 @@ test('invalid nesting is atomic and hidden ancestors exclude descendants from hi
   e.update(JSON.stringify({...shapes(e)[0],hidden:true}));assert.equal(e.hit_test(30,30),0);assert.equal(visibleInTree(shapes(e)[2],shapes(e)),false);
   assert.equal(descendants(shapes(e),[frame]).length,3);e.free();
 });
-test('moving a grouped layer into a frame keeps all group members together',()=>{
-  const e=new Editor(),frame=e.add('frame',0,0),a=e.add('rectangle',10,10),b=e.add('text',20,20);e.group_many(JSON.stringify([a,b]));e.reparent_many(JSON.stringify([a]),frame);
-  assert.ok(shapes(e).filter(s=>s.id!==frame).every(s=>s.parent_id===frame));e.free();
+test('moving a group into a frame keeps its child hierarchy together',()=>{
+  const e=new Editor(),frame=e.add('frame',0,0),a=e.add('rectangle',10,10),b=e.add('text',20,20);const g=e.group_many(JSON.stringify([a,b]));e.reparent_many(JSON.stringify([g]),frame);
+  assert.equal(shapes(e).find(s=>s.id===g).parent_id,frame);assert.ok(shapes(e).filter(s=>[a,b].includes(s.id)).every(s=>s.parent_id===g));e.free();
 });
 test('aligning frames translates children and reordering stays within parent siblings',()=>{
   const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',100,100),child=e.add('rectangle',120,120);e.reparent_many(JSON.stringify([child]),b);

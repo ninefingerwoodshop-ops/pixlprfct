@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import init,{Editor} from '../web/pkg/pixlprfct_core.js';
+import {ensureInputBase,inputBaseControl} from '../web/input-base.js';
+import {newControl,controlMarkup,controlCss,controlWithStates} from '../web/controls.js';
+import {sizingMode,sizingPatch} from '../web/layout-sizing.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+test('button starter has its own shared states, icons and variable-driven sizing',()=>{
+ const e=new Editor(),base=ensureInputBase(JSON.parse(e.snapshot()).variables,'button');
+ assert.equal(base.collection.name,'Button Base');assert.equal(ensureInputBase(base.variables,'button').variables.collections.length,1);
+ assert.ok(base.collection.modes.some(m=>m.name==='Selected'));assert.ok(!base.collection.modes.some(m=>m.name==='Required'));
+ const id=e.insert_control_starter(JSON.stringify({id:0,name:'Button starter',kind:'frame',x:0,y:0,width:120,height:44,fill:'#ffffff',text:'',hidden:false,control:{...newControl('button','Save'),starter:true,base_collection:base.collection.id},variable_bindings:base.bindings}),JSON.stringify(base.variables));
+ const instance=e.create_instance(id,200,0),get=id=>JSON.parse(e.snapshot()).shapes.find(s=>s.id===id);
+ e.update(JSON.stringify({...get(id),control:{...get(id).control,left_adornment:{enabled:true,icon:'plus'},right_adornment:{enabled:true,icon:'arrow-right'}}}));
+ const vars=JSON.parse(e.snapshot()).variables;vars.values.find(v=>v.name==='Padding').values[1]='12 24';vars.values.find(v=>v.name==='Font size').values[1]=18;e.save_variables(JSON.stringify(vars));
+ const c=inputBaseControl(get(instance),vars),css=controlCss(c,instance),html=controlMarkup(c,instance);
+ assert.match(css,/padding:12px 24px 12px 24px/);assert.match(css,/font-size:18px/);
+ assert.equal(c.states.hover.parts.input.background,'#1d4ed8');
+ assert.match(html,/<button/);assert.match(html,/px-control-adornment-left/);assert.match(html,/px-control-adornment-right/);assert.match(html,/px-button-label">Save/);
+ assert.equal(sizingMode(get(instance),'height'),'hug');assert.equal(sizingMode(sizingPatch(get(instance),'width','hug'),'width'),'hug');
+ assert.match(controlMarkup(controlWithStates({...c,toggle:true},'selected,disabled'),instance),/aria-pressed="true"/);
+ assert.match(controlMarkup(controlWithStates(c,'disabled'),instance),/disabled="disabled"/);
+ const copy=new Editor();copy.load(e.snapshot());assert.equal(JSON.parse(copy.snapshot()).shapes.find(s=>s.id===instance).control.left_adornment.icon,'plus');copy.free();e.free();
+});

@@ -21,3 +21,21 @@ test('assets tolerate removed component variants and ungrouped legacy documents'
   assert.deepEqual(componentAssets({pages:[],shapes:[],component_sets:[{name:'Empty',properties:[],variants:[{component_id:1,values:[]}]}]}),[]);
   assert.equal(componentAssets({pages:[{id:1,name:'Page'}],shapes:[{id:4,name:'Card',page_id:1,component:{type:'master'}}]})[0].variants[0].id,4);
 });
+
+test('asset previews render the real control and preserve the source document',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const {default:init,Editor}=await import('../web/pkg/pixlprfct_core.js');
+  const {newControl}=await import('../web/controls.js');
+  const {assetAppearance}=await import('../web/assets.js');
+  await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+  const e=new Editor(),id=e.add('frame',500,300);
+  const shape=JSON.parse(e.snapshot()).shapes.find(s=>s.id===id);
+  e.update(JSON.stringify({...shape,control:{...newControl('text','Email address'),placeholder:'name@example.com'}}));
+  const doc=JSON.parse(e.snapshot()),before=JSON.stringify(doc),preview=assetAppearance(doc,id);
+  assert.match(preview.html,/<input/);
+  assert.match(preview.html,/Email address/);
+  assert.match(preview.html,/name@example.com/);
+  assert.ok(preview.width>0&&preview.height>0);
+  assert.equal(JSON.stringify(doc),before);
+  e.free();
+});

@@ -1,0 +1,55 @@
+/* Native controls use the same compact field rhythm as the design inspector. */
+#control-inspector .control-fields{display:grid;gap:8px;min-width:0}
+#control-inspector .control-group{margin-top:16px;padding-top:12px;border-top:1px solid var(--ui-border)}
+#control-inspector .control-fields h4{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px;font-size:11px;font-weight:600;color:var(--ui-text-strong)}
+#control-inspector label.control-field{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:8px;margin:0;padding:0;font-size:11px;color:var(--ui-text-muted);min-width:0;line-height:1.4}
+#control-inspector .control-field>span{min-width:0}
+#control-inspector .control-field :is(input,select,textarea,.inspector-select-trigger){width:100%;min-width:0;margin:0;font-size:11px}
+#control-inspector .control-field textarea{min-height:84px;resize:vertical}
+#control-inspector label.control-check{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;min-height:24px;font-size:11px;line-height:1.4;color:var(--ui-text-color)}
+#control-inspector label.control-check-heading{width:100%;font-weight:600;color:var(--ui-text-strong)}
+#control-inspector .control-check input{flex:none;width:14px;height:14px;margin:0}
+#control-inspector .control-reset{min-height:24px;padding:0 4px;font-size:10px;font-weight:400;color:var(--ui-text-muted);width:auto}
+#control-inspector .control-preview{display:flex;justify-content:center;width:100%;min-height:28px;margin-top:16px;padding:4px 8px;background:var(--ui-field);border:1px solid var(--ui-border);font-size:11px;font-weight:500}
+#control-inspector .control-preview:hover{background:var(--ui-hover);border-color:var(--ui-border-hover)}
+#control-inspector p.control-hint{font-size:10px;line-height:1.5;margin:8px 0 0;color:var(--ui-text-muted)}
+.right-panel:has(#control-inspector:not([hidden])):has(#create-component[hidden]) .inspector-selection{display:none}
+.right-panel:has(#control-inspector:not([hidden])) #selection-caption{margin-left:0;text-align:left}
+#control-inspector .control-style-value{display:grid;gap:4px;min-width:0}
+#control-inspector .control-style-value input[type=color]{height:28px;min-height:28px;padding:3px;cursor:pointer}
+#control-inspector .control-field:has(.control-style-value){align-items:start}
+#control-inspector .control-field:has(.control-style-value)>span{padding-top:7px}
+#control-inspector .control-source-row{display:flex;align-items:center;gap:4px;min-width:0}
+#control-inspector .control-source-row>.inspector-select-trigger{flex:1;width:0;min-width:0}
+#control-inspector .control-variable-trigger{position:static;flex:0 0 24px;width:24px;height:24px;padding:4px}
+#control-inspector .control-variable-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 6px;border-radius:var(--ui-radius-control,4px);background:var(--ui-variable-bg);color:var(--ui-variable);font-size:10px}
+/* Instances expose their content/state and placement, not appearance overrides. */
+.right-panel.protected-instance #properties>.property-section:not(#control-inspector):not(#component-panel):not(.instance-position):not(#dimensions-section),
+.right-panel.protected-instance #design-inspector>:is(#constraints-panel,#scale-panel,#node-actions,#add-auto-layout),
+.right-panel.protected-instance #multi-properties .property-section:has(#multi-fill),
+.right-panel.protected-instance :is(#detach-instance,#push-style-overrides,#create-component,#add-auto-layout),
+.right-panel.protected-instance .instance-position label:has(#rotation),
+.right-panel.protected-instance #inspector-layer-actions{display:none!important}
+.right-panel.protected-instance .inspector-selection{display:none}
+.component-section-header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.component-section-header h3{flex:1;min-width:0;margin:0}
+#instance-actions{position:static;flex:0 0 24px;width:24px;height:24px;padding:4px}
+#instance-actions[hidden]{display:none!important}
+#component-panel :is(#go-main,#go-nested-main,#select-instance-root,#reset-instance,#detach-instance,#push-style-overrides){display:none!important}
+.right-panel.protected-instance #component-panel details:has(#create-component){display:none}
+
+/* Native controls expose the element and text parts, never wrapper appearance. */
+.right-panel.native-control-editor #properties>.property-section:not(#control-inspector):not(#component-panel):not(.instance-position):not(#variable-modes-section):not(#dimensions-section),
+.right-panel.native-control-editor #design-inspector>:is(#constraints-panel,#scale-panel,#node-actions,#add-auto-layout),
+.right-panel.native-control-editor #inspector-layer-actions,
+.right-panel.native-control-editor .instance-position label:has(#rotation){display:none!important}
+#control-inspector .control-source-row>input:not([type=color]){flex:1;width:0}
+#control-inspector .control-source-row>input[type=color]{flex:0 0 26px;width:26px;height:26px;padding:2px}
+
+/* Checkbox fields follow the shared label-left, control-right layout. */
+#control-inspector label.control-field:has(>input[type="checkbox"]){grid-template-columns:minmax(0,1fr) auto}
+#control-inspector .control-field>input[type="checkbox"]{width:16px;height:16px;min-width:16px;justify-self:end;margin:0}
+
+.right-panel:is(.native-control-editor,.protected-instance) #dimensions-section :is(label:has(#height),#aspect-ratio-lock,#add-auto-layout,#frame-section,#layout-child-panel,#auto-layout-panel,#text-sizing-row,.layout-flow,.flow-caption,.sizing-axis:has(#sizing-min-height)){display:none!important}
+.right-panel:is(.native-control-editor,.protected-instance) #dimensions-section>.property-grid{grid-template-columns:minmax(0,1fr)}
+.right-panel:is(.native-control-editor,.protected-instance) #dimensions-section .layout-sizing-controls{grid-template-columns:minmax(0,1fr)}

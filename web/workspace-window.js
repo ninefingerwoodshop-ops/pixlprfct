@@ -11,6 +11,6 @@ export function workspaceWindow(title,content,defaults={}){
  const body=document.createElement('div');body.className='workspace-window-body';body.append(content);dialog.append(header,body);document.body.append(dialog);
  dialog.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Escape'){event.preventDefault();dialog.close();}});
  let opener;
- dialog.addEventListener('close',()=>{dialog.querySelectorAll('.window-resize').forEach(el=>el.remove());opener?.focus?.();});
+ dialog.addEventListener('close',()=>{dialog.querySelectorAll('.window-resize').forEach(el=>el.remove());if(!dialog.dataset.navigationDismissed)opener?.focus?.();});
  return {dialog,open(){if(dialog.open){header.focus();return;}opener=document.activeElement;floatingWindow(dialog,header,toggle,title,defaults);dialog.show();header.focus();},close(){dialog.close();}};
 }

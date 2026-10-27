@@ -2,6 +2,67 @@ use super::*;
 
 #[wasm_bindgen]
 impl Editor {
+    pub fn duplicate_drop_layers(
+        &mut self,
+        json: &str,
+        target: u32,
+        position: &str,
+    ) -> Result<String, String> {
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        let copies = staged.duplicate_many(json)?;
+        let ids: Vec<u32> = serde_json::from_str(&copies).map_err(|e| e.to_string())?;
+        // A layer-tree copy keeps its canvas position; only its stack/parent changes.
+        for shape in &mut staged.document.shapes {
+            if ids.contains(&shape.id) {
+                shape.x -= 24.0;
+                shape.y -= 24.0;
+            }
+        }
+        let roots = groups::roots(&staged.document.shapes, &ids);
+        staged.drop_layers(&serde_json::to_string(&roots).unwrap(), target, position)?;
+        self.commit(staged.document)?;
+        self.next_id = self.next_id.max(staged.next_id);
+        Ok(serde_json::to_string(&roots).unwrap())
+    }
+
+    pub fn drop_layers(&mut self, json: &str, target: u32, position: &str) -> Result<(), String> {
+        let ids = groups::roots(&self.document.shapes, &self.selection_ids(json)?);
+        if ids.contains(&target) {
+            return Ok(());
+        }
+        let mut ordered: Vec<_> = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| ids.contains(&s.id))
+            .map(|s| s.id)
+            .collect();
+        if position == "before" {
+            ordered.reverse();
+        }
+        let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
+            text_measurer: self.text_measurer.clone(),
+            document: self.document.clone(),
+            undo: vec![],
+            redo: vec![],
+            next_id: self.next_id,
+            next_page_id: self.next_page_id,
+        };
+        for id in ordered {
+            staged.drop_layer(id, target, position)?;
+        }
+        self.commit(staged.document)
+    }
+
     // The layer tree displays the paint stack in reverse order.
     pub fn drop_layer(&mut self, id: u32, target: u32, position: &str) -> Result<(), String> {
         if !["before", "after", "inside"].contains(&position) {
@@ -10,7 +71,7 @@ impl Editor {
         if id == target {
             return Ok(());
         }
-        let source = self
+        let _source = self
             .document
             .shapes
             .iter()
@@ -22,8 +83,8 @@ impl Editor {
             .iter()
             .find(|s| s.id == target && s.page_id == self.document.active_page)
             .ok_or("Drop target not found")?;
-        if position == "inside" && destination.kind != "frame" {
-            return Err("Drop inside a frame".into());
+        if position == "inside" && !destination.is_container() {
+            return Err("Drop inside a frame or group".into());
         }
         let parent = if position == "inside" {
             target
@@ -34,7 +95,7 @@ impl Editor {
             .document
             .shapes
             .iter()
-            .filter(|s| s.id == id || (source.group_id > 0 && s.group_id == source.group_id))
+            .filter(|s| s.id == id)
             .map(|s| s.id)
             .collect();
         if moving.contains(&target) {
@@ -82,9 +143,7 @@ impl Editor {
         let index = if position == "inside" {
             document.shapes.len()
         } else {
-            let matches = |s: &Shape| {
-                s.id == target || (destination.group_id > 0 && s.group_id == destination.group_id)
-            };
+            let matches = |s: &Shape| s.id == target;
             if position == "before" {
                 document.shapes.iter().rposition(matches).unwrap() + 1
             } else {

@@ -25,8 +25,8 @@ test('guides persist, duplicate, scale, undo and stay out of SVG exports',()=>{
  const scaled=scaleShapes([get(e,f)],{x:0,y:0},2)[0];assert.equal(scaled.layout_grids[0].size,128);assert.equal(scaled.layout_grids[0].gutter,32);assert.equal(scaled.layout_grids[0].count,4);
  const s=get(e,f),without={...s,layout_grids:[]};assert.equal(svgDocument([s],s,1,null,()=>{}),svgDocument([without],without,1,null,()=>{}));copy.free();e.free();
 });
-test('guide validation is atomic and component overrides retain independent guides',()=>{
- const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{layout_grids:[defaultGuide()]});e.create_component(f);const i=e.create_instance(f,400,0);edit(e,i,{layout_grids:[{...defaultGuide(),count:6}]});edit(e,f,{layout_grids:[{...defaultGuide(),color:'#0000ff'}]});assert.equal(get(e,i).layout_grids[0].count,6);e.reset_override(i,'layout_grids');assert.equal(get(e,i).layout_grids[0].color,'#0000ff');
+test('guide validation is atomic and component instances inherit guides from the main',()=>{
+ const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{layout_grids:[defaultGuide()]});e.create_component(f);const i=e.create_instance(f,400,0),locked=e.snapshot();assert.throws(()=>edit(e,i,{layout_grids:[{...defaultGuide(),count:6}]}),/protected/);assert.equal(e.snapshot(),locked);edit(e,f,{layout_grids:[{...defaultGuide(),color:'#0000ff'}]});assert.equal(get(e,i).layout_grids[0].color,'#0000ff');assert.deepEqual(get(e,i).layout_grids,get(e,f).layout_grids);
  const before=e.snapshot();for(const patch of [{count:0},{count:257},{size:0},{opacity:2},{gutter:-1},{alignment:'other'},{color:'bad'},{kind:'other'}]){assert.throws(()=>edit(e,f,{layout_grids:[{...defaultGuide(),...patch}]}));assert.equal(e.snapshot(),before);}
  assert.throws(()=>edit(e,f,{layout_grids:Array(9).fill(defaultGuide())}));const r=e.add('rectangle',0,0);assert.throws(()=>edit(e,r,{layout_grids:[defaultGuide()]}));assert.deepEqual(get(e,r).layout_grids,[]);e.free();
 });

@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import init,{Editor} from '../web/pkg/pixlprfct_core.js';
+import {calendarDays,calendarMarkup,calendarCss,calendarConfig} from '../web/calendar-control.js';
+import {ensureInputBase} from '../web/input-base.js';
+import {newControl,controlMarkup} from '../web/controls.js';
+import {behaviorSource} from '../web/behaviors.js';
+await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
+test('calendar dates handle leap years, Monday starts, limits and steps',()=>{
+ const days=calendarDays(2024,1,'2024-02-29','2024-02-10','2024-02-29',1,'2');
+ assert.equal(days.length,42);assert.equal(days[0].date,'2024-01-29');
+ assert.equal(days.find(d=>d.date==='2024-02-09').disabled,true);
+ assert.equal(days.find(d=>d.date==='2024-02-10').disabled,false);
+ assert.equal(days.find(d=>d.date==='2024-02-11').disabled,true);
+ assert.equal(days.find(d=>d.date==='2024-02-29').selected,true);
+ assert.equal(days.find(d=>d.date==='2024-03-01').disabled,true);
+ assert.equal(calendarDays(2023,1).some(d=>d.date==='2023-02-29'),false);
+});
+test('date picker shares input styling and persists calendar settings into instances and exports',()=>{
+ const e=new Editor(),base=ensureInputBase(JSON.parse(e.snapshot()).variables,'date');
+ assert.ok(base.variables.collections.some(c=>c.preset==='input_base'));
+ assert.ok(base.variables.collections.some(c=>c.preset==='calendar_base'));
+ assert.equal(ensureInputBase(base.variables,'date').variables.collections.length,2);
+ const control={...newControl('date','Start date'),starter:true,base_collection:base.collection.id,value:'2026-10-15',min:'2026-10-10',max:'2026-10-20',calendar:{preview_open:true,week_start:1,width:320}};
+ const id=e.insert_control_starter(JSON.stringify({id:0,name:'Date picker',kind:'frame',x:0,y:0,width:280,height:112,fill:'#ffffff',text:'',hidden:false,control,variable_bindings:base.bindings}),JSON.stringify(base.variables));
+ const instance=e.create_instance(id,300,0),s=JSON.parse(e.snapshot()).shapes.find(s=>s.id===instance);
+ assert.equal(s.control.calendar.week_start,1);assert.equal(s.control.states.default.parts.calendar.background,'#ffffff');
+ const html=controlMarkup(s.control,instance);assert.match(html,/type="date"/);assert.match(html,/min="2026-10-10"/);assert.match(html,/role="dialog"/);assert.match(html,/data-date="2026-10-15"/);
+ assert.match(calendarMarkup({...control,disabled:true},id),/data-calendar="[^"]*" disabled/);
+ assert.match(calendarCss(control,id,false),/position:absolute;grid-column:1\/2;grid-row:2\/3;top:calc\(100% \+ 4px\)/);
+ const source=behaviorSource([s]);assert.match(source,/function mountCalendars/);assert.match(source,/function calendarDays/);new Function(source.replaceAll('export ',''));
+ assert.equal(calendarConfig({calendar:{width:9999}}).width,600);e.free();
+});

@@ -13,6 +13,11 @@ pub enum Component {
     },
 }
 const FIELDS: &[&str] = &[
+    "control_state",
+    "control",
+    "behaviors",
+    "rotation",
+    "border_widths",
     "variable_bindings",
     "variable_modes",
     "name",
@@ -42,8 +47,194 @@ const FIELDS: &[&str] = &[
     "y",
 ];
 
+// Old detach only removed the component link, leaving native button text with
+// no editable layer. Materialize that label and remove the native overlay.
+pub(crate) fn restore_detached_button_labels(
+    doc: &mut Document,
+    next: &mut u32,
+) -> Result<(), String> {
+    let buttons: Vec<_> = doc
+        .shapes
+        .iter()
+        .filter(|s| {
+            s.component.is_none()
+                && s.control
+                    .as_ref()
+                    .is_some_and(|c| c.kind == "button" && !c.starter)
+        })
+        .filter(|s| {
+            let mut parent = s.parent_id;
+            while let Some(p) = doc.shapes.iter().find(|p| p.id == parent) {
+                if p.component.is_some() {
+                    return false;
+                }
+                parent = p.parent_id;
+            }
+            true
+        })
+        .cloned()
+        .collect();
+    for button in buttons {
+        let control = button.control.as_ref().unwrap();
+        let existing = subtree(&doc.shapes, button.id)
+            .into_iter()
+            .find(|s| s.kind == "text");
+        let mut label = existing.clone().unwrap_or_else(|| button.clone());
+        if existing.is_none() {
+            label.id = *next;
+            *next = next.checked_add(1).ok_or("Shape ID limit reached")?;
+            label.parent_id = button.id;
+            label.kind = "text".into();
+            label.name = "Label".into();
+            label.appearance = None;
+            label.auto_layout = None;
+            label.layout_item = LayoutItem::default();
+            label.constraints = Constraints::default();
+            label.variable_bindings.clear();
+            label.variable_modes.clear();
+            label.rotation = 0.0;
+            label.aspect_ratio_locked = false;
+            label.clip_content = false;
+            label.points.clear();
+            label.handles.clear();
+            label.closed = false;
+            label.image = None;
+            label.border_widths = None;
+            label.behaviors.clear();
+            label.layout_grids.clear();
+            label.guide_style = 0;
+            label.prototype = None;
+            label.additional_interactions.clear();
+            label.flow_name.clear();
+            let horizontal = crate::layout::padding(&button, true);
+            let vertical = crate::layout::padding(&button, false);
+            label.width = (button.width - horizontal).max(1.0);
+            label.height = (button.height - vertical).max(1.0);
+            label.x = button.x + button.auto_layout.as_ref().map_or(0.0, |l| l.padding_left);
+            label.y = button.y + button.auto_layout.as_ref().map_or(0.0, |l| l.padding_top);
+        }
+        label.component = None;
+        label.control = None;
+        label.control_state.clear();
+        label.hidden = false;
+        label.locked = false;
+        label.text = control.label.clone();
+        let mut typography = button
+            .typography
+            .clone()
+            .or(label.typography.clone())
+            .unwrap_or(Typography {
+                font_size: 16.0,
+                font_weight: 400,
+                line_height: 1.2,
+                ..Typography::default()
+            });
+        typography.sizing = if button.auto_layout.as_ref().is_some_and(|l| l.hug_width) {
+            "width"
+        } else {
+            "fixed"
+        }
+        .into();
+        typography.align = "center".into();
+        typography.vertical_align = "center".into();
+        label.typography = Some(typography);
+        label.fill = "#222222".into();
+        let root = doc.shapes.iter_mut().find(|s| s.id == button.id).unwrap();
+        let mut appearance: Appearance =
+            serde_json::from_value(effective_value(root)["appearance"].clone())
+                .map_err(|e| e.to_string())?;
+        for state in ["default", button.control_state.as_str()] {
+            if let Some(style) = control.states.get(state) {
+                if style.color.starts_with('#') && style.color.len() == 7 {
+                    label.fill = style.color.clone();
+                }
+                if style.background.starts_with('#') && style.background.len() == 7 {
+                    root.fill = style.background.clone();
+                    appearance.fill_enabled = true;
+                    root.variable_bindings.remove("fill");
+                    root.variable_bindings.remove("appearance.fill_enabled");
+                }
+                if style.border_color.starts_with('#') && style.border_color.len() == 7 {
+                    appearance.stroke_color = style.border_color.clone();
+                    root.variable_bindings.remove("appearance.stroke_color");
+                }
+                if let Some(opacity) = style.opacity {
+                    appearance.opacity = opacity;
+                    root.variable_bindings.remove("appearance.opacity");
+                }
+                if let Some(radius) = style.radius {
+                    appearance.corner_radius = radius;
+                    appearance.corner_radii = None;
+                    root.variable_bindings.remove("appearance.corner_radius");
+                    root.variable_bindings.remove("appearance.corner_radii");
+                }
+            }
+        }
+        root.appearance = Some(appearance);
+        root.control = None;
+        root.control_state.clear();
+        root.variable_bindings
+            .retain(|path, _| !path.starts_with("control.states."));
+        if let Some(old) = doc.shapes.iter_mut().find(|s| s.id == label.id) {
+            *old = label;
+        } else {
+            doc.shapes.push(label);
+        }
+    }
+    Ok(())
+}
+
 fn subfields(field: &str) -> &'static [&'static str] {
     match field {
+        "control" => &[
+            "segmented",
+            "password",
+            "number",
+            "upload",
+            "textarea",
+            "calendar",
+            "selected_values",
+            "dropdown",
+            "shared_overrides",
+            "starter_linked",
+            "validation_trigger",
+            "pattern",
+            "min_length",
+            "max_length",
+            "left_adornment",
+            "right_adornment",
+            "base_collection",
+            "kind",
+            "label",
+            "label_position",
+            "width_sizing",
+            "name",
+            "value",
+            "placeholder",
+            "helper_message",
+            "hide_helper",
+            "validation_message",
+            "invalid",
+            "disabled",
+            "readonly",
+            "checked",
+            "required",
+            "required_icon",
+            "required_svg",
+            "required_icon_size",
+            "required_icon_weight",
+            "required_icon_offset",
+            "required_icon_color",
+            "multiple",
+            "min",
+            "max",
+            "step",
+            "accept",
+            "src",
+            "options",
+            "states",
+            "toggle",
+        ],
         "typography" => &[
             "sizing",
             "font_size",
@@ -261,14 +452,77 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
         overrides,
     }) = &old.component
     {
-        if new.kind != old.kind
-            || (master != source && new.parent_id != old.parent_id)
-            || new.group_id != old.group_id
-        {
+        if new.kind != old.kind || (master != source && new.parent_id != old.parent_id) {
             return Err("Detach the instance before changing its structure".into());
         }
         let a = effective_value(old);
         let b = effective_value(new);
+        // Instances expose content and state, not design-system appearance overrides.
+        for field in FIELDS {
+            if a[field] == b[field] {
+                continue;
+            }
+            let allowed = match *field {
+                "name" | "text" | "hidden" | "locked" | "control_state" => true,
+                "x" | "y" | "width" => master == source,
+                "layout_item" | "auto_layout" if master == source => {
+                    let mut before = a[*field].clone();
+                    let mut after = b[*field].clone();
+                    let keys = if *field == "layout_item" {
+                        vec!["fill_width", "min_width", "max_width", "grid_cell"]
+                    } else {
+                        vec!["hug_width"]
+                    };
+                    for key in keys {
+                        if let Some(v) = before.as_object_mut() {
+                            v.remove(key);
+                        }
+                        if let Some(v) = after.as_object_mut() {
+                            v.remove(key);
+                        }
+                    }
+                    before == after
+                }
+                "control" => {
+                    let mut before = a["control"].clone();
+                    let mut after = b["control"].clone();
+                    if old.control.as_ref().is_some_and(|c| c.kind == "radio") {
+                        if let Some(v) = before.as_object_mut() {
+                            v.remove("name");
+                        }
+                        if let Some(v) = after.as_object_mut() {
+                            v.remove("name");
+                        }
+                    }
+                    for key in [
+                        "width_sizing",
+                        "selected_values",
+                        "label",
+                        "value",
+                        "placeholder",
+                        "helper_message",
+                        "hide_helper",
+                        "validation_message",
+                        "invalid",
+                    ] {
+                        if let Some(v) = before.as_object_mut() {
+                            v.remove(key);
+                        }
+                        if let Some(v) = after.as_object_mut() {
+                            v.remove(key);
+                        }
+                    }
+                    before == after
+                }
+                _ => false,
+            };
+            if !allowed {
+                return Err(
+                    "Instance appearance is protected. Edit the main component instead.".into(),
+                );
+            }
+        }
+
         let mut changed = overrides.clone();
         for field in FIELDS {
             if a[field] == b[field] || changed.iter().any(|f| f == field) {
@@ -322,7 +576,7 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
             let structure = |doc: &Document| {
                 subtree(&doc.shapes, *master)
                     .iter()
-                    .map(|s| (s.id, s.parent_id, s.group_id, s.group_name.clone()))
+                    .map(|s| (s.id, s.parent_id))
                     .collect::<Vec<_>>()
             };
             // Staged operations may already have synchronized a main-component
@@ -346,11 +600,7 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
             let Some(n) = new.shapes.iter().find(|n| n.id == s.id) else {
                 return Err("Detach the instance before removing its layers".into());
             };
-            if n.parent_id != s.parent_id
-                || n.group_id != s.group_id
-                || n.group_name != s.group_name
-                || n.component.as_ref().is_none()
-            {
+            if n.parent_id != s.parent_id || n.component.as_ref().is_none() {
                 return Err("Detach the instance before changing its structure".into());
             }
             let order = |doc: &Document| {
@@ -369,6 +619,30 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
 }
 
 pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
+    // A designed text layer remains the editable source of a main button's
+    // native label and typography. Resolve it before copying to instances.
+    let labels: Vec<_> = doc
+        .shapes
+        .iter()
+        .filter(|s| {
+            s.component == Some(Component::Master)
+                && s.control
+                    .as_ref()
+                    .is_some_and(|c| c.kind == "button" && !c.starter)
+        })
+        .filter_map(|root| {
+            subtree(&doc.shapes, root.id)
+                .into_iter()
+                .find(|child| child.kind == "text" && !child.hidden)
+                .map(|child| (root.id, child.text.clone(), child.typography.clone()))
+        })
+        .collect();
+    for (id, label, typography) in labels {
+        if let Some(root) = doc.shapes.iter_mut().find(|s| s.id == id) {
+            root.control.as_mut().unwrap().label = label;
+            root.typography = typography;
+        }
+    }
     let pending_roots: Vec<_> = doc.shapes.iter().filter(|s|matches!(&s.component,Some(Component::Instance{master,source,..}) if master==source)).map(|s|s.id).collect();
     let root_ids: HashSet<_> = pending_roots.iter().copied().collect();
     let mut pending: Vec<_> = pending_roots
@@ -423,7 +697,6 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
         };
         let mut built: Vec<Shape> = vec![];
         let mut map = HashMap::new();
-        let mut groups = HashMap::new();
         for src in &source {
             let previous = old.iter().find(
                 |s| matches!(&s.component,Some(Component::Instance{source,..}) if *source==src.id),
@@ -443,24 +716,25 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
             } else {
                 map[&src.parent_id]
             };
-            shape.group_id = if src.id == master {
-                root.group_id
-            } else if src.group_id == 0 {
-                0
-            } else if let Some(id) = groups.get(&src.group_id) {
-                *id
-            } else {
-                let id = new_id;
-                groups.insert(src.group_id, id);
-                id
-            };
             if src.id == master {
-                shape.group_name = root.group_name.clone();
                 shape.x = root.x;
                 shape.y = root.y;
             } else {
-                let sp = source.iter().find(|s| s.id == src.parent_id).unwrap();
-                let np = built.iter().find(|s| s.id == shape.parent_id).unwrap();
+                let mut sp = source.iter().find(|s| s.id == src.parent_id).unwrap();
+                while sp.kind == "group" {
+                    let transformed = old.iter().find(|s| s.id == map[&sp.id]).is_some_and(|s| {
+                        matches!(&s.component, Some(Component::Instance { overrides, .. })
+                            if overrides.iter().any(|f| matches!(f.as_str(), "x" | "y" | "width" | "height")))
+                    });
+                    if transformed {
+                        break;
+                    }
+                    let Some(ancestor) = source.iter().find(|s| s.id == sp.parent_id) else {
+                        break;
+                    };
+                    sp = ancestor;
+                }
+                let np = built.iter().find(|s| s.id == map[&sp.id]).unwrap();
                 let mut constrained = src.clone();
                 if let Some(p) = previous {
                     if let Some(Component::Instance { overrides, .. }) = &p.component {
@@ -474,7 +748,11 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                     sp.width,
                     np.x,
                     np.width,
-                    &constrained.constraints.horizontal,
+                    if sp.kind == "group" {
+                        &crate::Constraint::Scale
+                    } else {
+                        &constrained.constraints.horizontal
+                    },
                 );
                 (shape.y, shape.height) = constrain_axis(
                     src.y,
@@ -483,7 +761,11 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                     sp.height,
                     np.y,
                     np.height,
-                    &constrained.constraints.vertical,
+                    if sp.kind == "group" {
+                        &crate::Constraint::Scale
+                    } else {
+                        &constrained.constraints.vertical
+                    },
                 );
             }
             let overrides = match previous.and_then(|s| s.component.as_ref()) {
@@ -491,6 +773,10 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                 _ => vec![],
             };
             if let Some(p) = previous {
+                // CSS identity belongs to the instance, not its appearance source.
+                shape.layout_class = p.layout_class.clone();
+                shape.layout_class_generated = p.layout_class_generated;
+                shape.breakpoint_original = p.breakpoint_original.clone();
                 apply_overrides(&mut shape, p, &overrides)?;
                 if src.id != master {
                     let op = old.iter().find(|s| s.id == p.parent_id).unwrap();
@@ -565,8 +851,6 @@ impl Editor {
         let id = self.next_id;
         root.id = id;
         root.parent_id = 0;
-        root.group_id = 0;
-        root.group_name.clear();
         root.flow_name.clear();
         root.page_id = self.document.active_page;
         root.x = x;
@@ -595,7 +879,11 @@ impl Editor {
                 s.component = None;
             }
         }
-        self.commit(doc)
+        let mut next = self.next_id;
+        restore_detached_button_labels(&mut doc, &mut next)?;
+        self.commit(doc)?;
+        self.next_id = self.next_id.max(next);
+        Ok(())
     }
 
     pub fn place_instance(
@@ -606,6 +894,7 @@ impl Editor {
         parent: u32,
     ) -> Result<u32, String> {
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],
@@ -689,11 +978,6 @@ impl Editor {
                         source,
                         overrides: overrides.clone(),
                     });
-                    // Groups are reconstructed from the new main component.
-                    if s.id != root {
-                        s.group_id = 0;
-                        s.group_name.clear();
-                    }
                     kept.push(s);
                 }
             }
@@ -706,7 +990,7 @@ impl Editor {
         let mut next = self.next_id.max(
             doc.shapes
                 .iter()
-                .map(|s| s.id.max(s.group_id))
+                .map(|s| s.id)
                 .max()
                 .unwrap_or(0)
                 .saturating_add(1),
@@ -743,12 +1027,12 @@ impl Editor {
             return Err("Select an instance layer".into());
         };
         overrides.retain(|p| {
-            !(["prototype", "additional_interactions"].contains(&path)
-                && ["prototype", "additional_interactions"].contains(&p.as_str()))
-                && p != path
-                && !p.starts_with(&format!("{path}."))
-                && !(["layout_grids", "guide_style"].contains(&path)
-                    && ["layout_grids", "guide_style"].contains(&p.as_str()))
+            !(p == path
+                || p.starts_with(&format!("{path}."))
+                || (["prototype", "additional_interactions"].contains(&path)
+                    && ["prototype", "additional_interactions"].contains(&p.as_str()))
+                || (["layout_grids", "guide_style"].contains(&path)
+                    && ["layout_grids", "guide_style"].contains(&p.as_str())))
         });
         self.commit(doc)
     }
@@ -902,29 +1186,33 @@ impl Editor {
                     "Nested main components are not supported; use linked instances".into(),
                 );
             }
-            if root.group_id != 0
-                && self
-                    .document
-                    .shapes
-                    .iter()
-                    .any(|s| s.group_id == root.group_id && !roots.iter().any(|r| r.id == s.id))
-            {
-                return Err("Select the whole group to frame the selection".into());
-            }
         }
-        let x = roots.iter().map(|s| s.x).fold(f64::INFINITY, f64::min);
-        let y = roots.iter().map(|s| s.y).fold(f64::INFINITY, f64::min);
+        let x = roots
+            .iter()
+            .map(|s| s.visual_bounds().0)
+            .fold(f64::INFINITY, f64::min);
+        let y = roots
+            .iter()
+            .map(|s| s.visual_bounds().1)
+            .fold(f64::INFINITY, f64::min);
         let width = roots
             .iter()
-            .map(|s| s.x + s.width)
+            .map(|s| {
+                let (x, _, w, _) = s.visual_bounds();
+                x + w
+            })
             .fold(f64::NEG_INFINITY, f64::max)
             - x;
         let height = roots
             .iter()
-            .map(|s| s.y + s.height)
+            .map(|s| {
+                let (_, y, _, h) = s.visual_bounds();
+                y + h
+            })
             .fold(f64::NEG_INFINITY, f64::max)
             - y;
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],

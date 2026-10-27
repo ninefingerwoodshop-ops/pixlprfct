@@ -9,7 +9,9 @@ export function renderGlassControls(host,shape,change){
  if(!['frame','rectangle','ellipse','polygon','star'].includes(shape.kind))return;
  const style=appearance(shape),active=style.backdrop_blur>0;
  const section=document.createElement('div');section.className='glass-material';
- const button=document.createElement('button');button.type='button';button.className='glass-material-button';button.textContent=active?'Reset glassmorphism':'Apply glassmorphism';button.onclick=()=>change(glassPreset(shape));section.append(button);
+ const preset=[...host.querySelectorAll('.effect-choices button')].find(b=>b.textContent==='Apply glass material');
+ if(preset){preset.textContent='Glassmorphism';preset.onclick=()=>change(glassPreset(shape));}
+ if(!active)return;
  if(active){
   const heading=document.createElement('h4');heading.textContent='Glassmorphism';section.append(heading);
   const fields=document.createElement('div');fields.className='glass-material-fields';section.append(fields);
@@ -19,5 +21,6 @@ export function renderGlassControls(host,shape,change){
   }
   const hint=document.createElement('p');hint.textContent='Place over artwork to see the background blur. Export as HTML/CSS to keep the live glass effect.';section.append(hint);
  }
- const effects=document.createElement('div');effects.className='glass-other-effects';effects.append(...host.childNodes);host.append(section,effects);
+ // Keep the Effects heading at the section root so glass collapses with its body.
+ host.querySelector('h3').after(section);
 }

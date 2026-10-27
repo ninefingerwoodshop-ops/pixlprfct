@@ -31,3 +31,56 @@ test('presentation scene isolates a frame and navigation history does not mutate
 test('links to synchronized instance child frames clear when their source is removed',()=>{
  const {e,a,b,button}=setup(),nested=e.add('frame',0,0);e.reparent_many(JSON.stringify([nested]),a);e.create_component(a);const instance=e.create_instance(a,800,0),target=doc(e).shapes.find(s=>s.parent_id===instance&&s.kind==='frame');edit(e,b,{prototype:{action:'navigate',target:target.id}});const before=e.snapshot();e.remove(nested);assert.equal(get(e,b).prototype,null);e.undo();assert.equal(e.snapshot(),before);e.free();
 });
+
+test('prototype device chrome fits the stage and retains portrait and landscape',async()=>{
+ const {prototypeViewport}=await import('../web/prototype.js');
+ for(const type of ['iphone','iphone-notch','ipad','phone','tablet','surface','desktop'])for(const [width,height] of [[393,852],[852,393]]){
+  const f={width,height,device_chrome:type},v=prototypeViewport(f,900,600);
+  assert.ok(v.chromeX>=15.999&&v.chromeY>=15.999);
+  assert.ok(v.chromeX+v.outerWidth*v.scale<=884.001);
+  assert.ok(v.chromeY+v.outerHeight*v.scale<=584.001);
+  assert.ok(v.x>=v.chromeX&&v.y>=v.chromeY);
+  assert.ok(v.x+width*v.scale<=900&&v.y+height*v.scale<=600);
+  assert.match(v.svg,/fill-rule="evenodd"/);
+  if(type==='iphone'||type==='ipad')assert.equal(v.svg.includes('rotate(90)'),width>height);
+  const center={x:v.x+width*v.scale/2,y:v.y+height*v.scale/2};
+  assert.ok(Math.abs((center.x-v.x)/v.scale-width/2)<1e-8);
+  assert.ok(Math.abs((center.y-v.y)/v.scale-height/2)<1e-8);
+ }
+});
+test('prototype navigation uses each frame’s saved chrome without adding shells to overlays',async()=>{
+ const {prototypeViewport}=await import('../web/prototype.js');
+ const {e,a,b}=setup();edit(e,a,{width:852,height:393,device_chrome:'iphone'});edit(e,b,{width:834,height:1194,device_chrome:'ipad',device_chrome_hidden:true});
+ const d=doc(e),before=e.snapshot(),state=prototypeState(d,a),view=()=>prototypeViewport(prototypeScene(d,state.current)[0],900,600);
+ assert.match(view().svg,/rotate\(90\)/);const phone=view();
+ state.open({target:b});assert.deepEqual(view(),phone);state.close();state.navigate(b);
+ assert.equal(view().svg,'');assert.equal(view().outerWidth,834);assert.equal(view().outerHeight,1194);
+ state.back();assert.deepEqual(view(),phone);assert.equal(e.snapshot(),before);e.free();
+});
+
+test('preview orientation reflows content and hit targets without changing the source document',async()=>{
+ const {prototypeOrientationDocument}=await import('../web/prototype.js');
+ const {e,a,b,button}=setup();edit(e,a,{width:393,height:852,device_chrome:'iphone'});
+ edit(e,button,{x:20,y:20,width:353,height:60,constraints:{horizontal:'stretch',vertical:'min'},prototype:{action:'navigate',target:b}});
+ const original=doc(e),before=e.snapshot(),preview=new Editor();
+ const landscape=prototypeOrientationDocument(preview,original,a,'landscape'),frame=landscape.shapes.find(s=>s.id===a),child=landscape.shapes.find(s=>s.id===button);
+ assert.equal(frame.width,852);assert.equal(frame.height,393);assert.equal(child.width,812);
+ assert.equal(preview.prototype_hit_test(a,800,40),button);
+ assert.equal(e.prototype_hit_test(a,800,40),0);assert.equal(e.snapshot(),before);
+ const portrait=prototypeOrientationDocument(preview,original,a,'portrait');assert.equal(portrait.shapes.find(s=>s.id===button).width,353);
+ assert.equal(portrait.shapes.find(s=>s.id===a).height,852);
+ const saved=prototypeOrientationDocument(preview,original,a);assert.equal(saved.shapes.find(s=>s.id===a).width,393);
+ preview.free();e.free();
+});
+
+
+test('preview chrome visibility overrides saved settings without changing orientation or source',async()=>{
+ const {prototypeViewport}=await import('../web/prototype.js');
+ const frame={width:852,height:393,device_chrome:'iphone',device_chrome_hidden:false},before=JSON.stringify(frame);
+ const shown=prototypeViewport(frame,900,600),hidden=prototypeViewport(frame,900,600,false),restored=prototypeViewport(frame,900,600,true);
+ assert.equal(hidden.svg,'');assert.equal(hidden.screenRadius,0);assert.equal(hidden.outerWidth,852);assert.equal(hidden.outerHeight,393);
+ assert.deepEqual(restored,shown);assert.match(restored.svg,/rotate\(90\)/);assert.equal(JSON.stringify(frame),before);
+ const savedHidden={...frame,device_chrome_hidden:true};assert.equal(prototypeViewport(savedHidden,900,600).svg,'');
+ assert.equal(prototypeViewport(savedHidden,900,600,true).svg,shown.svg);assert.equal(savedHidden.device_chrome_hidden,true);
+ assert.ok(prototypeViewport({width:1440,height:900},900,600,true).svg); // Custom frames use browser chrome.
+});

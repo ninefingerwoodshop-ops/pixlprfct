@@ -1,0 +1,14 @@
+/* Corner tokens apply to editor controls, never to document artwork. */
+:root{--ui-radius-control:6px;--ui-radius-menu:8px;--ui-radius-dialog:12px}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.tool-options,.menu-panel) button,
+:is(.left-panel,.right-panel,dialog,.paint-popover) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea),
+:is(.inspector-select-trigger,.paint-hex,.paint-alpha,.paint-swatch,.paint-picker-trigger,.paint-page-swatch,.property-grid label,.size-limit-field,.variable-alias-chip,.layout-flow,.layout-direction){border-radius:var(--ui-radius-control)!important}
+:is(.tool-group,.file-menu,.blend-popover,.effect-add-menu)>summary{border-radius:var(--ui-radius-control)}
+:is(.selection-menu,.inspector-select-menu,.tool-options,.menu-panel,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,.paint-popover,#page-switch-menu){border-radius:var(--ui-radius-menu)!important}
+dialog,.variables-workspace[open],.variables-dialog{border-radius:var(--ui-radius-dialog)!important}
+.variables-workspace .variables-body{border-radius:0 0 var(--ui-radius-dialog) var(--ui-radius-dialog)}
+.toolbox{border-radius:var(--ui-radius-dialog)}
+/* Docked workspace pages meet the application edges without floating corners. */
+.variables-workspace.variables-page{border-radius:0!important}
+.variables-page .variables-body{border-radius:0}
+/* Native checkbox/radio indicators, color handles and avatars retain their shapes. */

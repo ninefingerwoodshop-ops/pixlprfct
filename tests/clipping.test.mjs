@@ -23,6 +23,6 @@ test('moving into another frame is one undoable transaction; invalid drops never
   assert.throws(()=>e.move_into(JSON.stringify([{...child,x:900}]),c));assert.equal(e.snapshot(),before);e.free();
 });
 test('drop target excludes moved descendants and leaves partial group selections parented',()=>{
-  const shapes=[{id:1,kind:'frame',x:0,y:0,width:100,height:100,parent_id:0},{id:2,kind:'rectangle',x:10,y:10,width:10,height:10,parent_id:1,group_id:8},{id:3,kind:'text',x:20,y:20,width:10,height:10,parent_id:1,group_id:8}];
+  const shapes=[{id:1,kind:'frame',x:0,y:0,width:100,height:100,parent_id:0},{id:2,kind:'rectangle',x:10,y:10,width:10,height:10,parent_id:8},{id:3,kind:'text',x:20,y:20,width:10,height:10,parent_id:8},{id:8,kind:'group',x:10,y:10,width:20,height:20,parent_id:1}];
   assert.equal(dropParent(shapes,shapes,[1]),0);assert.equal(dropParent(shapes,[{...shapes[1],x:200}],[2]),null);
 });

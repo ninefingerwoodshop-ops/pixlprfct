@@ -18,9 +18,9 @@ test('invalid stroke edits are atomic and older files retain round solid strokes
  for(const patch of [{stroke_dash:[0,0]},{stroke_dash:[-1,2]},{stroke_dash:Array(17).fill(1)},{stroke_dash:[100001]},{stroke_dash_offset:1e7},{stroke_cap:'triangle'},{stroke_join:'bad'}]){assert.throws(()=>edit(e,id,{appearance:{...style,...patch}}));assert.equal(e.snapshot(),before);}
  const legacy={...style};for(const key of ['stroke_dash','stroke_dash_offset','stroke_cap','stroke_join'])delete legacy[key];edit(e,id,{appearance:legacy});assert.deepEqual(get(e,id).appearance.stroke_dash,[]);assert.equal(get(e,id).appearance.stroke_cap,'round');assert.equal(get(e,id).appearance.stroke_join,'round');assert.doesNotMatch(paintAttributes(get(e,id)),/dasharray/);e.free();
 });
-test('stroke overrides preserve unrelated main edits and reset independently',()=>{
- const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance:style});e.create_component(f);const i=e.create_instance(f,300,0);edit(e,i,{appearance:{...get(e,i).appearance,stroke_dash:[2,8]}});edit(e,f,{appearance:{...style,stroke_cap:'butt',stroke_color:'#ff0000'}});
- assert.deepEqual(get(e,i).appearance.stroke_dash,[2,8]);assert.equal(get(e,i).appearance.stroke_cap,'butt');assert.equal(get(e,i).appearance.stroke_color,'#ff0000');e.reset_override(i,'appearance.stroke_dash');assert.deepEqual(get(e,i).appearance.stroke_dash,style.stroke_dash);e.free();
+test('instances inherit main stroke dash, cap and color edits and reject instance stroke overrides',()=>{
+ const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance:style});e.create_component(f);const i=e.create_instance(f,300,0);const before=e.snapshot();assert.throws(()=>edit(e,i,{appearance:{...get(e,i).appearance,stroke_dash:[2,8]}}),/protected/);assert.equal(e.snapshot(),before);edit(e,f,{appearance:{...style,stroke_dash:[2,8],stroke_cap:'butt',stroke_color:'#ff0000'}});
+ assert.deepEqual(get(e,i).appearance.stroke_dash,[2,8]);assert.equal(get(e,i).appearance.stroke_cap,'butt');assert.equal(get(e,i).appearance.stroke_color,'#ff0000');assert.deepEqual(get(e,i).appearance,get(e,f).appearance);e.free();
 });
 test('export bounds include miter reach and diagonal square caps',()=>{
  const s={id:1,parent_id:0,kind:'pen',x:0,y:0,width:100,height:100,points:[[0,1],[.5,0],[1,1]],stroke_width:10,appearance:{...style,stroke_join:'miter'}};
@@ -37,8 +37,8 @@ test('miter limits roundtrip, remain dimensionless when scaled, and bound export
  for(const invalid of [0,.5,1001,null]){const before=e.snapshot();assert.throws(()=>edit(e,id,{appearance:{...get(e,id).appearance,stroke_miter_limit:invalid}}));assert.equal(e.snapshot(),before);}
  const legacy={...s.appearance};delete legacy.stroke_miter_limit;edit(e,id,{appearance:legacy});assert.equal(get(e,id).appearance.stroke_miter_limit,10);e.free();restored.free();
 });
-test('miter limit overrides reset independently of other component paints',()=>{
+test('instances inherit main miter limit and paint edits and reject miter limit overrides',()=>{
  const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance:{...style,stroke_miter_limit:4}});e.create_component(f);const i=e.create_instance(f,300,0);
- edit(e,i,{appearance:{...get(e,i).appearance,stroke_miter_limit:2}});edit(e,f,{appearance:{...get(e,f).appearance,stroke_miter_limit:6,stroke_color:'#ff0000'}});
- assert.equal(get(e,i).appearance.stroke_miter_limit,2);assert.equal(get(e,i).appearance.stroke_color,'#ff0000');e.reset_override(i,'appearance.stroke_miter_limit');assert.equal(get(e,i).appearance.stroke_miter_limit,6);e.free();
+ const before=e.snapshot();assert.throws(()=>edit(e,i,{appearance:{...get(e,i).appearance,stroke_miter_limit:2}}),/protected/);assert.equal(e.snapshot(),before);edit(e,f,{appearance:{...get(e,f).appearance,stroke_miter_limit:6,stroke_color:'#ff0000'}});
+ assert.equal(get(e,i).appearance.stroke_miter_limit,6);assert.equal(get(e,i).appearance.stroke_color,'#ff0000');e.free();
 });

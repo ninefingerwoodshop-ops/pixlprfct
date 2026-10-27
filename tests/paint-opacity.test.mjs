@@ -17,10 +17,10 @@ test('paint opacity persists, defaults to opaque for legacy files, and rejects i
  for(const field of ['fill_opacity','stroke_opacity'])for(const value of [-.1,1.1,null]){const before=e.snapshot();assert.throws(()=>edit(e,id,{appearance:{...appearance,[field]:value}}));assert.equal(e.snapshot(),before);}
  const legacy={...appearance};delete legacy.fill_opacity;delete legacy.stroke_opacity;edit(e,id,{appearance:legacy});assert.equal(get(e,id).appearance.fill_opacity,1);assert.equal(get(e,id).appearance.stroke_opacity,1);e.free();copy.free();
 });
-test('paint opacity component overrides preserve unrelated appearance changes',()=>{
+test('paint opacity propagates from the main with other appearance changes and instances reject paint opacity overrides',()=>{
  const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance});e.create_component(f);const i=e.create_instance(f,400,0);
- edit(e,i,{appearance:{...get(e,i).appearance,fill_opacity:.1}});edit(e,f,{appearance:{...get(e,f).appearance,fill_opacity:.5,stroke_opacity:.3,opacity:1}});
- assert.equal(get(e,i).appearance.fill_opacity,.1);assert.equal(get(e,i).appearance.stroke_opacity,.3);assert.equal(get(e,i).appearance.opacity,1);e.reset_override(i,'appearance.fill_opacity');assert.equal(get(e,i).appearance.fill_opacity,.5);e.free();
+ const before=e.snapshot();assert.throws(()=>edit(e,i,{appearance:{...get(e,i).appearance,fill_opacity:.1}}),/protected/);assert.equal(e.snapshot(),before);edit(e,f,{appearance:{...get(e,f).appearance,fill_opacity:.5,stroke_opacity:.3,opacity:1}});
+ assert.equal(get(e,i).appearance.fill_opacity,.5);assert.equal(get(e,i).appearance.stroke_opacity,.3);assert.equal(get(e,i).appearance.opacity,1);e.free();
 });
 test('canvas paint alpha multiplies the caller alpha and cannot leak to subsequent paints',()=>{
  const ctx={globalAlpha:.6},seen=[];

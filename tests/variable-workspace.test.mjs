@@ -21,3 +21,12 @@ test('detaching an alias retains the resolved value in each mode, including cros
  assert.equal(resolveVariableValue(vars,2,{collection:1,id:2}),'#ffffff');assert.equal(resolveVariableValue(vars,3,{collection:2,id:4}),'#000000');
  vars.values[0].values[1]={alias:3};assert.throws(()=>resolveVariableValue(vars,2,{collection:1,id:1}),/Circular/);
 });
+test('copying a cell across modes preserves literals and aliases and only changes its row',async()=>{
+ const {copyVariableValueToAllModes}=await import('../web/variable-manager.js');
+ for(const value of ['#abcdef',0,false,'<svg></svg>',{alias:9}]){
+  const vars={collections:[{id:1,modes:[{id:1},{id:2},{id:3}]}],values:[{id:1,collection_id:1,values:{1:'old',2:value,3:'different'}},{id:2,collection_id:1,values:{1:1,2:2,3:3}}]};
+  copyVariableValueToAllModes(vars,1,2);
+  assert.deepEqual(vars.values[0].values,{1:value,2:value,3:value});assert.deepEqual(vars.values[1].values,{1:1,2:2,3:3});
+  if(typeof value==='object'){assert.notEqual(vars.values[0].values[1],vars.values[0].values[2]);assert.equal(value.alias,9);}
+ }
+});

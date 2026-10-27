@@ -1,0 +1,17 @@
+// Sync the editor's vendored icons from the separately maintained font repository.
+import {readFile,writeFile,cp,mkdir} from 'node:fs/promises';
+import {resolve} from 'node:path';
+const source=resolve(process.argv[2]??'../pixlprfct_icons');
+const icons=JSON.parse(await readFile(resolve(source,'icons.json'),'utf8'));
+const file='web/icons.js',text=await readFile(file,'utf8');
+const paths=Object.fromEntries(Object.entries(icons).map(([name,data])=>[name,data.path]));
+await writeFile(file,text.replace(/export const iconPaths = \{[\s\S]*?\n\};/,`export const iconPaths = ${JSON.stringify(paths,null,2)};`));
+const keywords=Object.fromEntries(Object.entries(icons).filter(([,data])=>data.keywords).map(([name,data])=>[name,data.keywords]));
+await writeFile('web/icon-keywords.js',`export const iconKeywords = ${JSON.stringify(keywords,null,2)};\n`);
+const filled=Object.keys(icons).filter(name=>icons[name].filled);
+const updated=await readFile(file,'utf8');
+const declaration=`export const filledIcons = ${JSON.stringify(filled)};`;
+await writeFile(file,updated.includes('export const filledIcons = ')?updated.replace(/export const filledIcons = .*?;/,declaration):updated.replace('export const iconWeights=',declaration+'\nexport const iconWeights='));
+await mkdir('web/icon-library-assets',{recursive:true});
+for(const name of ['fonts','css','LICENSE'])await cp(resolve(source,name),resolve('web/icon-library-assets',name),{recursive:true});
+console.log(`Synced ${Object.keys(icons).length} icons from ${source}`);
