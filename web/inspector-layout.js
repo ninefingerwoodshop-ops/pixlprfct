@@ -3,7 +3,7 @@ export function installInspectorLayout() {
  const $=id=>document.getElementById(id), make=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
  const panel=document.querySelector('.right-panel'),tabs=document.querySelector('.inspector-tabs');
  const design=make('div','inspector-content'),prototype=make('div','inspector-content');design.id='design-inspector';prototype.id='prototype-inspector';
- for(const child of [...panel.children])if(!child.matches('.inspector-top,.inspector-tabs'))design.append(child);
+ for(const child of [...panel.children])if(!child.matches('.inspector-top,.inspector-tabs,#track-scroll-paused,#track-scroll-resumed'))design.append(child);
  panel.append(design,prototype);
  prototype.append($('prototype-panel'));
  const empty=make('section','property-section');empty.id='prototype-empty';empty.append(make('h3','','Prototype'),make('p','','Select a layer to add interactions, or select a frame to set a flow starting point.'));prototype.append(empty);
@@ -15,7 +15,7 @@ export function installInspectorLayout() {
  tabs.append(document.querySelector('.zoom-control'));
  const header=make('div','inspector-selection');header.append(caption);design.prepend(header);
  const properties=$('properties'),name=$('shape-name').closest('section'),position=$('x').closest('section'),fill=$('paint-label').closest('section'),limits=$('limit-min_width').closest('section'),arrange=$('duplicate').closest('section');
- name.classList.add('inspector-layer-name');position.querySelector('h3').textContent='Position';
+ name.classList.add('inspector-layer-name');position.classList.add('instance-position');position.querySelector('h3').textContent='Position';
  const alignment=document.querySelector('#multi-properties .align-tools').cloneNode(true);alignment.setAttribute('aria-label','Align to parent frame');position.querySelector('h3').after(alignment);
  $('shape-name').setAttribute('aria-label','Layer name');const visibility=$('visible').closest('label');visibility.classList.add('inspector-visibility');$('appearance-section').querySelector('h3').after(visibility);
  const layout=make('section','property-section');layout.id='dimensions-section';layout.append(make('h3','','Layout'));

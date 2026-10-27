@@ -1,5 +1,7 @@
 // Framework packages use the same compiled HTML/CSS as the live CSS canvas.
 const json=value=>JSON.stringify(value,null,2);
+// Split selector lists without splitting commas inside :is(), :has() or attributes.
+const selectorList=value=>{let depth=0,quote='',start=0;const result=[];for(let i=0;i<value.length;i++){const c=value[i];if(quote){if(c===quote&&value[i-1]!=='\\')quote='';}else if(c==='"'||c==="'")quote=c;else if(c==='('||c==='[')depth++;else if(c===')'||c===']')depth--;else if(c===','&&depth===0){result.push(value.slice(start,i));start=i+1;}}result.push(value.slice(start));return result;};
 const body=html=>html.match(/<body>([\s\S]*)<\/body>/)[1];
 const decode=s=>s.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi,(_,v)=>v[0]==='#'?String.fromCodePoint(v[1].toLowerCase()==='x'?parseInt(v.slice(2),16):Number(v.slice(1))):({amp:'&',lt:'<',gt:'>',quot:'"',apos:"'"}[v]));
 // Generated HTML is a known, escaped subset. Preserve text as JSX expressions.
@@ -8,7 +10,13 @@ export function reactMarkup(html){
   if(!token.startsWith('<'))return '{'+JSON.stringify(decode(token).replaceAll('&#39;',"'"))+'}';
   if(token.startsWith('</'))return token;
   return token.replace(/([\w:-]+)="([^"]*)"/g,(_,name,value)=>{
-   let key=({class:'className',for:'htmlFor','xlink:href':'xlinkHref',tabindex:'tabIndex',xmlns:'xmlns'}[name]??name);
+   if(name==='selected'&&token.startsWith('<option'))return '';
+   if(['disabled','readonly','required','multiple','checked','hidden'].includes(name))return `${name==='readonly'?'readOnly':name==='checked'?'defaultChecked':name}={true}`;
+   if(name==='data-initial-values')return 'defaultValue={'+JSON.stringify(JSON.parse(decode(value)))+'}';
+   if(name==='data-initial-value'&&token.includes(' data-initial-values='))return '';
+   if(name==='data-initial-value')return 'defaultValue={'+JSON.stringify(token.includes(' multiple=')?[decode(value)]:decode(value))+'}';
+   if(name==='value'&&/^<(input|textarea)\b/.test(token))return 'defaultValue={'+JSON.stringify(decode(value))+'}';
+   let key=({class:'className',for:'htmlFor','xlink:href':'xlinkHref',tabindex:'tabIndex',xmlns:'xmlns',minlength:'minLength',maxlength:'maxLength'}[name]??name);
    if(!key.startsWith('data-')&&!key.startsWith('aria-'))key=key.replace(/[-:]([a-z])/g,(_,c)=>c.toUpperCase());
    let val=decode(value).replaceAll('&#39;',"'");
    if(key==='style')val=Object.fromEntries(val.split(';').filter(Boolean).map(s=>{const i=s.indexOf(':');return [s.slice(0,i).trim().replace(/-([a-z])/g,(_,c)=>c.toUpperCase()),s.slice(i+1).trim()];}));
@@ -20,16 +28,19 @@ export function frameworkFiles(raw,{target,scope}){
  if(!['react','vue','angular','rust'].includes(target))throw new Error('Choose a valid framework');
  const manifest=JSON.parse(raw.find(f=>f.name==='project.json').text),files=[],whole=scope==='project';
  const add=(name,text)=>files.push({name,text});
+ const runtime=raw.find(f=>f.name==='behavior-runtime.js');
+ if(target!=='rust')add('behavior-runtime.js',runtime?.text??'export const behaviors=[]; export function mountBehaviors(){ return ()=>{}; }');
+ if(target==='angular')add('behavior-runtime.d.ts', 'export const behaviors: any[];\nexport function mountBehaviors(root: ParentNode, entries: any[], report?: (message: string) => void): () => void;\n');
  const pages=manifest.pages.map((page,i)=>{
   const name='Page'+(i+1),stem='page-'+(i+1),html=body(raw.find(f=>f.name===page.html).text);
   // Contain generic scene selectors so imported pages cannot override each other.
-  const css=raw.find(f=>f.name===page.css).text.replace('body{margin:0}','').replace(/([^{}]+)\{/g,(_,selectors)=>selectors.split(',').map(s=>`.${stem} ${s.trim()}`).join(',')+'{');
+  const css=raw.find(f=>f.name===page.css).text.replace('body{margin:0}','').replace(/([^{}]+)\{/g,(_,selectors)=>selectorList(selectors).map(s=>`.${stem} ${s.trim()}`).join(',')+'{');
   add(stem+'.css',css);
-  if(target==='react')add(name+'.jsx',`import React from 'react';\nimport './${stem}.css';\nexport default function ${name}(){\n return <div className="${stem}">${reactMarkup(html)}</div>;\n}\n`);
-  if(target==='vue')add(name+'.vue',`<template>\n <div class="${stem}" v-pre>${html}</div>\n</template>\n<style src="./${stem}.css"></style>\n`);
+  if(target==='react')add(name+'.jsx',`import React, {useEffect, useRef} from 'react';\nimport {mountBehaviors, behaviors} from './behavior-runtime.js';\nimport './${stem}.css';\nexport default function ${name}(){\n const root=useRef(null);\n useEffect(()=>mountBehaviors(root.current, behaviors), []);\n return <div ref={root} className="${stem}">${reactMarkup(html)}</div>;\n}\n`);
+  if(target==='vue')add(name+'.vue',`<script setup>\nimport {ref, onMounted, onBeforeUnmount} from 'vue';\nimport {mountBehaviors, behaviors} from './behavior-runtime.js';\nconst root=ref(null); let cleanup;\nonMounted(()=>{cleanup=mountBehaviors(root.value,behaviors);});\nonBeforeUnmount(()=>cleanup?.());\n</script>\n<template>\n <div ref="root" class="${stem}"><div v-pre>${html}</div></div>\n</template>\n<style src="./${stem}.css"></style>\n`);
   if(target==='angular'){
    add(stem+'.html',`<div class="${stem}" ngNonBindable>${html}</div>`);
-   add(stem+'.ts',`import {Component, ViewEncapsulation} from '@angular/core';\n@Component({selector:'px-${stem}',standalone:true,templateUrl:'./${stem}.html',styleUrl:'./${stem}.css',encapsulation:ViewEncapsulation.None})\nexport class ${name} {}\n`);
+   add(stem+'.ts',`import {Component, ViewEncapsulation, ElementRef, AfterViewInit, OnDestroy} from '@angular/core';\nimport {mountBehaviors, behaviors} from './behavior-runtime.js';\n@Component({selector:'px-${stem}',standalone:true,templateUrl:'./${stem}.html',styleUrl:'./${stem}.css',encapsulation:ViewEncapsulation.None})\nexport class ${name} implements AfterViewInit, OnDestroy {\n private cleanup: (() => void) | undefined;\n constructor(private root: ElementRef) {}\n ngAfterViewInit(){ this.cleanup=mountBehaviors(this.root.nativeElement,behaviors); }\n ngOnDestroy(){ this.cleanup?.(); }\n}\n`);
   }
   if(target==='rust'){
    add(stem+'.html',`<div class="${stem}">${html}</div>`);
@@ -68,6 +79,6 @@ export function frameworkFiles(raw,{target,scope}){
   }
  }
  add('project.json',json({name:manifest.name,target,pages:pages.map(({id,name,component,stem})=>({id,name,component,stem}))}));
- add('README.md',`# ${manifest.name.replace(/[\r\n]/g,' ')}\n\n${target.toUpperCase()} ${whole?'runnable project':'page/component export'}.\n\n${whole?(target==='rust'?'Install Rust and Trunk, then run:\n\n    rustup target add wasm32-unknown-unknown\n    cargo install trunk --locked\n    trunk serve --open\n\nProduction build: trunk build --release':'Requires Node.js 22.12+ and npm. Run:\n\n    npm install\n    npm run dev\n\nProduction build: npm run build'):`Copy the component and its companion HTML/CSS files into your existing ${target} application and import ${pages[0].component}. ${target==='rust'?'Add leptos 0.8 with the csr feature; declare the page_1 module.':''}`}\n\n${pages.map(p=>`- ${p.name}: ${p.component}`).join('\n')}\n\nThe design uses real CSS, including layout and glass effects, with inline SVG paint where needed. Supply the fonts used by your design.\n\nPrototype actions are not converted. Add application state, events and navigation in the generated components. ${target==='vue'?'Remove v-pre on the wrapper when adding Vue bindings (escape literal template syntax in design text).':target==='angular'?'Remove ngNonBindable when adding Angular bindings (escape literal template syntax in design text).':target==='rust'?'The Leptos component embeds editable HTML using include_str! and inner_html. Convert interactive elements into view! nodes when adding Rust event handlers.':''}\n`);
+ add('README.md',`# ${manifest.name.replace(/[\r\n]/g,' ')}\n\n${target.toUpperCase()} ${whole?'runnable project':'page/component export'}.\n\n${whole?(target==='rust'?'Install Rust and Trunk, then run:\n\n    rustup target add wasm32-unknown-unknown\n    cargo install trunk --locked\n    trunk serve --open\n\nProduction build: trunk build --release':'Requires Node.js 22.12+ and npm. Run:\n\n    npm install\n    npm run dev\n\nProduction build: npm run build'):`Copy the component and its companion HTML/CSS files into your existing ${target} application and import ${pages[0].component}. ${target==='rust'?'Add leptos 0.8 with the csr feature; declare the page_1 module.':''}`}\n\n${pages.map(p=>`- ${p.name}: ${p.component}`).join('\n')}\n\nThe design uses real CSS, including layout and glass effects, with inline SVG paint where needed. Supply the fonts used by your design.\n\nDevelopment JavaScript behaviors are included in behavior-runtime.js with mount and cleanup hooks. Copy that file alongside reusable components (and behavior-runtime.d.ts for Angular). Prototype actions are not converted. Add application state and navigation in the generated components. ${target==='vue'?'Remove v-pre on the wrapper when adding Vue bindings (escape literal template syntax in design text).':target==='angular'?'Remove ngNonBindable when adding Angular bindings (escape literal template syntax in design text).':target==='rust'?'The Leptos component embeds editable HTML using include_str! and inner_html. Convert interactive elements into view! nodes when adding Rust event handlers.':''}\n`);
  return files;
 }

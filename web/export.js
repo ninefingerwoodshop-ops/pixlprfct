@@ -1,3 +1,4 @@
+import {sceneToWorld} from './rotation.js';
 import {strokeAlignment,strokePadding,strokeTips} from './stroke-tips.js';
 import {alignedStrokeSvg} from './stroke-alignment.js';
 import {compositeGeometry,visibleShadows,effectSurfaceSize} from './shadows.js';
@@ -12,7 +13,7 @@ export function exportShapes(page,ids,scope){
  const chosen=scope==='selection'?descendants(page,ids):page,keep=new Set(chosen.map(s=>s.id));
  return chosen.filter(s=>visibleInTree(s,page)).map(s=>({...s,parent_id:keep.has(s.parent_id)?s.parent_id:0}));
 }
-export function exportBounds(shapes){const box=compositeGeometry(shapes,appearance).bounds;if(!box)throw new Error('Nothing visible to export');return box;}
+export function exportBounds(shapes){const box=compositeGeometry(sceneToWorld(shapes),appearance).bounds;if(!box)throw new Error('Nothing visible to export');return box;}
 export function exportSize(box,scale,format,shapes=[]){
   if(shapes.some(s=>s.appearance?.backdrop_blur>0))throw new Error('Background blur requires HTML/CSS export (File menu). Image and SVG export do not capture the browser backdrop.');
  if(!['png','jpeg','svg'].includes(format))throw new Error('Unsupported export format');
@@ -37,6 +38,7 @@ export function svgDocument(shapes,box,scale,background,textLayout){
  const size=exportSize(box,scale,'svg');
  const outline=s=>{if(s.points?.length)return vectorSvg(s);if(s.kind==='ellipse')return `<ellipse cx="${s.x+s.width/2}" cy="${s.y+s.height/2}" rx="${s.width/2}" ry="${s.height/2}" ${paintAttributes(s)}/>`;if(s.kind==='text')return textSvg(s,textLayout(s));return roundedSvg(s,paintAttributes(s));};
  const paint=s=>{
+  if(s.kind==='group')return '';
   if(s.kind==='image')return `<clipPath id="image-clip-${s.id}">${roundedSvg(s)}</clipPath><g clip-path="url(#image-clip-${s.id})" opacity="${appearance(s).fill_opacity??1}">${imageSvg(s)}</g>${roundedSvg(s,paintAttributes({...s,appearance:{...appearance(s),fill_enabled:false}}))}`;
   if(s.points?.length)return vectorSvg(s);
   if(s.kind==='ellipse')return `<ellipse cx="${s.x+s.width/2}" cy="${s.y+s.height/2}" rx="${s.width/2}" ry="${s.height/2}" ${paintAttributes(s)}/>`;
@@ -45,5 +47,5 @@ export function svgDocument(shapes,box,scale,background,textLayout){
  };
  if(background&&!/^#[0-9a-f]{6}$/i.test(background))throw new Error('Invalid export background');
  const backdrop=background?`<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${background}"/>`:'';
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.map(s=>gradientSvg(s)+gradientSvg(s,'stroke')).join('')}</defs>${backdrop}${sceneSvg(shapes,s=>alignedStrokeSvg(s,paint,outline))}</svg>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.map(s=>gradientSvg(s)+gradientSvg(s,'stroke')).join('')}</defs>${backdrop}${sceneSvg(shapes,s=>s.rotation?`<g transform="rotate(${-s.rotation} ${s.x} ${s.y})">${alignedStrokeSvg(s,paint,outline)}</g>`:alignedStrokeSvg(s,paint,outline))}</svg>`;
 }

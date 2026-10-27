@@ -10,7 +10,7 @@ export function spacingHandles(frame,shapes,gridPlan=null){
  add('padding_bottom','y',-1,x+w/2,y+h-l.padding_bottom,{x,y:y+h-l.padding_bottom,width:w,height:l.padding_bottom});
  if(l.direction==='grid'){
   if(!gridPlan)return handles;
-  for(const [sizes,key,axis,start,crossStart,crossSize,gap] of [[gridPlan.columns,'gap','x',x+l.padding_left,y+l.padding_top,Math.max(0,h-l.padding_top-l.padding_bottom),l.gap],[gridPlan.rows,'cross_gap','y',y+l.padding_top,x+l.padding_left,Math.max(0,w-l.padding_left-l.padding_right),l.cross_gap??l.gap]]){
+  for(const [sizes,key,axis,start,crossStart,crossSize,gap] of [[gridPlan.columns,'gap','x',x+l.padding_left+(gridPlan.offset_x??0),y+l.padding_top,Math.max(0,h-l.padding_top-l.padding_bottom),gridPlan.column_gap??l.gap],[gridPlan.rows,'cross_gap','y',y+l.padding_top+(gridPlan.offset_y??0),x+l.padding_left,Math.max(0,w-l.padding_left-l.padding_right),gridPlan.row_gap??l.cross_gap??l.gap]]){
    let edge=start;
    // Bound editing overlays for large implicit grids; all tracks remain
    // accessible through the inspector and the document keeps every row.
@@ -55,9 +55,10 @@ export function changeSpacing(frame,handle,delta,{shiftKey=false,altKey=false}={
  if(handle.track){
   const fallback={mode:'fr',value:1,min:null,max:null},g=frame.auto_layout.grid??{columns:[fallback,fallback],rows:[],auto_rows:fallback},{axis,index}=handle.track;
   const tracks=Array.from({length:Math.max(g[axis].length,index+1)},(_,i)=>({...g[axis][i]??g.auto_rows??fallback})),t=tracks[index];
-  t.mode='fixed';t.value=Math.max(t.min??0,Math.min(t.max??1e6,Math.round((handle.value+delta*handle.sign)/step)*step));
+  if(t.mode==='minmax'){t.min=null;t.max=null;}t.mode='fixed';t.value=Math.max(t.min??0,Math.min(t.max??1e6,Math.round((handle.value+delta*handle.sign)/step)*step));
   return {...frame,auto_layout:{...frame.auto_layout,grid:{...g,[axis]:tracks}}};
  }
+ if(frame.auto_layout.direction==='grid'&&['gap','cross_gap'].includes(handle.key)){const g=frame.auto_layout.grid??{},unit=g[handle.key==='gap'?'column_gap_unit':'row_gap_unit']??'px';if(unit==='em')delta/=frame.typography?.font_size??16;if(unit==='%'){const l=frame.auto_layout,available=handle.key==='gap'?frame.width-l.padding_left-l.padding_right:frame.height-l.padding_top-l.padding_bottom;delta=available>0?delta*100/available:0;}}
  const min=frame.auto_layout.direction!=='grid'&&(handle.key==='gap'||handle.key==='cross_gap')?-100000:0,value=Math.max(min,Math.min(100000,Math.round(((frame.auto_layout[handle.key]??frame.auto_layout.gap)+delta*handle.sign)/step)*step));
  const l={...frame.auto_layout,[handle.key]:value};
  if(altKey&&handle.key.startsWith('padding_')){const opposite={padding_left:'padding_right',padding_right:'padding_left',padding_top:'padding_bottom',padding_bottom:'padding_top'};l[opposite[handle.key]]=value;}

@@ -1,7 +1,9 @@
+import {recoveryStore} from './recovery-store.js';
 import {CloudSession,cloudRequest} from './cloud-session.js';
 import {openCloudHistory} from './cloud-history.js';
 export function cloudFiles({snapshot,load,status,toast}){
- let store;try{store=sessionStorage;}catch{}
+ let tabStore,durableStore;try{tabStore=sessionStorage;}catch{}try{durableStore=localStorage;}catch{}
+ const store=recoveryStore(tabStore,durableStore);
  const session=new CloudSession({snapshot,status,storage:store}),dialog=document.createElement('dialog');dialog.className='cloud-dialog';dialog.setAttribute('aria-label','Cloud files');
  const heading=document.createElement('h2');heading.textContent='Your files';const info=document.createElement('p');info.className='cloud-info';info.setAttribute('role','status');
  const actions=document.createElement('div');actions.className='cloud-actions';const list=document.createElement('div');list.className='cloud-list';
@@ -39,6 +41,7 @@ export function cloudFiles({snapshot,load,status,toast}){
  const trigger=document.getElementById('cloud-files');trigger.onclick=()=>{dialog.showModal();run(refresh);};
  window.addEventListener('online',()=>{if(session.error?.status!==409)session.flush().catch(()=>{});});
  window.addEventListener('pagehide',()=>session.remember());
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){session.remember();session.flush().catch(()=>{});}});
  window.addEventListener('beforeunload',event=>{if(session.active&&snapshot()!==session.ack){session.remember();event.preventDefault();event.returnValue='';}});
  return {session,changed:()=>session.changed(),beforeLocalOpen:async()=>{await session.flush();},localOpened:()=>session.detach(),restore(){try{const saved=JSON.parse(store?.getItem('pixlprfct.cloud.session')??'null');if(saved?.id&&saved.body&&saved.revision){load(saved.body);session.adopt(saved,saved.clean?snapshot():null);session.changed();if(saved.clean){const initial=snapshot();cloudRequest('/'+saved.id).then(file=>{if(session.active?.id!==saved.id||snapshot()!==initial||session.pending)return;if(file.deleted_at){const error=Object.assign(new Error('This file was moved to Trash on another device.'),{status:409});session.error=error;status('Cloud file is in Trash — open Files');return;}useFile(file);}).catch(error=>{if(session.active?.id===saved.id)status(error.status===401?'Sign in to reconnect cloud files':'Offline — showing the saved local copy');});}return true;}}catch(error){toast('Cloud recovery could not be loaded. Its saved copy has been retained.');}return false;}};
 }

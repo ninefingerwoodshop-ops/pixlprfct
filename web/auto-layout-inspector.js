@@ -2,14 +2,14 @@ import {icon} from './icons.js';
 const positions=['start','center','end'];
 export function alignmentPatch(direction,x,y,automatic=false){return direction==='vertical'?{align:positions[x],...(!automatic?{justify:positions[y]}:{})}:{align:positions[y],...(!automatic?{justify:positions[x]}:{})};}
 export function paddingPatch(axis,value){const n=Number(value);if(!Number.isFinite(n)||n<0||n>100000)throw new Error('Padding must be between 0 and 100000');return axis==='horizontal'?{padding_left:n,padding_right:n}:{padding_top:n,padding_bottom:n};}
-export function installAutoLayoutInspector(current,change){
+export function installAutoLayoutInspector(current,change,{document:read=()=>({variables:{values:[],collections:[]}}),bind=()=>{}}={}){
  const $=id=>document.getElementById(id),el=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
  const host=$('auto-layout-panel'),settings=$('layout-settings'),direction=$('layout-direction'),legacy=direction.closest('label');legacy.classList.add('layout-legacy');
- const flow=el('div','layout-flow');flow.setAttribute('role','group');flow.setAttribute('aria-label','Auto layout flow');
- for(const [value,label] of [['none','Freeform'],['vertical','Vertical'],['horizontal','Horizontal'],['grid','Grid']]){const b=el('button','');b.innerHTML=icon('layout-'+value);b.type='button';b.title=label;b.setAttribute('aria-label',label);b.dataset.flow=value;b.onclick=()=>{direction.value=value;direction.onchange();};flow.append(b);}legacy.after(flow);
- $('dimensions-section').querySelector('.property-grid').before(flow);host.querySelector('h3').classList.add('layout-legacy');
+ const flow=el('div','layout-flow');flow.setAttribute('role','group');flow.setAttribute('aria-label','Layout type');
+ for(const [value,label] of [['none','Freeform'],['vertical','Flex Layout · Vertical'],['horizontal','Flex Layout · Horizontal']]){const b=el('button','');b.innerHTML=icon('layout-'+value);b.type='button';b.title=label;b.setAttribute('aria-label',label);b.dataset.flow=value;b.onclick=()=>{direction.value=value;direction.onchange();};flow.append(b);}legacy.after(flow);
+ const flexSection=el('section','property-section');flexSection.id='flex-layout-section';flexSection.append(el('h3','','Flex Layout'),flow,host);$('dimensions-section').after(flexSection);host.querySelector('h3').classList.add('layout-legacy');
  const patch=values=>{const s=current();if(s?.auto_layout)change({...s,auto_layout:{...s.auto_layout,...values}});};
- const arrangement=el('div','layout-arrangement'),matrix=el('div','layout-alignment');matrix.setAttribute('role','group');matrix.setAttribute('aria-label','Align auto layout content');
+ const arrangement=el('div','layout-arrangement'),matrix=el('div','layout-alignment');matrix.setAttribute('role','group');matrix.setAttribute('aria-label','Align Flex Layout content');
  const names=['Top left','Top center','Top right','Center left','Center','Center right','Bottom left','Bottom center','Bottom right'];
  for(let y=0;y<3;y++)for(let x=0;x<3;x++){const b=el('button','','');b.type='button';b.title=names[y*3+x];b.setAttribute('aria-label',names[y*3+x]);b.dataset.x=x;b.dataset.y=y;b.append(el('span','alignment-dot'));b.onclick=()=>{const l=current()?.auto_layout;if(l)patch(alignmentPatch(l.direction,x,y,['between','around','evenly'].includes(l.justify)));};b.onkeydown=e=>{const l=current()?.auto_layout;if(!l)return;let nx=x,ny=y;if(e.key==='ArrowLeft')nx=Math.max(0,x-1);else if(e.key==='ArrowRight')nx=Math.min(2,x+1);else if(e.key==='ArrowUp')ny=Math.max(0,y-1);else if(e.key==='ArrowDown')ny=Math.min(2,y+1);else if(e.key.toLowerCase()==='x'){e.preventDefault();e.stopPropagation();patch({justify:['between','around','evenly'].includes(l.justify)?'start':'between'});return;}else return;e.preventDefault();e.stopPropagation();const next=matrix.children[ny*3+nx];next.click();next.focus();};matrix.append(b);}
  const spacing=el('div','layout-spacing-fields');spacing.append($('layout-gap').closest('label'),$('layout-cross_gap').closest('label'));arrangement.append(matrix,spacing);
@@ -17,18 +17,40 @@ export function installAutoLayoutInspector(current,change){
  const automatic=el('button','layout-auto-gap','Auto');automatic.type='button';automatic.title='Auto spacing';automatic.setAttribute('aria-label','Auto spacing');automatic.onclick=()=>{const l=current()?.auto_layout;if(l)patch({justify:['between','around','evenly'].includes(l.justify)?'start':'between'});};spacing.prepend(automatic);
  const padding=el('div','layout-padding-pair');
  for(const [axis,label] of [['horizontal','Horizontal padding'],['vertical','Vertical padding']]){const wrap=el('label',''),input=el('input','');wrap.innerHTML=icon('padding-'+axis);input.type='number';input.min=0;input.max=100000;input.id='paired-padding-'+axis;input.setAttribute('aria-label',label);wrap.title=label;let editingId=null,dirty=false;input.onfocus=()=>{editingId=current()?.id;dirty=false;};input.oninput=()=>{dirty=true;input.setCustomValidity('');};const commit=()=>{if(!dirty||current()?.id!==editingId)return;try{const values=paddingPatch(axis,input.value),l=current()?.auto_layout;if(l&&Object.entries(values).some(([key,value])=>l[key]!==value))patch(values);dirty=false;input.setCustomValidity('');}catch(e){input.setCustomValidity(e.message);input.reportValidity();}};input.onchange=commit;input.onblur=commit;input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();commit();}};wrap.append(input);padding.append(wrap);}
+ const variablePickers=[];
+ const variablePicker=(path,kind,caption)=>{
+  const label=el('label','layout-variable-picker',caption),select=el('select','');select.setAttribute('aria-label',caption);
+  select.onchange=()=>{const shape=current();if(shape?.auto_layout)bind(shape.id,path,Number(select.value));};label.append(select);variablePickers.push({path,kind,select});return label;
+ };
+ const paddingVariable=variablePicker('auto_layout.padding','padding','Padding variable');
+ const gapVariables=el('details','layout-gap-variables');gapVariables.append(el('summary','','Gap variables'),variablePicker('auto_layout.gap','number','Gap variable'),variablePicker('auto_layout.cross_gap','number','Row / column gap variable'));
  const individual=el('details','layout-individual-padding');individual.append(el('summary','','Individual padding'),$('layout-padding_top').closest('.property-grid'));
- const advanced=el('details','layout-advanced');advanced.append(el('summary','','Auto layout settings'));
+ const advanced=el('details','layout-advanced');advanced.append(el('summary','','Layout settings'));
  for(const id of ['layout-strokes_included','layout-canvas_stacking','layout-text_baseline','layout-align_content','layout-align','layout-justify'])advanced.append($(id).closest('label'));
  for(const p of [...settings.querySelectorAll(':scope > p')])advanced.append(p);
  for(const id of ['layout-hug_width','layout-hug_height'])$(id).closest('label').classList.add('layout-legacy');
- settings.prepend($('layout-wrap').closest('label'),arrangement,padding,individual);
- settings.append(advanced);const gridDetails=el('details','layout-grid-tracks');gridDetails.append(el('summary','','Grid rows and columns'));$('grid-frame-controls').before(gridDetails);gridDetails.append($('grid-frame-controls'));
+ settings.prepend($('layout-wrap').closest('label'),arrangement,paddingVariable,padding,individual,gapVariables);
+ settings.append(advanced);const gridDetails=el('div','layout-grid-tracks');$('grid-frame-controls').before(gridDetails);gridDetails.append($('grid-frame-controls'));
+ const gridSection=el('section','property-section');gridSection.id='grid-layout-section';
+ const gridHeader=el('div','grid-layout-heading'),gridTitle=el('h3','','Grid Layout'),enabled=el('input','');enabled.type='checkbox';enabled.setAttribute('aria-label','Enable Grid Layout');gridHeader.append(gridTitle,enabled);gridSection.append(gridHeader);
+ const gridBody=el('div','grid-layout-body');gridSection.append(gridBody);gridBody.append(el('p','grid-caption','Drag into cells. Resize edges to span tracks.'),gridDetails);const gridSpacing=el('details','grid-settings-group');gridSpacing.append(el('summary','','Gaps & padding'));gridBody.append(gridSpacing);const gapFields=el('div','grid-field-pair'),paddingFields=el('div','grid-field-pair');gridSpacing.append(gapFields,paddingFields);const gapUnits=[];
+ const gridFields=[];for(const [key,label] of [['gap','Column gap'],['cross_gap','Row gap'],['padding_top','Padding top'],['padding_right','Padding right'],['padding_bottom','Padding bottom'],['padding_left','Padding left']]){const row=el('label','grid-field',label),input=el('input','');input.type='number';input.min=0;input.max=100000;input.setAttribute('aria-label','Grid '+label.toLowerCase());input.onchange=()=>{const n=Number(input.value);if(Number.isFinite(n)&&n>=0&&n<=100000)patch({[key]:n});};row.append(input);(key.startsWith('padding')?paddingFields:gapFields).append(row);gridFields.push([key,input]);if(!key.startsWith('padding')){const select=el('select','');select.setAttribute('aria-label',label+' unit');for(const unit of ['px','%','em']){const option=el('option','',unit);option.value=unit;select.append(option);}const path=key==='gap'?'column_gap_unit':'row_gap_unit';select.onchange=()=>{const l=current()?.auto_layout;if(l)patch({grid:{...l.grid,[path]:select.value}});};row.append(select);gapUnits.push([path,select]);}}
+ const gridVariables=el('details','grid-settings-group');gridVariables.append(el('summary','','Spacing variables'));gridSpacing.append(gridVariables);gridVariables.append(variablePicker('auto_layout.padding','padding','Grid padding variable'),variablePicker('auto_layout.gap','number','Grid column gap variable'),variablePicker('auto_layout.cross_gap','number','Grid row gap variable'));
+ const editAreas=el('button','wide-button','Draw areas on canvas');editAreas.id='edit-grid-areas';editAreas.type='button';editAreas.setAttribute('aria-pressed','false');gridBody.prepend(editAreas);
+ const editGrid=el('button','wide-button','Edit grid spacing on canvas');editGrid.type='button';editGrid.onclick=()=>$('edit-layout-spacing').click();gridBody.append(editGrid);
+ enabled.onchange=()=>{direction.value=enabled.checked?'grid':'none';direction.onchange();};flexSection.after(gridSection);
  return(shape,parent)=>{
+  const vars=read().variables??{values:[],collections:[]};
+  for(const {path,kind,select} of variablePickers){
+   select.replaceChildren();const custom=el('option','','Custom');custom.value='0';select.append(custom);
+   for(const variable of vars.values.filter(v=>v.kind===kind)){const collection=vars.collections.find(c=>c.id===variable.collection_id);const option=el('option','',`${collection?.name??''} / ${variable.name}`);option.value=String(variable.id);select.append(option);}
+   select.value=String(shape?.variable_bindings?.[path]??0);select.disabled=!shape?.auto_layout;
+   select.title=select.options.length===1?`Create a ${kind} variable in Local variables`:select.selectedOptions[0]?.textContent??'';
+  }
   const l=shape?.auto_layout,auto=['between','around','evenly'].includes(l?.justify);
   const mainAxis=l?.direction==='vertical'?'vertical':'horizontal';gapIcons[0].innerHTML=icon('gap-'+mainAxis);gapIcons[1].innerHTML=icon('gap-'+(mainAxis==='horizontal'?'vertical':'horizontal'));
   for(const b of flow.children)b.setAttribute('aria-pressed',String(b.dataset.flow===(l?.direction??'none')));
-  $('dimensions-section').querySelector('h3').textContent=l?'Auto layout':'Layout';flow.hidden=shape?.kind!=='frame';matrix.hidden=!l||l.direction==='grid';gridDetails.hidden=l?.direction!=='grid';automatic.hidden=!l||l.direction==='grid';automatic.setAttribute('aria-pressed',String(auto));
+  $('dimensions-section').querySelector('h3').textContent='Layout';flexSection.hidden=gridSection.hidden=shape?.kind!=='frame';enabled.checked=l?.direction==='grid';for(const [key,select] of gapUnits)select.value=l?.grid?.[key]??'px';gridBody.hidden=!enabled.checked;for(const [key,input] of gridFields)input.value=l?.[key]??(key==='cross_gap'?l?.gap??0:0);flow.hidden=shape?.kind!=='frame';matrix.hidden=!l||l.direction==='grid';gridDetails.hidden=l?.direction!=='grid';automatic.hidden=!l||l.direction==='grid';automatic.setAttribute('aria-pressed',String(auto));
   if(l){const vertical=l.direction==='vertical',x=positions.indexOf(vertical?l.align:l.justify),y=positions.indexOf(vertical?l.justify:l.align);for(const b of matrix.children){const chosen=auto?(vertical?Number(b.dataset.x)===x:Number(b.dataset.y)===y):(Number(b.dataset.x)===x&&Number(b.dataset.y)===y);b.setAttribute('aria-pressed',String(chosen));}for(const [axis,a,b] of [['horizontal','left','right'],['vertical','top','bottom']]){const input=$('paired-padding-'+axis);input.value=l['padding_'+a]===l['padding_'+b]?l['padding_'+a]:'';input.placeholder='Mixed';}}
 
  };

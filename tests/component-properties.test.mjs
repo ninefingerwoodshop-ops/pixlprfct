@@ -13,9 +13,9 @@ test('exposed text synchronizes multiple bindings, inspector edits, overrides an
  e.reset_override(ia.id,'text');assert.equal(get(e,ia.id).text,'Main update');assert.equal(get(e,ib.id).text,'Main update');assert.ok(!get(e,ib.id).component.overrides.includes('text'));e.free();
 });
 test('visibility properties preserve layout, other overrides, saved files and legacy defaults',()=>{
- const e=new Editor(),{f,a,b}=main(e);e.auto_layout_selection(JSON.stringify([f]));const p=bind(e,f,'Show content','boolean',[a,b]),i=e.create_instance(f,700,0),[ia,ib]=children(e,i);edit(e,ia.id,{fill:'#ff0000'});
- e.set_component_property(i,p,'false');assert.equal(get(e,ia.id).hidden,true);assert.equal(get(e,ib.id).hidden,true);assert.equal(get(e,a).hidden,false);assert.equal(get(e,i).height,32);
- e.reset_component_property(ia.id,p);assert.equal(get(e,ia.id).hidden,false);assert.equal(get(e,ia.id).fill,'#ff0000');assert.ok(get(e,i).height>32);
+ const e=new Editor(),{f,a,b}=main(e);e.auto_layout_selection(JSON.stringify([f]));const p=bind(e,f,'Show content','boolean',[a,b]),i=e.create_instance(f,700,0),[ia,ib]=children(e,i);assert.throws(()=>edit(e,ia.id,{fill:'#ff0000'}),/protected/);edit(e,ia.id,{text:'Custom label'});
+ const previousHeight=get(e,i).height;e.set_component_property(i,p,'false');assert.equal(get(e,ia.id).hidden,true);assert.equal(get(e,ib.id).hidden,true);assert.equal(get(e,a).hidden,false);assert.equal(get(e,i).height,previousHeight);
+ e.reset_component_property(ia.id,p);assert.equal(get(e,ia.id).hidden,false);assert.equal(get(e,ia.id).text,'Custom label');assert.equal(get(e,i).height,previousHeight);
  const restored=new Editor();restored.load(e.snapshot());assert.equal(restored.snapshot(),e.snapshot());const legacy=doc(e);delete legacy.component_properties;restored.load(JSON.stringify(legacy));assert.deepEqual(doc(restored).component_properties,[]);e.free();restored.free();
 });
 test('same named properties preserve overrides when swapping to different layer names and hierarchy',()=>{

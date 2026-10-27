@@ -11,7 +11,7 @@ test('multi-layer stacking keeps relative order and each operation is one undo s
 test('groups move as units, selected ancestors preserve child order, and other pages stay unchanged',()=>{
  const e=new Editor(),f=e.add('frame',0,0),a=e.add('rectangle',0,0),b=e.add('ellipse',0,0),c=e.add('rectangle',0,0);
  e.reparent_many(JSON.stringify([a,b]),f);const before=order(e,f);e.arrange_many(JSON.stringify([f,a]),'front');assert.deepEqual(order(e,f),before);assert.deepEqual(order(e),[c,f]);
- const d=e.add('rectangle',0,0);e.group_many(JSON.stringify([c,d]));const grouped=order(e);e.arrange_many(JSON.stringify([c]),'back');assert.deepEqual(order(e),[c,d,f]);e.undo();assert.deepEqual(order(e),grouped);
+ const d=e.add('rectangle',0,0);const group=e.group_many(JSON.stringify([c,d]));const grouped=order(e);e.arrange_many(JSON.stringify([group]),'back');assert.deepEqual(order(e),[group,f]);assert.deepEqual(order(e,group),[c,d]);e.undo();assert.deepEqual(order(e),grouped);
  const page=JSON.parse(e.snapshot()).active_page;e.add_page();const other=e.add('rectangle',0,0);e.select_page(page);const idx=shapes(e).findIndex(s=>s.id===other);e.arrange_many(JSON.stringify([f]),'front');assert.equal(shapes(e).findIndex(s=>s.id===other),idx);e.free();
 });
 test('instance children reject arrangement atomically while main edits propagate',()=>{

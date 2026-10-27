@@ -1,0 +1,9 @@
+/* Consistent UI elevation, independent of document effects and focus rings. */
+:root{
+ --ui-shadow-overlay:0 2px 6px rgb(0 0 0 / 6%),0 8px 24px rgb(0 0 0 / 12%);
+ --ui-shadow-dialog:0 4px 12px rgb(0 0 0 / 8%),0 16px 48px rgb(0 0 0 / 16%);
+}
+:is(.menu-panel,.tool-options,.selection-menu,.inspector-select-menu,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,.paint-popover,#page-switch-menu,#pencil-options){box-shadow:var(--ui-shadow-overlay)}
+dialog:not(.variables-page),.variables-workspace[open]{box-shadow:var(--ui-shadow-dialog)}
+/* Docked workspace pages are part of the application surface, not floating windows. */
+.variables-workspace.variables-page{box-shadow:none}

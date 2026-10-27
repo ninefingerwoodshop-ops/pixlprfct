@@ -7,19 +7,7 @@ impl Editor {
         if !["forward", "backward", "front", "back"].contains(&direction) {
             return Err("Unknown layer arrangement".into());
         }
-        let mut selected: HashSet<u32> = self.selection_ids(json)?.into_iter().collect();
-        let groups: HashSet<u32> = self
-            .document
-            .shapes
-            .iter()
-            .filter(|s| selected.contains(&s.id) && s.group_id != 0)
-            .map(|s| s.group_id)
-            .collect();
-        for s in &self.document.shapes {
-            if s.page_id == self.document.active_page && groups.contains(&s.group_id) {
-                selected.insert(s.id);
-            }
-        }
+        let selected: HashSet<u32> = self.selection_ids(json)?.into_iter().collect();
         // A selected ancestor moves its entire paint subtree. Do not also change
         // the order of selected descendants inside it.
         let roots: HashSet<u32> = selected
@@ -64,19 +52,11 @@ impl Editor {
                 .filter(|(_, s)| s.page_id == document.active_page && s.parent_id == parent)
                 .map(|(i, _)| i)
                 .collect();
-            // Flat groups are indivisible sibling units; their internal order
-            // and all other pages/parents retain their original slots.
-            let mut units: Vec<Vec<Shape>> = Vec::new();
-            for &slot in &slots {
-                let shape = document.shapes[slot].clone();
-                if shape.group_id != 0 {
-                    if let Some(unit) = units.iter_mut().find(|u| u[0].group_id == shape.group_id) {
-                        unit.push(shape);
-                        continue;
-                    }
-                }
-                units.push(vec![shape]);
-            }
+            // Each sibling is a unit; containers carry their paint subtree.
+            let mut units: Vec<Vec<Shape>> = slots
+                .iter()
+                .map(|&slot| vec![document.shapes[slot].clone()])
+                .collect();
             let chosen = |unit: &Vec<Shape>| unit.iter().any(|s| roots.contains(&s.id));
             match direction {
                 "front" => units.sort_by_key(|u| chosen(u)),

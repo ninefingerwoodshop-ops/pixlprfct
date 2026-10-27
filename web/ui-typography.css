@@ -1,0 +1,21 @@
+/* Editor chrome only: canvas artwork and exported typography keep their styles. */
+:root{
+ --ui-font:Inter,Arial,sans-serif;
+ --ui-text:11px;
+ --ui-caption:10px;
+ --ui-title:14px;
+ --ui-regular:400;
+ --ui-medium:500;
+ --ui-semibold:600;
+}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu){font-family:var(--ui-font);font-size:var(--ui-text);font-weight:var(--ui-regular)}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu) :is(button,input,select,textarea,label,p,summary,td,th,a){font-family:var(--ui-font)!important;font-size:var(--ui-text)!important;font-weight:var(--ui-regular);line-height:1.4}
+:is(.left-panel,.right-panel,dialog,.paint-popover) :is(h3,h4,legend,th,.panel-heading strong,.selected-tab,.selection-caption,.inspector-section-toggle){font-family:var(--ui-font);font-size:var(--ui-text)!important;font-weight:var(--ui-semibold)!important;line-height:1.4}
+:is(dialog,.paint-popover) h2{font-family:var(--ui-font);font-size:var(--ui-title)!important;font-weight:var(--ui-semibold);line-height:1.4}
+:is(.left-panel,.right-panel,dialog,.paint-popover) :is(.primary,[role=tab][aria-selected=true],.variable-collection[aria-pressed=true],.variable-group[aria-pressed=true]){font-weight:var(--ui-semibold)}
+:is(.left-panel,.right-panel,dialog,.paint-popover,.selection-menu,.toolbox) :is(kbd,.muted,.inspector-field-caption,.current-page-label,.file-location,.assets-source,.variable-mode-actions,.variable-manage-link){font-family:var(--ui-font);font-size:var(--ui-caption)!important;font-weight:var(--ui-regular);line-height:1.4}
+.navigation-rail .rail-button,.left-footer,.canvas-heading,#hint,.right-panel .inspector-section-actions button,.layer-tree-actions button{font-family:var(--ui-font);font-size:var(--ui-caption)!important;font-weight:var(--ui-regular);line-height:1.4}
+.right-panel #inspector-layer-actions>summary,.right-panel .inspector-details>summary,.paint-popover-heading strong{font-size:var(--ui-text)!important;font-weight:var(--ui-semibold)}
+.left-panel #document-name{font-size:var(--ui-text)!important;font-weight:var(--ui-semibold)}
+/* Keep text actions centered in the shared 24px header slots. */
+.right-panel .variable-section-heading .variable-manage-link{line-height:24px}

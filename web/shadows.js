@@ -1,3 +1,4 @@
+import {visualBounds} from './rotation.js';
 import {strokePadding} from './stroke-tips.js';
 import {paintChildren} from './stacking.js';
 export function visibleShadows(style){return(style?.shadows??[]).filter(s=>s.visible!==false&&s.opacity>0);}
@@ -35,8 +36,9 @@ export function compositeGeometry(shapes,styleOf){
  const visit=s=>{
   const a=styleOf(s);if(s.hidden||a.opacity===0){geometry.set(s.id,{content:null,output:null});return null;}
   const pad=a.stroke_enabled?strokePadding(s,a):0;
-  let content={x:s.x-pad,y:s.y-pad,width:s.width+2*pad,height:s.height+2*pad};
-  for(const child of children.get(s.id)??[]){let box=visit(child);if(s.kind==='frame'&&s.clip_content)box=intersect(box,s);content=union(content,box);}
+  const visual=visualBounds(s);
+  let content=s.kind==='group'?null:{x:visual.x-pad,y:visual.y-pad,width:visual.width+2*pad,height:visual.height+2*pad};
+  for(const child of children.get(s.id)??[]){let box=visit(child);if(s.kind==='frame'&&s.clip_content)box=intersect(box,visual);content=union(content,box);}
   const output=blurBounds(shadowBounds(content,a.shadows),a.layer_blur??0);geometry.set(s.id,{content,output});return output;
  };
  let bounds=null;for(const s of children.get(0)??[])bounds=union(bounds,visit(s));return{children,geometry,bounds};

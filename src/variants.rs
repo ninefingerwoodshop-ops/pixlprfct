@@ -88,6 +88,7 @@ impl Editor {
             .ok_or("Main component not found on this page")?
             .clone();
         let mut staged = Editor {
+            clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
             document: self.document.clone(),
             undo: vec![],

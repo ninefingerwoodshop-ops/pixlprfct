@@ -1,3 +1,4 @@
+import {icon} from './icons.js';
 export function componentEntries(doc){
  const grouped=new Set((doc.component_sets??[]).flatMap(s=>s.variants.map(v=>v.component_id)));
  const entries=[...(doc.component_sets??[]).filter(s=>s.variants.length).map(s=>({key:'set:'+s.id,id:s.variants[0].component_id,name:s.name,count:s.variants.length})),...doc.shapes.filter(s=>s.component?.type==='master'&&!grouped.has(s.id)).map(s=>({...s,key:'component:'+s.id}))];
@@ -17,7 +18,7 @@ export function renderSortableComponents(container,entries,{insert,reorder}){
  for(const entry of entries){
   const row=document.createElement('div');row.className='component-sort-row';row.dataset.componentKey=entry.key;row.draggable=true;row.setAttribute('role','listitem');
   row.onkeydown=e=>{if(!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();const index=keys.indexOf(entry.key),to=index+(e.key==='ArrowUp'?-1:1);if(to>=0&&to<keys.length)commit(moveComponent(keys,entry.key,keys[to],to>index),entry.key);};
-  const b=document.createElement('button');b.type='button';b.className='component-asset';b.textContent=(entry.count?'▦ ':'◆ ')+entry.name+(entry.count?` · ${entry.count} variants`:'');b.title='Insert instance of '+entry.name;b.setAttribute('aria-label',b.title);b.onclick=()=>{if(!suppressClick)insert(entry.id);};b.title+=' · Drag to reorder · Alt+↑ / Alt+↓';row.append(b);
+  const b=document.createElement('button');b.type='button';b.className='component-asset';b.innerHTML=icon(entry.count?'layout-grid':'component');b.append(document.createTextNode(entry.name+(entry.count?` · ${entry.count} variants`:'')));b.title='Insert instance of '+entry.name;b.setAttribute('aria-label',b.title);b.onclick=()=>{if(!suppressClick)insert(entry.id);};b.title+=' · Drag to reorder · Alt+↑ / Alt+↓';row.append(b);
   row.ondragstart=e=>{dragged=entry.key;suppressClick=true;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('application/x-pixl-component-order',entry.key);row.classList.add('component-dragging');e.stopPropagation();};
   row.ondragover=e=>{if(!dragged||dragged===entry.key)return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='move';clear();const rect=row.getBoundingClientRect();row.classList.add(e.clientY>rect.top+rect.height/2?'drop-after':'drop-before');};
   row.ondragleave=e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drop-before','drop-after');};
