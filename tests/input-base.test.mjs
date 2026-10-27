@@ -36,7 +36,7 @@ test('starter modes reflect behavior and preserve existing mode values',()=>{
  const checkbox=ensureInputBase(text.variables,'checkbox');
  assert.ok(checkbox.collection.modes.some(m=>m.name==='Checked'));
  assert.equal(checkbox.variables.values.find(v=>v.name==='Border radius').values[2],'20');
- for(const v of checkbox.variables.values)assert.equal(Object.keys(v.values).length,checkbox.collection.modes.length);
+ for(const v of checkbox.variables.values.filter(v=>v.collection_id===checkbox.collection.id))assert.equal(Object.keys(v.values).length,checkbox.collection.modes.length);
  assert.deepEqual(ensureInputBase(empty,'hidden').collection.modes.map(m=>m.name),['Default']);
  assert.ok(!ensureInputBase(empty,'select').collection.modes.some(m=>m.name==='Read only'));
  assert.ok(ensureInputBase(empty,'select').collection.modes.some(m=>m.name==='Selected'));

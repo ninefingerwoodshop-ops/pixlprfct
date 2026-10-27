@@ -27,6 +27,6 @@ test('border and padding minimum wins over max size; wrapping uses interior widt
 test('legacy frames omit inclusion without shifting; new auto-layout frames opt in',()=>{
  const e=new Editor(),f=frame(e),c=child(e,f);const old={...layout};delete old.strokes_included;set(e,f,{auto_layout:old});assert.equal(get(e,c).x,110);assert.equal(get(e,f).auto_layout.strokes_included,false);const fresh=e.add('frame',500,0);e.auto_layout_selection(JSON.stringify([fresh]));assert.equal(get(e,fresh).auto_layout.strokes_included,true);e.free();
 });
-test('component instances preserve individual stroke inclusion overrides and reset them',()=>{
- const e=new Editor(),f=frame(e);child(e,f);e.create_component(f);const i=e.create_instance(f,300,0);set(e,i,{auto_layout:{...get(e,i).auto_layout,strokes_included:false}});set(e,f,{auto_layout:{...get(e,f).auto_layout,gap:24}});assert.equal(get(e,i).auto_layout.strokes_included,false);assert.equal(get(e,i).auto_layout.gap,24);e.reset_override(i,'auto_layout.strokes_included');assert.equal(get(e,i).auto_layout.strokes_included,true);e.free();
+test('component instances inherit stroke inclusion from the main and reject inclusion overrides',()=>{
+ const e=new Editor(),f=frame(e);child(e,f);e.create_component(f);const i=e.create_instance(f,300,0);const before=e.snapshot();assert.throws(()=>set(e,i,{auto_layout:{...get(e,i).auto_layout,strokes_included:false}}),/protected/);assert.equal(e.snapshot(),before);set(e,f,{auto_layout:{...get(e,f).auto_layout,strokes_included:false,gap:24}});assert.equal(get(e,i).auto_layout.strokes_included,false);assert.equal(get(e,i).auto_layout.gap,24);assert.equal(get(e,i).width,70);e.free();
 });

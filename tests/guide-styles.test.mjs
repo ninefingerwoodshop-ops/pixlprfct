@@ -26,15 +26,15 @@ test('detach, direct local edits and scaling preserve independent guide values',
  e.apply_guide_style(JSON.stringify([a]),id);e.update_many(JSON.stringify(scaleShapes([shape(e,a)],{x:0,y:0},2)));assert.equal(shape(e,a).guide_style,0);assert.equal(shape(e,a).layout_grids[0].size,128);
  e.free();
 });
-test('guide styles and component overrides keep binding and values together',()=>{
+test('guide styles keep component instances bound to the main and reject instance guide edits',()=>{
  const e=new Editor(),a=e.add('frame',0,0),one=save(e,0,'Grid',[defaultGuide()],a);e.create_component(a);const i=e.create_instance(a,400,0);
  assert.equal(shape(e,i).guide_style,one);
- const two=save(e,0,'Alternate',[{...defaultGuide(),count:6}]);e.apply_guide_style(JSON.stringify([i]),two);
- save(e,one,'Grid',[{...defaultGuide(),count:12}]);assert.equal(shape(e,i).layout_grids[0].count,6);
- save(e,two,'Alternate',[{...defaultGuide(),count:8}]);assert.equal(shape(e,i).layout_grids[0].count,8);
- e.reset_override(i,'layout_grids');assert.equal(shape(e,i).guide_style,one);assert.equal(shape(e,i).layout_grids[0].count,12);
- e.apply_guide_style(JSON.stringify([i]),0);save(e,one,'Grid',[{...defaultGuide(),count:4}]);assert.equal(shape(e,i).layout_grids[0].count,12);assert.equal(shape(e,i).guide_style,0);
- const old=e.snapshot();e.remove_guide_style(one);assert.equal(shape(e,a).guide_style,0);assert.equal(shape(e,a).layout_grids[0].count,4);e.undo();assert.equal(e.snapshot(),old);e.free();
+ const two=save(e,0,'Alternate',[{...defaultGuide(),count:6}]),before=e.snapshot();
+ for(const style of [two,0]){assert.throws(()=>e.apply_guide_style(JSON.stringify([i]),style),/protected/);assert.equal(e.snapshot(),before);}
+ save(e,one,'Grid',[{...defaultGuide(),count:12}]);assert.equal(shape(e,i).layout_grids[0].count,12);
+ save(e,two,'Alternate',[{...defaultGuide(),count:8}]);assert.equal(shape(e,i).layout_grids[0].count,12);assert.equal(shape(e,i).guide_style,one);
+ save(e,one,'Grid',[{...defaultGuide(),count:4}]);assert.equal(shape(e,i).layout_grids[0].count,4);assert.deepEqual(shape(e,i).layout_grids,shape(e,a).layout_grids);
+ const old=e.snapshot();e.remove_guide_style(one);assert.equal(shape(e,a).guide_style,0);assert.equal(shape(e,a).layout_grids[0].count,4);assert.equal(shape(e,i).guide_style,0);assert.equal(shape(e,i).layout_grids[0].count,4);e.undo();assert.equal(e.snapshot(),old);e.free();
 });
 test('clipboard detaches style references and invalid definitions are atomic',()=>{
  const e=new Editor(),a=e.add('frame',0,0),id=save(e,0,'Grid',[defaultGuide()],a),before=e.snapshot();

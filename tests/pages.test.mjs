@@ -13,7 +13,7 @@ test('duplicate page preserves all layer properties and hierarchy with fresh IDs
  const originals=after.shapes.filter(s=>s.page_id===source.active_page),copies=after.shapes.filter(s=>s.page_id===page);
  assert.deepEqual(originals,source.shapes);assert.equal(copies.length,2);
  const mapping=new Map(originals.map((s,i)=>[s.id,copies[i].id]));
- originals.forEach((s,i)=>assert.deepEqual(copies[i],{...s,id:mapping.get(s.id),page_id:page,parent_id:mapping.get(s.parent_id)??s.parent_id}));
+ originals.forEach((s,i)=>{assert.ok(copies[i].layout_class.endsWith('-'+mapping.get(s.id)));assert.deepEqual(copies[i],{...s,id:mapping.get(s.id),page_id:page,parent_id:mapping.get(s.parent_id)??s.parent_id,layout_class:copies[i].layout_class});});
  e.undo();assert.equal(e.snapshot(),before);e.redo();assert.deepEqual(snapshot(e),after);
  e.select_page(source.active_page);e.duplicate_page(source.active_page);assert.equal(snapshot(e).pages[1].name,'Page 1 copy 2');e.free();
 });

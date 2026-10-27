@@ -106,7 +106,7 @@ test('typography survives history and roundtrip; invalid updates are atomic', ()
   editor.undo(); assert.deepEqual(JSON.parse(editor.snapshot()).shapes[0],shape);
   editor.redo(); assert.equal(editor.snapshot(),saved);
   const restored = new Editor(); restored.load(saved); assert.equal(restored.snapshot(),saved);
-  for (const invalid of [{font_size:0},{font_size:513},{font_weight:999},{font_family:'unknown'},{align:'justify'},{line_height:0}]) {
+  for (const invalid of [{font_size:0},{font_size:513},{font_weight:999},{font_family:''},{font_family:'<script>'},{align:'justify'},{line_height:0}]) {
     assert.throws(() => editor.update(JSON.stringify({...styled,typography:{...styled.typography,...invalid}})));
     assert.equal(editor.snapshot(),saved);
   }

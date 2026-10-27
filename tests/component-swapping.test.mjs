@@ -22,7 +22,7 @@ test('instance style and constraint edits are rejected while main edits propagat
 
 test('swapping retains matched overrides and IDs, inherits the replacement, and is one undo step',()=>{
  const e=new Editor(),a=main(e,'Primary'),b=main(e,'Secondary',800);edit(e,b.f,{fill:'#123456',width:240});edit(e,b.t,{text:'Secondary default',typography:{...get(e,b.t).typography,font_size:20}});
- const i=e.create_instance(a.f,400,200),c=children(e,i)[0].id;edit(e,c,{text:'Keep me',name:'Renamed locally'});assert.throws(()=>edit(e,i,{width:350}),/protected/);const before=e.snapshot();
+ const i=e.create_instance(a.f,400,200),c=children(e,i)[0].id;edit(e,c,{text:'Keep me',name:'Renamed locally'});assert.throws(()=>edit(e,i,{height:150}),/protected/);const before=e.snapshot();
  assert.equal(e.swap_instance(c,b.f),i);assert.equal(get(e,i).component.master,b.f);assert.equal(get(e,i).name,'Secondary');assert.equal(get(e,i).width,240);assert.equal(get(e,i).x,400);assert.equal(get(e,i).y,200);assert.equal(get(e,i).fill,'#123456');assert.equal(children(e,i)[0].id,c);assert.equal(get(e,c).name,'Renamed locally');assert.equal(get(e,c).text,'Keep me');assert.equal(get(e,c).typography.font_size,20);assert.equal(get(e,c).typography.align,'left');
  e.undo();assert.equal(e.snapshot(),before);e.redo();edit(e,b.t,{fill:'#abcdef'});assert.equal(get(e,c).fill,'#abcdef');edit(e,a.t,{fill:'#ffffff'});assert.equal(get(e,c).fill,'#abcdef');
  const restored=new Editor();restored.load(e.snapshot());assert.equal(restored.snapshot(),e.snapshot());e.free();restored.free();
@@ -45,10 +45,10 @@ test('legacy whole-style overrides survive; invalid paths and swap targets rejec
  const invalid=JSON.parse(before);invalid.shapes.find(s=>s.id===c).component.overrides=['appearance.unknown'];assert.throws(()=>e.load(JSON.stringify(invalid)),/Invalid component/);assert.equal(e.snapshot(),before);e.reset_override(c,'typography');assert.equal(get(e,c).typography.font_size,50);e.free();
 });
 
-test('child constraints and instance dimensions are protected',()=>{
+test('child constraints and instance height are protected',()=>{
  const e=new Editor(),{f,t}=main(e,'Card'),i=e.create_instance(f,400,0),c=children(e,i)[0].id;
  assert.throws(()=>edit(e,c,{constraints:{horizontal:'max',vertical:'min'}}),/protected/);
- assert.throws(()=>edit(e,i,{width:400}),/protected/);
+ assert.throws(()=>edit(e,i,{height:200}),/protected/);
  edit(e,t,{constraints:{horizontal:'max',vertical:'min'}});edit(e,f,{width:400});
  assert.equal(get(e,i).width,400);assert.equal(get(e,c).x,516);e.free();
 });

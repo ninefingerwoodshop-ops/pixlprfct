@@ -96,9 +96,10 @@ test('groups in components synchronize nested structure and fitted bounds',()=>{
  assert.equal(copy.kind,'group');edit(e,a,{x:-30});assert.equal(get(e,copyA.id).x,770);assert.equal(get(e,copy.id).x,770);assert.equal(shapes(e).filter(s=>s.parent_id===copy.id).length,2);e.ungroup_many(ids(g));assert.equal(get(e,copy.id),undefined);assert.equal(get(e,copyA.id).parent_id,instance);assert.ok(get(e,b));e.free();
 });
 
-test('resizing a group inside an instance keeps descendant geometry scaled through component synchronization',()=>{
+test('resizing a group in the main component keeps instance descendant geometry scaled through component synchronization',()=>{
  const e=new Editor(),f=e.add('frame',0,0),{a,b,g}=pair(e);e.reparent_many(ids(g),f);e.create_component(f);const instance=e.create_instance(f,800,0),copy=shapes(e).find(s=>s.parent_id===instance),copyA=shapes(e).find(s=>s.component?.source===a&&s.id!==a),copyB=shapes(e).find(s=>s.component?.source===b&&s.id!==b),before=e.snapshot();
- edit(e,copy.id,{width:copy.width*2});assert.equal(get(e,copy.id).width,copy.width*2);assert.equal(get(e,copyA.id).width,copyA.width*2);assert.equal(get(e,copyB.id).x,copy.x+(copyB.x-copy.x)*2);assert.equal(get(e,copyB.id).typography.font_size,copyB.typography.font_size);e.undo();assert.equal(e.snapshot(),before);e.free();
+ assert.throws(()=>edit(e,copy.id,{width:copy.width*2}),/protected/);assert.equal(e.snapshot(),before);
+ edit(e,g,{width:copy.width*2});assert.equal(get(e,copy.id).width,copy.width*2);assert.equal(get(e,copyA.id).width,copyA.width*2);assert.equal(get(e,copyB.id).x,copy.x+(copyB.x-copy.x)*2);assert.equal(get(e,copyB.id).typography.font_size,copyB.typography.font_size);e.undo();assert.equal(e.snapshot(),before);e.free();
 });
 
 // Measurements from the live Figma reference file AsBSQYyd3KZLGRi0QM1VPg.
@@ -120,16 +121,18 @@ test('Figma parity: resizing a group scales nested frames but respects their chi
  assert.equal(get(e,a).x,620);assert.equal(get(e,a).y,110);assert.equal(get(e,a).width,40);assert.equal(get(e,a).height,20);
  edit(e,a,{constraints:{horizontal:'max',vertical:'max'}});edit(e,g,{width:900,height:300});assert.equal(get(e,a).x,820);assert.equal(get(e,a).y,210);e.free();
 });
-test('Figma parity: nested frame constraints also survive group resizing in component instances',()=>{
+test('Figma parity: nested frame constraints also survive main group resizing in component instances',()=>{
  const e=new Editor(),root=e.add('frame',0,0),f=e.add('frame',20,20),a=e.add('rectangle',40,30);
  edit(e,f,{width:200,height:100});edit(e,a,{width:40,height:20});e.reparent_many(ids(a),f);const g=e.group_many(ids(f));e.reparent_many(ids(g),root);e.create_component(root);
  const instance=e.create_instance(root,800,0),copy=shapes(e).find(s=>s.parent_id===instance),copyA=shapes(e).find(s=>s.id!==a&&s.component?.source===a),copyF=shapes(e).find(s=>s.id!==f&&s.component?.source===f);
- edit(e,copy.id,{width:400,height:200});assert.equal(get(e,copyF.id).width,400);assert.equal(get(e,copyA.id).width,40);assert.equal(get(e,copyA.id).x,copyA.x);assert.equal(get(e,copyA.id).y,copyA.y);e.free();
+ const before=e.snapshot();assert.throws(()=>edit(e,copy.id,{width:400,height:200}),/protected/);assert.equal(e.snapshot(),before);
+ edit(e,g,{width:400,height:200});assert.equal(get(e,copyF.id).width,400);assert.equal(get(e,copyF.id).height,get(e,f).height);assert.equal(get(e,copyA.id).width,40);assert.equal(get(e,copyA.id).x,copyA.x);assert.equal(get(e,copyA.id).y,copyA.y);e.free();
 });
 test('Figma parity: enclosing frame constraints pass through nested groups',()=>{
  const e=new Editor(),f=e.add('frame',1400,100),a=e.add('rectangle',1420,120),b=e.add('rectangle',1600,200);
  edit(e,f,{width:300,height:200});edit(e,a,{width:40,height:30});edit(e,b,{width:40,height:30,constraints:{horizontal:'max',vertical:'max'}});e.reparent_many(ids(a,b),f);
  const g=e.group_many(ids(a,b)),outer=e.group_many(ids(g)),before=e.snapshot();edit(e,f,{width:500,height:400});
  assert.equal(get(e,a).x,1420);assert.equal(get(e,a).y,120);assert.equal(get(e,b).x,1800);assert.equal(get(e,b).y,400);assert.equal(get(e,b).width,40);assert.equal(get(e,g).width,420);assert.equal(get(e,g).height,310);assert.equal(get(e,outer).width,420);e.undo();assert.equal(e.snapshot(),before);
- e.create_component(f);const instance=e.create_instance(f,2200,100),copyB=shapes(e).find(s=>s.id!==b&&s.component?.source===b);edit(e,instance,{width:500,height:400});assert.equal(get(e,copyB.id).x,2600);assert.equal(get(e,copyB.id).y,400);assert.equal(get(e,copyB.id).width,40);e.free();
+ e.create_component(f);const instance=e.create_instance(f,2200,100),copyB=shapes(e).find(s=>s.id!==b&&s.component?.source===b),copyG=shapes(e).find(s=>s.id!==g&&s.component?.source===g),locked=e.snapshot();
+ assert.throws(()=>edit(e,instance,{width:500,height:400}),/protected/);assert.throws(()=>edit(e,copyG.id,{width:600}),/protected/);assert.equal(e.snapshot(),locked);edit(e,f,{width:500,height:400});assert.equal(get(e,copyB.id).x,2600);assert.equal(get(e,copyB.id).y,400);assert.equal(get(e,copyB.id).width,40);e.free();
 });

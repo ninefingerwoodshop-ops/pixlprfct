@@ -12,6 +12,6 @@ test('canvas and SVG share sibling subtree order; nested frame drop targets matc
 test('hidden and locked children retain selection rules while prototype ignores editing locks',()=>{
  const {e,f,a,b}=setup();set(e,f,{auto_layout:{...layout,canvas_stacking:'first'}});set(e,a,{locked:true});assert.equal(e.hit_test(50,50),b);assert.equal(e.prototype_hit_test(f,50,50),a);set(e,a,{hidden:true});assert.equal(e.prototype_hit_test(f,50,50),b);e.free();
 });
-test('component stacking overrides propagate independently and reset',()=>{
- const {e,f}=setup();e.create_component(f);const i=e.create_instance(f,300,0);set(e,i,{auto_layout:{...get(e,i).auto_layout,canvas_stacking:'first'}});set(e,f,{auto_layout:{...layout,gap:-50}});assert.equal(get(e,i).auto_layout.canvas_stacking,'first');assert.equal(get(e,i).auto_layout.gap,-50);e.reset_override(i,'auto_layout.canvas_stacking');assert.equal(get(e,i).auto_layout.canvas_stacking,'last');e.free();
+test('component instances inherit main stacking and reject stacking overrides',()=>{
+ const {e,f}=setup();e.create_component(f);const i=e.create_instance(f,300,0),[ia,ib]=all(e).filter(s=>s.parent_id===i).map(s=>s.id);assert.equal(e.hit_test(375,50),ib);const before=e.snapshot();assert.throws(()=>set(e,i,{auto_layout:{...get(e,i).auto_layout,canvas_stacking:'first'}}),/protected/);assert.equal(e.snapshot(),before);set(e,f,{auto_layout:{...layout,gap:-50,canvas_stacking:'first'}});assert.equal(get(e,i).auto_layout.canvas_stacking,'first');assert.equal(get(e,i).auto_layout.gap,-50);assert.equal(e.hit_test(375,50),ia);assert.equal(e.prototype_hit_test(i,375,50),ia);e.free();
 });

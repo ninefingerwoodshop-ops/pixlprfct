@@ -34,10 +34,11 @@ test('invalid values, property types, aliases and modes fail without changing do
  let v=fixture();v.values[0].values[1]='oops';attempt(()=>save(e,v));v=fixture();v.values[0].values[1]={alias:5};attempt(()=>save(e,v));v=fixture();v.values[0].values[1]={alias:2};attempt(()=>save(e,v));v=fixture();v.values[1].values[1]=-10;attempt(()=>save(e,v));
  v=fixture();delete v.values[0].values[2];attempt(()=>save(e,v));v=doc(e);v.shapes[0].variable_bindings.fill=999;attempt(()=>e.load(JSON.stringify(v)));e.free();
 });
-test('component instances inherit bindings, permit explicit overrides and duplicate in-document',()=>{
+test('component instances inherit bindings and modes from the main, reject instance binding edits and duplicate in-document',()=>{
  const e=new Editor();const v=fixture();save(e,v);const master=e.add('frame',0,0);e.bind_variable(master,'fill',1);e.create_component(master);const instance=e.create_instance(master,700,0);
- assert.equal(shape(e,instance).variable_bindings.fill,1);e.set_variable_mode(instance,1,2);assert.equal(shape(e,instance).fill,'#0000ff');assert.equal(shape(e,master).fill,'#ff0000');
- e.bind_variable(instance,'fill',5);v.values[4].values[2]='#00ff00';save(e,v);assert.equal(shape(e,instance).fill,'#00ff00');
+ assert.equal(shape(e,instance).variable_bindings.fill,1);const before=e.snapshot();for(const action of [()=>e.set_variable_mode(instance,1,2),()=>e.bind_variable(instance,'fill',5),()=>e.bind_variable(instance,'fill',0)]){assert.throws(action,/protected/);assert.equal(e.snapshot(),before);}
+ e.set_variable_mode(master,1,2);assert.equal(shape(e,instance).fill,'#0000ff');assert.equal(shape(e,master).fill,'#0000ff');assert.deepEqual(shape(e,instance).variable_modes,shape(e,master).variable_modes);
+ e.bind_variable(master,'fill',5);v.values[4].values[2]='#00ff00';save(e,v);assert.equal(shape(e,instance).fill,'#00ff00');assert.equal(shape(e,instance).variable_bindings.fill,5);
  const copy=JSON.parse(e.duplicate_many(JSON.stringify([instance])))[0];assert.equal(shape(e,copy).fill,'#00ff00');assert.equal(shape(e,copy).variable_bindings.fill,5);
  const other=new Editor(),pasted=JSON.parse(other.paste_layers(e.copy_layers(JSON.stringify([instance])),0,0,0))[0];assert.equal(shape(other,pasted).fill,'#00ff00');assert.deepEqual(shape(other,pasted).variable_bindings,{});other.free();e.free();
 });

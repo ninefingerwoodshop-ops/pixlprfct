@@ -28,6 +28,6 @@ test('hover leave fires only after exit, ignores child entry, and clears when sc
  h.move({mouseleave:[10]});h.scope(2);assert.equal(h.exit(),0);
  h.move({mouseleave:[10]});assert.equal(h.move({mouseenter:[30]}),10);assert.equal(h.move({mouseenter:[30]}),30);h.reset();assert.equal(h.exit(),0);
 });
-test('component trigger overrides remain intact until reset',()=>{
- const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{prototype:{action:'back',trigger:'mouseenter'}});e.create_component(f);const i=e.create_instance(f,400,0);assert.equal(get(e,i).prototype.trigger,'mouseenter');edit(e,i,{prototype:{action:'back',trigger:'mouseleave'}});edit(e,f,{prototype:{action:'back',trigger:'click'}});assert.equal(get(e,i).prototype.trigger,'mouseleave');e.reset_override(i,'prototype');assert.equal(get(e,i).prototype.trigger,'click');e.free();
+test('component triggers follow the main and instance trigger edits are rejected',()=>{
+ const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{prototype:{action:'back',trigger:'mouseenter'}});e.create_component(f);const i=e.create_instance(f,400,0);assert.equal(get(e,i).prototype.trigger,'mouseenter');const before=e.snapshot();assert.throws(()=>edit(e,i,{prototype:{action:'back',trigger:'mouseleave'}}),/protected/);assert.equal(e.snapshot(),before);edit(e,f,{prototype:{action:'back',trigger:'click'}});assert.equal(get(e,i).prototype.trigger,'click');assert.deepEqual(get(e,i).prototype,get(e,f).prototype);e.free();
 });

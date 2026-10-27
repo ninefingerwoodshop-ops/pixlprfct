@@ -21,11 +21,11 @@ test('oversized radii normalize opposing sums and SVG paths retain all four arcs
  const path=roundedSvg({...s,width:300,height:300});assert.match(path,/M 100 0 H 300 L 300 0 V 280 A 20 20/);assert.match(path,/A 100 100 0 0 1 100 0 Z/);
  const svg=svgDocument([s],{x:0,y:0,width:100,height:80},1,null,()=>{});assert.match(svg,/<path d=/);assert.match(svg,/fill="#123456"/);
 });
-test('corner arrays validate atomically, roundtrip, scale and support independent component overrides',()=>{
- const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance:paint});e.create_component(f);const i=e.create_instance(f,300,0);edit(e,i,{appearance:{...get(e,i).appearance,corner_radii:[4,8,12,16]}});
- edit(e,f,{appearance:{...paint,opacity:.4,corner_radii:[20,30,40,50]}});assert.deepEqual(get(e,i).appearance.corner_radii,[4,8,12,16]);assert.equal(get(e,i).appearance.opacity,.4);
+test('corner arrays validate atomically, roundtrip, scale and propagate to instances that reject corner overrides',()=>{
+ const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{appearance:paint});e.create_component(f);const i=e.create_instance(f,300,0),locked=e.snapshot();assert.throws(()=>edit(e,i,{appearance:{...get(e,i).appearance,corner_radii:[4,8,12,16]}}),/protected/);assert.equal(e.snapshot(),locked);
+ edit(e,f,{appearance:{...paint,opacity:.4,corner_radii:[20,30,40,50]}});assert.deepEqual(get(e,i).appearance.corner_radii,[20,30,40,50]);assert.equal(get(e,i).appearance.opacity,.4);
  const before=e.snapshot();for(const corner_radii of [[1,2,3],[-1,0,0,0],[1e7,0,0,0]]){assert.throws(()=>edit(e,f,{appearance:{...paint,corner_radii}}));assert.equal(e.snapshot(),before);}
- e.reset_override(i,'appearance.corner_radii');assert.deepEqual(get(e,i).appearance.corner_radii,[20,30,40,50]);e.undo();assert.equal(e.snapshot(),before);
- const copy=new Editor();copy.load(before);assert.equal(copy.snapshot(),before);const scaled=scaleShapes([get(e,i)],{x:0,y:0},2)[0];assert.deepEqual(scaled.appearance.corner_radii,[8,16,24,32]);
+ e.undo();assert.deepEqual(get(e,i).appearance.corner_radii,[40,0,20,10]);e.redo();assert.equal(e.snapshot(),before);
+ const copy=new Editor();copy.load(before);assert.equal(copy.snapshot(),before);const scaled=scaleShapes([get(e,i)],{x:0,y:0},2)[0];assert.deepEqual(scaled.appearance.corner_radii,[40,60,80,100]);
  const legacy={...paint};delete legacy.corner_radii;edit(e,f,{appearance:legacy});assert.equal(get(e,f).appearance.corner_radii,null);e.free();copy.free();
 });

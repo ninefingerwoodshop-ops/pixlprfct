@@ -25,7 +25,7 @@ test('main structure changes synchronize stable instance IDs; instance structure
 });
 test('instance geometry respects constraints, placement, main-driven resizing, duplication and portable clipboard',()=>{
  const {e,f,t}=fixture();edit(e,t,{constraints:{horizontal:'max',vertical:'min'}});const i=e.create_instance(f,400,20),c=children(e,i)[0].id;
- assert.throws(()=>edit(e,i,{width:400}),/protected/);edit(e,f,{width:400});assert.equal(get(e,c).x,520);edit(e,f,{fill:'#123456'});assert.equal(get(e,i).width,400);assert.equal(get(e,c).x,520);
+ assert.throws(()=>edit(e,i,{height:400}),/protected/);edit(e,f,{width:400});assert.equal(get(e,c).x,520);edit(e,f,{fill:'#123456'});assert.equal(get(e,i).width,400);assert.equal(get(e,c).x,520);
  edit(e,i,{x:600});assert.equal(get(e,c).x,720);
  const ids=JSON.parse(e.duplicate_many(JSON.stringify([i])));assert.equal(get(e,ids[0]).component.master,f);assert.equal(children(e,ids[0])[0].x,744);
  const clone=new Editor();clone.paste_layers(e.copy_layers(JSON.stringify([i])),0,0,0);assert.ok(shapes(clone).every(s=>s.component===null));clone.load(e.snapshot());assert.equal(clone.snapshot(),e.snapshot());

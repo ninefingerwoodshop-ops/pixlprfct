@@ -21,9 +21,9 @@ test('after-delay settings validate, persist, undo and stay independent from ani
  edit(e,f,{prototype:{...get(e,f).prototype,delay:600000}});e.undo();assert.equal(e.snapshot(),saved);e.redo();assert.equal(get(e,f).prototype.delay,600000);
  const copy=new Editor();copy.load(saved);assert.equal(copy.snapshot(),saved);assert.equal(get(copy,f).prototype.duration,500);edit(e,r,{prototype:{action:'back'}});assert.equal(get(e,r).prototype.delay,800);e.free();copy.free();
 });
-test('timer settings propagate through components and can be independently overridden as an interaction',()=>{
+test('timer settings propagate through components while instance timer edits are rejected',()=>{
  const e=new Editor(),f=e.add('frame',0,0);edit(e,f,{prototype:{trigger:'afterdelay',action:'back',delay:1200}});e.create_component(f);const i=e.create_instance(f,400,0);
- assert.equal(get(e,i).prototype.delay,1200);edit(e,i,{prototype:{...get(e,i).prototype,delay:4500}});edit(e,f,{prototype:{...get(e,f).prototype,delay:1500}});assert.equal(get(e,i).prototype.delay,4500);e.reset_override(i,'prototype');assert.equal(get(e,i).prototype.delay,1500);e.free();
+ assert.equal(get(e,i).prototype.delay,1200);const before=e.snapshot();assert.throws(()=>edit(e,i,{prototype:{...get(e,i).prototype,delay:4500}}),/protected/);assert.equal(e.snapshot(),before);edit(e,f,{prototype:{...get(e,f).prototype,delay:1500}});assert.equal(get(e,i).prototype.delay,1500);assert.deepEqual(get(e,i).prototype,get(e,f).prototype);e.free();
 });
 test('visible timed frames include nested instances but exclude hidden ancestors and click actions',()=>{
  const frame=(id,parent_id=0,hidden=false,trigger='afterdelay')=>({id,parent_id,hidden,kind:'frame',prototype:{trigger,delay:id*100}});

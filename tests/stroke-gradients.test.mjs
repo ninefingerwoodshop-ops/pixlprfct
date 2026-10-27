@@ -10,8 +10,8 @@ import {svgDocument,exportBounds} from '../web/export.js';
 await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
 const get=(e,id)=>JSON.parse(e.snapshot()).shapes.find(s=>s.id===id),fill=defaultGradient('#ff0000'),stroke=defaultGradient('#00ff00','radial');
 const set=(e,id,g)=>{const s=get(e,id);e.update(JSON.stringify({...s,appearance:{...appearance(s),stroke_enabled:true,gradient:fill,stroke_gradient:g}}));};
-test('stroke gradients preserve independent fill, component overrides and history',()=>{
- const e=new Editor(),id=e.add('frame',0,0);set(e,id,stroke);e.create_component(id);const i=e.create_instance(id,400,0);set(e,i,{...stroke,start:[.25,.25]});set(e,id,{...stroke,end:[.9,.8]});assert.deepEqual(get(e,i).appearance.stroke_gradient.start,[.25,.25]);assert.deepEqual(get(e,i).appearance.gradient,fill);e.reset_override(i,'appearance.stroke_gradient');assert.deepEqual(get(e,i).appearance.stroke_gradient.end,[.9,.8]);
+test('stroke gradients preserve independent fill, inherit main edits, reject instance overrides and keep history',()=>{
+ const e=new Editor(),id=e.add('frame',0,0);set(e,id,stroke);e.create_component(id);const i=e.create_instance(id,400,0);const before=e.snapshot();assert.throws(()=>set(e,i,{...stroke,start:[.25,.25]}),/protected/);assert.equal(e.snapshot(),before);set(e,id,{...stroke,end:[.9,.8]});assert.deepEqual(get(e,i).appearance.stroke_gradient,get(e,id).appearance.stroke_gradient);assert.deepEqual(get(e,i).appearance.stroke_gradient.end,[.9,.8]);assert.deepEqual(get(e,i).appearance.gradient,fill);
  const saved=e.snapshot();set(e,id,null);e.undo();assert.equal(e.snapshot(),saved);const copy=new Editor();copy.paste_layers(e.copy_layers(JSON.stringify([i])),0,0,0);assert.deepEqual(JSON.parse(copy.snapshot()).shapes[0].appearance.stroke_gradient,get(e,i).appearance.stroke_gradient);e.free();copy.free();
 });
 test('stroke gradient geometry and stop edits never modify fill gradients',()=>{

@@ -8,9 +8,9 @@ import {layoutText,textSvg} from '../web/typography.js';
 import {compileCssScene} from '../web/css-renderer.js';
 await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
 const get=(e,id)=>JSON.parse(e.snapshot()).shapes.find(s=>s.id===id);
-test('all offered blend modes persist and propagate, invalid modes reject atomically, overrides reset independently',()=>{
+test('all offered blend modes persist and propagate, invalid modes reject atomically, instances inherit blend modes and reject instance overrides',()=>{
  const e=new Editor(),id=e.add('frame',0,0);const set=(id,mode)=>{const s=get(e,id);e.update(JSON.stringify({...s,appearance:{...appearance(s),blend_mode:mode}}));};
- for(const [mode] of blendModes){set(id,mode);assert.equal(get(e,id).appearance.blend_mode,mode);}const saved=e.snapshot();assert.throws(()=>set(id,'invalid'));assert.equal(e.snapshot(),saved);e.create_component(id);const instance=e.create_instance(id,400,0);set(instance,'multiply');set(id,'screen');assert.equal(get(e,instance).appearance.blend_mode,'multiply');e.reset_override(instance,'appearance.blend_mode');assert.equal(get(e,instance).appearance.blend_mode,'screen');e.undo();assert.equal(get(e,instance).appearance.blend_mode,'multiply');e.free();
+ for(const [mode] of blendModes){set(id,mode);assert.equal(get(e,id).appearance.blend_mode,mode);}const saved=e.snapshot();assert.throws(()=>set(id,'invalid'));assert.equal(e.snapshot(),saved);e.create_component(id);const instance=e.create_instance(id,400,0);assert.equal(get(e,instance).appearance.blend_mode,'luminosity');const before=e.snapshot();assert.throws(()=>set(instance,'multiply'),/protected/);assert.equal(e.snapshot(),before);set(id,'screen');assert.equal(get(e,instance).appearance.blend_mode,'screen');e.undo();assert.equal(get(e,instance).appearance.blend_mode,'luminosity');e.free();
 });
 test('blend mode output agrees between isolated SVG groups, CSS layers and canvas compositing names',()=>{
  const shape={id:1,parent_id:0,kind:'rectangle',x:0,y:0,width:100,height:100,fill:'#ff0000',appearance:{opacity:1,fill_enabled:true,corner_radius:0,blend_mode:'multiply'}};
