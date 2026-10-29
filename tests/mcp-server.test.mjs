@@ -29,6 +29,7 @@ test('real MCP client discovers tools, resources and prompts, builds, exports an
  await instance.server.connect(a);await client.connect(b);const list=await client.listTools();assert.equal(list.tools.length,13);assert.ok(list.tools.find(tool=>tool.name==='pixlprfct_build').inputSchema);
  assert.ok((await client.listResources()).resources.length>=10);assert.equal((await client.listPrompts()).prompts[0].name,'build-design');
  assert.match((await client.readResource({uri:'pixlprfct://reference/overview'})).contents[0].text,/Rust document engine/);
+ const models=unpack(await client.callTool({name:'pixlprfct_reference',arguments:{topic:'models',query:['Typography','Value']}}));assert.ok(models.models.Typography);assert.deepEqual(models.constraints.Value.examples.alias,{alias:1});
  const open=unpack(await client.callTool({name:'pixlprfct_open_project',arguments:{create:true,name:'Protocol test'}}));
  const built=unpack(await client.callTool({name:'pixlprfct_build',arguments:{session:open.id,revision:open.revision,operations:[{op:'create',kind:'frame',as:'frame',properties:{name:'Screen',width:800,height:600}},{op:'create',kind:'text',parent:{$ref:'frame'},properties:{text:'Built through MCP'}}]}}));assert.equal(built.layerCount,2);
  const bad=await client.callTool({name:'pixlprfct_build',arguments:{session:open.id,revision:open.revision,operations:[{op:'create'}]}});assert.equal(bad.isError,true);assert.match(bad.content[0].text,/Revision conflict/);

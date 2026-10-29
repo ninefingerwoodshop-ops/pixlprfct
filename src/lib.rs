@@ -2625,6 +2625,14 @@ impl Editor {
     }
 
     pub fn duplicate_many(&mut self, json: &str) -> Result<String, String> {
+        self.duplicate_many_offset(json, 24.0, 24.0)
+    }
+
+    /// Explicit translation for automation; zero duplicates in place.
+    pub fn duplicate_many_offset(&mut self, json: &str, x: f64, y: f64) -> Result<String, String> {
+        if !x.is_finite() || !y.is_finite() {
+            return Err("Duplicate offsets must be finite".into());
+        }
         let ids = self.descendants(&self.selection_ids(json)?);
         let next_id = self
             .next_id
@@ -2648,8 +2656,8 @@ impl Editor {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
                 }
-                copy.x += 24.0;
-                copy.y += 24.0;
+                copy.x += x;
+                copy.y += y;
                 created.push(copy.id);
                 document.shapes.push(copy);
             }

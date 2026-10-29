@@ -39,7 +39,7 @@ export function rasterSettings(format,background,quality=90){
  if(format==='jpeg'&&(!Number.isFinite(quality)||quality<1||quality>100))throw new Error('JPEG quality must be between 1 and 100');
  return {type:format==='jpeg'?'image/jpeg':'image/png',extension:format==='jpeg'?'jpg':'png',background:format==='jpeg'?(background??'#ffffff'):background,quality:format==='jpeg'?quality/100:undefined};
 }
-export function svgDocument(shapes,box,scale,background,textLayout){
+export function svgDocument(shapes,box,scale,background,textLayout,transformPaint=s=>s){
  shapes=resolvePatternPaints(artworkShapes(shapes),(source,box)=>svgDocument(source,box,1,null,textLayout));
  const size=exportSize(box,scale,'svg');
  const outline=s=>{if(s.points?.length)return vectorSvg(s);if(s.kind==='ellipse')return `<ellipse cx="${s.x+s.width/2}" cy="${s.y+s.height/2}" rx="${s.width/2}" ry="${s.height/2}" ${paintAttributes(s)}/>`;if(s.kind==='text')return textSvg(s,textLayout(s));return roundedSvg(s,paintAttributes(s));};
@@ -53,5 +53,5 @@ export function svgDocument(shapes,box,scale,background,textLayout){
  };
  if(background&&!/^#[0-9a-f]{6}$/i.test(background))throw new Error('Invalid export background');
  const backdrop=background?`<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="${background}"/>`:'';
- return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.flatMap(paintLayers).map(s=>gradientSvg(s)+gradientSvg(s,'stroke')+textureSvg(s)+textureSvg(s,'stroke')).join('')}</defs>${backdrop}${sceneSvg(shapes,s=>s.rotation?`<g transform="rotate(${-s.rotation} ${s.x} ${s.y})">${alignedStrokeSvg(s,paint,outline)}</g>`:alignedStrokeSvg(s,paint,outline))}</svg>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${box.x} ${box.y} ${box.width} ${box.height}">${clipDefinitions(shapes)}<defs>${shapes.flatMap(paintLayers).map(s=>gradientSvg(s)+gradientSvg(s,'stroke')+textureSvg(s)+textureSvg(s,'stroke')).join('')}</defs>${backdrop}${sceneSvg(shapes,layer=>{const s=transformPaint(layer);return s.rotation?`<g transform="rotate(${-s.rotation} ${s.x} ${s.y})">${alignedStrokeSvg(s,paint,outline)}</g>`:alignedStrokeSvg(s,paint,outline);})}</svg>`;
 }

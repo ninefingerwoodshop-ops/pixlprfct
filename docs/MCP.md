@@ -109,7 +109,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_close_project` | Close an in-memory file session without deleting the saved file |
 
 The server also exposes `pixlprfct://reference/<topic>` resources and a
-`build-design` prompt. Its catalog currently covers 81 engine commands and 43
+`build-design` prompt. Its catalog currently covers 82 engine commands and 43
 model definitions, generated from the compiled API and Rust types. Building the
 editor regenerates the catalog; `npm run mcp:check` checks it for drift.
 
@@ -153,6 +153,46 @@ Assets starters. Create children first and call `group_many` to form a group.
 batch. IDs are never guessed. Read `commands` for ordered command arguments:
 JSON arguments are structured objects/arrays, not strings containing JSON.
 Read `defaults`, `models`, and the relevant guide before authoring nested fields.
+
+Model queries accept an array of searches, comma-separated names, or a single
+search string. For example, `{"topic":"models","query":["Typography","Value"]}`
+returns both the declarations and their accepted values.
+
+### Design-system authoring
+
+- **Variable aliases:** a mode value may be `{"alias":1}`, where `1` is the
+  primitive variable's ID. The kinds must match. Cross-collection aliases resolve
+  using the target collection's inherited mode and update when primitives change.
+  `save_variables` replaces the complete object; read and preserve unrelated values.
+- **Text sizing:** `typography.sizing` stores `"width"` (auto width), `"height"`
+  (auto height), or `"fixed"`. MCP create/update also accept `"auto_width"` and
+  `"auto_height"`. Use auto width for labels and `layout_item.fill_width:false`.
+  Fill width intentionally changes a text layer to auto height. Auto-layout
+  inference preserves auto-width text; fixed full-width children may become Fill.
+- **Hugged buttons:** set the parent `auto_layout.hug_width:true` and keep label
+  `fill_width:false`. Creating a component preserves these settings. A Fill child
+  prevents its parent from hugging on that axis, regardless of component status.
+- **Coordinates:** stored `x/y`, update patches and engine commands use document
+  coordinates. Create defaults to `coordinate_space:"world"`; use
+  `coordinate_space:"parent"` with a parent ID/ref for offsets from that parent's
+  stored origin. Auto layout still controls flow children. This is an offset from
+  the unrotated origin, not a transformed screen coordinate.
+- **Duplication:** `duplicate` and `duplicate_many` retain the interactive 24px
+  offset. `duplicate_many_offset` takes `[ids, xOffset, yOffset]`; `[ids,0,0]`
+  duplicates in place. It preserves hierarchy and bindings and returns all copied
+  IDs in document order. Auto-layout flow remains in effect.
+- **Stroke alpha:** MCP create/update accept `appearance.stroke_color:"#102a4780"`
+  and store `#102a47` plus `stroke_opacity:128/255`. Explicit `stroke_opacity` wins.
+  Raw engine commands and serialized project files use separate color and opacity.
+- **Exported variables:** generic number tokens remain unitless. Length bindings
+  add `calc(var(--px-space-3,16) * 1px)` automatically, while opacity and line height
+  use unitless values. Manually authored CSS must choose the appropriate unit.
+  Solid stroke color bindings survive HTML/framework export, including stacked,
+  aligned, and per-side borders. Standalone SVG remains a resolved visual snapshot.
+
+Long unbreakable words in a constrained text box currently break at grapheme
+boundaries. Auto-width text avoids this unless a maximum width is set. A separate
+word-breaking policy is not yet implemented. Saved text styles remain an open gap.
 
 A batch supports up to 200 operations and commits only if every operation and
 permission check succeeds. Errors leave the original document and undo history

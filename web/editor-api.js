@@ -354,6 +354,26 @@ export const engineCommands=[
     "returns": "string"
   },
   {
+    "name": "duplicate_many_offset",
+    "readOnly": false,
+    "description": "Array of layer IDs and explicit x/y translation. Use 0,0 to duplicate in place; hierarchy, variable bindings and exposed component properties are preserved. Flow children remain governed by auto layout. duplicate and duplicate_many retain the interactive +24/+24 offset.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "x",
+        "type": "number"
+      },
+      {
+        "name": "y",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "duplicate_page",
     "readOnly": false,
     "description": "duplicate page",

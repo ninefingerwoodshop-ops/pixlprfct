@@ -29,6 +29,7 @@ const notes={
  place_instance:'Create an instance inside parent (0 = page root).',
  paste_layers:'Portable clipboard object from copy_layers, x/y offsets, and parent ID.',
  copy_layers:'Array of layer IDs. Returns the portable clipboard object.',
+ duplicate_many_offset:'Array of layer IDs and explicit x/y translation. Use 0,0 to duplicate in place; hierarchy, variable bindings and exposed component properties are preserved. Flow children remain governed by auto layout. duplicate and duplicate_many retain the interactive +24/+24 offset.',
  group_many:'Array of sibling IDs. Returns the new group ID.',
  auto_layout_selection:'Array of layer IDs. Infers a Flex layout and returns its frame ID.',
  drop_layers:'Array of layer IDs, destination layer ID, and position before/after/inside.',

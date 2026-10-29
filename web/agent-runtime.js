@@ -48,6 +48,15 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
   }finally{scratch.free();}
  };
  const patch=(engine,id,properties)=>{
+  properties=structuredClone(properties);
+  // Accept the names agents use in design tools while keeping the stored schema stable.
+  const sizing=properties.typography?.sizing;
+  if(sizing==='auto_width'||sizing==='auto_height')properties.typography.sizing=sizing==='auto_width'?'width':'height';
+  const stroke=properties.appearance?.stroke_color;
+  if(typeof stroke==='string'&&/^#[\da-f]{8}$/i.test(stroke)){
+   properties.appearance.stroke_color=stroke.slice(0,7);
+   properties.appearance.stroke_opacity??=parseInt(stroke.slice(7),16)/255;
+  }
   const before=shapeAt(engine,id);for(const name of Object.keys(properties)){if(['id','page_id','component'].includes(name))throw new Error('Use engine commands to change identity, page, or component links.');if(!new RegExp('pub '+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':').test(modelReference.Shape.declaration))throw new Error('Unknown layer property: '+name);}
   const base={...before,...(properties.appearance&&!before.appearance?{appearance:appearance(before)}:{}),...(properties.auto_layout&&!before.auto_layout?{auto_layout:autoLayoutDefaults}:{})};
   const next=reconcilePaints(mergeProperties(base,properties),before);if(next.custom_css)renderLayerStyles(next);
@@ -62,8 +71,15 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
     if(!layerKinds.includes(op.kind??'rectangle'))throw new Error('Unknown layer kind. Read the catalog.');
     if(op.kind==='group')throw new Error('Create the layers first, then call group_many with their IDs. Empty groups are removed by the engine.');
     const kind=op.control?'frame':op.kind??'rectangle',vector=vectorTools.includes(kind);
-    result=engine.add(vector||kind==='image'?'rectangle':kind,op.x??0,op.y??0);
     let properties=op.properties??{};
+    if(!['world','parent'].includes(op.coordinate_space??'world'))throw new Error('coordinate_space must be world or parent.');
+    const parent=op.parent?shapeAt(engine,op.parent):null;
+    if(op.coordinate_space==='parent'&&!parent)throw new Error('Parent coordinates require a parent layer.');
+    const x=properties.x??op.x??0,y=properties.y??op.y??0;
+    if(!Number.isFinite(x)||!Number.isFinite(y))throw new Error('Layer coordinates must be finite numbers.');
+    const offset=op.coordinate_space==='parent'?parent:{x:0,y:0};
+    result=engine.add(vector||kind==='image'?'rectangle':kind,x+offset.x,y+offset.y);
+    properties={...properties,x:x+offset.x,y:y+offset.y};
     if(vector){const geometry=['pen','pencil'].includes(kind)?{points:[[0,0],[1,1]],closed:false}:drawnShape(kind,{x:0,y:0},{x:160,y:120});properties={points:geometry.points,closed:geometry.closed??false,...properties,kind};}
     if(kind==='image')properties={...properties,kind};
     if(op.control){if(!controlTypes.includes(op.control))throw new Error('Unknown control kind.');properties={...properties,control:mergeProperties({...newControl(op.control,properties.name??op.control),starter:true},properties.control??{})};}
