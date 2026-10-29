@@ -62,3 +62,15 @@ test('runtime rejects unknown commands, identity edits, unknown fields, prototyp
  assert.throws(()=>mergeProperties({},JSON.parse('{"__proto__":{"admin":true}}')),/Invalid property/);
  const blocked=fixture(t,{busy:()=>true});await assert.rejects(blocked.build([{op:'create'}]),/active gesture/);
 });
+
+test('MCP creates, applies, updates and exports reusable effect styles in atomic batches',async t=>{
+ const {runtime,read,build}=fixture(t);
+ const style={id:0,name:'Elevation / Card',effects:{shadows:[{kind:'drop',x:0,y:4,blur:12,color:'#000000',opacity:.2}]}};
+ const result=await build([{op:'create',kind:'rectangle',as:'card'},{op:'command',name:'save_effect_style',args:[style,{$ref:'card'}],as:'elevation'},{op:'create',kind:'ellipse',as:'badge'},{op:'command',name:'apply_effect_style',args:[[{$ref:'badge'}],{$ref:'elevation'}]}]);
+ const {card,badge,elevation}=result.result.refs;let state=await read();assert.equal(state.document.effect_styles[0].id,elevation);for(const id of [card,badge])assert.equal(state.document.shapes.find(s=>s.id===id).effect_style,elevation);
+ await runtime.request('command',{revision:runtime.state().revision,name:'save_effect_style',args:[{...style,id:elevation,effects:{shadows:[{...style.effects.shadows[0],blur:28}]}},0]});
+ state=await read();for(const id of [card,badge])assert.equal(state.document.shapes.find(s=>s.id===id).appearance.shadows[0].blur,28);
+ const before=JSON.stringify(state.document);await assert.rejects(build([{op:'command',name:'remove_effect_style',args:[elevation]},{op:'command',name:'apply_effect_style',args:[[card],elevation]}]));assert.equal(JSON.stringify((await read()).document),before);
+ const exported=await runtime.request('export',{target:'pixl'});assert.equal(JSON.parse(exported.files[0].text).effect_styles[0].id,elevation);
+ await runtime.request('command',{revision:runtime.state().revision,name:'apply_effect_style',args:[[badge],0]});assert.equal((await read()).document.shapes.find(s=>s.id===badge).appearance.shadows[0].blur,28);
+});

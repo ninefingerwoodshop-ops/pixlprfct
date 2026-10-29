@@ -81,3 +81,32 @@
 .paint-popover.inspector-settings-popover.guide-settings-popover .setting-heading-title>.inspector-select-trigger{border:1px solid #444!important}
 .paint-popover.inspector-settings-popover .setting-color-field button.setting-swatch{border-radius:2px!important}
 .paint-popover.inspector-settings-popover.setting-color-picker .setting-heading>span{flex:1}
+/* Effect style reference: Figma desktop, October 29 2026. */
+.setting-section [hidden]{display:none!important}
+.effect-style-picker .setting-heading-title{gap:4px}
+.effect-style-picker .setting-heading-title>span{flex:1}
+.effect-style-picker .setting-heading{padding-left:16px}
+.effect-style-picker .setting-body{padding:8px 8px 12px;gap:8px}
+.effect-style-picker input.effect-style-search{background:transparent!important}
+.effect-style-option{display:flex;align-items:center;gap:0;min-height:32px;border-radius:5px}
+.effect-style-option:hover{background:#383838}
+.effect-style-option .effect-style-apply{display:flex;align-items:center;gap:4px;flex:1;min-width:0;height:32px;min-height:32px;padding:0 4px;border:0;background:transparent;color:#fff;font:inherit;text-align:left}
+.effect-style-apply span{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.effect-style-option>.setting-action{opacity:0}
+.effect-style-option:hover>.setting-action,.effect-style-option:focus-within>.setting-action{opacity:1}
+.effect-style-option:has([aria-pressed=true]){background:#4a5878}
+.effect-style-list>.setting-note{padding:8px}
+.effect-style-editor .setting-heading{padding-left:16px}
+.effect-style-editor .setting-body{padding:0 16px 16px;gap:8px}
+.effect-style-preview{height:136px;min-height:136px;margin:0 -16px 8px;display:grid;place-items:center;overflow:hidden;background:repeating-conic-gradient(#fff 0% 25%,#f0f0f0 0% 50%) 0/16px 16px}
+.effect-style-preview-disc{width:112px;height:112px;border-radius:50%;background:#fff}
+.effect-style-editor .setting-row{grid-template-columns:88px minmax(0,1fr)}
+.effect-style-editor textarea{box-sizing:border-box;resize:vertical;min-width:0;width:100%;height:24px;min-height:24px;max-height:120px;margin:0;padding:4px 8px;border:0;border-radius:5px;background:#383838;color:#fff;font:inherit}
+.effect-style-editor textarea:focus-visible{outline:1px solid #0d99ff}
+.effect-style-properties{margin-top:12px}
+.effect-style-properties .setting-item{margin:0;padding:0;gap:8px}
+.effect-style-properties .setting-list{display:flex;flex-direction:column;gap:0}
+.effect-style-editor button.effect-style-create{background:#0d99ff;color:#fff;border:0;text-align:center;margin-top:8px}
+.effect-style-editor button.effect-style-delete{color:#b3b3b3;margin-top:8px}
+.effect-style-properties button.effect-edit{height:26px!important;min-height:26px!important;max-height:26px!important;padding:0!important;gap:0!important;border:1px solid #444!important;justify-content:flex-start;background-color:transparent!important;color:#fff!important}
+.effect-style-properties button.effect-edit[aria-expanded=true]{background-color:#4a5878!important;color:#a8d7ff!important;border-color:transparent!important}

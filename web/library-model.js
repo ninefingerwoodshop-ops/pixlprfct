@@ -36,14 +36,14 @@ export function librarySnapshot(doc) {
 const modeMap=(m,maps)=>Object.fromEntries(Object.entries(m??{}).map(([id,value])=>[maps.collections[id],value]).filter(([id])=>id));
 export function mergeLibrary(document,release) {
  const doc=clone(document),source=typeof release.body==='string'?JSON.parse(release.body):clone(release.body);
- doc.libraries??=[];doc.variables??={collections:[],values:[]};doc.component_sets??=[];doc.component_properties??=[];doc.guide_styles??=[];
+ doc.libraries??=[];doc.variables??={collections:[],values:[]};doc.component_sets??=[];doc.component_properties??=[];doc.guide_styles??=[];doc.effect_styles??=[];
  const existing=doc.libraries.find(l=>l.id===release.id&&l.workspace===release.workspace);
  const link=existing??{id:release.id,workspace:release.workspace,page_id:Math.max(0,...doc.pages.map(p=>p.id))+1,maps:{shapes:{},collections:{},variables:{},sets:{},properties:{},guides:{}}};
  if(!existing&&doc.pages.length>=100)throw new Error('This project has reached its page limit.');
- const maps=link.maps;
+ const maps=link.maps;maps.effects??={};
  const allocate=(key,incoming,current)=>{let next=Math.max(0,...current.map(s=>s.id),...Object.values(maps[key]))+1;for(const item of incoming)if(!maps[key][item.id])maps[key][item.id]=next++;};
  allocate('shapes',source.shapes,doc.shapes);allocate('collections',source.variables?.collections??[],doc.variables.collections);allocate('variables',source.variables?.values??[],doc.variables.values);
- allocate('sets',source.component_sets??[],doc.component_sets);allocate('properties',source.component_properties??[],doc.component_properties);allocate('guides',source.guide_styles??[],doc.guide_styles);
+ allocate('sets',source.component_sets??[],doc.component_sets);allocate('properties',source.component_properties??[],doc.component_properties);allocate('guides',source.guide_styles??[],doc.guide_styles);allocate('effects',source.effect_styles??[],doc.effect_styles);
  const present=new Set(source.shapes.map(s=>maps.shapes[s.id])),oldIds=new Set(Object.values(maps.shapes));
  if(doc.shapes.some(s=>s.component?.type==='instance'&&!oldIds.has(s.id)&&oldIds.has(s.component.master)&&!present.has(s.component.master)))throw new Error('This update removes a component used in this project. Remove its instances before accepting the update.');
  const remapInteraction=p=>p?{...p,target:maps.shapes[p.target]??0}:p;
@@ -51,7 +51,7 @@ export function mergeLibrary(document,release) {
   const s=clone(original);s.id=maps.shapes[s.id];s.page_id=link.page_id;s.parent_id=maps.shapes[s.parent_id]??0;s.layout_class='';s.layout_class_generated=true;
   if(s.component?.type==='instance'){s.component.master=maps.shapes[s.component.master];s.component.source=maps.shapes[s.component.source];}
   s.variable_bindings=Object.fromEntries(Object.entries(s.variable_bindings??{}).map(([path,id])=>[path,maps.variables[id]]));s.variable_modes=modeMap(s.variable_modes,maps);
-  s.guide_style=maps.guides[s.guide_style]??0;if(s.control?.base_collection)s.control.base_collection=maps.collections[s.control.base_collection]??0;
+  s.guide_style=maps.guides[s.guide_style]??0;s.effect_style=maps.effects[s.effect_style]??0;if(s.control?.base_collection)s.control.base_collection=maps.collections[s.control.base_collection]??0;
   s.prototype=remapInteraction(s.prototype);s.additional_interactions=(s.additional_interactions??[]).map(remapInteraction);return s;
  });
  const replace=(old,added,key)=>old.filter(s=>!Object.values(maps[key]).includes(s.id)).concat(added);
@@ -61,6 +61,13 @@ export function mergeLibrary(document,release) {
  doc.component_sets=replace(doc.component_sets,(source.component_sets??[]).map(s=>({...s,id:maps.sets[s.id],variants:s.variants.map(v=>({...v,component_id:maps.shapes[v.component_id]}))})),'sets');
  doc.component_properties=replace(doc.component_properties,(source.component_properties??[]).map(p=>({...p,id:maps.properties[p.id],component_id:maps.shapes[p.component_id],targets:p.targets.map(id=>maps.shapes[id])})),'properties');
  doc.guide_styles=replace(doc.guide_styles,(source.guide_styles??[]).map(s=>({...s,id:maps.guides[s.id]})),'guides');
+ // Distinguish imported definitions when another library or a local style uses the same name.
+ const effectNames=new Set(doc.effect_styles.filter(s=>!Object.values(maps.effects).includes(s.id)).map(s=>s.name.trim().toLowerCase()));
+ const bounded=value=>{let result='';for(const char of value){if(new TextEncoder().encode(result+char).length>110)break;result+=char;}return result;};
+ const effects=(source.effect_styles??[]).map(s=>{let name=s.name;const base=bounded(release.name+' / '+s.name);let suffix=1;while(effectNames.has(name.trim().toLowerCase()))name=base+(suffix++>1?' ('+(suffix-1)+')':'');effectNames.add(name.trim().toLowerCase());return {...s,id:maps.effects[s.id],name};});
+ const retiredEffects=new Set(Object.values(maps.effects).filter(id=>!effects.some(s=>s.id===id)));
+ for(const shape of doc.shapes)if(retiredEffects.has(shape.effect_style))shape.effect_style=0;
+ doc.effect_styles=replace(doc.effect_styles,effects,'effects');
  Object.assign(link,{name:release.name,revision:release.revision,enabled:true});
  if(!existing){doc.libraries.push(link);doc.pages.push({id:link.page_id,name:'Library · '+release.name,variable_modes:{}});}
  return doc;
@@ -72,8 +79,8 @@ export function importedContentError(before,after,{updating=false}={}) {
   const next=(after.libraries??[]).find(l=>l.id===link.id&&l.workspace===link.workspace);
   if(!next||!equal({...link,enabled:true},{...next,enabled:true}))return 'Use Manage libraries to change a linked library.';
   for(const id of Object.values(link.maps.shapes)){const a=before.shapes.find(s=>s.id===id),b=after.shapes.find(s=>s.id===id);if(!equal(a&&content(a),b&&content(b)))return 'Library source is protected. Open the source project to edit it.';}
-  for(const [key,field] of [['collections','collections'],['variables','values']])for(const id of Object.values(link.maps[key]))if(!equal(before.variables?.[field]?.find(s=>s.id===id),after.variables?.[field]?.find(s=>s.id===id)))return 'Library variables are protected. Update them in the source project.';
-  for(const [key,field] of [['sets','component_sets'],['properties','component_properties'],['guides','guide_styles']])for(const id of Object.values(link.maps[key]))if(!equal(before[field]?.find(s=>s.id===id),after[field]?.find(s=>s.id===id)))return 'Library definitions are protected. Update them in the source project.';
+  for(const [key,field] of [['collections','collections'],['variables','values']])for(const id of Object.values(link.maps[key]??{}))if(!equal(before.variables?.[field]?.find(s=>s.id===id),after.variables?.[field]?.find(s=>s.id===id)))return 'Library variables are protected. Update them in the source project.';
+  for(const [key,field] of [['sets','component_sets'],['properties','component_properties'],['guides','guide_styles'],['effects','effect_styles']])for(const id of Object.values(link.maps[key]??{}))if(!equal(before[field]?.find(s=>s.id===id),after[field]?.find(s=>s.id===id)))return 'Library definitions are protected. Update them in the source project.';
  }
  return null;
 }

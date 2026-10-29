@@ -13,7 +13,8 @@ First call pixlprfct_reference for the overview and relevant model/command defin
 Use a live session for the user's open project, or open/create a saved .pixl project within the configured workspace.
 Read before editing. Every mutation requires the current revision. Build batches are atomic and one undo step.
 Use build/create and build/update for partial properties; arrays replace, objects deep merge, null clears.
-Use engine commands for pages, hierarchy, components, variants, variables, guide styles and Grid operations.
+Named shadow/blur styles are supported: save_effect_style creates or updates an EffectStyle, apply_effect_style binds layers (0 detaches), and remove_effect_style deletes the definition while preserving effects. Read document.effect_styles with full=true. Update the main component to style its protected instances. Direct local effect edits detach the style; edits to other appearance properties keep it linked.
+Use engine commands for pages, hierarchy, components, variants, variables, guide styles, reusable effect styles and Grid operations.
 All serialized layer properties are editable: paint stacks, effects, guides, controls, text, vectors, images, layout,
 responsive rules, custom CSS, prototype interactions, motion and development behaviors. Read model definitions and defaults.
 Never invent layer IDs. Name build results with as, then reference them with {"$ref":"name"}.
