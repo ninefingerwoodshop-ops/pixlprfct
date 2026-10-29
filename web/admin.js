@@ -46,7 +46,10 @@ function needsOrganization(target){
  else{empty(target,'Connect your workspace','This app is saving projects on this device. Set up a server for accounts, teams, and shared projects.',[navLink('database','Set up a database'),button('Open a team server',connectServer)]);}
  return true;
 }
-function connectServer(){dialog('Open a team server',(node,close)=>{node.append(el('p','Open your existing PixlPrfct server. Projects on this device stay in this browser.'));node.append(form('Open team server',[field('Workspace address','address',{type:'url',value:'http://127.0.0.1:4174'})],'Open workspace',data=>{const target=new URL(data.address),local=['localhost','127.0.0.1','[::1]'].includes(target.hostname);if(target.username||target.password||!(target.protocol==='https:'||local&&target.protocol==='http:'))throw new Error('Use HTTPS, or HTTP for a server on this computer, without credentials in the address.');close();location.assign(new URL('/editor/admin.html',target.origin).href);}));});}
+function connectServer(){
+ if(window.pixlDesktop?.local){window.pixlDesktop.connect().catch(error=>notify(error.message,true));return;}
+ dialog('Open a team server',(node,close)=>{node.append(el('p','Open your existing PixlPrfct server. Projects on this device stay in this browser.'));node.append(form('Open team server',[field('Workspace address','address',{type:'url',value:'http://127.0.0.1:4174'})],'Open workspace',data=>{const target=new URL(data.address),local=['localhost','127.0.0.1','[::1]'].includes(target.hostname);if(target.username||target.password||!(target.protocol==='https:'||local&&target.protocol==='http:'))throw new Error('Use HTTPS, or HTTP for a server on this computer, without credentials in the address.');close();location.assign(new URL('/editor/admin.html',target.origin).href);}));});
+}
 async function dashboard(target,version){
  header(overview?overview.organization.name+' admin':'PixlPrfct admin');
  const grid=el('div',undefined,'admin-grid');target.append(grid);
@@ -119,7 +122,7 @@ function settings(target){header('Settings');const wrapper=el('div',undefined,'a
  const security=el('section'),list=el('div',undefined,'admin-settings-list');security.append(el('h2','Access and security'),list);wrapper.append(security);
  if(workspace)setting(list,'Account security','Manage your password, two-factor authentication, and signed-in devices.',link('Manage','/editor/account.html'));
  if(overview)setting(list,'People and roles','Owners and admins manage membership. Project deletion is restricted to creators and admins.',navLink('people','Manage'));
- setting(list,'Database and hosting',installation?.mode==='self-hosted'?'Database provider: '+installation.provider:'This preview stores projects in this browser.',navLink('database','Open setup'));
+ setting(list,'Database and hosting',installation?.mode==='self-hosted'?'Database provider: '+installation.provider:window.pixlDesktop?.local?'Projects are saved in this desktop app.':'Projects are saved in this browser.',navLink('database','Open setup'));
  if(installation?.mode==='self-hosted')setting(list,'Registration',installation.registration?'New account registration is open.':'New account registration is closed.');
  if(!overview&&!workspace)setting(list,'Team administration','Connect to a PixlPrfct server to manage accounts and teams.',button('Open team server',connectServer));
 }
