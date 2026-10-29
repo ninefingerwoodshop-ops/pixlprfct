@@ -1,4 +1,5 @@
 import {installDesktop} from './desktop-integration.js';
+import {staticHost} from './static-host.js';
 import {readDesignFile} from './design-import.js';
 import {icon} from './icons.js';
 import {LocalDrafts,DRAFTS_KEY} from './local-drafts.js';
@@ -79,7 +80,7 @@ function render(){
  }
 }
 async function fetchCloud(more=false){
- if(disposed||cloudLoading)return;cloudLoading=true;cloudError=null;render();
+ if(disposed||cloudLoading||staticHost)return;cloudLoading=true;cloudError=null;render();
  try{const result=await cloudRequest(more&&next?'?'+new URLSearchParams({before:next}):'');const rows=result.documents.filter(f=>!f.deleted_at).map(f=>({...f,kind:'cloud',updatedAt:f.updated_at}));cloud=more?[...cloud,...rows]:rows;next=result.next;}
  catch(error){cloudError=error;}finally{cloudLoading=false;render();}
 }
@@ -94,6 +95,7 @@ const onStorage=event=>{if(event.key===DRAFTS_KEY)render();},onPageShow=event=>{
 window.addEventListener('storage',onStorage);window.addEventListener('pageshow',onPageShow);
 
 async function loadWorkspace(){
+ if(staticHost)return;
  try{
   const installation=await api('/api/installation');if(installation.mode!=='self-hosted')return;selfHosted=true;
   $('cloud-signin').href='/editor/account.html';$('cloud-signin').textContent='Sign in or create account';
@@ -120,6 +122,11 @@ if(window.pixlDesktop?.local){
  const links=root.querySelector('.home-account-links');links.replaceChildren();
  const connect=el('button',null,'Connect to a team server…');connect.onclick=()=>window.pixlDesktop.connect();links.append(connect);
  closeDesktop=installDesktop({report,importFile:importDesign});
+}
+if(staticHost){
+ root.querySelector('[data-scope="cloud"]').hidden=true;
+ const links=root.querySelector('.home-account-links');links.replaceChildren();
+ const desktop=el('a',null,'Get the desktop app');desktop.href='https://ninefingerwoodshop.com/pixlprfct.html#download';links.append(desktop);
 }
 const params=new URLSearchParams(location.search);
 if(params.has('projectError'))report(new Error('That project could not be opened. Choose a saved project below or import a copy.'));

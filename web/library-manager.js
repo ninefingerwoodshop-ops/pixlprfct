@@ -1,6 +1,7 @@
 import {icon} from './icons.js';
 import {mergeLibrary,libraryForMaster,descendantsOf,importedContentError,protectedInstanceError,sourceEditError} from './library-model.js';
 import {projectUrl} from './project-navigation.js';
+import {staticHost} from './static-host.js';
 const el=(tag,className,text)=>{const e=document.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;};
 export async function libraryRequest(path='',options={}){
  const url=new URL('/api/libraries'+path,location.origin);const workspace=new URLSearchParams(location.search).get('workspace');if(workspace)url.searchParams.set('workspace',workspace);
@@ -43,7 +44,7 @@ export function createLibraryManager({getDocument,getSession,applyDocument,saveC
  function message(text){content.append(el('p','library-empty',text));}
  function render(){
   tabs.forEach(b=>{b.setAttribute('aria-current',b.dataset.tab===tab?'page':'false');b.disabled=busy;});content.replaceChildren();status.textContent=failure;if(failure)content.append(status);
-  if(!selfHosted){message('Team libraries are available on self-hosted installations with accounts.');const a=el('a','library-action','Set up a workspace');a.href='/editor/setup.html';content.append(a);return;}
+  if(!selfHosted){message('Team libraries are available on self-hosted installations with accounts.');if(!staticHost){const a=el('a','library-action','Set up a workspace');a.href='/editor/setup.html';content.append(a);}return;}
   const doc=getDocument(),session=getSession(),links=doc.libraries??[],active=links.filter(l=>l.enabled!==false),current=catalog.find(l=>l.id===session?.active?.id);
   if(tab==='file'){
    content.append(el('h3',null,'Assets created in this file'));
