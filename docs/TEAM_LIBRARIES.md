@@ -93,6 +93,6 @@ need deployment-specific integration testing.
   pages in exports/prototypes, tenant isolation, permission escalation/revocation,
   stale saves, immutable releases, and version restoration.
 - Focused library/component/clipboard/export/prototype/account checks: 36 passed.
-  TypeScript and the three Rust tests passed. Full JavaScript suite: 807 tests,
-  805 passed, with the same two pre-existing failures in `css-renderer.test.mjs`
-  and `icon-library.test.mjs` observed before these changes.
+  TypeScript and the three Rust tests passed. Release validation: all 807
+  JavaScript tests pass after rebuilding the icon font and omitting empty motion
+  rules from CSS output. The production build, Rust formatting, and Clippy pass.
