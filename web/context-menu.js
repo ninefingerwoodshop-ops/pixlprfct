@@ -11,7 +11,7 @@ export function contextMenuBounds(point, size, viewport) {
   };
 }
 
-export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = document.body, onClose = () => {}} = {}) {
+export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = document.body, anchor = null, onClose = () => {}} = {}) {
   event.preventDefault();
   closeMenu();
   const menu = document.createElement('div');
@@ -37,6 +37,13 @@ export function showContextMenu(event, actions, returnFocus, {label = 'Layer act
   closeMenu = close;
   for (const action of actions) {
     if (action.visible === false) continue;
+    if (action.separator) {
+      const separator = document.createElement('div');
+      separator.className = 'selection-menu-separator';
+      separator.setAttribute('role', 'separator');
+      menu.append(separator);
+      continue;
+    }
     const button = document.createElement('button');
     button.setAttribute('role', 'menuitem');
     const name = document.createElement('span');
@@ -57,7 +64,8 @@ export function showContextMenu(event, actions, returnFocus, {label = 'Layer act
     const visual = window.visualViewport;
     const viewport = {left: visual?.offsetLeft ?? 0, top: visual?.offsetTop ?? 0,
       width: visual?.width ?? innerWidth, height: visual?.height ?? innerHeight};
-    const point = {x: event.clientX, y: event.clientY};
+    const rect = anchor?.getBoundingClientRect();
+    const point = rect ? {x: rect.left, y: rect.bottom + 5} : {x: event.clientX, y: event.clientY};
     const limits = contextMenuBounds(point, {width: 0, height: 0}, viewport);
     menu.style.maxWidth = limits.maxWidth + 'px';
     menu.style.maxHeight = limits.maxHeight + 'px';
@@ -68,7 +76,7 @@ export function showContextMenu(event, actions, returnFocus, {label = 'Layer act
   position();
   const buttons = () => [...menu.querySelectorAll('button:not(:disabled)')];
   buttons()[0]?.focus();
-  document.addEventListener('pointerdown', e => { if (!menu.contains(e.target)) close(); }, {signal:controller.signal});
+  document.addEventListener('pointerdown', e => { if (!menu.contains(e.target) && !(anchor && returnFocus?.contains(e.target))) close(); }, {signal:controller.signal});
   window.addEventListener('resize', position, {signal:controller.signal});
   window.visualViewport?.addEventListener('resize', position, {signal:controller.signal});
   window.visualViewport?.addEventListener('scroll', position, {signal:controller.signal});
@@ -84,4 +92,5 @@ export function showContextMenu(event, actions, returnFocus, {label = 'Layer act
       close(true);
     }
   };
+  return close;
 }

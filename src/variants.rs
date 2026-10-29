@@ -90,6 +90,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],

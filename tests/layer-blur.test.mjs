@@ -26,3 +26,30 @@ test('large blur buffers reject raster exports even when a small target is reque
  const shape={id:1,parent_id:0,kind:'rectangle',x:0,y:0,width:100,height:100,appearance:{opacity:1,stroke_enabled:false,layer_blur:100000}};
  assert.throws(()=>exportSize({width:100,height:100},1,'png',[shape]),/Effect buffer/);
 });
+
+test('blur enabled states preserve values through undo, save, clipboard and component inheritance',()=>{
+ const e=new Editor(),id=e.add('frame',0,0),other=new Editor();
+ try{
+  const original=get(e,id);e.update(JSON.stringify({...original,appearance:{...appearance(original),layer_blur:16,backdrop_blur:24}}));
+  const enabled=get(e,id);assert.equal(enabled.appearance.layer_blur_enabled,true);assert.equal(enabled.appearance.backdrop_blur_enabled,true);
+  e.update(JSON.stringify({...enabled,appearance:{...enabled.appearance,layer_blur_enabled:false,backdrop_blur_enabled:false}}));
+  const disabled=e.snapshot();assert.equal(get(e,id).appearance.layer_blur,16);assert.equal(get(e,id).appearance.backdrop_blur,24);
+  e.undo();assert.equal(get(e,id).appearance.layer_blur_enabled,true);e.redo();assert.equal(e.snapshot(),disabled);
+  other.load(disabled);assert.equal(other.snapshot(),disabled);
+  const copy=JSON.parse(other.paste_layers(e.copy_layers(JSON.stringify([id])),400,0,0))[0];assert.equal(get(other,copy).appearance.layer_blur_enabled,false);assert.equal(get(other,copy).appearance.backdrop_blur,24);
+  e.create_component(id);const instance=e.create_instance(id,400,0);assert.equal(get(e,instance).appearance.layer_blur_enabled,false);
+  const main=get(e,id);e.update(JSON.stringify({...main,appearance:{...main.appearance,layer_blur_enabled:true}}));
+  assert.equal(get(e,instance).appearance.layer_blur_enabled,true);assert.equal(get(e,instance).appearance.layer_blur,16);assert.equal(get(e,instance).appearance.backdrop_blur_enabled,false);
+ }finally{e.free();other.free();}
+});
+test('disabled blur is excluded from CSS, SVG, bounds and export requirements',async()=>{
+ const {compileCssScene}=await import('../web/css-renderer.js');
+ const shape={id:1,page_id:1,parent_id:0,kind:'rectangle',name:'Blur test',x:0,y:0,width:100,height:100,fill:'#ffffff',appearance:{opacity:1,corner_radius:0,fill_enabled:true,stroke_enabled:false,stroke_color:'#000000',layer_blur:100000,backdrop_blur:24,layer_blur_enabled:false,backdrop_blur_enabled:false}};
+ assert.deepEqual(compositeGeometry([shape],appearance).bounds,{x:0,y:0,width:100,height:100});
+ assert.doesNotMatch(sceneSvg([shape],()=>'<rect/>'),/GaussianBlur|filter=/);
+ const css=compileCssScene([shape]).css;assert.doesNotMatch(css,/(?:backdrop-)?filter:blur/);
+ assert.deepEqual(exportSize({x:0,y:0,width:100,height:100},1,'png',[shape]),{width:100,height:100});
+ const active={...shape,appearance:{...shape.appearance,layer_blur:16,layer_blur_enabled:true,backdrop_blur_enabled:true}};
+ assert.match(compileCssScene([active]).css,/backdrop-filter:blur\(24px\)/);assert.match(compileCssScene([active]).css,/filter:blur\(8px\)/);
+ assert.throws(()=>exportSize({x:0,y:0,width:100,height:100},1,'png',[active]),/Background blur requires/);
+});

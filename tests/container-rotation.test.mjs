@@ -28,3 +28,27 @@ test('auto-layout frame rotation retains flow and local sizing on resize',()=>{
  const before=all(e).filter(s=>s.parent_id===p).map(s=>[s.id,s.width,s.height]);set(e,p,{rotation:45});assert.deepEqual(all(e).filter(s=>s.parent_id===p).map(s=>[s.id,s.width,s.height]),before);
  set(e,p,{width:500,auto_layout:{...get(e,p).auto_layout,hug_width:false}});assert.equal(get(e,p).rotation,45);assert.equal(get(e,p).width,500);e.free();
 });
+
+test('inspector quarter turns preserve the visual center and dimensions for every layer kind',async()=>{
+ const {rotateQuarterTurn}=await import('../web/rotation.js');
+ for(const kind of ['rectangle','frame','group','text','image','ellipse','pen']){
+  const original={kind,x:70,y:90,width:140,height:60,rotation:33,layout_item:{fill_width:true,fill_height:true}};
+  let shape=original;const center=worldPoint(original,{x:140,y:120});
+  for(let turn=0;turn<4;turn++){
+   shape=rotateQuarterTurn(shape);const next=worldPoint(shape,{x:shape.x+70,y:shape.y+30});
+   near(next.x,center.x);near(next.y,center.y);assert.equal(shape.width,140);assert.equal(shape.height,60);
+   assert.equal(shape.layout_item.fill_width,false);assert.equal(shape.layout_item.fill_height,false);
+  }
+  near(shape.x,original.x);near(shape.y,original.y);near(shape.rotation,original.rotation);
+ }
+});
+
+test('inspector frame rotation retains child geometry through undo and save',async()=>{
+ const {rotateQuarterTurn}=await import('../web/rotation.js');const e=new Editor();
+ const frame=e.add('frame',50,70),child=e.add('rectangle',80,100);e.reparent_many(JSON.stringify([child]),frame);
+ const before=e.snapshot(),s=get(e,frame),center=worldPoint(s,{x:s.x+s.width/2,y:s.y+s.height/2});
+ e.update(JSON.stringify(rotateQuarterTurn(s)));const next=get(e,frame),after=e.snapshot();
+ const actual=worldPoint(next,{x:next.x+next.width/2,y:next.y+next.height/2});near(center.x,actual.x);near(center.y,actual.y);
+ assert.equal(get(e,child).parent_id,frame);assert.equal(get(e,child).width,JSON.parse(before).shapes.find(s=>s.id===child).width);
+ e.undo();assert.equal(e.snapshot(),before);e.redo();assert.equal(e.snapshot(),after);const copy=new Editor();copy.load(after);assert.equal(copy.snapshot(),after);e.free();copy.free();
+});

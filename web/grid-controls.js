@@ -1,5 +1,5 @@
 import {layoutClass} from './layout-class.js';
-import {areaTrackValues,editAreaTrack,areaTrackDefinition} from './grid-area-track-values.js';
+import {areaTrackValues,editAreaTrack,areaTrackDefinition,areaPlacementKey} from './grid-area-track-values.js';
 import {gridPickerCell,gridPickerWindow,sizeGridTracks} from './grid-ux.js';
 import {icon} from './icons.js';
 import {bindGridPickerDrag} from './grid-picker-drag.js';
@@ -98,12 +98,23 @@ export function renderGridCell(panel,shape,parent,update,plan,preview){
  panel.append(el('h3','Grid cell'));
  const areaTracks=areaTrackValues(shape,plan);
  if(areaTracks.length){
+  const active=el('div',null,'grid-active-area');active.hidden=true;active.dataset.basePlacement=areaPlacementKey(placed);
+  const status=el('p',null,'grid-caption grid-active-placement');status.setAttribute('role','status');
+  active.append(status,el('p',null,'grid-caption grid-active-tracks'));panel.append(active);
   const tracks=el('div',null,'grid-area-track-values');
-  tracks.append(el('p','Area track sizes','grid-caption'),el('p','Sizes apply to the parent grid and every area sharing these tracks.','grid-caption'));
+  tracks.append(el('p','Base area tracks','grid-caption'),el('p','Edits apply to the base grid and every area sharing these tracks. Breakpoint overrides are edited in Layout CSS.','grid-caption'));
   for(const track of areaTracks){
    const definition=areaTrackDefinition(parent,track.key),label=track.label.replace(' (px)','');
    const card=el('div',null,'area-track-control');card.dataset.areaTrackControl=track.key;card.setAttribute('role','group');card.setAttribute('aria-label',label);tracks.append(card);
-   const row=pair(card);
+   const details=el('details',null,'area-track-details');details.id=`area-track-details-${parent.id}-${shape.id}-${track.key}`;details.open=expanded.has(details.id);card.append(details);
+   const summary=el('summary'),heading=el('span',null,'area-track-heading');
+   heading.append(el('span',label+' ','area-track-name'),el('span',gridTrackCss(definition),'area-track-rule'));
+   const measured=el('span',`${track.value} px on canvas`,'area-track-measured');measured.dataset.areaTrackMeasured=track.key;
+   summary.append(heading,measured);details.append(summary);
+   // Let the disclosure and inspector scroll normally without editing canvas layers.
+   summary.onkeydown=event=>{if(!event.ctrlKey&&!event.metaKey&&!event.altKey&&['Enter',' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(event.key))event.stopPropagation();};
+   const settings=el('div',null,'area-track-settings');details.append(settings);
+   const row=pair(settings);
    const supported=['fixed','fr','percent','auto','minmax'].includes(definition.mode);
    const mode=definition.mode;
    const choices=[['fixed','px'],['fr','fr'],['percent','%'],['auto','Auto'],['minmax','Min / max']];
@@ -119,16 +130,16 @@ export function renderGridCell(panel,shape,parent,update,plan,preview){
    if(mode==='minmax'){
     const change=next=>update(editAreaTrack(parent,track.key,next.value,'minmax',next));
     field(row,`${label} maximum size`,'area-track-max-'+track.key,definition.value,value=>{if(value===null)throw new Error('Enter a maximum size.');change({...definition,value});});
-    trackRangeControls(card,'area-track-'+track.key,definition,change);
+    trackRangeControls(settings,'area-track-'+track.key,definition,change);
    }
-   const measured=el('p',`${track.value} px on canvas`,'grid-caption');measured.dataset.areaTrackMeasured=track.key;card.append(measured);
    const feedback=el('p',null,'area-track-limit');feedback.id='area-track-limit-'+track.key;feedback.hidden=true;card.append(feedback);
+   summary.setAttribute('aria-describedby',feedback.id);
    for(const control of card.querySelectorAll('input,select'))control.setAttribute('aria-describedby',feedback.id);
   }
   panel.append(tracks);
  }
  const placementSummary=el('p',null,'grid-caption'),summaryText=cell=>`Column ${cell.column} · Row ${cell.row} · ${cell.column_span} × ${cell.row_span}`;
- if(placed){placementSummary.textContent=summaryText(placed);panel.append(placementSummary);}
+ if(placed){placementSummary.textContent=(c.area?'Base placement: ':'')+summaryText(placed);panel.append(placementSummary);}
  const cellShape=cell=>({...shape,layout_item:{...shape.layout_item,grid_cell:cell,...(cell.column_span>1?{fill_width:true}:{}),...(cell.row_span>1&&shape.component?.type!=='instance'?{fill_height:true}:{})}});
  const commitCell=cell=>update(cellShape(cell));
  const commit=(key,value)=>update({...shape,layout_item:{...shape.layout_item,grid_cell:{...c,...(['column','row','column_span','row_span'].includes(key)?{area:''}:{}),[key]:value},...(key==='column_span'&&value>1?{fill_width:true}:{}),...(key==='row_span'&&value>1&&shape.component?.type!=='instance'?{fill_height:true}:{})}});

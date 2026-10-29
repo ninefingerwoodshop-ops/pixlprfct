@@ -11,7 +11,7 @@ export function transformRectangle(shape,action){
  const vector=([x,y])=>rotate?[-y,x]:horizontal?[-x,y]:[x,-y];
  const a=appearance(shape),corners=a.corner_radii;
  const gradient=g=>{if(!g)return g;const m=g.radial_transform??[1,0,0,1];return {...g,start:point(g.start),end:point(g.end),...(g.kind==='radial'?{radial_transform:[...vector(m.slice(0,2)),...vector(m.slice(2,4))]}:{})};};
- return {...shape,...(rotate?{x:shape.x+(shape.width-shape.height)/2,y:shape.y+(shape.height-shape.width)/2,width:shape.height,height:shape.width}:{}),appearance:{...a,gradient:gradient(a.gradient),stroke_gradient:gradient(a.stroke_gradient),...(corners?{corner_radii:(rotate?[3,0,1,2]:horizontal?[1,0,3,2]:[3,2,1,0]).map(i=>corners[i])}:{})}};
+ return {...shape,...(rotate?{x:shape.x+(shape.width-shape.height)/2,y:shape.y+(shape.height-shape.width)/2,width:shape.height,height:shape.width}:{}),appearance:{...a,...Object.fromEntries(['fills','strokes'].filter(key=>a[key]).map(key=>[key,a[key].map(p=>({...p,gradient:gradient(p.gradient)}))])),gradient:gradient(a.gradient),stroke_gradient:gradient(a.stroke_gradient),...(corners?{corner_radii:(rotate?[3,0,1,2]:horizontal?[1,0,3,2]:[3,2,1,0]).map(i=>corners[i])}:{})}};
 }
 
 export function rectangleToVector(shape){

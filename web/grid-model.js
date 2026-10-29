@@ -3,6 +3,9 @@ const length=(v,u)=>`${num(v)}${['px','%','em','fr'].includes(u)?u:'px'}`;
 const sizing=(v,u)=>['auto','min-content','max-content'].includes(u)?u:length(v,u);
 export function gridTrackCss(t={mode:'fr',value:1}){
  if(t.mode==='minmax')return `minmax(${sizing(t.min??0,t.min_unit||'px')},${sizing(t.value,t.max_unit||'fr')})`;
+ // A bounded length still has a preferred size. minmax(min,max) discards it
+ // and makes the browser grow fixed tracks to their maximum during a drag.
+ if(['fixed','percent','em'].includes(t.mode)&&(t.min!=null||t.max!=null))return `clamp(${length(t.min??0,'px')},${length(t.value,t.mode==='percent'?'%':t.mode==='em'?'em':'px')},${length(t.max??1000000,'px')})`;
  const value=t.mode==='hug'?'max-content':['auto','min-content','max-content'].includes(t.mode)?t.mode:t.mode==='fr'?`${Math.max(.001,num(t.value))}fr`:length(t.value,t.mode==='percent'?'%':t.mode==='em'?'em':'px');
  return t.min!=null||t.max!=null?`minmax(${length(t.min??0,'px')},${t.max!=null?length(t.max,'px'):value})`:t.mode==='fr'?`minmax(0,${value})`:value;
 }

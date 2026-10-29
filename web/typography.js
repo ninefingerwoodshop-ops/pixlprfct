@@ -65,6 +65,8 @@ export function escapeXml(value) { return String(value).replace(/[&<>"']/g, c =>
 
 export function textSvg(shape, layout) {
   const { style, lines } = layout;
+  if(shape.editor_meta?.text_path){const p=shape.editor_meta.text_path,points=p.reverse?[...p.points].reverse():p.points,d=points.map(([x,y],i)=>(i?'L':'M')+(shape.x+x*shape.width)+' '+(shape.y+y*shape.height)).join(' '),offset=style.align==='center'?50:style.align==='right'?100:p.offset*100;return `<defs><path id="text-path-${shape.id}" d="${d}"/></defs><text ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${style.align==='center'?'middle':style.align==='right'?'end':'start'}"><textPath href="#text-path-${shape.id}" startOffset="${offset}%">${escapeXml(shape.text)}</textPath></text>`;}
+
   const anchor = { left: 'start', center: 'middle', right: 'end' }[style.align];
   return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${anchor}" dominant-baseline="text-before-edge" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
 }

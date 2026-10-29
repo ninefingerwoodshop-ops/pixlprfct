@@ -1,3 +1,4 @@
+import {effectBlur} from './effect-values.js';
 import {visualBounds} from './rotation.js';
 import {strokePadding} from './stroke-tips.js';
 import {paintChildren} from './stacking.js';
@@ -39,7 +40,7 @@ export function compositeGeometry(shapes,styleOf){
   const visual=visualBounds(s);
   let content=s.kind==='group'?null:{x:visual.x-pad,y:visual.y-pad,width:visual.width+2*pad,height:visual.height+2*pad};
   for(const child of children.get(s.id)??[]){let box=visit(child);if(s.kind==='frame'&&s.clip_content)box=intersect(box,visual);content=union(content,box);}
-  const output=blurBounds(shadowBounds(content,a.shadows),a.layer_blur??0);geometry.set(s.id,{content,output});return output;
+  const output=blurBounds(shadowBounds(content,a.shadows),effectBlur(a,'layer_blur'));geometry.set(s.id,{content,output});return output;
  };
  let bounds=null;for(const s of children.get(0)??[])bounds=union(bounds,visit(s));return{children,geometry,bounds};
 }

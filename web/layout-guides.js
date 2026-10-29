@@ -1,6 +1,7 @@
 import {radii} from './appearance.js';
 import {clippingFrames} from './scene.js';
 import {visibleInTree} from './selection.js';
+export {renderGuideControls} from './guide-controls.js';
 export const defaultGuide=()=>({kind:'columns',size:64,count:4,gutter:16,margin:16,alignment:'stretch',color:'#ff3366',opacity:.12,visible:true});
 // Geometry is independent of canvas so resized guides and export exclusion can
 // be checked without a browser. Dense square grids are omitted at low zoom.
@@ -25,39 +26,4 @@ export function drawLayoutGuides(ctx,shapes,zoom){
    for(const r of guideGeometry(frame,g,zoom)){if(g.kind==='grid'){ctx.moveTo(r.x,r.y);ctx.lineTo(r.x+r.width,r.y+r.height);}else ctx.fillRect(r.x,r.y,r.width,r.height);}if(g.kind==='grid')ctx.stroke();
   }ctx.restore();
  }
-}
-export function renderGuideControls(host,shape,change,shown,toggle,stylesApi){
- host.replaceChildren();host.hidden=shape?.kind!=='frame';if(host.hidden)return;
- const title=document.createElement('h3');title.textContent='Layout guides';host.append(title);
- const show=document.createElement('button');show.className='wide-button';show.textContent=shown?'Hide all guides · Shift G':'Show all guides · Shift G';show.onclick=toggle;host.append(show);
- const linked=stylesApi?.styles.find(s=>s.id===shape.guide_style);
- const commit=next=>linked?stylesApi.save({...linked,grids:next.layout_grids},0):change(next);
- if(stylesApi){
-  const choose=document.createElement('select');choose.setAttribute('aria-label','Layout guide style');
-  for(const s of [{id:0,name:'Custom guides (no style)'},...stylesApi.styles]){const o=document.createElement('option');o.value=s.id;o.textContent=s.name;choose.append(o);}choose.value=shape.guide_style??0;choose.onchange=()=>stylesApi.apply(Number(choose.value));host.append(choose);
-  const name=document.createElement('input');name.type='text';name.maxLength=128;name.placeholder='Guide style name';name.setAttribute('aria-label','Guide style name');name.value=linked?.name??'';host.append(name);
-  const button=(text,fn)=>{const b=document.createElement('button');b.className='wide-button';b.textContent=text;b.onclick=fn;host.append(b);return b;};
-  button('Save as new guide style',()=>stylesApi.save({id:0,name:name.value,grids:shape.layout_grids??[]},shape.id));
-  if(linked){
-   const note=document.createElement('p');note.className='muted';note.textContent='Editing these guides updates every frame linked to this style.';host.append(note);
-   button('Rename guide style',()=>stylesApi.save({...linked,name:name.value},0));
-   button('Detach guide style',()=>stylesApi.apply(0));
-   button('Delete guide style',()=>stylesApi.remove(linked.id));
-  }
- }
- const grids=shape.layout_grids??[];
- const save=(i,patch)=>commit({...shape,layout_grids:grids.map((g,n)=>n===i?{...g,...patch}:g)});
- grids.forEach((g,i)=>{
-  const box=document.createElement('div');box.className='guide-settings';host.append(box);
-  const label=(name,input)=>{const l=document.createElement('label');l.append(document.createTextNode(name),input);input.setAttribute('aria-label',`Guide ${i+1} ${name}`);box.append(l);};
-  const select=(name,key,values)=>{const el=document.createElement('select');for(const [value,text] of values){const opt=document.createElement('option');opt.value=value;opt.textContent=text;el.append(opt);}el.value=g[key];el.onchange=()=>save(i,{[key]:el.value});label(name,el);};
-  const number=(name,key,min,max)=>{const el=document.createElement('input');el.type='number';el.min=min;el.max=max;el.value=key==='opacity'?g[key]*100:g[key];el.onchange=()=>save(i,{[key]:Number(el.value)/(key==='opacity'?100:1)});label(name,el);};
-  select('Type','kind',[['grid','Square grid'],['columns','Columns'],['rows','Rows']]);
-  if(g.kind!=='grid'){select('Alignment','alignment',[['stretch','Stretch'],['start','Start'],['center','Center'],['end','End']]);number('Count','count',1,256);number('Gutter','gutter',0,1000000);number('Margin','margin',0,1000000);}
-  if(g.kind==='grid'||g.alignment!=='stretch')number('Size','size',1,1000000);
-  const color=document.createElement('input');color.type='color';color.value=g.color;color.onchange=()=>save(i,{color:color.value});label('Color',color);number('Opacity (%)','opacity',0,100);
-  const visible=document.createElement('input');visible.type='checkbox';visible.checked=g.visible;visible.onchange=()=>save(i,{visible:visible.checked});label('Visible',visible);
-  const remove=document.createElement('button');remove.className='wide-button danger';remove.textContent=`Remove guide ${i+1}`;remove.onclick=()=>commit({...shape,layout_grids:grids.filter((_,n)=>n!==i)});box.append(remove);
- });
- const add=document.createElement('button');add.className='wide-button';add.textContent='Add layout guide';add.disabled=grids.length>=8;add.onclick=()=>commit({...shape,layout_grids:[...grids,defaultGuide()]});host.append(add);
 }

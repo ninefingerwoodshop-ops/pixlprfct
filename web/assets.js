@@ -26,7 +26,7 @@ export function assetAppearance(doc,id,textLayout){
  return {...compileCssScene(normalized,{variables:doc.variables,pageModes:modes,textLayout,interactive:true}),width:Math.max(1,box.width),height:Math.max(1,box.height)};
 }
 
-export function renderAssets(container, assets, {insert, goMain, preview, page, dragStart, dragEnd}, limit = 40) {
+export function renderAssets(container, assets, {insert, goMain, preview, page, dragStart, dragEnd,library}, limit = 40) {
   container.disposeAssetPreviews?.();const observers=[];container.disposeAssetPreviews=()=>observers.forEach(o=>o.disconnect());
   const rows = assets.slice(0,limit).map(asset => {
     const card = document.createElement('article');card.className='asset-card';
@@ -56,9 +56,9 @@ export function renderAssets(container, assets, {insert, goMain, preview, page, 
         {label:'Go to main component',run:()=>goMain(selected)}
       ],options,{label:'Options for '+asset.name,heading:asset.name,container:container.closest('dialog')??document.body,onClose:()=>options.setAttribute('aria-expanded','false')});
     };
-    caption.append(options);return card;
+    caption.append(options);const source=library?.(selected);if(source){const note=document.createElement('small');note.className='asset-library-note';note.innerHTML=icon('lock');note.append(document.createTextNode(source.name+' · Protected'));card.append(note);}return card;
   });
   if(!rows.length){const message=document.createElement('div');message.className='empty-assets';const title=document.createElement('strong');title.textContent='No components to show';const hint=document.createElement('p');hint.textContent='Create a component from selected layers with Ctrl/⌘ + Alt + K, or adjust your search and page filter.';message.append(title,hint);rows.push(message);}
-  if(assets.length>limit){const more=document.createElement('button');more.textContent=`Show more (${assets.length-limit} remaining)`;more.onclick=()=>renderAssets(container,assets,{insert,goMain,preview,page,dragStart,dragEnd},limit+40);rows.push(more);}
+  if(assets.length>limit){const more=document.createElement('button');more.textContent=`Show more (${assets.length-limit} remaining)`;more.onclick=()=>renderAssets(container,assets,{insert,goMain,preview,page,dragStart,dragEnd,library},limit+40);rows.push(more);}
   container.replaceChildren(...rows);
 }

@@ -6,8 +6,9 @@ export function exportJobs(page,ids,options,name){
  if(options.scope==='layers')roots=roots.filter(s=>{let p=s;while(p.parent_id){p=page.find(n=>n.id===p.parent_id);if(!p)break;if(ids.includes(p.id))return false;}return true;});
  if(batch&&!roots.length)throw new Error(options.scope==='frames'?'No visible top-level frames to export':'Select visible layers to export');
  if(batch&&roots.length>100)throw new Error('Batch export supports up to 100 files');
- const entries=batch?roots.map(s=>({name:s.name,shapes:exportShapes(page,[s.id],'selection')})):[{name,shapes:exportShapes(page,ids,options.scope)}];
- const used=new Set();return entries.map(entry=>{const box=exportBounds(entry.shapes),size=exportSize(box,options.scale,options.format,entry.shapes);let base=(entry.name??'Layer').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[. ]+$/g,'').slice(0,100)||'Layer';if(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(base))base='_'+base;let filename=base,n=2;while(used.has(filename.toLowerCase()))filename=base+' ('+n+++')';used.add(filename.toLowerCase());return{...entry,name:filename,box,size};});
+ const entryFor=s=>s.editor_meta?.role==='slice'?{name:s.name,shapes:exportShapes(page,[],'page'),box:{x:s.x,y:s.y,width:s.width,height:s.height}}:{name:s.name,shapes:exportShapes(page,[s.id],'selection')};
+ const entries=batch?roots.map(entryFor):options.scope==='selection'&&roots.length===1&&roots[0].editor_meta?.role==='slice'?[entryFor(roots[0])]:[{name,shapes:exportShapes(page,ids,options.scope)}];
+ const used=new Set();return entries.map(entry=>{const box=entry.box??exportBounds(entry.shapes),size=exportSize(box,options.scale,options.format,entry.shapes);let base=(entry.name??'Layer').replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').replace(/[. ]+$/g,'').slice(0,100)||'Layer';if(/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(base))base='_'+base;let filename=base,n=2;while(used.has(filename.toLowerCase()))filename=base+' ('+n+++')';used.add(filename.toLowerCase());return{...entry,name:filename,box,size};});
 }
 export function crc32(bytes){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return(crc^0xffffffff)>>>0;}
 export function zipFiles(files){

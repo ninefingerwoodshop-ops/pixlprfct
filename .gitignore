@@ -74,3 +74,6 @@ yarn-error.log*
 .DS_Store
 
 public/editor/
+
+# Self-hosted database and private development email
+/data/

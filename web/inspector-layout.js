@@ -5,7 +5,7 @@ export function installInspectorLayout() {
  const design=make('div','inspector-content'),prototype=make('div','inspector-content');design.id='design-inspector';prototype.id='prototype-inspector';
  for(const child of [...panel.children])if(!child.matches('.inspector-top,.inspector-tabs,#track-scroll-paused,#track-scroll-resumed'))design.append(child);
  panel.append(design,prototype);
- prototype.append($('prototype-panel'));
+ const help=make('p','prototype-help','Prototype links show where interactions go. Turn them on to connect frames on the canvas.');help.id='prototype-help';prototype.append(help,$('prototype-panel'));
  const empty=make('section','property-section');empty.id='prototype-empty';empty.append(make('h3','','Prototype'),make('p','','Select a layer to add interactions, or select a frame to set a flow starting point.'));prototype.append(empty);
  const caption=$('selection-caption');tabs.replaceChildren();tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Inspector mode');
  const buttons=['Design','Prototype'].map((label,i)=>{const b=make('button','inspector-tab',label);b.id=`inspector-tab-${i}`;b.type='button';b.setAttribute('role','tab');b.setAttribute('aria-controls',i?prototype.id:design.id);tabs.append(b);return b;});
@@ -35,7 +35,7 @@ export function installInspectorLayout() {
  return (shape,count)=>{
   empty.hidden=!!shape;utilities.hidden=!count;sizing.hidden=shape?.kind!=='text';
   const addLayout=$('add-auto-layout');if(shape){if(addLayout.parentElement!==layout)layout.append(addLayout);}else if(addLayout.parentElement!==design)design.insertBefore(addLayout,utilities);
-  caption.textContent=count>1?`${count} layers`:shape?.component?.type==='master'?'Component':shape?.component?.type==='instance'?'Instance':shape?.kind?shape.kind[0].toUpperCase()+shape.kind.slice(1):'Page';
+  caption.textContent=count>1?`${count} layers`:shape?.component?.type==='master'?'Component':shape?.component?.type==='instance'?'Instance':shape?.editor_meta?.role?shape.editor_meta.role[0].toUpperCase()+shape.editor_meta.role.slice(1):shape?.kind?shape.kind[0].toUpperCase()+shape.kind.slice(1):'Page';
   // Ordinary layers expose component creation with other layer actions.
   if(shape?.component){if(component.parentElement!==properties)properties.insertBefore(component,position);}
   else if(component.parentElement!==utilities)utilities.append(component);

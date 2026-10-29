@@ -1,34 +1,37 @@
 # PixlPrfct — saved direction and next steps
 
-Saved October 26, 2026. This is a continuation note, not a claim that every historical request is implemented or verified. Check the current code and UI before starting any item below.
+Saved October 28, 2026. This is a continuation note, not a claim that every historical request is implemented or verified. Check the current code and UI before starting any item below.
 
 ## Latest review
 
-See [Grid workflow review](docs/GRID_WORKFLOW_REVIEW.md) for the hands-on walkthrough, fixes, 125 passing focused tests, and broader-suite failures. A separate **Grid walkthrough** page is saved in the local editor document.
+See [Grid workflow review](docs/GRID_WORKFLOW_REVIEW.md) for the hands-on walkthrough, canvas resize fixes, and current passing test results. A separate **Grid walkthrough** page is saved in the local editor document.
 
 ## Where we stopped
 
-We were improving CSS Grid named-area resizing and the right-panel feedback experience.
+Responsive Grid editing now has a full browser pass: base-track edits under an active query, editing the override itself, switching boundaries, overlapping Grid-to-Flex queries, and restoring the original width after reload with Undo/Redo. Named-area measurements use the active browser layout while inputs retain base values. Children show their responsive parent’s status and breakpoint/restore controls. The canvas now resolves the media cascade once, fixing a freeze when overlapping queries switched Grid to Flex.
 
-The latest change gives the automatic-scrolling **paused** and **resumed** messages reserved space above the inspector controls. The controls scroll independently underneath, without being covered. Automatic reveal and manual-scroll detection now target the inner `.inspector-content` scroll container.
+The next responsive pass covered changing column counts and multiple named areas. Active area placement and occupied-track measurements now follow the rendered breakpoint, while base editing controls keep their meaning. Omitted areas auto-place without creating stale implicit columns, retaining their saved bindings and children. Renaming an area updates every breakpoint template atomically and rejects collisions with names used only by a breakpoint. Canvas area drawing directs users to Layout CSS when the active query overrides area definitions or track counts; switching into such a query exits drawing mode.
+
+Named-area track settings now use compact disclosures. Each collapsed track keeps its row/column name, CSS sizing rule, measured pixel size, and active limit warning visible. Expand individual tracks to edit their units and min/max settings. Open state survives edits and undo/redo for the same selected area; changing selection resets the track disclosures. Enter and Space toggle a track, and navigation keys do not leak into canvas editing.
 
 Relevant files:
-- `web/grid-resize-feedback.js` — limits, automatic reveal, pause/resume lifecycle and shortcut.
-- `web/editor.css` — reserved notice space and highlighted track controls.
-- `web/ui-motion.css` — confirmation fades and reduced-motion handling.
-- `web/index.html` — notice markup.
-- `tests/grid-resize-feedback.test.mjs` — 16 targeted tests passing after this change.
+- `web/grid-controls.js` — named-area track disclosures and keyboard handling.
+- `web/editor.css` — compact track summaries, focus rings, and existing resize notices.
+- `web/grid-area-track-values.js` — live measurements remain visible in collapsed summaries.
+- `web/grid-resize-feedback.js` — existing limits, automatic reveal, and pause/resume behavior.
 
-Served assets were refreshed with `node scripts/prepare-editor.mjs`. The latest change still needs a visual check in the running editor after reload; tests are not a substitute for that check. No commit or deployment is implied by this note.
+Verified in the real editor: four-track named area, expanding/collapsing with keyboard, editing a minmax minimum, and undo/redo while retaining expansion. The existing document was restored after the temporary edit. In an isolated 240px inspector using the same modules, verified a 12-column layout, collapsed-track limit feedback, automatic reveal, manual scroll pause, Resume, Option+R, and end-of-drag cleanup without horizontal overflow. A later canvas pass verified real resize drags, bounded fixed/minmax tracks, ordinary cell spans, and deterministic Escape/pointercancel/lost-capture/blur event paths. Dimensions, selection, history, and limit cleanup were preserved on cancellation; the review documents the event-injection method.
+
+Bounded fixed/percent/em tracks now preserve their preferred size using CSS clamp(). Finite minmax tracks now grow toward their limits in the engine, matching CSS canvas geometry. Relevant additions: `web/grid-model.js`, `web/layout-css.js`, `src/grid.rs`, and regression tests.
+
+All 722 JavaScript tests and 3 Rust tests pass. WASM rebuilt and served assets refreshed. No commit or deployment is implied by this note.
 
 ## Immediate follow-up ideas
 
-1. Verify a real named-area resize that hits a min/max limit: the matching track and inspector control highlight, and the control scrolls into view.
-2. Check paused/resumed notices at narrow panel widths and with long text. They must reserve space, remain readable, and never cover controls.
-3. Exercise manual scrolling, Resume, and Alt/Option+R during a drag. Manual scrolling should pause automatic scrolling only for the current drag. Resuming should reveal the current limit and use the user's latest scroll position as the restoration point.
-4. Verify release, Escape, pointer cancellation, and focus loss clean up notices, timers, listeners, and highlights. Rapid pause/resume must not stack notices or let old timers dismiss a new message.
-5. Check reduced motion, keyboard access, focus visibility, and screen-reader announcements. Keep announcements useful rather than repeating on every animation frame.
-6. Run an end-to-end Grid usability pass before adding more small interactions: create grid → create named area → place items → resize tracks → edit CSS → preview breakpoints → undo/redo.
+1. Extend canvas coverage to responsive minmax units, intrinsic/content sizing, and OS-level focus switching during a drag. The bounded resize and deterministic interruption paths now pass.
+2. Verify responsive exports and cross-browser behavior. Canvas tests now cover query-driven track counts/named areas, rename, omission/reappearance, base edits under active overrides, reload and width restoration.
+3. Check track disclosure behavior when parent tracks are reordered/deleted. Moving named areas between breakpoint tracks now has a separate active readout and stable base controls.
+4. Keep prioritizing complete user workflows over isolated tooltip refinements. The old broader-suite failures in the October 26 review are historical; the current baseline is clean.
 
 ## Product direction to preserve
 

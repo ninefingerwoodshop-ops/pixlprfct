@@ -7,7 +7,7 @@ import {prototypeHover} from './prototype-hover.js';
 import {canvasTransitions} from './prototype-transition.js';
 import {descendants,visibleInTree} from './selection.js';
 import {drawScene,radii,roundedContains} from './appearance.js';
-export function prototypeFrames(doc){return doc.shapes.filter(s=>s.kind==='frame'&&visibleInTree(s,doc.shapes));}
+export function prototypeFrames(doc){return doc.shapes.filter(s=>s.kind==='frame'&&!(doc.libraries??[]).some(l=>l.page_id===s.page_id)&&visibleInTree(s,doc.shapes));}
 export function prototypeScene(doc,root){return descendants(doc.shapes,[root]).map(s=>s.id===root?{...s,parent_id:0,clip_content:true}:s);}
 export function prototypeState(doc,start){
  const frames=new Set(prototypeFrames(doc).map(s=>s.id));if(!frames.has(start))throw new Error('Choose a visible frame to present');
@@ -17,20 +17,23 @@ export function overlayPlacement(base,frame,position='center',x=0,y=0){
  if(position==='manual')return{x,y};
  return{x:position.endsWith('left')?0:position.endsWith('right')?base.width-frame.width:(base.width-frame.width)/2,y:position.startsWith('top')?0:position.startsWith('bottom')?base.height-frame.height:(base.height-frame.height)/2};
 }
-export function renderPrototypeControls(host,shape,doc,change,present){
+export function renderPrototypeControls(host,shape,doc,change,present,{activeIndex=0,select=()=>{}}={}){
  host.replaceChildren();host.hidden=!shape;if(!shape)return;
- const heading=document.createElement('h3');heading.textContent='Prototype';host.append(heading);
+ const heading=document.createElement('h3');heading.textContent='Interactions';host.append(heading);
  const field=(name,input)=>{const label=document.createElement('label');label.append(document.createTextNode(name),input);input.setAttribute('aria-label',name);host.append(label);};
  const frames=prototypeFrames(doc),list=interactions(shape),items=list.length?list:[null];
+ const intro=document.createElement('p');intro.className='prototype-layer-caption';intro.textContent=list.length?`Interactions for ${shape.name}`:'No interactions yet. Choose an action below to get started.';host.append(intro);
  items.forEach((p,index)=>{
-  const group=document.createElement('fieldset');group.className='prototype-interaction';const legend=document.createElement('legend');legend.textContent='Interaction '+(index+1);group.append(legend);host.append(group);
+  const group=document.createElement('fieldset');group.className='prototype-interaction';group.id=`prototype-interaction-${index}`;group.tabIndex=-1;group.classList.toggle('active',!!p&&index===activeIndex);const legend=document.createElement('legend');legend.textContent='Interaction '+(index+1);group.append(legend);host.append(group);
+  const activate=()=>{for(const card of host.querySelectorAll('.prototype-interaction'))card.classList.toggle('active',!!p&&card===group);select(index);};group.onpointerdown=activate;group.onfocusin=activate;
+  if(p){const summary=document.createElement('p');summary.className='prototype-connection-summary';summary.textContent=(triggerLabels[p.trigger??'click']??'On click')+' → '+(frames.find(f=>f.id===p.target)?.name??({back:'Go back',close:'Close overlay'}[p.action]??'Choose a destination'));group.append(summary);}
   const body=document.createElement('div');group.append(body);
   renderInteractionControls(body,{...shape,prototype:p},doc,updated=>{const next=[...list];if(updated.prototype)next[index]=updated.prototype;else next.splice(index,1);change(withInteractions(shape,next));},list.filter((_,i)=>i!==index).map(p=>p.trigger??'click'));
   for(const field of body.querySelectorAll('[aria-label]'))field.id=`prototype-${shape.id}-${index}-${field.getAttribute('aria-label').replace(/[^a-z0-9]/gi,'-')}`;
-  if(p){const remove=document.createElement('button');remove.textContent='Remove interaction '+(index+1);remove.onclick=()=>change(withInteractions(shape,list.filter((_,i)=>i!==index)));group.append(remove);}
+  if(p){const remove=document.createElement('button');remove.type='button';remove.className='delete-interaction';remove.textContent='Delete interaction';remove.setAttribute('aria-label','Delete interaction '+(index+1));remove.onclick=()=>{select(Math.max(0,index-1));change(withInteractions(shape,list.filter((_,i)=>i!==index)));};group.append(remove);}
  });
  const unused=Object.keys(triggerLabels).find(t=>(shape.kind==='frame'||t!=='afterdelay')&&!list.some(p=>(p.trigger??'click')===t));
- const add=document.createElement('button');add.textContent='Add interaction';add.className='wide-button';add.disabled=!unused;add.onclick=()=>change(withInteractions(shape,[...list,{trigger:unused,action:'back',target:0}]));host.append(add);
+ const add=document.createElement('button');add.textContent='Add interaction';add.className='wide-button';add.disabled=!unused;add.onclick=()=>{const target=frames.find(f=>f.id!==shape.id);select(list.length);change(withInteractions(shape,[...list,{trigger:unused,action:target?'navigate':'back',target:target?.id??0}]));};host.append(add);
  if(shape.kind==='frame'){const flow=document.createElement('input');flow.type='text';flow.maxLength=128;flow.placeholder='Not a flow start';flow.value=shape.flow_name??'';flow.onchange=()=>change({...shape,flow_name:flow.value.trim()});field('Flow starting point',flow);}
  const play=document.createElement('button');play.className='wide-button';play.textContent='Present prototype';play.disabled=!frames.length;play.onclick=present;host.append(play);
 }
@@ -48,7 +51,7 @@ function renderInteractionControls(host,shape,doc,change,usedTriggers=[]){
  const save=()=>{const targets=['navigate','overlay','swap'].includes(action.value);if(targets&&!target.value)return;change({...shape,prototype:action.value==='none'?null:{trigger:trigger.value,delay:Number(delay.value),action:action.value,target:targets?Number(target.value):0,overlay_position:position.value,overlay_x:Number(offsetX.value),overlay_y:Number(offsetY.value),backdrop_color:backdropColor.value,backdrop_opacity:Number(backdropOpacity.value)/100,close_on_outside:outside.checked,transition:['overlay','close','swap'].includes(action.value)&&transition.value.startsWith('slide-')?'dissolve':transition.value,duration:Number(duration.value),easing:easing.value}});};action.onchange=save;trigger.onchange=save;delay.onchange=save;target.onchange=save;position.onchange=save;outside.onchange=save;if(['navigate','overlay','swap'].includes(action.value))field('Destination frame',target);if(action.value==='overlay'){field('Overlay position',position);if(position.value==='manual'){field('Overlay X',offsetX);field('Overlay Y',offsetY);}field('Backdrop color',backdropColor);field('Backdrop opacity (%)',backdropOpacity);field('Close when clicking outside',outside);}
  for(const input of [offsetX,offsetY,backdropColor,backdropOpacity])input.onchange=save;
  if(action.value==='swap'){const note=document.createElement('p');note.textContent='Replaces the top overlay, keeping its placement, backdrop and dismissal settings. Requires an open overlay.';host.append(note);}
- transition.onchange=save;duration.onchange=save;easing.onchange=save;if(action.value!=='none'){field('Transition',transition);if(transition.value!=='instant'){field('Duration (ms)',duration);field('Easing',easing);}}
+ transition.onchange=save;duration.onchange=save;easing.onchange=save;if(action.value!=='none'){field('Animation',transition);if(transition.value!=='instant'){field('Duration (ms)',duration);field('Easing',easing);}}
 
 }
 // Fit the complete device, while hit testing continues to use the content viewport.

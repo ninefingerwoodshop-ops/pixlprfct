@@ -1,5 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createBreakpointPreview} from '../web/breakpoint-preview.js';
+import {parseLayoutCss,formatLayoutCss,layoutMediaState} from '../web/layout-css.js';
+import {editAreaTrack} from '../web/grid-area-track-values.js';
 test('restores starting width after multiple previews without reverting unrelated edits',()=>{
  let root={id:1,width:1200,height:900,auto_layout:{direction:'grid',hug_width:true,gap:12},layout_item:{fill_width:false}};
  const previews=createBreakpointPreview(next=>root=next);
@@ -73,4 +75,29 @@ test('restore all spans pages, preserves other edits, and uses a single undo ste
  assert.equal(previews.original(get(a)),undefined);assert.equal(previews.original(get(b)),undefined);
  const after=editor.snapshot();editor.undo();assert.equal(editor.snapshot(),before);editor.redo();assert.equal(editor.snapshot(),after);
  restoreAllBreakpointWidths(snapshot().shapes,()=>calls++);assert.equal(calls,1);editor.free();
+});
+
+test('active-query track edits survive breakpoint switches, reload and width restoration',()=>{
+ const editor=new Editor(),id=editor.add('frame',0,0);
+ const get=()=>JSON.parse(editor.snapshot()).shapes.find(s=>s.id===id);
+ const css='.layout {display:grid;grid-template-columns:160px 1fr;} @media (max-width:500px){.layout {grid-template-columns:90px 1fr;}} @media (min-width:701px){.layout {grid-template-columns:200px 1fr;}}';
+ editor.update(JSON.stringify(parseLayoutCss(css,{...get(),width:600,auto_layout:{direction:'grid',gap:12,padding_top:16,padding_right:16,padding_bottom:16,padding_left:16,align:'start',justify:'start',hug_width:false,hug_height:false}})));
+ const previews=createBreakpointPreview(next=>editor.update(JSON.stringify(next)));
+ previews.preview(get(),500);
+ editor.update(JSON.stringify(editAreaTrack(get(),'columns-1',210)));
+ assert.equal(layoutMediaState(get(),[get()]).shape.auto_layout.grid.columns[0].value,90);
+ editor.update(JSON.stringify(parseLayoutCss(formatLayoutCss(get()).replace('90px 1fr','110px 1fr'),get())));
+ for(const [width,value] of [[501,210],[701,200],[700,210],[500,110]]){
+  previews.preview(get(),width);
+  assert.equal(layoutMediaState(get(),[get()]).shape.auto_layout.grid.columns[0].value,value);
+  assert.equal(get().auto_layout.grid.columns[0].value,210);
+  assert.equal(previews.original(get()).width,600);
+ }
+ const saved=editor.snapshot();editor.load(saved);editor.clear_history();
+ previews.restore(get());
+ assert.equal(get().width,600);assert.equal(get().auto_layout.grid.columns[0].value,210);
+ assert.equal(get().layout_media[0].declarations['grid-template-columns'],'110px 1fr');
+ assert.equal(previews.original(get()),undefined);
+ editor.undo();assert.equal(editor.snapshot(),saved);
+ editor.redo();assert.equal(get().width,600);editor.free();
 });

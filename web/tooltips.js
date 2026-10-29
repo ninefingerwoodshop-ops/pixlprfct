@@ -54,7 +54,10 @@ export function installTooltips(){
  tooltip.addEventListener('wheel',event=>event.stopPropagation(),{passive:true});
  document.addEventListener('focusin',event=>{if(tooltip.contains(event.target)){const hint=tooltip.querySelector('.tooltip-keyboard-hint');if(hint){hint.textContent='↑↓ · Page Up/Down · Home/End to scroll. Esc, F6 or Tab to return to canvas.';position();}return;}hide();if(event.target.matches(':focus-visible')){const entry=find(event.target);
   // Area tooltips reopen through an explicit hover or keyboard selection, not restored focus.
-  if(entry&&entry.el.id!=='grid-area-status')show(entry);
+  // A popover can move focus synchronously while it is opening. Wait until that
+  // operation finishes before showing another top-layer element, and discard a
+  // request if focus moved again in the meantime.
+  if(entry&&entry.el.id!=='grid-area-status'){const request=keyboardRequest;requestAnimationFrame(()=>{if(request===keyboardRequest&&entry.el.contains(document.activeElement))show(entry);});}
  }});
  document.addEventListener('dragstart',hide,true);document.addEventListener('focusout',event=>{if(!tooltip.contains(event.relatedTarget))hide();});document.addEventListener('pointerdown',event=>{if(!tooltip.contains(event.target))hide();},true);
  document.addEventListener('keydown',event=>{

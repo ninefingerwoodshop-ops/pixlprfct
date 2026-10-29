@@ -6,7 +6,8 @@ import {behaviorSource} from './behaviors.js';
 
 export function codeExportFiles(doc,{scope='project',pageId=doc.active_page,ids=[],textLayout,target='html'}={}){
  if(!['project','page','selection'].includes(scope))throw new Error('Choose a valid export scope');
- const pages=scope==='project'?doc.pages:doc.pages.filter(p=>p.id===pageId);
+ const designPages=doc.pages.filter(p=>!(doc.libraries??[]).some(l=>l.page_id===p.id));
+ const pages=scope==='project'?designPages:designPages.filter(p=>p.id===pageId);
  if(!pages.length)throw new Error('Page not found');
  const exportedShapes=[],files=[],warnings=new Set(),manifest={name:doc.name,pages:[]};
  for(const [index,page] of pages.entries()){
@@ -37,6 +38,7 @@ ${[...warnings].join('\n')}`});
 
 
 export function showCodeExport(doc,ids,onExport,onImport){
+ doc={...doc,pages:doc.pages.filter(p=>!(doc.libraries??[]).some(l=>l.page_id===p.id))};
  const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text)node.textContent=text;return node;};
  const content=el('div','code-export-content'),main=el('div','code-export-main');let scope='page';
  const intro=el('div','code-export-intro');intro.append(el('h3','','Export your project'),el('p','','Share an editable PixlPrfct file or export code for the web.'));

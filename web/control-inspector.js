@@ -7,6 +7,7 @@ import {calendarConfig} from './calendar-control.js';
 import {renderDropdownInspector} from './dropdown-inspector.js';
 import {renderControlParts} from './control-parts.js';
 import {icon,iconWeights,iconPaths} from './icons.js';
+import {disclosureButton} from './inspector-disclosure.js';
 import {showContextMenu} from './context-menu.js';
 import {controlTypes,controlStates,controlPreviewStates,newControl,supportsReadonly,parseControlStates} from './controls.js';
 const make=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
@@ -244,12 +245,10 @@ export function installControlInspector({current,document:doc,change,redraw,prev
   if(c.kind==='select')renderDropdownInspector({id:shape.id,c,save,field,newGroup,make});
   const partsGroup=newGroup('');
   const overrideHeading=partsGroup.querySelector('h4');
-  const overrideLabel=make('label');overrideLabel.className='control-check control-check-heading';
-  const override=make('input');override.type='checkbox';override.checked=showOverrides;override.setAttribute('aria-label','Appearance override');
-  override.onchange=()=>{showOverrides=override.checked;signature='';render();};
-  overrideLabel.append(make('span','Appearance override'),override);overrideHeading.append(overrideLabel);
+  const override=disclosureButton('Appearance override',expanded=>{showOverrides=expanded;signature='';render();},showOverrides);
+  overrideHeading.append(override);
   if(showOverrides){
-   const note=make('p','Changes here override the shared variables for this control only. Blank values inherit. Turning this toggle off hides these tools; it keeps your overrides.');note.className='control-hint';partsGroup.append(note);
+   const note=make('p','Changes here override the shared variables for this control only. Blank values inherit. Collapsing this section keeps your overrides.');note.className='control-hint';partsGroup.append(note);
    renderControlParts({host:partsGroup,shape,state,part,onPart:value=>{part=value;signature='';render();},read:whole=>whole?doc():doc().shapes.find(s=>s.id===shape.id),change:next=>{signature='';change(next);}});
   }
   const run=make('button','Try native control');run.className='control-preview';run.onclick=preview;section.append(run);

@@ -1,5 +1,5 @@
 import {createBreakpointPreview,restoreAllBreakpointWidths} from './breakpoint-preview.js';
-import {layoutMediaState} from './layout-css.js';
+import {layoutMediaState,layoutMediaSource} from './layout-css.js';
 import {icon} from './icons.js';
 import {layoutClass,validateLayoutClass} from './layout-class.js';
 export function installLayerCssInspector(parent,{current,shapes,change,changeMany}){
@@ -20,7 +20,7 @@ export function installLayerCssInspector(parent,{current,shapes,change,changeMan
  const mediaHint=document.createElement('p');mediaHint.className='grid-caption';
  mediaHint.textContent='Visual controls edit the base layout. Edit Layout CSS to change breakpoint overrides.';
  media.append(mediaTitle,mediaWidth,mediaState,mediaHint,breakpointList,restore);
- section.append(label,row,status,media);parent.prepend(section);let selectedId;
+ const heading=document.createElement('h3');heading.textContent='CSS & responsive layout';section.append(heading,label,row,status,media);parent.append(section);let selectedId;
  const allSection=document.createElement('section');allSection.className='property-section breakpoint-restore-all';
  const restoreAll=document.createElement('button');restoreAll.type='button';restoreAll.className='wide-button';restoreAll.textContent='Restore all widths';
  const allStatus=document.createElement('p');allStatus.setAttribute('role','status');
@@ -39,8 +39,10 @@ export function installLayerCssInspector(parent,{current,shapes,change,changeMan
  input.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'){event.preventDefault();commit();}if(event.key==='Escape'){event.preventDefault();input.value=layoutClass(current());clear();}});
  const render=()=>{renderAll();const shape=current();section.hidden=!shape;if(!shape){selectedId=null;return;}if(selectedId!==shape.id||document.activeElement!==input){input.value=layoutClass(shape);clear();}selectedId=shape.id;render.responsive(shapes());};
  render.responsive=scene=>{
-  const selected=current(),shape=scene.find(s=>s.id===selected?.id);
-  media.hidden=!shape?.layout_media?.length;if(media.hidden)return;
+  const selected=current(),shape=layoutMediaSource(scene.find(s=>s.id===selected?.id),scene);
+  media.hidden=!shape;if(media.hidden)return;
+  mediaTitle.textContent=shape.id===selected.id?'Responsive layout':`Responsive layout · ${shape.name}`;
+  mediaHint.textContent=shape.id===selected.id?'Visual controls edit the base layout. Edit Layout CSS to change breakpoint overrides.':`Visual controls edit the base layout. Select ${shape.name} and edit its Layout CSS to change breakpoint overrides.`;
   const state=layoutMediaState(shape,scene),direction=state.shape.auto_layout?.direction;
   mediaWidth.textContent=`Frame width: ${Math.round(state.width*100)/100}px`;
   const text=`${state.rules.length?state.rules.map(r=>`@media ${r.query}`).join(' + '):'Base styles · no matching media query'} → ${direction==='grid'?'Grid Layout':`Flex Layout · ${direction==='vertical'?'Vertical':'Horizontal'}`}`;

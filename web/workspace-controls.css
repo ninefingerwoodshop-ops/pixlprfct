@@ -1,0 +1,66 @@
+/* Assets, Tools, and Variables use the shared field/action rules in both
+   page and floating modes. Their content layouts remain independent. */
+dialog.workspace-page-controls{color:var(--ui-text-color);background:var(--ui-surface)}
+.workspace-page-controls :is(button,input,textarea,.inspector-select-trigger){border-radius:var(--ui-radius-control)}
+.workspace-page-controls button{font:var(--ui-regular) var(--ui-text)/20px var(--ui-font)}
+.workspace-page-controls button.primary{background-color:var(--ui-accent)!important;color:white;font-weight:var(--ui-semibold)}
+.workspace-page-controls button.danger{color:var(--ui-danger)}
+.workspace-page-controls .variable-window-header{height:var(--ui-section-height);padding:0 var(--ui-space-2) 0 0;gap:var(--ui-space-1);border-color:var(--ui-border)}
+.workspace-page-controls .variable-window-heading{min-width:0;padding:0 var(--ui-space-4);gap:var(--ui-space-2);border-color:var(--ui-border);flex-shrink:0}
+.workspace-page-controls .variable-window-heading h2{min-width:0}
+.workspace-page-controls :is(h2,.variable-page-heading){font:var(--ui-semibold) var(--ui-title)/20px var(--ui-font);margin:0}
+.workspace-page-controls .variable-page-heading{padding:0 var(--ui-space-4)}
+.workspace-page-controls p{font-size:var(--ui-text);line-height:16px;color:var(--ui-text-muted)}
+.workspace-page-controls .variable-sidebar-heading{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-1);color:var(--ui-text-muted)}
+.workspace-page-controls .variable-collection,.workspace-page-controls .variable-group{width:calc(100% - 32px);margin:var(--ui-space-1) var(--ui-space-4);text-align:left}
+.workspace-page-controls .variable-group{padding-left:var(--variable-group-indent,var(--ui-space-2))!important}
+.workspace-page-controls .variables-body>aside>input{width:calc(100% - 32px);margin:var(--ui-space-1) var(--ui-space-4)}
+
+/* Search, filters, and tool results use the same 16px inset and 8px gaps. */
+.workspace-page-controls .workspace-actions{padding:var(--ui-space-4);gap:var(--ui-space-2)}
+.workspace-page-controls .workspace-actions .action-results{display:flex;flex-direction:column;gap:var(--ui-space-1);margin:0}
+.workspace-page-controls .workspace-actions .action-result{flex:none;flex-wrap:wrap;gap:var(--ui-space-2)}
+.workspace-page-controls .action-result strong{font-size:var(--ui-text);font-weight:var(--ui-semibold);line-height:20px}
+.workspace-page-controls .action-result>span{font-size:var(--ui-caption);line-height:16px;color:var(--ui-text-muted)}
+.workspace-page-controls .action-result:focus:not(:disabled){background-color:var(--ui-hover)!important}
+.workspace-page-controls .variable-searchbar{gap:var(--ui-space-2);padding:var(--ui-space-2) var(--ui-space-4);border-color:var(--ui-border)}
+.workspace-page-controls .variable-searchbar>input{min-width:0}
+.workspace-page-controls .variable-collection-note{padding:var(--ui-space-2) var(--ui-space-4);line-height:16px;border-color:var(--ui-border)}
+.workspace-page-controls .variable-create-row{min-height:44px;padding:var(--ui-space-2) var(--ui-space-4);border-color:var(--ui-border)}
+.workspace-page-controls .variable-create-row>.variable-type-menu{left:var(--ui-space-4)}
+
+/* Table cells retain their grid boundaries, with ordinary shared fields
+   inside. Reserve a separate slot for each cell's alias action. */
+.workspace-page-controls table :is(th,td){height:44px;padding:var(--ui-space-2);font-size:var(--ui-text);vertical-align:middle}
+.workspace-page-controls table th{font-weight:var(--ui-semibold)}
+.workspace-page-controls table :is(input,textarea,.inspector-select-trigger){vertical-align:middle}
+.workspace-page-controls table tr[aria-selected=true] td{background:var(--ui-selected)}
+.workspace-page-controls .variable-kind{margin-right:var(--ui-space-2);vertical-align:middle;color:var(--ui-text-muted)}
+.workspace-page-controls table .variable-value-cell{padding-right:calc(var(--ui-icon-button) + var(--ui-space-4))}
+.workspace-page-controls .variable-cell-action{right:var(--ui-space-2);top:10px}
+.workspace-page-controls table input[type=color]{margin-right:var(--ui-space-2)}
+.workspace-page-controls table textarea{width:150px;vertical-align:top}
+.workspace-page-controls .variable-alias-chip{height:var(--ui-control-height);padding:4px 8px;border:0;background:var(--ui-variable-bg);color:var(--ui-variable);line-height:20px;vertical-align:middle}
+.workspace-page-controls .variable-alias-chip:hover{background-color:var(--ui-variable-bg)!important}
+.workspace-page-controls input[type=file]{font-size:var(--ui-text);max-width:240px}
+.workspace-page-controls input[type=file]::file-selector-button{height:var(--ui-control-height);padding:0 var(--ui-space-2);margin-right:var(--ui-space-2);border:0;border-radius:var(--ui-radius-control);background:var(--ui-field);color:var(--ui-text-color);font:inherit;cursor:pointer}
+.workspace-page-controls input[type=file]::file-selector-button:hover{background:var(--ui-hover)}
+.workspace-page-controls :is(.variables-empty,.variables-no-results){padding:var(--ui-space-4)}
+.workspace-page-controls .variables-empty h3{margin:0 0 var(--ui-space-2);font-size:var(--ui-title)}
+.workspace-page-controls .variables-empty p{margin:0 0 var(--ui-space-4)}
+
+/* Thumbnails keep their authored artwork and square geometry. Caption
+   actions and menus use the same controls as the rest of the app. */
+.assets-workspace #assets-panel{padding:var(--ui-space-4);gap:var(--ui-space-4)}
+.assets-workspace .assets-starters{padding:var(--ui-space-4);gap:var(--ui-space-2);background:var(--ui-surface)}
+.assets-workspace .assets-starter-intro h3{margin:0 0 var(--ui-space-1)}
+.assets-workspace .assets-starter-intro p{line-height:16px}
+.assets-workspace .assets-collection-heading{gap:var(--ui-space-2);margin:0}
+.assets-workspace .assets-browser-toolbar{gap:var(--ui-space-2)}
+.assets-workspace #asset-cards{gap:var(--ui-space-4)}
+.assets-workspace .asset-card{gap:var(--ui-space-2)}
+.assets-workspace .asset-caption{gap:var(--ui-space-1)}
+.assets-workspace .asset-caption>strong{font-size:var(--ui-text);line-height:16px}
+.assets-workspace .asset-card-actions{padding:var(--ui-space-1);gap:var(--ui-space-1);border-radius:var(--ui-radius-menu);box-shadow:var(--ui-shadow-overlay)}
+.assets-workspace .empty-assets{padding:var(--ui-space-6) var(--ui-space-4)}
+.assets-workspace .empty-assets p{margin-top:var(--ui-space-2);line-height:16px}

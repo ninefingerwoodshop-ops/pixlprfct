@@ -8,7 +8,7 @@ export function installActionPanel(actions){
  const help=document.createElement('p');help.textContent='Search commands. Unavailable actions explain what to select.';
  const search=document.createElement('input');search.type='search';search.placeholder='Search tools and actions…';search.setAttribute('aria-label','Search tools and actions');
  const list=document.createElement('div');list.className='action-results';list.setAttribute('role','group');list.setAttribute('aria-label','Matching actions');
- content.append(help,search,list);const window=workspaceWindow('Tools and actions',content),dialog=window.dialog;
+ content.append(help,search,list);const window=workspaceWindow('Tools and actions',content),dialog=window.dialog;dialog.classList.add('workspace-page-controls');
  function render(){list.replaceChildren();for(const a of matchingActions(actions,search.value)){
   const row=document.createElement('button'),enabled=!a.enabled||a.enabled();row.className='action-result';row.disabled=!enabled;
   const label=document.createElement('strong');label.textContent=a.label;

@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.selfhost
+    env_file: .env.selfhost
+    environment:
+      HOST: 0.0.0.0
+      PIXL_SQLITE_PATH: /app/data/pixlprfct.sqlite
+    ports:
+      - "127.0.0.1:4174:4174"
+    volumes:
+      - pixlprfct-data:/app/data
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  pixlprfct-data:

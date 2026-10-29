@@ -1,6 +1,6 @@
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=211230c6dd25") format("woff2");font-weight:300;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=768ac7e12c1b") format("woff2");font-weight:400;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=c389490b269e") format("woff2");font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=5e797eaa46e4") format("woff2");font-weight:300;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=6b675bb00f0a") format("woff2");font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=983c45e63b37") format("woff2");font-weight:700;font-style:normal;font-display:block}
 .pxi{display:inline-block;font-family:"PixlPrfct Icons"!important;font-style:normal;font-weight:400;font-variant:normal;text-transform:none;line-height:1;font-synthesis:none;speak:none;-webkit-font-smoothing:antialiased}
 .pxi-light{font-weight:300}.pxi-regular{font-weight:400}.pxi-bold{font-weight:700}
 .pxi-align-bottom::before{content:"\e900"}
@@ -361,3 +361,29 @@
 .pxi-money-bank::before{content:"\ea63"}
 .pxi-money-safe::before{content:"\ea64"}
 .pxi-money-piggy-bank::before{content:"\ea65"}
+.pxi-rotate-right::before{content:"\ea66"}
+.pxi-flip-horizontal::before{content:"\ea67"}
+.pxi-flip-vertical::before{content:"\ea68"}
+.pxi-bounding-box::before{content:"\ea69"}
+.pxi-droplet::before{content:"\ea6a"}
+.pxi-layers::before{content:"\ea6b"}
+.pxi-swatches::before{content:"\ea6c"}
+.pxi-corners::before{content:"\ea6d"}
+.pxi-blend-mode::before{content:"\ea6e"}
+.pxi-keyframe::before{content:"\ea6f"}
+.pxi-timeline-collapse::before{content:"\ea70"}
+.pxi-mode-draw::before{content:"\ea71"}
+.pxi-mode-design::before{content:"\ea72"}
+.pxi-mode-motion::before{content:"\ea73"}
+.pxi-mode-dev::before{content:"\ea74"}
+.pxi-section::before{content:"\ea75"}
+.pxi-slice::before{content:"\ea76"}
+.pxi-text-path::before{content:"\ea77"}
+.pxi-code::before{content:"\ea78"}
+.pxi-spec::before{content:"\ea79"}
+.pxi-comment::before{content:"\ea7a"}
+.pxi-annotation::before{content:"\ea7b"}
+.pxi-measurement::before{content:"\ea7c"}
+.pxi-media::before{content:"\ea7d"}
+.pxi-design::before{content:"\ea7e"}
+.pxi-motion::before{content:"\ea7f"}

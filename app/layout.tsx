@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "PixlPrfct",
   description: "Design workspace with a Rust document engine.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/editor/favicon.svg?v=mono",
+    shortcut: "/editor/favicon.svg?v=mono",
   },
 };
 

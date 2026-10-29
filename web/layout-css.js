@@ -6,6 +6,8 @@ function length(value){const m=/^(\d+(?:\.\d+)?)(px|%|em|fr)?$/.exec(value);if(!
 function px(value){const n=length(value);if(n.unit!=='px')fail('Padding and Flex gaps currently use px.');return n.value;}
 function track(value){
  if(['auto','min-content','max-content'].includes(value))return {mode:value,value:1};
+ const bounded=/^clamp\(([^,]+),\s*([^,]+),\s*([^,]+)\)$/.exec(value);
+ if(bounded){const min=px(bounded[1].trim()),preferred=length(bounded[2].trim()),max=px(bounded[3].trim());if(preferred.unit==='fr')fail('Bounded tracks need px, % or em sizing.');if(min>max)fail('Minimum track size cannot exceed maximum.');return {mode:({px:'fixed','%':'percent',em:'em'})[preferred.unit],value:preferred.value,min,max};}
  const mm=/^minmax\((.+),\s*(.+)\)$/.exec(value);if(mm){const endpoint=v=>['auto','min-content','max-content'].includes(v)?{value:0,unit:v}:length(v);const a=endpoint(mm[1].trim()),b=endpoint(mm[2].trim());return {mode:'minmax',min:a.value,min_unit:a.unit,value:b.value,max_unit:b.unit};}
  const n=length(value);return {mode:({px:'fixed','%':'percent',em:'em',fr:'fr'})[n.unit],value:n.value};
 }
@@ -59,10 +61,36 @@ export function parseLayoutCss(text,shape){
 }
 const block=d=>Object.entries(d).map(([k,v])=>`  ${k}: ${v};`).join('\n');
 export function formatLayoutCss(shape){return `.${layoutClass(shape)} {\n${block(layoutDeclarations(shape))}\n}`+(shape.layout_media??[]).map(r=>`\n\n@media ${r.query} {\n  .${layoutClass(shape)} {\n${block(r.declarations).split('\n').map(l=>'  '+l).join('\n')}\n  }\n}`).join('');}
+// A selected cell can be governed by a responsive parent even when it has no
+// media queries of its own. Keep that source visible while editing its tracks.
+export function layoutMediaSource(shape,shapes){
+ const byId=new Map(shapes.map(s=>[s.id,s])),seen=new Set();
+ while(shape&&!seen.has(shape.id)){
+  if(shape.layout_media?.length)return shape;
+  seen.add(shape.id);shape=byId.get(shape.parent_id);
+ }
+ return null;
+}
 export function layoutMediaState(shape,shapes){
  const byId=new Map(shapes.map(s=>[s.id,s]));let root=shape,seen=new Set();
  while(byId.has(root.parent_id)&&!seen.has(root.id)){seen.add(root.id);root=byId.get(root.parent_id);}
  const rules=(shape.layout_media??[]).filter(rule=>root.width>=(rule.min??0)&&root.width<=(rule.max??Infinity));
  return {root,width:root.width,rules,shape:rules.reduce((next,rule)=>applyLayoutDeclarations(next,rule.declarations),shape)};
 }
-export function responsiveLayoutShapes(shapes){return shapes.map(shape=>layoutMediaState(shape,shapes).shape);}
+export function gridAreaEditingOverridden(shape,shapes){
+ if(shape?.auto_layout?.direction!=='grid')return false;
+ const active=layoutMediaState(shape,shapes),base=shape.auto_layout.grid??{},grid=active.shape.auto_layout.grid??{};
+ return active.shape.auto_layout.direction!=='grid'||
+  active.rules.some(rule=>Object.hasOwn(rule.declarations,'grid-template-areas'))||
+  (base.columns?.length??0)!==(grid.columns?.length??0)||(base.rows?.length??0)!==(grid.rows?.length??0);
+}
+export function responsiveLayoutShapes(shapes){
+ const resolved=shapes.map(shape=>layoutMediaState(shape,shapes).shape),byId=new Map(resolved.map(s=>[s.id,s]));
+ return resolved.map(shape=>{
+  const cell=shape.layout_item?.grid_cell,parent=byId.get(shape.parent_id);
+  if(!cell?.area||parent?.auto_layout?.direction!=='grid'||parent.auto_layout.grid?.areas?.some(a=>a.name===cell.area))return shape;
+  // A breakpoint can omit an area without deleting its contents or binding.
+  // Do not turn its saved span into unwanted implicit columns in the preview.
+  return {...shape,layout_item:{...shape.layout_item,grid_cell:{...cell,area:'',column:null,row:null,column_span:1,row_span:1}}};
+ });
+}

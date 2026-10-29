@@ -2,7 +2,7 @@ import {appearance} from './appearance.js';
 
 export function glassPreset(shape){
  const style=appearance(shape);
- return {...shape,fill:'#ffffff',stroke_width:1,appearance:{...style,gradient:null,stroke_gradient:null,fill_enabled:true,fill_opacity:.18,opacity:1,corner_radius:20,corner_radii:null,stroke_enabled:true,stroke_color:'#ffffff',stroke_opacity:.35,stroke_alignment:'inside',backdrop_blur:20,shadows:[{kind:'drop',x:0,y:8,blur:24,spread:0,color:'#000000',opacity:.12,visible:true}]}};
+ return {...shape,fill:'#ffffff',stroke_width:1,appearance:{...style,gradient:null,stroke_gradient:null,fill_enabled:true,fill_opacity:.18,opacity:1,corner_radius:20,corner_radii:null,stroke_enabled:true,stroke_color:'#ffffff',stroke_opacity:.35,stroke_alignment:'inside',backdrop_blur:20,backdrop_blur_enabled:true,shadows:[{kind:'drop',x:0,y:8,blur:24,spread:0,color:'#000000',opacity:.12,visible:true}]}};
 }
 
 export function renderGlassControls(host,shape,change){
@@ -21,6 +21,6 @@ export function renderGlassControls(host,shape,change){
   }
   const hint=document.createElement('p');hint.textContent='Place over artwork to see the background blur. Export as HTML/CSS to keep the live glass effect.';section.append(hint);
  }
- // Keep the Effects heading at the section root so glass collapses with its body.
- host.querySelector('h3').after(section);
+ // Glass settings belong to the background effect's disclosure.
+ (host.querySelector('[data-effect=backdrop_blur]')??host).append(section);
 }

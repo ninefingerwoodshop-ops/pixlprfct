@@ -1,12 +1,16 @@
 /* Shared semantic colors for editor chrome. Paint values remain document data. */
 :root{
- --ui-surface:#ffffff;--ui-field:#f5f5f5;--ui-hover:#eeeeee;
- --ui-text-color:#333333;--ui-text-strong:#222222;--ui-text-muted:#666666;
- --ui-border:#e6e6e6;--ui-border-hover:#cccccc;
- --ui-accent:#2563eb;--ui-accent-text:#1d4ed8;--ui-selected:#eff6ff;
- --ui-instance:#087ac1;
- --ui-danger:#b42318;--ui-danger-bg:#fff0f0;
- --ui-variable:#7950b2;--ui-variable-bg:#f0eafa;
+ color-scheme:dark;
+ --ui-workspace:#1e1e1e;--ui-surface:#2c2c2c;--ui-field:#383838;--ui-field-bg:var(--ui-field);--ui-hover:#444444;
+ --ui-text-color:#eeeeee;--ui-text-strong:#ffffff;--ui-text-muted:#b3b3b3;
+ --ui-border:#444444;--ui-border-hover:#666666;
+ --ui-accent:#0d99ff;--ui-accent-text:#80caff;--ui-primary-hover:#0085e5;--ui-selected:#35465a;
+ --ui-instance:#80caff;
+ --ui-danger:#ff9d98;--ui-danger-bg:#4b302f;
+ --ui-warning:#f5c779;--ui-warning-bg:#493c29;
+ --ui-success:#8cdbb0;--ui-success-bg:#2b4435;
+ --ui-variable:#d6bbfb;--ui-variable-bg:#493b5c;
+ --ui-checker-light:#666666;--ui-checker-dark:#555555;
  --line:var(--ui-border);--muted:var(--ui-text-muted);--accent:var(--ui-accent);
 }
 :is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,#page-switch-menu){background-color:var(--ui-surface);color:var(--ui-text-color);border-color:var(--ui-border)}
@@ -19,7 +23,7 @@
 :is(.layer.active,.toolbox button.active,.rail-button.active,.inspector-select-menu [aria-selected=true],.variable-collection[aria-pressed=true],.variable-group[aria-pressed=true],.layout-flow button[aria-pressed=true]){background-color:var(--ui-selected)!important;color:var(--ui-accent-text)!important}
 :is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu) :is(button,input,textarea,select,summary,a):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}
 :is(.left-panel,.right-panel,dialog,.paint-popover) .primary{background-color:var(--ui-accent);color:white;border-color:transparent}
-:is(.left-panel,.right-panel,dialog,.paint-popover) .primary:hover{background-color:var(--ui-accent-text)}
+:is(.left-panel,.right-panel,dialog,.paint-popover) .primary:hover{background-color:var(--ui-primary-hover)}
 .right-panel .variable-manage-link,.code-import-project{color:var(--ui-accent-text)}
 :is(.danger,.variables-error,.code-export-error){color:var(--ui-danger)}
 .variables-workspace .variables-error{background-color:var(--ui-danger-bg)}

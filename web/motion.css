@@ -1,0 +1,71 @@
+/* Geometry measured against Figma's Motion panel. Shared tokens follow the
+   editor theme; timeline geometry is independent of canvas zoom. */
+body.motion-open>main{height:calc(100dvh - var(--timeline-height,200px));min-height:0}
+body.motion-open>.navigation-rail{bottom:var(--timeline-height,200px)}
+body.motion-open #workspace .toolbox{bottom:12px}
+body.motion-open .canvas-bottom{display:none}
+#motion-timeline{--timeline-label-width:296px;position:fixed;z-index:20;inset:auto 0 0;height:var(--timeline-height,200px);background:var(--ui-surface,#fff);border-top:1px solid var(--ui-border,#e6e6e6);color:var(--ui-text-color,#333);font:11px Inter,Arial,sans-serif;overflow:visible;isolation:isolate}
+#motion-timeline button{border:0;border-radius:4px;background:transparent;padding:0;font:inherit;color:inherit}
+#motion-timeline button:hover{background:var(--ui-hover,#f0f0f0)}
+#motion-timeline button:focus-visible{outline:1px solid var(--ui-accent,#0d99ff);outline-offset:1px}
+#motion-timeline button[aria-pressed=true]{background:var(--ui-selected,#e5f4ff);color:var(--ui-accent,#0d99ff)}
+#motion-timeline svg{width:16px;height:16px;flex:none}
+#motion-timeline .timeline-controls{position:absolute;left:0;top:0;width:var(--timeline-label-width);height:48px;display:flex;align-items:center;gap:8px;padding:0 8px;border-right:1px solid var(--ui-border,#e6e6e6);border-bottom:1px solid var(--ui-border,#e6e6e6);z-index:4;background:inherit}
+#motion-timeline .timeline-controls>button{width:24px;height:24px;flex:none}
+#motion-timeline .timeline-time{display:flex;align-items:center;height:24px;background:var(--ui-field-bg,#f5f5f5);border-radius:4px;overflow:hidden;gap:0}
+#motion-timeline .timeline-time input{width:42px;height:24px;padding:0 6px;border:0;border-radius:0;background:transparent;font:10px/24px ui-monospace,SFMono-Regular,monospace;text-align:right;color:inherit;outline-offset:-1px;appearance:textfield;-moz-appearance:textfield}
+#motion-timeline .timeline-time input+input{border-left:1px solid var(--ui-border,#e6e6e6);color:var(--ui-text-muted,#777)}
+#motion-timeline .timeline-time input::-webkit-inner-spin-button{appearance:none}
+#motion-timeline .timeline-time button{width:24px;height:24px;font-size:10px;color:var(--ui-text-muted,#777);border-radius:0}
+#motion-timeline>button[aria-label$="Motion timeline"]{position:absolute;right:0;top:0;width:48px;height:48px;border-left:1px solid var(--ui-border,#e6e6e6);border-radius:0;z-index:5;background:inherit}
+#motion-timeline .motion-resize{position:absolute;top:-4px;left:0;right:0;height:7px;z-index:10;cursor:ns-resize;touch-action:none}
+#motion-timeline .motion-resize:hover,#motion-timeline .motion-resize:focus-visible{background:color-mix(in srgb,var(--ui-accent,#0d99ff) 35%,transparent)}
+.timeline-viewport{position:absolute;inset:0 48px 0 var(--timeline-label-width);overflow:auto;scrollbar-width:thin;outline:none}
+.timeline-content{position:relative;min-height:100%;padding-top:48px}
+.timeline-ruler{position:sticky;top:0;margin-top:-48px;height:48px;z-index:3;background:var(--ui-surface,#fff);border-bottom:1px solid var(--ui-border,#e6e6e6);cursor:ew-resize;touch-action:none}
+.timeline-tick{position:absolute;top:3px;width:1px;height:5px;background:var(--ui-border,#e6e6e6);pointer-events:none}
+.timeline-tick.major{height:10px}.timeline-tick>span{position:absolute;top:18px;left:0;transform:translateX(-50%);white-space:nowrap;font-size:11px;color:var(--ui-text-muted,#777)}
+.timeline-playhead{position:absolute;top:0;bottom:0;width:1px;background:var(--ui-accent,#0d99ff);z-index:4;pointer-events:none}
+.timeline-playhead-cap{position:sticky;top:0;margin-left:-8px;width:17px;height:14px;clip-path:polygon(0 0,100% 0,100% 65%,50% 100%,0 65%);background:var(--ui-accent,#0d99ff)}
+.timeline-labels{position:absolute;top:48px;bottom:0;left:0;width:var(--timeline-label-width);overflow:hidden;border-right:1px solid var(--ui-border,#e6e6e6)}
+#motion-timeline .timeline-track-label{display:flex;align-items:center;gap:8px;width:100%;height:28px;padding:0 12px 0 56px;border-radius:0;justify-content:flex-start;color:var(--ui-text-muted,#777);white-space:nowrap}
+#motion-timeline .timeline-track-label.timeline-layer-row{padding-left:24px;color:var(--ui-text-color,#333);font-weight:500;background:var(--ui-field-bg,#f5f5f5)}
+.timeline-track-label span{overflow:hidden;text-overflow:ellipsis}.timeline-track{position:relative;height:28px;border-bottom:1px solid color-mix(in srgb,var(--ui-border,#eee) 50%,transparent)}
+.timeline-track.timeline-layer-row{background:var(--ui-field-bg,#f5f5f5)}
+#motion-timeline .timeline-keyframe{position:absolute;top:10px;width:8px;height:8px;border:1px solid var(--ui-text-muted,#888);border-radius:1px;background:var(--ui-surface,#fff);transform:rotate(45deg);touch-action:none}
+#motion-timeline .timeline-keyframe.selected,#motion-timeline .timeline-keyframe:hover,#motion-timeline .timeline-keyframe:focus{background:var(--ui-accent,#0d99ff);border-color:var(--ui-accent,#0d99ff)}
+#motion-timeline .timeline-zoom{position:absolute;bottom:16px;right:64px;display:flex;height:32px;border:1px solid var(--ui-border,#ddd);border-radius:16px;overflow:hidden;background:var(--ui-surface,#fff);box-shadow:0 2px 6px #0001;z-index:6}
+#motion-timeline .timeline-zoom button{width:32px;height:30px;border-radius:0}.timeline-zoom button+button{border-left:1px solid var(--ui-border,#ddd)!important}
+#motion-timeline.timeline-collapsed .timeline-labels,#motion-timeline.timeline-collapsed .timeline-tracks,#motion-timeline.timeline-collapsed .timeline-zoom{display:none}
+#motion-timeline.timeline-collapsed .timeline-viewport{overflow:hidden}
+#motion-inspector{overflow:auto;min-height:0;flex:1;font-size:11px}
+#motion-inspector .motion-selection-heading{padding:16px;height:48px;display:flex;align-items:center;border-bottom:1px solid var(--ui-border)}
+#motion-inspector .motion-property-section{padding:16px;border-bottom:1px solid var(--ui-border)}
+#motion-inspector h3{font-size:11px;font-weight:600;margin:0 0 16px;display:flex;align-items:center;justify-content:space-between;height:16px}
+#motion-inspector h3 button{width:24px;height:24px;padding:4px;margin-right:-8px}
+#motion-inspector .motion-property{margin-top:12px}#motion-inspector .motion-property-label{font-size:10px;color:var(--ui-text-muted);margin-bottom:6px}
+#motion-inspector .motion-property-fields{display:flex;gap:1px;align-items:center;min-width:0}
+#motion-inspector .motion-property-input{display:flex;gap:4px;align-items:center;flex:1;min-width:0;height:24px;padding:0 5px;background:var(--ui-field-bg,#f5f5f5);border-radius:3px;font-size:11px;color:var(--ui-text-muted)}
+#motion-inspector .motion-property-input input{width:100%;min-width:0;height:24px;padding:0;border:0;border-radius:0;background:transparent;font:inherit;color:var(--ui-text-color);appearance:textfield;-moz-appearance:textfield}
+#motion-inspector input::-webkit-inner-spin-button{appearance:none}
+#motion-inspector .motion-property-fields>button{width:24px;height:24px;padding:5px;flex:none;background:var(--ui-field-bg,#f5f5f5)}
+#motion-inspector .motion-property-fields>button:hover{background:var(--ui-hover)}
+#motion-inspector .motion-diamond[aria-pressed=true]{color:var(--ui-accent);background:var(--ui-selected)}
+#motion-inspector .motion-diamond[aria-pressed=true] svg{fill:var(--ui-accent)}
+#motion-inspector .motion-empty{padding:16px;color:var(--ui-text-muted);line-height:1.5}
+body.motion-open .right-panel #prototype-connections,body.motion-open .right-panel>.inspector-section-actions,body.motion-open .right-panel>#selection-caption{display:none!important}
+body.motion-open .right-panel .inspector-top{height:48px;min-height:48px;padding:8px 12px;flex-wrap:nowrap}
+body.motion-open .right-panel .inspector-tabs{height:32px;min-height:32px;padding:0 16px}
+body.motion-open .right-panel .inspector-tabs #tab-motion{flex:0 0 auto;background:transparent;color:var(--ui-text-color);padding:0;font-size:11px;font-weight:400}
+#motion-inspector .motion-property-section h3{margin-bottom:12px}
+#motion-inspector .motion-property-section:has(>h3>button) h3{margin-bottom:0}
+#motion-inspector .motion-property{margin-top:8px}
+#motion-inspector .motion-property-section>h3+.motion-property{margin-top:0}
+#motion-inspector .motion-property-label{line-height:12px;margin-bottom:4px}
+#motion-inspector .motion-property-input input{height:24px!important;min-height:24px!important;max-height:24px!important;padding:0!important;background:transparent!important;font-size:11px!important}
+#motion-inspector .motion-paired{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+#motion-inspector .motion-paired h3{grid-column:1/-1;margin-bottom:4px}
+#motion-inspector .motion-paired .motion-property{margin-top:0}
+#motion-inspector .motion-paired .motion-property-fields{gap:0}
+#motion-inspector .motion-paired .motion-property-input{padding:0 4px;gap:3px}
+#motion-inspector .motion-paired .motion-diamond{width:20px;padding:4px}
