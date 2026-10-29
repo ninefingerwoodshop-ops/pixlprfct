@@ -12,7 +12,15 @@ const eslintConfig = defineConfig([
     ".sites-runtime/**",
     "outputs/**",
     "work/**",
+    ".desktop/**",
+    "releases/**",
+    "web/vendor/figma-import-worker.js",
   ]),
+  {
+    files: ["desktop/**/*.cjs"],
+    // Sandboxed Electron preloads use CommonJS, not the web app's ESM runtime.
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],
     rules: {

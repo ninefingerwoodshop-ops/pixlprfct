@@ -28,8 +28,14 @@ export function installFigmaInspector({current,change}){
  });header.append(more);
  // Keep the shared prototype action accessible without an extra header row.
  const prototype=$('prototype-connections');$('prototype-inspector').prepend(prototype);
- const flex=$('flex-layout-section'),flow=flex.querySelector('.layout-flow'),flowCaption=flex.querySelector('.flow-caption'),auto=$('auto-layout-panel');
+ const flex=$('flex-layout-section'),flow=flex.querySelector('.layout-flow'),flowCaption=flex.querySelector('.flow-caption'),auto=$('auto-layout-panel'),grid=$('grid-layout-section');
  dimensions.querySelector('h3').after(flowCaption,flow);dimensions.append(auto);flex.classList.add('layout-legacy');
+ // Grid and Flexbox share the Layout disclosure; neither owns a second heading.
+ grid.querySelector('h3').hidden=true;grid.querySelector('.grid-layout-heading').hidden=true;
+ grid.prepend(make('div','inspector-field-caption','CSS Grid'));
+ dimensions.append(grid);
+ for(const control of flow.querySelectorAll('[data-flow=none],[data-flow=grid]'))control.hidden=true;
+ flowCaption.textContent='Flexbox';
  const sizeCaption=dimensions.querySelector('.dimension-caption'),textSizing=dimensions.querySelector('.text-sizing-tools'),textSizingCaption=make('div','inspector-field-caption','Resizing');sizeCaption.before(textSizingCaption,textSizing);
  const frame=$('frame-section');frame.classList.add('figma-core-section');frame.querySelector('h3').hidden=true;frame.querySelector('p').hidden=true;
  dimensions.append(frame);
@@ -42,7 +48,16 @@ export function installFigmaInspector({current,change}){
  const arrangement=layoutSettings.querySelector('.layout-arrangement'),alignment=arrangement.querySelector('.layout-alignment');alignment.before(make('div','inspector-field-caption alignment-caption','Alignment'));
  const gap=$('layout-gap').closest('label');gap.classList.add('figma-gap');
  const advancedButton=button('Auto layout settings','settings-sliders',()=>{const toggle=advanced.querySelector(':scope > summary button');if(toggle)toggle.click();else advanced.open=!advanced.open;});advancedButton.classList.add('layout-advanced-action');arrangement.append(advancedButton);
- const disableLayout=button('Remove auto layout','layout-horizontal',()=>{const s=current();if(s)change({...s,auto_layout:null});});disableLayout.classList.add('remove-auto-layout');dimensions.append(disableLayout);
+ const chooseLayout=button('Choose layout type','plus',event=>{
+  const s=current();if(s?.kind!=='frame')return;
+  const setLayout=value=>{const direction=$('layout-direction');if(direction.value!==value){direction.value=value;direction.onchange();}};
+  const rect=chooseLayout.getBoundingClientRect();chooseLayout.setAttribute('aria-expanded','true');
+  showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.right,clientY:rect.bottom},[
+   {label:'Flexbox',run:()=>setLayout(s.auto_layout?.direction==='horizontal'?'horizontal':'vertical')},
+   {label:'CSS Grid',run:()=>setLayout('grid')},
+   ...(s.auto_layout?[{separator:true},{label:'Remove layout',run:()=>setLayout('none')}]:[]),
+  ],chooseLayout,{label:'Layout type',anchor:chooseLayout,onClose:()=>chooseLayout.setAttribute('aria-expanded','false')});
+ });chooseLayout.id='choose-layout-type';chooseLayout.classList.add('section-add');chooseLayout.setAttribute('aria-haspopup','menu');chooseLayout.setAttribute('aria-expanded','false');dimensions.append(chooseLayout);
  $('add-auto-layout').setAttribute('aria-label','Add auto layout');$('add-auto-layout').title='Add auto layout (Shift A)';
  // Frame-specific extensions do not displace standard Figma fields.
  const extensions=make('details','inspector-details inspector-extensions');extensions.id='inspector-extensions';extensions.append(make('summary','','Additional tools'));
@@ -69,12 +84,14 @@ export function installFigmaInspector({current,change}){
  return shape=>{
   const frameShape=shape?.kind==='frame',enabled=frameShape&&!!shape.auto_layout;
   textSizingCaption.hidden=textMore.hidden=shape?.kind!=='text';
-  dimensions.querySelector('h3').textContent=enabled?'Auto layout':'Layout';
-  flex.hidden=true;flow.hidden=flowCaption.hidden=!enabled;wrapButton.hidden=!enabled||shape.auto_layout.direction==='grid';wrapButton.setAttribute('aria-pressed',String(!!shape?.auto_layout?.wrap));
-  disableLayout.hidden=!enabled;$('add-auto-layout').hidden=!shape||enabled;
-  $('grid-layout-section').hidden=!enabled||shape.auto_layout.direction!=='grid';
+  dimensions.querySelector('h3').textContent='Layout';
+  flex.hidden=true;flow.hidden=flowCaption.hidden=!enabled||shape.auto_layout.direction==='grid';wrapButton.hidden=!enabled||shape.auto_layout.direction==='grid';wrapButton.setAttribute('aria-pressed',String(!!shape?.auto_layout?.wrap));
+  chooseLayout.hidden=!frameShape;chooseLayout.title=enabled?`Layout type: ${shape.auto_layout.direction==='grid'?'CSS Grid':'Flexbox'}`:'Add layout';
+  $('add-auto-layout').hidden=!shape||frameShape||enabled;
+  grid.hidden=!enabled||shape.auto_layout.direction!=='grid';
   individualButton.setAttribute('aria-pressed',String(individual.open));
-  extensions.hidden=!shape;more.hidden=!shape;for(const id of ['edit-layout-spacing','edit-layout-css']){const node=$(id);if(node&&node.parentElement!==extensions)extensions.append(node);}
+  extensions.hidden=!shape;more.hidden=!shape;
+  for(const [id,owner] of [['edit-layout-spacing',extensions],['edit-layout-css',dimensions]]){const node=$(id);if(node&&node.parentElement!==owner)owner.append(node);}
   const gridEnable=$('grid-layout-section').querySelector('.inspector-feature-check');if(gridEnable)gridEnable.hidden=true;
   if(shape?.kind==='text')$('line-height').value=Math.round(textStyle(shape).line_height*100);
   const crossGap=panel.querySelector('.inspector-cross-gap');if(crossGap&&crossGap.parentElement!==advanced)advanced.append(crossGap);

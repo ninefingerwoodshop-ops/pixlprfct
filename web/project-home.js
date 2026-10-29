@@ -1,3 +1,5 @@
+import {installDesktop} from './desktop-integration.js';
+import {readDesignFile} from './design-import.js';
 import {icon} from './icons.js';
 import {LocalDrafts,DRAFTS_KEY} from './local-drafts.js';
 import {installDesignCreator} from './design-browser.js';
@@ -11,7 +13,7 @@ import {migrateChromeDocument} from './frame-tools.js';
 import {ensureBaseTextDocument} from './base-text.js';
 
 export function mountProjectHome(root){
-let disposed=false;
+let disposed=false,closeDesktop=()=>{};
 root.innerHTML=`<aside class="home-sidebar" aria-label="Workspace navigation">
  <a class="home-brand" href="/"><img class="home-mark" src="/editor/favicon.svg?v=mono" width="34" height="34" alt=""><span>PixlPrfct<small>Design workspace</small></span></a>
  <label class="home-workspace" id="home-workspace-label" hidden>Workspace<select id="home-workspace" aria-label="Workspace"></select></label><span class="home-nav-label">Projects</span>
@@ -19,14 +21,14 @@ root.innerHTML=`<aside class="home-sidebar" aria-label="Workspace navigation">
  <div class="home-account-links"><a href="/editor/account.html" id="home-account">Account & teams</a><a href="/editor/setup.html">Host your workspace</a></div><div class="home-sidebar-note">A place for your next idea.<span>Create a project, then make it yours.</span></div>
 </aside>
 <main class="home-main">
- <header class="home-header"><div><h1 id="home-title">All projects</h1><p id="home-description">Create a design or pick up where you left off.</p></div><div class="home-actions"><button id="home-import">${icon('download')}Import design</button><button id="home-new" class="primary">${icon('plus')}New design</button></div></header>
+ <header class="home-header"><div><h1 id="home-title">All projects</h1><p id="home-description">Create a design or pick up where you left off.</p></div><div class="home-actions"><button id="home-import" title="Import a PixlPrfct (.pixl) or Figma (.fig) design">${icon('download')}Import design</button><button id="home-new" class="primary">${icon('plus')}New design</button></div></header>
  <div class="home-toolbar"><label class="home-search">${icon('search')}<input id="project-search" type="search" placeholder="Search projects" aria-label="Search projects"></label><div class="home-view-controls"><label class="home-sort">Sort by<select id="project-sort" aria-label="Sort projects"><option value="edited">Last edited</option><option value="name">Name</option></select></label><div class="home-view-toggle" role="group" aria-label="Project view"><button id="project-grid" class="icon-button" aria-label="Grid view" aria-pressed="true">${icon('layout-grid')}</button><button id="project-list" class="icon-button" aria-label="List view" aria-pressed="false">${icon('list-bulleted')}</button></div></div></div>
  <p id="home-error" class="home-notice" role="alert" hidden></p>
  <div id="cloud-notice" class="home-notice" hidden><span id="cloud-message" role="status"></span><button id="cloud-retry">Try again</button><a id="cloud-signin" href="/signin-with-chatgpt?return_to=%2F" hidden>Sign in with ChatGPT</a></div>
  <div class="home-collection-heading"><h2 id="collection-title">Your designs</h2><span id="project-count" role="status"></span></div>
  <div id="project-cards" class="project-grid" aria-label="Projects"></div><button id="home-more" hidden>Load more cloud projects</button>
  <p class="home-storage-note">Projects on this device are saved in this browser. Download a copy from the editor to keep a backup.</p>
- <input id="project-import-file" type="file" accept=".pixl,.json" hidden>
+ <input id="project-import-file" type="file" accept=".pixl,.json,.fig" hidden>
 </main>`;
 const $=id=>document.getElementById(id),el=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=text;return n;};
 let storage,tabStorage;try{storage=localStorage;}catch{}try{tabStorage=sessionStorage;}catch{}
@@ -40,11 +42,18 @@ async function normalize(body){
 }
 const syncDropdowns=installInspectorDropdowns(root);
 const creator=installDesignCreator({saveLocation:()=>selfHosted&&workspace!=='personal'?'Saved to this shared workspace':'Saved in your projects on this device',create:async body=>{const normalized=await normalize(body);const file=selfHosted&&workspace!=='personal'?await cloudRequest('',{method:'POST',body:normalized}):drafts.create(normalized);location.assign(projectUrl({kind:selfHosted&&workspace!=='personal'?'cloud':'local',id:file.id,workspace}));}});
+root.ondragover=event=>{if(event.dataTransfer.types.includes('Files'))event.preventDefault();};
+root.ondrop=event=>{event.preventDefault();const file=event.dataTransfer.files[0];if(file)importDesign(file).catch(error=>{if(error.name!=='AbortError')report(error);});};
 $('home-new').onclick=()=>creator.showNew();$('home-import').onclick=()=>$('project-import-file').click();
+async function importDesign(file){
+ const {body}=await readDesignFile(file),normalized=await normalize(body),shared=selfHosted&&workspace!=='personal';
+ const saved=shared?await cloudRequest('',{method:'POST',body:normalized}):drafts.create(normalized);
+ location.assign(projectUrl({kind:shared?'cloud':'local',id:saved.id,workspace}));
+}
 $('project-import-file').onchange=async()=>{
  const file=$('project-import-file').files[0];if(!file)return;$('home-import').disabled=true;
- try{if(file.size>5_000_000)throw new Error('Files must be smaller than 5 MB.');const normalized=await normalize(await file.text());const saved=selfHosted&&workspace!=='personal'?await cloudRequest('',{method:'POST',body:normalized}):drafts.create(normalized);location.assign(projectUrl({kind:selfHosted&&workspace!=='personal'?'cloud':'local',id:saved.id,workspace}));}
- catch(error){report(error);}finally{$('project-import-file').value='';$('home-import').disabled=false;}
+ try{await importDesign(file);}
+ catch(error){if(error.name!=='AbortError')report(error);}finally{$('project-import-file').value='';$('home-import').disabled=false;}
 };
 function localProjects(){try{return drafts.list().map(file=>({...file,kind:'local'}));}catch(error){report(error);return [];}}
 function render(){
@@ -105,11 +114,18 @@ try{
  if(!drafts.list().length){const legacy=storage?.getItem('pixlprfct.document.v1');if(legacy){const normalized=await normalize(legacy);if(!drafts.list().length)drafts.create(normalized);}}
 }catch(error){report(error);}
 if(disposed)return;await loadWorkspace();if(disposed)return;render();fetchCloud();
+if(window.pixlDesktop?.local){
+ root.querySelector('.home-storage-note').textContent='Projects on this device are saved in the desktop app. Save a .pixl copy to keep a portable backup.';
+ root.querySelector('[data-scope="cloud"]').hidden=true;
+ const links=root.querySelector('.home-account-links');links.replaceChildren();
+ const connect=el('button',null,'Connect to a team server…');connect.onclick=()=>window.pixlDesktop.connect();links.append(connect);
+ closeDesktop=installDesktop({report,importFile:importDesign});
+}
 const params=new URLSearchParams(location.search);
 if(params.has('projectError'))report(new Error('That project could not be opened. Choose a saved project below or import a copy.'));
 if(params.get('new')==='1'){const query=new URLSearchParams(location.search);query.delete('new');history.replaceState(null,'','/'+(query.size?'?'+query:''));creator.showNew();}
 
 }
 start().catch(report);
-return ()=>{disposed=true;window.removeEventListener('storage',onStorage);window.removeEventListener('pageshow',onPageShow);creator.destroy();syncDropdowns.destroy();root.replaceChildren();};
+return ()=>{disposed=true;closeDesktop();window.removeEventListener('storage',onStorage);window.removeEventListener('pageshow',onPageShow);creator.destroy();syncDropdowns.destroy();root.replaceChildren();};
 }

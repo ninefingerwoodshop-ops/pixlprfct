@@ -29,7 +29,7 @@
 .figma-inspector #dimensions-section #add-auto-layout,.figma-inspector .remove-auto-layout{position:absolute;right:8px;top:8px}
 .figma-inspector #dimensions-section .dimensions-with-lock{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 24px;gap:8px}
 .figma-inspector .layout-sizing-controls:has(.size-limit-fields[hidden]):not(:has(.size-limit-fields:not([hidden]))){display:none}
-.figma-inspector #dimensions-section>.layout-flow{margin:0 32px 8px 0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--ui-field);gap:0;border-radius:4px}
+.figma-inspector #dimensions-section>.layout-flow{margin:0 32px 8px 0;display:grid;grid-template-columns:repeat(2,1fr);background:var(--ui-field);gap:0;border-radius:4px}
 .figma-inspector #dimensions-section .layout-flow button{width:100%!important;max-width:none!important;min-width:0!important;flex:auto!important}
 .figma-inspector #dimensions-section .layout-flow button[aria-pressed=true]{background:var(--ui-surface)!important;color:var(--ui-text-strong)!important;box-shadow:inset 0 0 0 1px var(--ui-border)!important}
 .figma-inspector .layout-wrap-action{position:absolute;right:8px;top:60px}
@@ -125,3 +125,34 @@
 .figma-inspector .inspector-select-glyph svg{width:16px;height:16px}
 .figma-inspector .blend-popover>.inspector-select-icon:hover{background:var(--ui-hover)!important}
 .figma-inspector .blend-popover>.inspector-select-icon[aria-expanded=true]{background:var(--ui-selected)!important}
+
+/* Section labels are the disclosure targets. Actions keep their own right-hand
+   slots; expanding a section never enables or disables a document property. */
+.right-panel.figma-inspector .property-section.inspector-collapsible{padding-top:0;--header-action-top:4px}
+.right-panel.figma-inspector .inspector-collapsible>.inspector-collapse-header{height:32px;min-height:32px;margin-bottom:8px!important;box-sizing:border-box}
+.right-panel.figma-inspector .inspector-collapsible.inspector-collapsed>.inspector-collapse-header{margin-bottom:0!important}
+.right-panel.figma-inspector .inspector-collapsible>.inspector-collapse-header h3{height:auto;min-height:0}
+.right-panel.figma-inspector button.inspector-accordion-toggle{cursor:pointer;justify-content:flex-start}
+.right-panel.figma-inspector .inspector-section-toggle::before{content:none!important}
+.right-panel.figma-inspector .inspector-accordion-toggle>.inspector-switch-track{display:none!important}
+.right-panel.figma-inspector .inspector-collapsible>.inspector-collapse-header .inspector-disclosure-label{padding-right:0}
+.right-panel.figma-inspector .inspector-collapsible>:is(.section-add,.effect-add-menu,.paint-variable-trigger){right:8px!important;top:4px!important}
+.right-panel.figma-inspector #appearance-section.inspector-collapsible>.inspector-visibility{right:36px!important;top:4px!important}
+.right-panel.figma-inspector #appearance-section.inspector-collapsible>.blend-popover{right:8px;top:4px}
+.right-panel.figma-inspector #appearance-section.inspector-collapsible>.variable-mode-popover{top:4px}
+.right-panel.figma-inspector #appearance-section>.inspector-collapse-header{padding-right:88px!important}
+.right-panel.figma-inspector #dimensions-section>.inspector-collapse-header{padding-right:28px!important}
+.right-panel.figma-inspector .setting-section-heading>h3{flex:1;min-width:0}
+.right-panel.figma-inspector #dimensions-section>.remove-auto-layout{top:4px}
+.right-panel.figma-inspector .inspector-collapsible>.variable-section-heading>.variable-manage-link{right:0}
+.right-panel.figma-inspector .inspector-disclosure-summary>.inspector-icon{right:0}
+.right-panel.figma-inspector .inspector-disclosure-summary>.inspector-icon:not(:last-child){right:28px}
+
+/* Hover belongs to the whole section row, including the inset beside its label. */
+.right-panel.figma-inspector .inspector-collapsible:has(>.inspector-collapse-header:hover),
+.right-panel.figma-inspector :is(#inspector-layer-actions,#inspector-extensions):has(>summary:hover){background-image:linear-gradient(var(--ui-hover),var(--ui-hover));background-size:100% var(--inspector-toggle-row-height);background-position:0 0;background-repeat:no-repeat}
+.right-panel.figma-inspector button.inspector-accordion-toggle:is(:hover,:focus-visible){background-color:transparent!important}
+.right-panel.figma-inspector :is(#inspector-layer-actions,#inspector-extensions){padding-top:0}
+.right-panel.figma-inspector .inspector-disclosure-summary::marker{content:''}
+.right-panel.figma-inspector #dimensions-section>#grid-layout-section{padding:12px 0 0;border:0;box-shadow:none}
+.right-panel.figma-inspector #dimensions-section>#choose-layout-type{top:4px!important;right:8px!important}

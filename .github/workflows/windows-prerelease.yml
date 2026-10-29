@@ -1,0 +1,76 @@
+name: Windows prerelease
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: npm ci
+      - run: node node_modules/electron/install.js
+      - run: npm run desktop:win
+      - name: Test desktop boundaries and Figma imports
+        run: node --test tests/desktop.test.mjs tests/desktop-signing.test.mjs tests/desktop-preferences.test.mjs tests/figma-import.test.mjs
+      - name: Check Windows install, startup, and uninstall
+        shell: pwsh
+        run: |
+          $installer = @(Get-ChildItem releases/desktop/*.exe)
+          if ($installer.Count -ne 1) { throw 'Expected one Windows installer' }
+          $installDir = Join-Path $env:RUNNER_TEMP 'PixlPrfct-installed'
+          $install = Start-Process -FilePath $installer[0].FullName -ArgumentList '/S', "/D=$installDir" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
+          $app = Start-Process -FilePath (Join-Path $installDir 'PixlPrfct.exe') -PassThru
+          try {
+            Start-Sleep -Seconds 15
+            $app.Refresh()
+            if ($app.HasExited) { throw "PixlPrfct exited during startup: $($app.ExitCode)" }
+            if ($app.MainWindowHandle -eq 0) { throw 'PixlPrfct did not create a main window' }
+            Write-Output "Installed PixlPrfct opened a window: $($app.MainWindowTitle). This is a startup check, not a full interactive test."
+          } finally {
+            if (!$app.HasExited) {
+              $null = $app.CloseMainWindow()
+              if (!$app.WaitForExit(10000)) { Stop-Process -Id $app.Id -Force }
+            }
+          }
+          $uninstaller = @(Get-ChildItem $installDir -Filter '*Uninstall*.exe')
+          if ($uninstaller.Count -ne 1) { throw 'Uninstaller not found' }
+          $uninstall = Start-Process -FilePath $uninstaller[0].FullName -ArgumentList '/S' -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "Uninstaller failed: $($uninstall.ExitCode)" }
+          $deadline = (Get-Date).AddSeconds(20)
+          while ((Test-Path (Join-Path $installDir 'PixlPrfct.exe')) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 1 }
+          if (Test-Path (Join-Path $installDir 'PixlPrfct.exe')) { throw 'Uninstall did not remove the app executable' }
+      - name: Record checksums and source
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem releases/desktop/* -File | Where-Object { $_.Extension -in '.exe', '.zip' } | Sort-Object Name
+          if ($files.Count -ne 2) { throw 'Expected one installer and one ZIP' }
+          $files | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } | Set-Content -Encoding utf8NoBOM releases/desktop/SHA256SUMS.txt
+          @{
+            repository = '${{ github.repository }}'
+            commit = '${{ github.sha }}'
+            build = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            platform = 'windows-x64'
+            signing = 'unsigned'
+          } | ConvertTo-Json | Set-Content -Encoding utf8NoBOM releases/desktop/BUILD-PROVENANCE.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: PixlPrfct-windows-prerelease
+          path: |
+            releases/desktop/*.exe
+            releases/desktop/*.zip
+            releases/desktop/SHA256SUMS.txt
+            releases/desktop/BUILD-PROVENANCE.json
+          if-no-files-found: error
+          retention-days: 14

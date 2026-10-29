@@ -1,5 +1,16 @@
 /* Dialog controls share the drawers' field and action rules. Presentation
    canvases and docked workspace pages keep their own content geometry. */
+.design-import-dialog{width:480px}
+.design-import-dialog .dialog-actions{display:flex;justify-content:flex-end}
+.design-import-dialog ul{max-height:40vh;overflow:auto;margin:var(--ui-space-3) 0;padding-left:var(--ui-space-5)}
+.design-import-dialog li{margin:var(--ui-space-3) 0;line-height:18px}
+.design-import-dialog small{display:block;color:var(--ui-text-muted);overflow-wrap:anywhere}
+.design-import-dialog h3{font:var(--ui-semibold) var(--ui-text)/20px var(--ui-font);margin:var(--ui-space-4) 0 var(--ui-space-2)}
+#design-import-dialog.design-import-dialog button{min-height:var(--ui-control-height);padding:4px 12px;background-color:var(--ui-field)!important;color:var(--ui-text-color)!important;border:1px solid transparent;cursor:pointer}
+#design-import-dialog.design-import-dialog button:hover{background-color:var(--ui-hover)!important}
+#design-import-dialog.design-import-dialog button.primary{background-color:var(--ui-accent)!important;color:white!important}
+#design-import-dialog.design-import-dialog button.primary:hover{background-color:var(--ui-primary-hover)!important}
+.design-import-dialog button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)){
  box-sizing:border-box;font:var(--ui-regular) var(--ui-text)/16px var(--ui-font);
  color:var(--ui-text-color);background:var(--ui-surface);border:1px solid var(--ui-border);

@@ -1,3 +1,5 @@
+import {installDesktop} from './desktop-integration.js';
+import {readDesignFile} from './design-import.js';
 import {installFigmaInspector} from './figma-inspector.js';
 let updateFigmaInspector=()=>{};
 import {installMotion} from './motion.js';
@@ -15,6 +17,8 @@ import {areaResizeConstraints,drawResizeLimits,updateTrackLimitControls} from '.
 import {updateAreaTrackValues} from './grid-area-track-values.js';
 import {gridAreaEditingOverridden} from './layout-css.js';
 import {installLayerCssInspector} from './layer-css-inspector.js';
+import {createLayerCssEditor} from './layer-css-editor.js';
+import {installAgentConnection} from './agent-connection.js';
 import {createLayoutCssEditor} from './layout-css-editor.js';
 import {installDeviceChrome,orientFrame,chromeBreakpoints,deviceChromeStatus} from './device-chrome.js';
 import {gridStackDrop,drawGridStackDrop} from './grid-stack-drop.js';
@@ -126,16 +130,18 @@ const renderFrameLabels=installFrameLabels(canvas,{beginDrag:(id,start,event)=>s
   canvas.onpointermove(event);
 }),select:id=>{setSelection([id]);refresh(false);},rename:(id,name)=>{const shape=doc.shapes.find(s=>s.id===id);if(shape)update({...shape,name});}});
 const cssCanvas=mountCssCanvas(canvas,()=>scheduleViewportDraw());let cssCanvasEnabled=null,cssGeometry=[];
-const needsControlRenderer=()=>pageShapes().some(s=>s.control||s.auto_layout?.direction==='grid'||s.layout_media?.length);
-const cssActive=()=>!!layoutCssPreview||needsControlRenderer()||(cssCanvasEnabled??pageShapes().some(s=>effectBlur(s.appearance,'backdrop_blur')>0));
+const needsControlRenderer=()=>pageShapes().some(s=>s.control||s.auto_layout?.direction==='grid'||s.layout_media?.length||s.custom_css);
+const cssActive=()=>!!layoutCssPreview||!!layerCssPreview||needsControlRenderer()||(cssCanvasEnabled??pageShapes().some(s=>effectBlur(s.appearance,'backdrop_blur')>0));
 const canvasHit=(x,y)=>cssActive()?cssCanvas.hit({x,y}):editor.hit_test(x,y);
 const measureCtx = document.createElement('canvas').getContext('2d');
 function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
+function agentEditor(){const instance=new Editor();instance.set_text_measurer(json=>{const shape=JSON.parse(json);if(shape.control?.kind==='button'){const style=shape.typography??{font_family:'Arial',font_size:16,font_weight:400,line_height:1.2};measureCtx.font=fontCss(style);return JSON.stringify([Math.max(1,Math.ceil(measureCtx.measureText(shape.control.label).width)),Math.max(1,Math.ceil(style.font_size*style.line_height))]);}measureCtx.font=fontCss(textStyle(shape));return JSON.stringify([...textSize(shape,value=>measureCtx.measureText(value).width),textBaseline(shape,measureCtx)]);});return instance;}
 const KEY = 'pixlprfct.document.v1';
 let textEditing=null;
 const inlineText=mountTextEditor(canvas,{input:previewText,finish:finishText,zoom:key=>zoomAt(key==='0'?1/zoom:key==='-'?1/1.2:1.2)});
 let gridHoverPointer = null;
 let layoutCssPreview=null,layoutCssEditor,renderLayerCssInspector;
+let layerCssPreview=null,layerCssEditor;
 let gridPickerPreview=null;
 let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, gesture = null, space = false;
 // Trackpad pinch emits small wheel deltas; amplify these while anchoring at the pointer.
@@ -263,6 +269,7 @@ async function openLocalDesign(body,id=null){
  if(id)drafts.activate(id);else drafts.create(normalized);
  cloud?.localOpened();loadDesign(normalized);persist();
 }
+async function importDesignFile(file){const {body,report}=await readDesignFile(file);await openLocalDesign(body);toast(report?`Imported ${report.pages} Figma pages and ${report.layers} layers into Drafts`:'Editable project imported into Drafts');}
 function refresh(save = true) {
   // A committed document change invalidates any snapshot used for live CSS preview.
   layoutCssPreview=null;
@@ -634,12 +641,17 @@ function renderLibraryProtection(){
  if(!notice.hidden){notice.append(document.createTextNode(link?link.name+' · Protected library instance. Move or duplicate it; edit its properties in the source project.':'Protected design system · You can edit only components assigned to you.'));if(link){const button=document.createElement('button');button.textContent='Open source';button.onclick=()=>libraries.source(shapes.find(s=>libraryForShape(doc,s)).component?.master??shapes[0].id);notice.append(button);}}
  if(!link&&!sourceLocked)return;
  const movable=shapes.length===1&&shapes[0].component?.master===shapes[0].component?.source;
- for(const field of $('design-inspector').querySelectorAll('input,select,textarea,button')){if(field.closest('#library-selection-notice')||field.matches('.inspector-accordion-toggle,.inspector-section-toggle')||['go-main','select-instance-root','go-nested-main','export-artwork'].includes(field.id)||field.getAttribute('aria-label')==='Copy CSS class'||(link&&movable&&['x','y','duplicate','delete'].includes(field.id)))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}
+ for(const field of $('design-inspector').querySelectorAll('input,select,textarea,button')){if(field.closest('#library-selection-notice')||field.matches('.inspector-accordion-toggle,.inspector-section-toggle')||['go-main','select-instance-root','go-nested-main','export-artwork','edit-component-css'].includes(field.id)||field.getAttribute('aria-label')==='Copy CSS class'||(link&&movable&&['x','y','duplicate','delete'].includes(field.id)))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}
 }
 const renderProperties=inspectorRenderer(()=>{for(const [field,disabled]of libraryDisabled)field.disabled=disabled;libraryDisabled.clear();renderPropertiesNow();renderLibraryProtection();syncInspectorDropdowns();scheduleViewportDraw();},()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
 function renderPropertiesNow() {
   if(!renderLayerCssInspector)renderLayerCssInspector=installLayerCssInspector($('design-inspector'),{current,shapes:()=>doc.shapes,change:shape=>{editor.update(JSON.stringify(shape));refresh();},changeMany:shapes=>{editor.update_across_pages(JSON.stringify(shapes));refresh();}});
   renderLayerCssInspector();
+  if(!layerCssEditor){
+    layerCssEditor=createLayerCssEditor({current,shapes:()=>doc.shapes,options:()=>({variables:doc.variables,pageModes:activePage()?.variable_modes,textLayout}),editable:shape=>shape.component?.type!=='instance'&&!libraryForShape(doc,shape)&&!libraries?.locked([shape]),apply:update,preview:next=>{if(!next){layerCssPreview=null;draw();return;}const result=JSON.parse(editor.preview_update_many(JSON.stringify([next])));layerCssPreview=result.shapes.filter(s=>s.page_id===doc.active_page);draw();}});
+    const button=document.createElement('button');button.id='edit-component-css';button.type='button';button.className='wide-button';button.textContent='Edit CSS…';button.onclick=()=>layerCssEditor.open();$('layer-css-section').append(button);
+  }
+  const cssShape=current();$('edit-component-css').textContent=cssShape&&(cssShape.component?.type==='instance'||libraryForShape(doc,cssShape)||libraries?.locked([cssShape]))?'View CSS…':'Edit CSS…';
   if(!layoutCssEditor){
     layoutCssEditor=createLayoutCssEditor({current,shapes:()=>doc.shapes,apply:update,preview:next=>{
       if(!next){layoutCssPreview=null;draw();return;}
@@ -720,7 +732,7 @@ function renderPropertiesNow() {
   areaButton.textContent=editingGridAreas===shape.id?'Finish editing areas':'Draw areas on canvas';areaButton.setAttribute('aria-pressed',String(editingGridAreas===shape.id));areaButton.disabled=!canvasEditable()||shape.component?.type==='instance'||areaOverride;
   $('edit-layout-spacing').textContent=editingLayout===shape.id?'Finish spacing edits':'Edit spacing on canvas';$('edit-layout-spacing').disabled=!canvasEditable();$('edit-layout-spacing').setAttribute('aria-pressed',String(editingLayout===shape.id));
   $('auto-layout-panel').hidden=shape.kind!=='frame';$('layout-direction').value=shape.auto_layout?.direction??'none';$('layout-settings').hidden=!shape.auto_layout||shape.auto_layout.direction==='grid';$('layout-text_baseline').parentElement.hidden=shape.auto_layout?.direction!=='horizontal';
-  renderGridControls($('grid-frame-controls'),shape,update,(axis,index,delta)=>safe(()=>{shiftGridTrack(shape.id,axis,index,delta);}),gridPlan(shape),(axis,index)=>safe(()=>{editor.delete_grid_track(shape.id,axis,index);activeSpacing=null;refresh();toast('Grid track deleted · all layers kept');}),(oldName,newName)=>{editor.rename_grid_area(shape.id,oldName,newName);if(activeGridArea===oldName)activeGridArea=newName;refresh();},name=>safe(()=>{editor.delete_grid_area(shape.id,name);if(activeGridArea===name)activeGridArea=null;refresh();toast('Area deleted · items kept in their cells');}));const gridFlow=shape.auto_layout?.direction==='grid';for(const id of ['layout-wrap','layout-align_content','layout-align','layout-justify'])$(id).parentElement.hidden=gridFlow;
+  renderGridControls($('grid-frame-controls'),shape,update,(axis,index,delta)=>safe(()=>{shiftGridTrack(shape.id,axis,index,delta,true);}),gridPlan(shape),(axis,index)=>safe(()=>{editor.delete_grid_track(shape.id,axis,index);activeSpacing=null;refresh();toast('Grid track deleted · all layers kept');}),(oldName,newName)=>{editor.rename_grid_area(shape.id,oldName,newName);if(activeGridArea===oldName)activeGridArea=newName;refresh();},name=>safe(()=>{editor.delete_grid_area(shape.id,name);if(activeGridArea===name)activeGridArea=null;refresh();toast('Area deleted · items kept in their cells');}),(axis,index,before)=>safe(()=>{const next=editor.move_grid_track(shape.id,axis,index,before);activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;refresh();focusGridTrack(axis,next);}));const gridFlow=shape.auto_layout?.direction==='grid';for(const id of ['layout-wrap','layout-align_content','layout-align','layout-justify'])$(id).parentElement.hidden=gridFlow;
   $('layout-gap-caption').textContent=gridFlow?'Column gap':'Gap';$('layout-cross-gap-caption').textContent=gridFlow?'Row gap':'Row / column gap';$('layout-gap').min=$('layout-cross_gap').min=gridFlow?'0':'-100000';
   if(shape.auto_layout)for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap','strokes_included','text_baseline','canvas_stacking']){const el=$('layout-'+key);if((key.startsWith('hug')||key==='wrap'||key==='strokes_included'||key==='text_baseline'))el.checked=shape.auto_layout[key];else el.value=shape.auto_layout[key]??'';}
   if(shape.auto_layout)for(const [key,mode] of [['gap','justify'],['cross_gap','align_content']]){const el=$('layout-'+key),auto=shape.auto_layout.direction!=='grid'&&['between','around','evenly'].includes(shape.auto_layout[mode]);el.disabled=auto;el.placeholder=auto?'Auto':key==='cross_gap'?'Use main gap':'';if(auto)el.value='';}
@@ -778,7 +790,8 @@ function drawShape(shape, target=ctx) {
   ctx.restore();if(a.stroke_enabled&&!shape.points?.length&&shape.kind!=='text')stroke(()=>drawAlignedStroke(ctx,shape,{stroke:c=>c.stroke(outline),fill:c=>c.fill(outline)}));
   ctx.restore();
 }
-function shiftGridTrack(id,axis,index,delta){const next=editor.shift_grid_track(id,axis,index,delta);activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;const old=$('grid-'+axis+'-'+index),target=$('grid-'+axis+'-'+next);if(old?.open){old.open=false;if(target)target.open=true;}refresh();}
+function focusGridTrack(axis,index){$('grid-'+axis+'-section')?.querySelectorAll('.grid-track-grip')[index]?.focus({preventScroll:true});}
+function shiftGridTrack(id,axis,index,delta,focus=false){const next=editor.shift_grid_track(id,axis,index,delta);activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;const old=$('grid-'+axis+'-'+index),target=$('grid-'+axis+'-'+next);if(old?.open){old.open=false;if(target)target.open=true;}refresh();if(focus)focusGridTrack(axis,next);}
 function gridPlan(frame){if(gesture?.gridParentId===frame?.id&&gesture.grid)return {...gesture.grid,...(frame._gridLayout??{})};if(gridPickerPreview?.parentId===frame?.id)return {...gridPickerPreview.grid,...(frame._gridLayout??{})};return frame?.auto_layout?.direction==='grid'?{...JSON.parse(editor.grid_layout(frame.id)),...(frame._gridLayout??{})}:null;}
 function gridSpanParent(shape){
  if(!shape||shape.layout_item?.absolute)return null;
@@ -797,6 +810,7 @@ function draw() {
   if(textEditing)scene=textEditing.document.shapes.filter(s=>s.page_id===doc.active_page);
   if(gridPickerPreview)scene=gridPickerPreview.scene;
   if(layoutCssPreview&&layoutCssEditor?.isOpen())scene=layoutCssPreview;
+  if(layerCssPreview&&layerCssEditor?.isOpen())scene=layerCssPreview;
   scene=motionTools?.preview(scene)??scene;
   scene=resolvePatternPaints(previewPaints(scene),(source,box)=>svgDocument(source,box,1,null,textLayout));
   renderLayerCssInspector?.responsive(scene);
@@ -824,7 +838,7 @@ function draw() {
     if(live)for(const axis of ['width','height'])if(document.activeElement!==$(axis))$(axis).value=Number(live[axis].toFixed(2));
   }
   $('css-canvas').setAttribute('aria-pressed',String(cssActive()));
-  $('css-canvas').disabled=needsControlRenderer();$('css-canvas').title=needsControlRenderer()?'CSS canvas is required for controls and CSS Grid':'Browser layout with live inspector editing';
+  $('css-canvas').disabled=needsControlRenderer();$('css-canvas').title=needsControlRenderer()?'CSS canvas is required for controls, CSS Grid, and custom CSS':'Browser layout with live inspector editing';
   renderDeviceChrome(scene,pan,zoom);
   const chromeStatus=deviceChromeStatus(selectedIds.size===1?scene.find(s=>selectedIds.has(s.id)):null,scene);
   if($('device-chrome-active').textContent!==chromeStatus)$('device-chrome-active').textContent=chromeStatus;
@@ -1102,7 +1116,7 @@ function bind() {
   $('reset-crop').onclick=()=>{const s=current();if(s?.image)update({...s,image:{...s.image,zoom:1,offset_x:.5,offset_y:.5}});};
   canvas.ondragover=event=>{event.preventDefault();event.dataTransfer.dropEffect='copy';if(event.dataTransfer.types.includes(ASSET_MIME)){if(!assetDrag){event.dataTransfer.dropEffect='none';return;}assetDrag.point=point(event);assetDrag.parent=frameAt(pageShapes(),assetDrag.point);draw();}};
   canvas.ondragleave=()=>{if(assetDrag){assetDrag.point=null;draw();}};
-  canvas.ondrop=event=>{event.preventDefault();if(event.dataTransfer.types.includes(ASSET_MIME)){const master=readAssetDrag(event.dataTransfer.getData(ASSET_MIME),assetDragToken),p=point(event);clearAssetDrag();safe(()=>{const source=doc.shapes.find(s=>s.id===master&&s.component?.type==='master');if(!source)throw new Error('Drag a component from this file’s Assets panel');const placement=centeredPlacement(source,p),parent=frameAt(pageShapes(),p);setSelection([editor.place_instance(master,placement.x,placement.y,parent)]);refresh();toast(parent?'Linked instance placed in frame':'Linked instance placed');});return;}const file=event.dataTransfer.files[0];if(file)placeImage(file,point(event));};
+  canvas.ondrop=event=>{event.preventDefault();if(event.dataTransfer.types.includes(ASSET_MIME)){const master=readAssetDrag(event.dataTransfer.getData(ASSET_MIME),assetDragToken),p=point(event);clearAssetDrag();safe(()=>{const source=doc.shapes.find(s=>s.id===master&&s.component?.type==='master');if(!source)throw new Error('Drag a component from this file’s Assets panel');const placement=centeredPlacement(source,p),parent=frameAt(pageShapes(),p);setSelection([editor.place_instance(master,placement.x,placement.y,parent)]);refresh();toast(parent?'Linked instance placed in frame':'Linked instance placed');});return;}const file=event.dataTransfer.files[0];if(file){if(/\.(fig|pixl|json)$/i.test(file.name))importDesignFile(file).catch(error=>{if(error.name!=='AbortError')toast(error.message);});else placeImage(file,point(event));}};
   window.addEventListener('paste',event=>{
     if(event.target.closest('input,textarea,select,[contenteditable]')||!event.clipboardData)return;
     const text=event.clipboardData.getData(LAYER_MIME)||event.clipboardData.getData('text/plain'),payload=layerPayload(text),inPlace=pasteInPlace,replace=pasteReplace,frames=pasteFrames;pasteInPlace=false;pasteReplace=false;pasteFrames=false;
@@ -1139,6 +1153,8 @@ function bind() {
   commands.push(...[['front','Bring to front',']'],['back','Send to back','['],['forward','Bring forward','Ctrl/⌘ ]'],['backward','Send backward','Ctrl/⌘ [']].map(([direction,label,shortcut])=>({label,shortcut,category:'Layers',enabled:()=>selectedIds.size>0,unavailable:'Select layers',run:()=>arrangeSelection(direction)})));
   const showIconLibrary=installIconLibrary({insert:(svg,name)=>safe(()=>placeSvg(parseSvg(svg,name))),notify:toast});
   commands.push({label:'PixlPrfct Icon Library',category:'Libraries',run:showIconLibrary});
+  const showAgentConnection=installAgentConnection({editor,identity:()=>location.search,createEditor:agentEditor,guard:(before,after,history)=>libraries?.guard(before,after,history)??(projectLoading?'Wait for the project to finish loading.':null),options:()=>({textLayout}),finalize:instance=>{let next=JSON.parse(instance.snapshot());if(next.shapes.some(s=>s.component?.type!=='instance'&&!s.layout_item?.grid_container&&s.auto_layout?.direction==='grid'&&!s.auto_layout.grid?.cell_containers))instance.enable_grid_containers();next=ensureBaseTextDocument(JSON.parse(instance.snapshot()));if(next)instance.load(JSON.stringify(next));},changed:()=>{setSelection([...selectedIds].filter(id=>JSON.parse(editor.snapshot()).shapes.some(s=>s.id===id)));refresh();},busy:()=>projectLoading||!!gesture||!!textEditing||!!layoutCssPreview||!!layerCssPreview||!!gridPickerPreview,selection:()=>[...selectedIds],select:(ids,page)=>{editor.select_page(page);refresh(false);setSelection(ids);renderLayers();renderProperties();draw();}});
+  commands.push({label:'MCP connection',category:'Development',keywords:'agent AI automation bridge',run:showAgentConnection});
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
   const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
@@ -1464,8 +1480,8 @@ function bind() {
   $('export-cancel').onclick=()=>$('export-dialog').close();$('export-download').onclick=()=>exportArtwork().catch(error=>{$('export-summary').textContent=String(error);}); $('open').onclick = () => $('file').click();
   $('file').onchange = async () => {
     const file = $('file').files[0]; if (!file) return;
-    try { if (file.size > 5_000_000) throw new Error('Files must be smaller than 5 MB.'); await openLocalDesign(await file.text());toast('Editable project imported into Drafts'); }
-    catch (error) { toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
+    try { await importDesignFile(file); }
+    catch (error) { if(error.name!=='AbortError')toast(`Could not open design: ${error}`); } finally { $('file').value = ''; }
   };
   canvas.oncontextmenu=event=>{const p=point(event);showSelectionMenu(event,canvasHit(p.x,p.y));};
   canvas.onpointerdown = event => safe(() => {
@@ -1849,4 +1865,5 @@ try {
   projectLoading=false;syncProjectAddress();
   if(!recoveryBlocked&&!cloud.session.active)persist();
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
+  installDesktop({importFile:importDesignFile,report:error=>toast(error.message),commands:{save:()=>$('save').click(),undo:()=>$('undo').click(),redo:()=>$('redo').click()}});
 } catch (error) { if(new URLSearchParams(location.search).has('draft')||new URLSearchParams(location.search).has('cloud')){location.replace('/?projectError=1');} $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

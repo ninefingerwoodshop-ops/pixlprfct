@@ -575,6 +575,34 @@ pub(crate) fn shift_track(
     if !["columns", "rows"].contains(&axis) || ![-1, 1].contains(&delta) {
         return Err("Choose a grid axis and an adjacent track direction".into());
     }
+    reorder_track(doc, id, axis, index, TrackDestination::Adjacent(delta))
+}
+
+pub(crate) fn move_track(
+    doc: &crate::Document,
+    id: u32,
+    axis: &str,
+    index: usize,
+    before: usize,
+) -> Result<(Vec<Shape>, usize), String> {
+    reorder_track(doc, id, axis, index, TrackDestination::Before(before))
+}
+
+enum TrackDestination {
+    Adjacent(i32),
+    Before(usize),
+}
+
+fn reorder_track(
+    doc: &crate::Document,
+    id: u32,
+    axis: &str,
+    index: usize,
+    destination: TrackDestination,
+) -> Result<(Vec<Shape>, usize), String> {
+    if !["columns", "rows"].contains(&axis) {
+        return Err("Choose a grid axis".into());
+    }
     let frame = doc
         .shapes
         .iter()
@@ -601,6 +629,9 @@ pub(crate) fn shift_track(
     };
     if index >= n || n > 128 {
         return Err("Track reordering supports up to 128 tracks per axis".into());
+    }
+    if matches!(destination, TrackDestination::Before(before) if before > n) {
+        return Err("Choose a drop position within the grid tracks".into());
     }
     // Every spanned interval joins adjacent tracks. Taking connected components
     // also handles overlapping spans transitively, including the destination.
@@ -664,11 +695,35 @@ pub(crate) fn shift_track(
         }
     }
     let from = groups.iter().position(|g| g.contains(&index)).unwrap();
-    let to = (from as i64 + delta as i64).clamp(0, groups.len() as i64 - 1) as usize;
+    let to = match destination {
+        TrackDestination::Adjacent(delta) => {
+            (from as i64 + delta as i64).clamp(0, groups.len() as i64 - 1) as usize
+        }
+        // A drop inside a connected span snaps to its far edge in the direction
+        // of travel. Never split spanning layers or named areas.
+        TrackDestination::Before(before) => {
+            let slot = groups
+                .iter()
+                .position(|g| *g.last().unwrap() >= before)
+                .unwrap_or(groups.len());
+            if slot == from {
+                from
+            } else if slot > from {
+                if slot < groups.len() && before > groups[slot][0] {
+                    slot
+                } else {
+                    slot - 1
+                }
+            } else {
+                slot
+            }
+        }
+    };
     if from == to {
         return Ok((vec![], index));
     }
-    groups.swap(from, to);
+    let moved = groups.remove(from);
+    groups.insert(to, moved);
     let order: Vec<_> = groups.into_iter().flatten().collect();
     let mut mapping = vec![0; n];
     for (new, old) in order.iter().enumerate() {

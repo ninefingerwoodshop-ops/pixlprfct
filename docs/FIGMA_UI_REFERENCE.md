@@ -62,3 +62,23 @@ See [RIGHT_DRAWER_AUDIT.md](RIGHT_DRAWER_AUDIT.md) for measured Design section
 geometry, browser checks, bug fixes, test results, and the remaining parity gaps.
 The core text inspector now matches the observed section and field coordinates.
 This is not a claim of complete visual or functional parity across the drawer.
+
+## Section labels and Grid access (2026-10-29)
+
+The user explicitly requests label-click collapse/expand for right-drawer
+sections, without disclosure chevrons. This is an intentional interaction
+extension to the Figma reference. Collapsing settings never disables their
+document properties. Header add actions stay independent and reveal the section
+when adding a paint, effect, or layout guide.
+
+The user then requested a Layout header menu with **Flexbox** and **CSS Grid**.
+Grid tools live inside Layout and collapse with it. Flexbox exposes horizontal
+and vertical flow; the menu also removes an existing layout. Section hover
+backgrounds extend across the drawer instead of ending at the label button.
+These choices intentionally extend the reference UI.
+
+Browser verification covered enabling and switching layout types, changing
+columns and checking generated CSS after reload, label and keyboard collapse,
+saved collapsed states, and adding paints/effects/guides from collapsed sections.
+General CSS editing is available for every layer through **CSS & responsive
+layout → Edit CSS**; see [CSS_EDITING.md](CSS_EDITING.md).

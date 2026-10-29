@@ -77,3 +77,15 @@ public/editor/
 
 # Self-hosted database and private development email
 /data/
+
+# Desktop staging, installers, and private Apple profiles
+/.desktop/
+/releases/
+*.provisionprofile
+*.mobileprovision
+*.p12
+*.p8
+
+# Bundled local Figma import worker
+/web/vendor/figma-import-worker.js
+/web/vendor/figma-import-LICENSES.txt

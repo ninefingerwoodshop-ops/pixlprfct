@@ -3,6 +3,7 @@ import {areaTrackValues,editAreaTrack,areaTrackDefinition,areaPlacementKey} from
 import {gridPickerCell,gridPickerWindow,sizeGridTracks} from './grid-ux.js';
 import {icon} from './icons.js';
 import {bindGridPickerDrag} from './grid-picker-drag.js';
+import {bindGridTrackSort} from './grid-track-sort.js';
 import {gridTrackCss,gridCss} from './grid-model.js';
 export const defaultTrack=()=>({mode:'fr',value:1,min:null,max:null});
 export const defaultGrid=()=>({cell_containers:true,columns:[defaultTrack(),defaultTrack()],rows:[],auto_rows:defaultTrack()});
@@ -15,14 +16,17 @@ function action(label,glyph,run){const b=el('button',null,'inspector-icon');b.ty
 function group(parent,title,id,open=false){const d=el('details',null,'grid-settings-group');d.id=id;d.open=open;d.append(el('summary',title));parent.append(d);return d;}
 function pair(parent){const row=el('div',null,'grid-field-pair');parent.append(row);return row;}
 function trackRangeControls(card,id,t,change){const range=pair(card);field(range,'Minimum size',`${id}-min`,t.min??0,value=>change({...t,min:value??0}));select(range,'Minimum unit',`${id}-min-unit`,t.min_unit||'px',[['px','px'],['%','%'],['em','em'],['auto','Auto'],['min-content','Min content'],['max-content','Max content']],min_unit=>change({...t,min_unit}));select(card,'Maximum unit',`${id}-max-unit`,t.max_unit||'fr',[['fr','fr'],['px','px'],['%','%'],['em','em'],['auto','Auto'],['min-content','Min content'],['max-content','Max content']],max_unit=>change({...t,max_unit}));}
-function trackControls(parent,title,id,t,change,reorder,remove){
- const card=el('div',null,'grid-track-card'),header=el('div',null,'grid-track-heading');header.append(el('span',title));const buttons=el('div',null,'grid-track-actions');
+function trackControls(parent,title,id,t,change,reorder,remove,sortable=false){
+ const card=el('div',null,'grid-track-card'),header=el('div',null,'grid-track-heading');
+ if(sortable){const grip=action(`Drag to reorder ${title.toLowerCase()} (Arrow Up or Down)`,'grip-vertical');grip.classList.add('grid-track-grip');header.append(grip);}
+ header.append(el('span',title,'grid-track-title'));const buttons=el('div',null,'grid-track-actions');
  if(reorder){buttons.append(action(`Move ${title.toLowerCase()} earlier`,'chevron-up',()=>reorder(-1)),action(`Move ${title.toLowerCase()} later`,'chevron-down',()=>reorder(1)));}
  if(remove)buttons.append(action(`Remove ${title.toLowerCase()}`,'minus',remove));header.append(buttons);card.append(header);parent.append(card);
  const row=pair(card);select(row,`${title} sizing`,`${id}-mode`,t.mode,units,mode=>change({...t,mode,value:mode==='fr'?1:mode==='fixed'?100:t.value,min:null,max:null}));
  if(['fixed','fr','percent','em','minmax'].includes(t.mode))field(row,t.mode==='minmax'?'Maximum size':`${title} size`,`${id}-value`,t.value,value=>change({...t,value:value??1}),{min:t.mode==='fr'?.001:0});
  if(t.mode==='minmax')trackRangeControls(card,id,t,change);
  else {const limits=group(card,'Size limits',`${id}-limits`),r=pair(limits);for(const key of ['min','max'])field(r,key==='min'?'Minimum (px)':'Maximum (px)',`${id}-${key}`,t[key],value=>change({...t,[key]:value}),{placeholder:'None'});}
+ return card;
 }
 function placementPicker(panel,c,placed,plan,change,preview){
  if(!plan)return;
@@ -48,7 +52,7 @@ function placementPicker(panel,c,placed,plan,change,preview){
  if(!buttons.some(b=>b.tabIndex===0))buttons[0].tabIndex=0;
  box.append(map,el('p',`Column · Row · Dot = occupied${view.totalColumns>8||view.totalRows>8?' · Showing a window around the selected item; use the fields below for other cells.':''}`,'grid-caption'));panel.append(box);
 }
-export function renderGridControls(panel,shape,update,reorder,plan,remove,renameArea,deleteArea){
+export function renderGridControls(panel,shape,update,reorder,plan,remove,renameArea,deleteArea,move){
  const hadContent=panel.childElementCount>0,expanded=new Set([...panel.querySelectorAll('details[open]')].map(e=>e.id));panel.replaceChildren();panel.classList.add('grid-editor');panel.hidden=shape?.auto_layout?.direction!=='grid';if(panel.hidden)return;
  const l=shape.auto_layout,g=l.grid??defaultGrid(),commit=grid=>update({...shape,auto_layout:{...l,grid}}),patch=v=>commit({...g,...v});
  select(panel,'Placement','grid-placement',g.masonry?'masonry':'manual',[['manual','Manual cells'],['masonry','Automatic masonry']],value=>patch({masonry:value==='masonry',cell_containers:true}));
@@ -60,7 +64,8 @@ export function renderGridControls(panel,shape,update,reorder,plan,remove,rename
  for(const [title,axis,mode] of [['Equal columns','columns','fr'],...(!g.masonry?[['Content-height rows','rows','auto']]:[])]){const b=el('button',title);b.type='button';b.title=axis==='columns'?'Give every column an equal share of the available width':'Let each row grow to fit its content, including automatically added rows';b.onclick=()=>commit(sizeGridTracks(g,axis,mode));quick.append(b);}
 
  for(const key of (g.masonry?['columns']:['columns','rows'])){const section=group(panel,key==='columns'?`Column sizing · ${g.columns.length}`:`Row sizing · ${g.rows.length||'Auto'}`,`grid-${key}-section`,false);const tracks=g[key];
- tracks.forEach((t,i)=>trackControls(section,`${key==='columns'?'Column':'Row'} ${i+1}`,`grid-${key}-${i}`,t,value=>patch({[key]:tracks.map((old,j)=>i===j?value:old)}),reorder?delta=>reorder(key,i,delta):null,tracks.length>(key==='columns'?1:0)?()=>{if(remove&&(plan?.[key]?.length??0)>1)remove(key,i);else patch({[key]:tracks.filter((_,j)=>i!==j)});}:null));
+ const cards=tracks.map((t,i)=>trackControls(section,`${key==='columns'?'Column':'Row'} ${i+1}`,`grid-${key}-${i}`,t,value=>patch({[key]:tracks.map((old,j)=>i===j?value:old)}),reorder?delta=>reorder(key,i,delta):null,tracks.length>(key==='columns'?1:0)?()=>{if(remove&&(plan?.[key]?.length??0)>1)remove(key,i);else patch({[key]:tracks.filter((_,j)=>i!==j)});}:null,!!move));
+ if(move&&cards.length)bindGridTrackSort(section,cards,(index,before)=>move(key,index,before),(index,delta)=>reorder?.(key,index,delta));
  const add=el('button',`Add ${key==='columns'?'column':'row'}`,'wide-button grid-add-track');add.type='button';add.disabled=tracks.length>=128;add.onclick=()=>patch({[key]:[...tracks,defaultTrack()]});section.append(add);
  }
  const implicit=group(panel,'Auto placement & implicit tracks','grid-implicit');

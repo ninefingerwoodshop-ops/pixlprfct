@@ -1,5 +1,15 @@
 # PixlPrfct
 
+## Desktop downloads
+
+The first Windows desktop build is an unsigned early-testing prerelease. Get the installer, ZIP, checksums, and build details from [GitHub Releases](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases). It includes local projects, drawing and text tools, Flexbox/CSS Grid layout, custom CSS, Figma Design file import, and optional self-hosted team connections. Back up designs as `.pixl` files; this is not a production-stability promise or full Figma compatibility.
+
+**Code signing policy:** [Signing status, maintainers, and release approvals](CODE_SIGNING.md). SignPath enrollment is pending; this prerelease has no Windows publisher signature. **Privacy:** [Data handling and network controls](PRIVACY.md). Online fonts are off by default in local desktop designs.
+
+Desktop apps: `npm run desktop:dev`, `npm run desktop:mac`, and `npm run desktop:win`. See [Desktop builds and Mac App Store signing](docs/DESKTOP.md).
+
+AI agents can build and edit live or saved designs through the [PixlPrfct MCP server](docs/MCP.md).
+
 Self-hosted accounts, organizations, teams, and database setup: see [Self-hosting PixlPrfct](docs/SELF_HOSTING.md). Start with `npm run selfhost:setup`.
 
 A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor now follows the structure and interaction conventions of the current Figma Design UI, while retaining the PixlPrfct name. It supports local drafts and self-hosted account and team workspaces. Live simultaneous editing is not yet implemented.
@@ -69,7 +79,7 @@ Place PNG, JPEG, or WebP images with the toolbar image button or Ctrl/Cmd+Shift+
 
 ## Architecture
 
-`src/lib.rs` owns versioned documents, shapes, mutations, history, hit testing, and validation. It builds as both a native Rust library and a WASM module. The native library can later back a desktop application.
+`src/lib.rs` owns versioned documents, shapes, mutations, history, hit testing, and validation. It builds as both a native Rust library and a WASM module. The Electron desktop app bundles the same WASM engine and web editor.
 
 `web/app.js` adapts pointer and keyboard input to the Rust engine and draws the returned document using Canvas 2D. HTML/CSS supply the editor interface. Rendering and browser UI are currently JavaScript; this is not an all-Rust UI or GPU renderer.
 
@@ -77,11 +87,11 @@ Place PNG, JPEG, or WebP images with the toolbar image button or Ctrl/Cmd+Shift+
 
 ## Current limits
 
-Managed cloud documents are private to the signed-in account. Self-hosted installations support organization/team workspaces and protected libraries; real-time multiplayer collaboration, nested instance-swap overrides, `.fig` import and Boolean operations remain unimplemented. Polygon and star use fixed point counts. Paths support separate solid fill and stroke colors, round stroke caps/joins, and a 4096-point limit. Their selection bounds include control handles. Frames support nested parent relationships, movement with descendants, subtree duplication/deletion, inherited visibility, and expandable layer trees. Assign layers with Parent frame → Move into frame; choose Page to detach. Coordinates are currently page-relative. Frames have a Clip content toggle, respected by rendering, selection, and SVG export. New UI-created frames clip by default; old documents retain their previous overflow behavior. Drawing starts inside the frontmost visible frame at the initial pointer position. Dragging uses the moved selection’s center to choose a destination frame, with reparenting and movement in one undo step; direct drags of individual group members retain their parent. Multi-selection supports proportional scaling, but not independent width/height stretching. Marquee intersects bounding boxes; no deep selection of nested objects is available. Alignment targets the selection bounds, not a parent frame. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
+Managed cloud documents are private to the signed-in account. Self-hosted installations support organization/team workspaces and protected libraries; real-time multiplayer collaboration, nested instance-swap overrides and Boolean operations remain unimplemented. Polygon and star use fixed point counts. Paths support separate solid fill and stroke colors, round stroke caps/joins, and a 4096-point limit. Their selection bounds include control handles. Frames support nested parent relationships, movement with descendants, subtree duplication/deletion, inherited visibility, and expandable layer trees. Assign layers with Parent frame → Move into frame; choose Page to detach. Coordinates are currently page-relative. Frames have a Clip content toggle, respected by rendering, selection, and SVG export. New UI-created frames clip by default; old documents retain their previous overflow behavior. Drawing starts inside the frontmost visible frame at the initial pointer position. Dragging uses the moved selection’s center to choose a destination frame, with reparenting and movement in one undo step; direct drags of individual group members retain their parent. Multi-selection supports proportional scaling, but not independent width/height stretching. Marquee intersects bounding boxes; no deep selection of nested objects is available. Alignment targets the selection bounds, not a parent frame. Text supports one style per box and clips to the box, with a warning in the inspector. Fonts are limited to Manrope, DM Sans, Georgia, and the system monospace font. Manrope and DM Sans load from Google Fonts; system fallbacks apply when unavailable. SVG uses the same measured wrapping and alignment as the canvas, but still depends on fonts available in the viewing application (fonts are not embedded).
 
 Interface references: [current navigation](https://help.figma.com/hc/en-us/articles/360039831974-Explore-the-navigation-bar-and-left-sidebar), [selection](https://help.figma.com/hc/en-us/articles/360040449873-Select-layers-and-objects), and [alignment and distribution](https://help.figma.com/hc/en-us/articles/360039956914-Adjust-alignment-rotation-position-and-dimensions). Unimplemented Figma features are not presented as functioning controls.
 
-Local storage belongs to this browser and origin; use **Save file** for portable backups. Multiple tabs do not merge edits. The desktop application is not implemented yet.
+Local storage belongs to this browser and origin; use **Save file** for portable backups. Multiple tabs do not merge edits. The Electron desktop app packages the same editor for macOS and Windows; see [Desktop builds](docs/DESKTOP.md).
 
 Use **+ New page** in the Pages sidebar to start another canvas. Select a page and use **Rename** or **Delete page** below the list. At least one page must remain. On narrow screens the page picker and page controls appear above the canvas. Save files include every page; artwork export includes the current page or selected layers. Version 1 files and existing local designs automatically migrate to Page 1 in the version 2 format. Page navigation does not consume undo history; undo/redo of an edit returns to its saved active page.
 
@@ -285,3 +295,7 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
+
+### Figma file import
+
+Use **Import design** or drop a local `.fig` file onto the projects page or canvas. The browser and desktop apps parse it locally, show a conversion report, and create a separate editable project. Pages, layers, text, paints, images, vectors and basic auto layout are supported. Component instances are detached, and advanced Figma features have conversion limits. See [Figma import](docs/FIGMA_IMPORT.md) for supported content, limits and verification.

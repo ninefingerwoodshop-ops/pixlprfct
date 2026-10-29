@@ -15,7 +15,7 @@ export function disclosureSwitch(title, change, expanded=false) {
  return button;
 }
 
-// A compact property switch has no disclosure state: its neighboring chevron
+// A compact property switch has no disclosure state: its neighboring label
 // controls visibility, while this button changes the document property.
 export function propertySwitch(title,change,enabled=false) {
  const button=document.createElement('button'),track=document.createElement('span');
@@ -30,6 +30,7 @@ export function disclosureButton(title, change, expanded=false) {
  const button=disclosureSwitch(title,change,expanded);
  button.classList.replace('inspector-disclosure-switch','inspector-accordion-toggle');
  button.removeAttribute('role');button.removeAttribute('aria-checked');
+ button.querySelector('.inspector-switch-track').remove();
  return button;
 }
 
