@@ -1,6 +1,6 @@
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=13c693b90ff5") format("woff2");font-weight:300;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=f2ae3224c5a8") format("woff2");font-weight:400;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=f2a23f15dda3") format("woff2");font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=22b026bd9cf8") format("woff2");font-weight:300;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=a08ce1beeaa1") format("woff2");font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=22251eeff7de") format("woff2");font-weight:700;font-style:normal;font-display:block}
 .pxi{display:inline-block;font-family:"PixlPrfct Icons"!important;font-style:normal;font-weight:400;font-variant:normal;text-transform:none;line-height:1;font-synthesis:none;speak:none;-webkit-font-smoothing:antialiased}
 .pxi-light{font-weight:300}.pxi-regular{font-weight:400}.pxi-bold{font-weight:700}
 .pxi-align-bottom::before{content:"\e900"}
@@ -475,3 +475,77 @@
 .pxi-file-disk-image::before{content:"\ead5"}
 .pxi-file-shortcut::before{content:"\ead6"}
 .pxi-file-ebook::before{content:"\ead7"}
+.pxi-heading-4::before{content:"\ead8"}
+.pxi-heading-5::before{content:"\ead9"}
+.pxi-heading-6::before{content:"\eada"}
+.pxi-font-size-increase::before{content:"\eadb"}
+.pxi-font-size-decrease::before{content:"\eadc"}
+.pxi-text-uppercase::before{content:"\eadd"}
+.pxi-text-lowercase::before{content:"\eade"}
+.pxi-text-title-case::before{content:"\eadf"}
+.pxi-text-small-caps::before{content:"\eae0"}
+.pxi-text-style::before{content:"\eae1"}
+.pxi-text-overline::before{content:"\eae2"}
+.pxi-text-double-underline::before{content:"\eae3"}
+.pxi-format-painter::before{content:"\eae4"}
+.pxi-paste-plain-text::before{content:"\eae5"}
+.pxi-paste-match-style::before{content:"\eae6"}
+.pxi-paste-from-word::before{content:"\eae7"}
+.pxi-select-all::before{content:"\eae8"}
+.pxi-text-direction-ltr::before{content:"\eae9"}
+.pxi-text-direction-rtl::before{content:"\eaea"}
+.pxi-paragraph-spacing-before::before{content:"\eaeb"}
+.pxi-paragraph-spacing-after::before{content:"\eaec"}
+.pxi-paragraph-keep-together::before{content:"\eaed"}
+.pxi-paragraph-keep-next::before{content:"\eaee"}
+.pxi-line-break::before{content:"\eaef"}
+.pxi-column-break::before{content:"\eaf0"}
+.pxi-section-break::before{content:"\eaf1"}
+.pxi-list-restart::before{content:"\eaf2"}
+.pxi-list-continue::before{content:"\eaf3"}
+.pxi-table-add::before{content:"\eaf4"}
+.pxi-table-delete::before{content:"\eaf5"}
+.pxi-table-header-row::before{content:"\eaf6"}
+.pxi-table-header-column::before{content:"\eaf7"}
+.pxi-table-row-above::before{content:"\eaf8"}
+.pxi-table-row-below::before{content:"\eaf9"}
+.pxi-table-column-before::before{content:"\eafa"}
+.pxi-table-column-after::before{content:"\eafb"}
+.pxi-table-cell-background::before{content:"\eafc"}
+.pxi-table-borders-all::before{content:"\eafd"}
+.pxi-table-borders-none::before{content:"\eafe"}
+.pxi-table-borders-outer::before{content:"\eaff"}
+.pxi-table-borders-inner::before{content:"\eb00"}
+.pxi-table-border-top::before{content:"\eb01"}
+.pxi-table-border-bottom::before{content:"\eb02"}
+.pxi-table-border-left::before{content:"\eb03"}
+.pxi-table-border-right::before{content:"\eb04"}
+.pxi-table-distribute-rows::before{content:"\eb05"}
+.pxi-table-distribute-columns::before{content:"\eb06"}
+.pxi-image-wrap-left::before{content:"\eb07"}
+.pxi-image-wrap-right::before{content:"\eb08"}
+.pxi-image-inline::before{content:"\eb09"}
+.pxi-image-block::before{content:"\eb0a"}
+.pxi-image-caption::before{content:"\eb0b"}
+.pxi-image-alt-text::before{content:"\eb0c"}
+.pxi-image-replace::before{content:"\eb0d"}
+.pxi-emoji::before{content:"\eb0e"}
+.pxi-mention::before{content:"\eb0f"}
+.pxi-equation::before{content:"\eb10"}
+.pxi-footnote::before{content:"\eb11"}
+.pxi-endnote::before{content:"\eb12"}
+.pxi-table-of-contents::before{content:"\eb13"}
+.pxi-page-number::before{content:"\eb14"}
+.pxi-citation::before{content:"\eb15"}
+.pxi-embed::before{content:"\eb16"}
+.pxi-callout::before{content:"\eb17"}
+.pxi-link-edit::before{content:"\eb18"}
+.pxi-track-changes::before{content:"\eb19"}
+.pxi-change-accept::before{content:"\eb1a"}
+.pxi-change-reject::before{content:"\eb1b"}
+.pxi-changes-accept-all::before{content:"\eb1c"}
+.pxi-changes-reject-all::before{content:"\eb1d"}
+.pxi-change-previous::before{content:"\eb1e"}
+.pxi-change-next::before{content:"\eb1f"}
+.pxi-word-count::before{content:"\eb20"}
+.pxi-grammar-check::before{content:"\eb21"}
