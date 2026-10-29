@@ -1,10 +1,27 @@
-import {mkdir} from 'node:fs/promises';
+import {mkdir,readFile} from 'node:fs/promises';
 import path from 'node:path';
 export function postgresSQL(query) {
   let index = 0;
   return query.replace(/\b(organizationId|userId|teamId|teamMember)\b/g, '"$1"').replace(/instr\(lower\(name\),lower\(\?\)\)/g, 'strpos(lower(name),lower(?))').replace(/\?/g, () => '$' + (++index));
 }
 const numbers = row => row && Object.fromEntries(Object.entries(row).map(([key,value]) => [key, /^(revision|created_at|updated_at|deleted_at)$/.test(key) && value !== null ? Number(value) : value]));
+export async function postgresPoolOptions(config){
+  const parsed=new URL(config.databaseUrl);
+  // URL SSL parameters override node-postgres's ssl object. Keep certificate
+  // verification under server configuration, including for custom provider CAs.
+  for(const key of [...parsed.searchParams.keys()])if(key.startsWith('ssl'))parsed.searchParams.delete(key);
+  const ca=config.databaseCAFile?await readFile(config.databaseCAFile,'utf8'):undefined;
+  return {connectionString:parsed.href,max:10,connectionTimeoutMillis:10000,idleTimeoutMillis:30000,
+    ssl:config.databaseTLS===false&&!ca?false:{rejectUnauthorized:true,...(ca?{ca}:{})},
+    ...(config.databaseSchema?{onConnect:async client=>{
+      // Session poolers can discard startup options. Set and verify the schema
+      // before the pool gives a connection to auth, migrations, or documents.
+      await client.query('SELECT set_config($1,$2,false)',['search_path',config.databaseSchema]);
+      const {rows}=await client.query('SELECT current_schema() AS schema');
+      if(rows[0]?.schema!==config.databaseSchema)throw new Error('The configured database schema is missing or inaccessible.');
+    }}:{}),
+  };
+}
 export async function connectDatabase(config) {
   let connection, query, close, batch;
   if (config.engine === 'sqlite') {
@@ -18,10 +35,7 @@ export async function connectDatabase(config) {
     close = async () => connection.close();
   } else if (config.engine === 'postgres') {
     const {Pool} = await import('pg');
-    const parsed = new URL(config.databaseUrl);
-    // pg URL SSL options can override ssl; remove them and enforce CA verification.
-    for (const key of [...parsed.searchParams.keys()]) if(key.startsWith('ssl'))parsed.searchParams.delete(key);
-    connection = new Pool({connectionString:parsed.href,max:10,connectionTimeoutMillis:10000,idleTimeoutMillis:30000,ssl:config.databaseTLS===false?false:{rejectUnauthorized:true}});
+    connection = new Pool(await postgresPoolOptions(config));
     const execute = async (client,sql,args,mode) => {const result=await client.query(postgresSQL(sql),args);return mode==='all'?result.rows.map(numbers):{changes:result.rowCount};};
     query = (sql,args=[],mode='all') => execute(connection,sql,args,mode);
     batch = async statements => {const client=await connection.connect();try{await client.query('BEGIN');const result=[];for(const s of statements)result.push({meta:await execute(client,s.sql,s.args,'run')});await client.query('COMMIT');return result;}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}};

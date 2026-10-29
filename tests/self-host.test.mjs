@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {readConfig} from '../server/config.mjs';
-import {connectDatabase,migrateDocuments,postgresSQL} from '../server/database.mjs';
+import {connectDatabase,migrateDocuments,postgresSQL,postgresPoolOptions} from '../server/database.mjs';
 import {createAuth,migrateAuth,smtpOptions} from '../server/auth.mjs';
 import {createApplication} from '../server/application.mjs';
 import {setupPlan} from '../web/setup-plan.js';
@@ -55,6 +55,26 @@ test('persistent authentication rate limiting rejects repeated logins',async()=>
 test('large designs and history stay in the shared database without object-storage dependencies',async()=>{const f=await fixture();try{const {client}=await f.register('large@example.com');const body=JSON.stringify({...document,shapes:[{text:'x'.repeat(1_600_000)}]});let result=await client.call('/api/documents',body);assert.equal(result.status,201,JSON.stringify(result.data));const id=result.data.id;assert.equal((await client.call('/api/documents/'+id)).data.body,body);assert.equal((await f.db.query('SELECT id FROM document_bodies')).length,1);result=await client.call('/api/documents/'+id,document,{method:'PUT',headers:{'if-match':'1'}});assert.equal(result.status,200);const versions=(await client.call('/api/documents/'+id+'/versions')).data.versions;assert.equal(versions.length,1);assert.equal((await client.call('/api/documents/'+id+'/versions/'+versions[0].id)).data.body,body);result=await client.call('/api/documents/'+id+'/versions/'+versions[0].id+'/restore',{}, {headers:{'if-match':'2'}});assert.equal(result.status,200);assert.equal(result.data.body,body);}finally{await f.db.close();}});
 
 test('remote databases and SMTP verify TLS even during a local app trial',()=>{const config=readConfig({...base,PIXL_DATABASE_PROVIDER:'supabase',DATABASE_URL:'postgresql://user:password@db.example.com:5432/pixl'});assert.equal(config.databaseTLS,true);assert.equal(readConfig({...base,PIXL_DATABASE_PROVIDER:'postgres',DATABASE_URL:'postgresql://user:password@localhost:5432/pixl'}).databaseTLS,false);assert.throws(()=>readConfig({...base,PIXL_DATABASE_PROVIDER:'postgres',DATABASE_URL:'postgresql://user:password@db.example.com/pixl?sslmode=disable'}),/TLS/);const mail=smtpOptions({...config,smtpUrl:'smtp://user:password@mail.example.com:587?ignoreTLS=true'});assert.equal(mail.requireTLS,true);assert.equal(mail.tls.rejectUnauthorized,true);assert.equal(mail.ignoreTLS,undefined);});
+
+test('Postgres pool connections verify the private schema before allowing queries',async()=>{
+ const settings={...base,PIXL_DATABASE_PROVIDER:'supabase',DATABASE_URL:'postgresql://user:password@db.example.com/pixl?sslmode=require',PIXL_DATABASE_SCHEMA:'pixlprfct'};
+ for(const schema of ['public,auth','x;DROP TABLE user','a'.repeat(64),'MixedCase'])assert.throws(()=>readConfig({...settings,PIXL_DATABASE_SCHEMA:schema}),/schema name/);
+ assert.throws(()=>readConfig({...base,PIXL_DATABASE_SCHEMA:'pixlprfct'}),/PostgreSQL/);
+ const options=await postgresPoolOptions(readConfig(settings));assert.equal(options.ssl.rejectUnauthorized,true);assert.equal(new URL(options.connectionString).searchParams.has('sslmode'),false);
+ const calls=[];await options.onConnect({query:async(sql,args)=>{calls.push({sql,args});return {rows:[{schema:'pixlprfct'}]};}});assert.deepEqual(calls[0].args,['search_path','pixlprfct']);assert.equal(calls.length,2);
+ await assert.rejects(options.onConnect({query:async()=>({rows:[{schema:'public'}]})}),/missing or inaccessible/);
+ await assert.rejects(options.onConnect({query:async()=>{throw new Error('Permission denied');}}),/Permission denied/);
+ const defaults=await postgresPoolOptions(readConfig({...settings,PIXL_DATABASE_SCHEMA:''}));assert.equal(defaults.onConnect,undefined);
+});
+
+test('Postgres provider CA files retain certificate verification and fail closed if missing',async()=>{
+ const {mkdtemp,writeFile,rm}=await import('node:fs/promises'),{tmpdir}=await import('node:os'),{join}=await import('node:path');const folder=await mkdtemp(join(tmpdir(),'pixl-ca-'));
+ try{const file=join(folder,'provider.crt');await writeFile(file,'test certificate');const config=readConfig({...base,PIXL_DATABASE_PROVIDER:'supabase',DATABASE_URL:'postgresql://user:password@db.example.com/pixl?sslmode=require&sslrootcert=ignored',PIXL_DATABASE_CA_FILE:file});
+  const options=await postgresPoolOptions(config);assert.deepEqual(options.ssl,{rejectUnauthorized:true,ca:'test certificate'});assert.equal(new URL(options.connectionString).searchParams.has('sslrootcert'),false);
+  await assert.rejects(postgresPoolOptions({...config,databaseCAFile:join(folder,'missing.crt')}),{code:'ENOENT'});
+  assert.throws(()=>readConfig({...base,PIXL_DATABASE_CA_FILE:file}),/PostgreSQL/);
+ }finally{await rm(folder,{recursive:true,force:true});}
+});
 
 test('creator migration is repeatable and does not invent historical shared creators',async()=>{
  const db=await connectDatabase(readConfig(base));
