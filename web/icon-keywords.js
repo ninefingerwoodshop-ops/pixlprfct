@@ -406,5 +406,483 @@ export const iconKeywords = {
     "sales",
     "crm",
     "map-pin"
+  ],
+  "file-jpg": [
+    "file",
+    "jpeg",
+    "image",
+    "jpg",
+    "jfif",
+    "jpe"
+  ],
+  "file-png": [
+    "file",
+    "png",
+    "image",
+    "apng"
+  ],
+  "file-gif": [
+    "file",
+    "gif",
+    "image"
+  ],
+  "file-webp": [
+    "file",
+    "webp",
+    "image"
+  ],
+  "file-avif": [
+    "file",
+    "avif",
+    "image"
+  ],
+  "file-tiff": [
+    "file",
+    "tiff",
+    "image",
+    "tif"
+  ],
+  "file-bmp": [
+    "file",
+    "bitmap",
+    "image",
+    "bmp",
+    "dib"
+  ],
+  "file-heic": [
+    "file",
+    "heif",
+    "image",
+    "heic"
+  ],
+  "file-raw": [
+    "file",
+    "camera",
+    "raw",
+    "image",
+    "dng",
+    "cr2",
+    "cr3",
+    "nef",
+    "nrw",
+    "arw",
+    "orf",
+    "rw2",
+    "raf"
+  ],
+  "file-ico": [
+    "file",
+    "icon",
+    "ico",
+    "icns",
+    "cur"
+  ],
+  "file-jxl": [
+    "file",
+    "jpeg",
+    "xl",
+    "image",
+    "jxl"
+  ],
+  "file-jp2": [
+    "file",
+    "jpeg",
+    "2000",
+    "image",
+    "jp2",
+    "j2k",
+    "jpx"
+  ],
+  "file-svg": [
+    "file",
+    "svg",
+    "vector",
+    "svgz"
+  ],
+  "file-eps": [
+    "file",
+    "postscript",
+    "vector",
+    "eps",
+    "ps"
+  ],
+  "file-psd": [
+    "file",
+    "photoshop",
+    "document",
+    "psd",
+    "psb"
+  ],
+  "file-ai": [
+    "file",
+    "illustrator",
+    "document",
+    "ai"
+  ],
+  "file-indesign": [
+    "file",
+    "indesign",
+    "document",
+    "indd",
+    "idml"
+  ],
+  "file-fig": [
+    "file",
+    "figma",
+    "document",
+    "fig"
+  ],
+  "file-pixl": [
+    "file",
+    "pixlprfct",
+    "document",
+    "pixl"
+  ],
+  "file-word": [
+    "file",
+    "word",
+    "document",
+    "doc",
+    "docx",
+    "docm",
+    "dot",
+    "dotx"
+  ],
+  "file-excel": [
+    "file",
+    "excel",
+    "workbook",
+    "xls",
+    "xlsx",
+    "xlsm",
+    "xlsb",
+    "xlt",
+    "xltx"
+  ],
+  "file-powerpoint": [
+    "file",
+    "powerpoint",
+    "presentation",
+    "ppt",
+    "pptx",
+    "pptm",
+    "pps",
+    "ppsx",
+    "potx"
+  ],
+  "file-csv": [
+    "file",
+    "comma-separated",
+    "data",
+    "csv"
+  ],
+  "file-tsv": [
+    "file",
+    "tab-separated",
+    "data",
+    "tsv"
+  ],
+  "file-markdown": [
+    "file",
+    "markdown",
+    "document",
+    "md",
+    "mdx"
+  ],
+  "file-rtf": [
+    "file",
+    "rich",
+    "text",
+    "document",
+    "rtf"
+  ],
+  "file-txt": [
+    "file",
+    "plain",
+    "text",
+    "document",
+    "txt",
+    "log"
+  ],
+  "file-html": [
+    "file",
+    "html",
+    "document",
+    "htm",
+    "xhtml"
+  ],
+  "file-css": [
+    "file",
+    "stylesheet",
+    "css",
+    "scss",
+    "sass",
+    "less"
+  ],
+  "file-javascript": [
+    "file",
+    "javascript",
+    "source",
+    "js",
+    "mjs",
+    "cjs",
+    "jsx"
+  ],
+  "file-typescript": [
+    "file",
+    "typescript",
+    "source",
+    "ts",
+    "mts",
+    "cts",
+    "tsx"
+  ],
+  "file-json": [
+    "file",
+    "json",
+    "data",
+    "jsonc",
+    "json5",
+    "jsonl",
+    "ndjson"
+  ],
+  "file-xml": [
+    "file",
+    "xml",
+    "data",
+    "xsl",
+    "xslt",
+    "xsd",
+    "rss",
+    "atom"
+  ],
+  "file-yaml": [
+    "file",
+    "yaml",
+    "configuration",
+    "yml"
+  ],
+  "file-sql": [
+    "file",
+    "sql",
+    "script"
+  ],
+  "file-zip": [
+    "file",
+    "zip",
+    "archive",
+    "zipx"
+  ],
+  "file-image": [
+    "file",
+    "image",
+    "picture",
+    "photo"
+  ],
+  "file-vector": [
+    "file",
+    "vector",
+    "drawing",
+    "cdr",
+    "afdesign"
+  ],
+  "file-design": [
+    "file",
+    "design",
+    "layout",
+    "artwork",
+    "afphoto",
+    "afpub",
+    "xd"
+  ],
+  "file-sketch": [
+    "file",
+    "sketch",
+    "design"
+  ],
+  "file-document": [
+    "file",
+    "document",
+    "writing",
+    "word-processing",
+    "odt",
+    "ott",
+    "pages",
+    "epub"
+  ],
+  "file-spreadsheet": [
+    "file",
+    "spreadsheet",
+    "workbook",
+    "table",
+    "ods",
+    "ots",
+    "numbers"
+  ],
+  "file-presentation": [
+    "file",
+    "presentation",
+    "slides",
+    "deck",
+    "odp",
+    "otp",
+    "key",
+    "keynote"
+  ],
+  "file-font": [
+    "file",
+    "font",
+    "typeface",
+    "typography",
+    "ttf",
+    "otf",
+    "woff",
+    "woff2",
+    "eot",
+    "ttc"
+  ],
+  "file-archive": [
+    "file",
+    "archive",
+    "compressed",
+    "bundle",
+    "rar",
+    "7z",
+    "tar",
+    "gz",
+    "tgz",
+    "bz2",
+    "xz",
+    "zst",
+    "lz",
+    "lzma"
+  ],
+  "file-audio": [
+    "file",
+    "audio",
+    "sound",
+    "music",
+    "mp3",
+    "wav",
+    "m4a",
+    "aac",
+    "flac",
+    "ogg",
+    "oga",
+    "opus",
+    "aif",
+    "aiff",
+    "mid",
+    "midi"
+  ],
+  "file-video": [
+    "file",
+    "video",
+    "movie",
+    "film",
+    "motion",
+    "mp4",
+    "m4v",
+    "mov",
+    "webm",
+    "avi",
+    "mkv",
+    "mpeg",
+    "mpg",
+    "wmv"
+  ],
+  "file-3d": [
+    "file",
+    "3d",
+    "model",
+    "mesh",
+    "scene",
+    "obj",
+    "fbx",
+    "gltf",
+    "glb",
+    "blend",
+    "stl",
+    "ply",
+    "usd",
+    "usda",
+    "usdc",
+    "usdz",
+    "dae"
+  ],
+  "file-cad": [
+    "file",
+    "cad",
+    "technical-drawing",
+    "engineering",
+    "dwg",
+    "dxf",
+    "step",
+    "stp",
+    "iges",
+    "igs"
+  ],
+  "file-database": [
+    "file",
+    "database",
+    "storage",
+    "data",
+    "db",
+    "sqlite",
+    "sqlite3",
+    "mdb",
+    "accdb"
+  ],
+  "file-executable": [
+    "file",
+    "executable",
+    "application",
+    "binary",
+    "installer",
+    "exe",
+    "msi",
+    "app",
+    "dmg",
+    "pkg",
+    "apk",
+    "deb",
+    "rpm",
+    "wasm",
+    "bin",
+    "dll",
+    "so",
+    "dylib"
+  ],
+  "file-email": [
+    "file",
+    "email",
+    "mail",
+    "message",
+    "eml",
+    "msg",
+    "mbox"
+  ],
+  "file-calendar": [
+    "file",
+    "calendar",
+    "event",
+    "invitation",
+    "ics",
+    "ical",
+    "icalendar"
+  ],
+  "file-contact": [
+    "file",
+    "contact",
+    "address-book",
+    "vcard",
+    "vcf"
+  ],
+  "file-unknown": [
+    "file",
+    "unknown",
+    "unrecognized",
+    "generic",
+    "fallback"
   ]
 };

@@ -1,6 +1,6 @@
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=b52af6403a98") format("woff2");font-weight:300;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=e50c2d8ff20b") format("woff2");font-weight:400;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=ba634b79e7cf") format("woff2");font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=8c1ee0c5cc09") format("woff2");font-weight:300;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=6918c65a08bb") format("woff2");font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=141faa4d1ebf") format("woff2");font-weight:700;font-style:normal;font-display:block}
 .pxi{display:inline-block;font-family:"PixlPrfct Icons"!important;font-style:normal;font-weight:400;font-variant:normal;text-transform:none;line-height:1;font-synthesis:none;speak:none;-webkit-font-smoothing:antialiased}
 .pxi-light{font-weight:300}.pxi-regular{font-weight:400}.pxi-bold{font-weight:700}
 .pxi-align-bottom::before{content:"\e900"}
@@ -412,3 +412,58 @@
 .pxi-hourglass::before{content:"\ea96"}
 .pxi-scales::before{content:"\ea97"}
 .pxi-territory-track::before{content:"\ea98"}
+.pxi-file-jpg::before{content:"\ea99"}
+.pxi-file-png::before{content:"\ea9a"}
+.pxi-file-gif::before{content:"\ea9b"}
+.pxi-file-webp::before{content:"\ea9c"}
+.pxi-file-avif::before{content:"\ea9d"}
+.pxi-file-tiff::before{content:"\ea9e"}
+.pxi-file-bmp::before{content:"\ea9f"}
+.pxi-file-heic::before{content:"\eaa0"}
+.pxi-file-raw::before{content:"\eaa1"}
+.pxi-file-ico::before{content:"\eaa2"}
+.pxi-file-jxl::before{content:"\eaa3"}
+.pxi-file-jp2::before{content:"\eaa4"}
+.pxi-file-svg::before{content:"\eaa5"}
+.pxi-file-eps::before{content:"\eaa6"}
+.pxi-file-psd::before{content:"\eaa7"}
+.pxi-file-ai::before{content:"\eaa8"}
+.pxi-file-indesign::before{content:"\eaa9"}
+.pxi-file-fig::before{content:"\eaaa"}
+.pxi-file-pixl::before{content:"\eaab"}
+.pxi-file-word::before{content:"\eaac"}
+.pxi-file-excel::before{content:"\eaad"}
+.pxi-file-powerpoint::before{content:"\eaae"}
+.pxi-file-csv::before{content:"\eaaf"}
+.pxi-file-tsv::before{content:"\eab0"}
+.pxi-file-markdown::before{content:"\eab1"}
+.pxi-file-rtf::before{content:"\eab2"}
+.pxi-file-txt::before{content:"\eab3"}
+.pxi-file-html::before{content:"\eab4"}
+.pxi-file-css::before{content:"\eab5"}
+.pxi-file-javascript::before{content:"\eab6"}
+.pxi-file-typescript::before{content:"\eab7"}
+.pxi-file-json::before{content:"\eab8"}
+.pxi-file-xml::before{content:"\eab9"}
+.pxi-file-yaml::before{content:"\eaba"}
+.pxi-file-sql::before{content:"\eabb"}
+.pxi-file-zip::before{content:"\eabc"}
+.pxi-file-image::before{content:"\eabd"}
+.pxi-file-vector::before{content:"\eabe"}
+.pxi-file-design::before{content:"\eabf"}
+.pxi-file-sketch::before{content:"\eac0"}
+.pxi-file-document::before{content:"\eac1"}
+.pxi-file-spreadsheet::before{content:"\eac2"}
+.pxi-file-presentation::before{content:"\eac3"}
+.pxi-file-font::before{content:"\eac4"}
+.pxi-file-archive::before{content:"\eac5"}
+.pxi-file-audio::before{content:"\eac6"}
+.pxi-file-video::before{content:"\eac7"}
+.pxi-file-3d::before{content:"\eac8"}
+.pxi-file-cad::before{content:"\eac9"}
+.pxi-file-database::before{content:"\eaca"}
+.pxi-file-executable::before{content:"\eacb"}
+.pxi-file-email::before{content:"\eacc"}
+.pxi-file-calendar::before{content:"\eacd"}
+.pxi-file-contact::before{content:"\eace"}
+.pxi-file-unknown::before{content:"\eacf"}
