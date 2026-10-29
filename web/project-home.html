@@ -5,6 +5,41 @@
  <title>Projects · PixlPrfct</title><link rel="icon" type="image/svg+xml" href="/editor/favicon.svg?v=mono">
  <link rel="stylesheet" href="/editor/inspector-dropdown.css"><link rel="stylesheet" href="/editor/ui-typography.css"><link rel="stylesheet" href="/editor/ui-spacing.css"><link rel="stylesheet" href="/editor/ui-radii.css"><link rel="stylesheet" href="/editor/ui-colors.css"><link rel="stylesheet" href="/editor/ui-shadows.css"><link rel="stylesheet" href="/editor/ui-states.css"><link rel="stylesheet" href="/editor/ui-motion.css"><link rel="stylesheet" href="/editor/design-browser.css"><link rel="stylesheet" href="/editor/project-home.css">
  <link rel="stylesheet" href="/editor/inspector-fields.css"><link rel="stylesheet" href="/editor/inspector-actions.css"><link rel="stylesheet" href="/editor/popover-controls.css"><link rel="stylesheet" href="/editor/dialog-controls.css">
+<!-- preloader:styles -->
+<style>
+/* Critical styles are inlined into the static entry pages by generate-preloader.mjs. */
+html:has(.loading-screen:not([hidden])){background:#1e1e1e;color-scheme:dark}
+body:has(.loading-screen:not([hidden])){overflow:hidden}
+body:has(> .loading-screen:not([hidden])) > :not(.loading-screen){visibility:hidden}
+body:has(.loading-screen:not([hidden])) #project-home{visibility:hidden}
+.loading-screen{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;margin:0;background:#1e1e1e;color:#fff;font:12px/20px Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;isolation:isolate}
+.loading-screen[hidden],.loading-screen [hidden]{display:none!important}
+.loading-content{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px;max-width:400px}
+.loading-screen .loading-mark{display:block;width:112px;height:112px;overflow:visible;margin:0 0 20px;color:#fff}
+.loading-screen .loading-brand{font-size:16px;font-weight:600;letter-spacing:-.4px}
+.loading-screen .loading-message{margin:8px 0 0;max-width:320px;min-height:20px;color:#b3b3b3;font:inherit}
+.loading-screen .loading-help,.loading-screen noscript{margin:20px 0 0;max-width:280px;color:#b3b3b3;font:inherit}
+.loading-screen .loading-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px}
+.loading-screen .loading-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 12px;border:1px solid #444;border-radius:6px;color:white;background:#2c2c2c;text-decoration:none;font:inherit}
+.loading-screen .loading-actions a:hover{background:#383838}
+.loading-screen .loading-actions a:focus-visible{outline:2px solid #0d99ff;outline-offset:3px}
+.loading-screen .loading-actions .loading-retry{background:#0d99ff;border-color:#0d99ff}
+.loading-screen .loading-mark-solid{fill:currentColor;animation:loading-solid 4.8s ease-in-out infinite}
+.loading-screen .loading-mark-trace{fill:none;stroke:currentColor;stroke-width:.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:100;animation:loading-trace 4.8s ease-in-out infinite}
+.loading-screen .loading-mark-dot{fill:currentColor;opacity:0;animation:loading-dots 4.8s ease-in-out infinite;animation-delay:var(--dot-delay)}
+@keyframes loading-trace{0%{stroke-dashoffset:100;opacity:0}5%{opacity:1}28%,34%{stroke-dashoffset:0;opacity:1}44%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes loading-solid{0%,24%{opacity:0}34%,44%{opacity:1}54%,78%{opacity:0}88%,94%{opacity:1}100%{opacity:0}}
+@keyframes loading-dots{0%,43%{opacity:0;transform:translate(0,0)}51%{opacity:1;transform:translate(0,0)}64%,70%{opacity:.8;transform:translate(var(--dot-x),var(--dot-y))}83%{opacity:1;transform:translate(0,0)}90%,100%{opacity:0;transform:translate(0,0)}}
+.loading-screen[data-failed] .loading-mark *{animation:none}
+.loading-screen[data-failed] .loading-mark-solid{opacity:1}
+.loading-screen[data-failed] .loading-mark-trace,.loading-screen[data-failed] .loading-mark-dot{opacity:0}
+@media(prefers-reduced-motion:reduce){.loading-screen .loading-mark *{animation:none}.loading-screen .loading-mark-solid{opacity:1}.loading-screen .loading-mark-trace,.loading-screen .loading-mark-dot{opacity:0}}
+</style>
+<!-- /preloader:styles -->
 </head>
-<body><div id="project-home"><p class="home-loading" role="status">Loading your projects…</p></div><script type="module" src="/editor/project-home-entry.js"></script></body>
+<body>
+<!-- preloader:markup -->
+<div class="loading-screen" data-loading-screen aria-label="Loading PixlPrfct"><div class="loading-content"><svg class="loading-mark" viewBox="-5 -5 34 34" aria-hidden="true" focusable="false"><path class="loading-mark-solid" d="M11 3.5Q11 3 11.6 3.2L18.7 5.3C21.4 6.1 22.3 8.3 20.8 10.1C20.2 9.5 19.5 9.2 18.5 8.9L11 6.7ZM3 19V13.5C3 11 4.6 10.1 6.8 10.8L13.4 12.7C16.2 13.5 19.5 12.3 21 10.8V14C20 16.3 16.3 18.1 13.5 17.3L7.1 15.4Q5.5 14.9 5.5 16.2V21C4 20.8 3 20 3 19Z"/><path class="loading-mark-trace" d="M11 3.5Q11 3 11.6 3.2L18.7 5.3C21.4 6.1 22.3 8.3 20.8 10.1C20.2 9.5 19.5 9.2 18.5 8.9L11 6.7ZM3 19V13.5C3 11 4.6 10.1 6.8 10.8L13.4 12.7C16.2 13.5 19.5 12.3 21 10.8V14C20 16.3 16.3 18.1 13.5 17.3L7.1 15.4Q5.5 14.9 5.5 16.2V21C4 20.8 3 20 3 19Z" pathLength="100"/><circle class="loading-mark-dot" cx="11.5" cy="4.2" r=".6" style="--dot-x:12.50px;--dot-y:7.80px;--dot-delay:0ms"/><circle class="loading-mark-dot" cx="14.4" cy="5" r=".6" style="--dot-x:9.16px;--dot-y:10.24px;--dot-delay:11ms"/><circle class="loading-mark-dot" cx="17.4" cy="5.9" r=".6" style="--dot-x:4.85px;--dot-y:12.34px;--dot-delay:22ms"/><circle class="loading-mark-dot" cx="19.8" cy="7.5" r=".6" style="--dot-x:0.39px;--dot-y:13.27px;--dot-delay:33ms"/><circle class="loading-mark-dot" cx="11.5" cy="6" r=".6" style="--dot-x:6.02px;--dot-y:16.65px;--dot-delay:44ms"/><circle class="loading-mark-dot" cx="14.4" cy="6.9" r=".6" style="--dot-x:0.04px;--dot-y:16.85px;--dot-delay:55ms"/><circle class="loading-mark-dot" cx="17.4" cy="7.8" r=".6" style="--dot-x:-6.22px;--dot-y:16.17px;--dot-delay:66ms"/><circle class="loading-mark-dot" cx="20" cy="9.4" r=".6" style="--dot-x:-12.02px;--dot-y:13.91px;--dot-delay:77ms"/><circle class="loading-mark-dot" cx="4.2" cy="12" r=".6" style="--dot-x:0.88px;--dot-y:9.80px;--dot-delay:88ms"/><circle class="loading-mark-dot" cx="7" cy="12" r=".6" style="--dot-x:-4.31px;--dot-y:7.57px;--dot-delay:99ms"/><circle class="loading-mark-dot" cx="10" cy="13" r=".6" style="--dot-x:-9.01px;--dot-y:3.78px;--dot-delay:110ms"/><circle class="loading-mark-dot" cx="13" cy="14" r=".6" style="--dot-x:-12.89px;--dot-y:-0.37px;--dot-delay:121ms"/><circle class="loading-mark-dot" cx="16" cy="14.6" r=".6" style="--dot-x:-15.89px;--dot-y:-4.23px;--dot-delay:132ms"/><circle class="loading-mark-dot" cx="19" cy="13.8" r=".6" style="--dot-x:-18.01px;--dot-y:-6.58px;--dot-delay:143ms"/><circle class="loading-mark-dot" cx="20.3" cy="12" r=".6" style="--dot-x:-17.61px;--dot-y:-7.57px;--dot-delay:154ms"/><circle class="loading-mark-dot" cx="4.2" cy="15" r=".6" style="--dot-x:0.88px;--dot-y:-12.80px;--dot-delay:165ms"/><circle class="loading-mark-dot" cx="4.2" cy="18" r=".6" style="--dot-x:3.78px;--dot-y:-17.31px;--dot-delay:176ms"/><circle class="loading-mark-dot" cx="4.8" cy="20" r=".6" style="--dot-x:6.38px;--dot-y:-19.97px;--dot-delay:187ms"/><circle class="loading-mark-dot" cx="7" cy="14.3" r=".6" style="--dot-x:7.44px;--dot-y:-14.05px;--dot-delay:198ms"/><circle class="loading-mark-dot" cx="10" cy="15.2" r=".6" style="--dot-x:7.52px;--dot-y:-13.85px;--dot-delay:209ms"/><circle class="loading-mark-dot" cx="13" cy="16.1" r=".6" style="--dot-x:7.19px;--dot-y:-12.87px;--dot-delay:220ms"/><circle class="loading-mark-dot" cx="16" cy="16.2" r=".6" style="--dot-x:6.25px;--dot-y:-10.44px;--dot-delay:231ms"/><circle class="loading-mark-dot" cx="19" cy="15.2" r=".6" style="--dot-x:4.56px;--dot-y:-6.44px;--dot-delay:242ms"/></svg><div class="loading-brand">PixlPrfct</div><p class="loading-message" role="status" aria-live="polite" aria-atomic="true">Loading your projects…</p><p class="loading-help" hidden>This is taking longer than usual. You can keep waiting or try again.</p><div class="loading-actions" hidden><a href="" class="loading-retry">Try again</a><a href="/">All projects</a></div><noscript>Enable JavaScript to open PixlPrfct.</noscript></div></div>
+<!-- /preloader:markup -->
+<div id="project-home"></div><script type="module" src="/editor/project-home-entry.js"></script></body>
 </html>
