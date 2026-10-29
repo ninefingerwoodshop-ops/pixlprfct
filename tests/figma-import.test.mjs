@@ -4,6 +4,7 @@ import {readFile,mkdtemp,writeFile,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
 import {deflateSync,zipSync,unzipSync} from 'fflate';
 import {parseSchema,compileSchema,encodeBinarySchema} from 'kiwi-schema';
 import {parseFigma,decodeKiwi,inflateBounded} from '../web/figma/parse.js';
@@ -74,7 +75,7 @@ test('invalid archives, unsafe paths, truncated chunks and excessive decompressi
  assert.throws(()=>vectorCommands(new Uint8Array([4])),/Invalid/);
 });
 test('native desktop reads binary Figma files and keeps PixlPrfct JSON import compatible',async()=>{
- const file=new URL('fixtures/figma/circle.fig',import.meta.url);const native=await readDesign(file.pathname);assert.equal(native.name,'circle.fig');assert.equal(parseFigma(native.data).version,101);
+ const file=new URL('fixtures/figma/circle.fig',import.meta.url);const native=await readDesign(fileURLToPath(file));assert.equal(native.name,'circle.fig');assert.equal(parseFigma(native.data).version,101);
  const dir=await mkdtemp(path.join(os.tmpdir(),'pixl-import-'));try{
   await writeFile(path.join(dir,'design.pixl'),'{}');const design=await readDesign(path.join(dir,'design.pixl'));assert.equal((await readDesignFile(design)).body,'{}');
   await writeFile(path.join(dir,'large.pixl'),new Uint8Array(5_000_001));await assert.rejects(()=>readDesign(path.join(dir,'large.pixl')),/smaller/);await assert.rejects(()=>readDesign(path.join(dir,'code.js')),/Choose/);
