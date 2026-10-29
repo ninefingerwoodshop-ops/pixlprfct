@@ -2,6 +2,8 @@
 
 The Electron app packages the existing editor and Rust/WASM engine for macOS and Windows. The editor works offline, with local projects in its own persistent app profile. **File → Connect to a team server** opens a self-hosted workspace in a separate window/session. Registration, login, teams, library permissions and shared project storage remain on that server. The desktop package does not start a database or an HTTP server.
 
+After a team server loads successfully, Desktop remembers its validated address and opens that workspace on the next launch. **File → All local projects** continues to open your offline projects. If you run the server on this Mac, keep its background service running; the desktop connection address is the local PixlPrfct server address, not the database provider's API URL.
+
 ## Run and build
 
 Use Node.js 24+, Rust and the `wasm32-unknown-unknown` target. Run `npm ci`; if your npm installation blocks lifecycle scripts, run `node node_modules/electron/install.js` to download the official Electron runtime.
@@ -21,13 +23,14 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
-## 0.1.1-alpha.1 desktop update
+## 0.1.1-alpha.2 desktop update
 
 This build includes the animated logo preloader, expanded file-type and rich-text
 icons, recoverable project Trash, and the Admin console. Open **Projects → Admin**
 for local Content/Trash and database setup. **Open a team server** uses the desktop
 connection window, preserving isolated local and remote sessions; people, roles,
 invitations, and teams are managed on the connected server.
+This update also restores the last successfully loaded team server on launch.
 
 To update a direct-distribution build, quit PixlPrfct after the editor reports
 **Saved on this device**, keep a backup of the previous app, and replace the app

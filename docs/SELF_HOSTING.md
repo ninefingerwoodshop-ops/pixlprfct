@@ -31,7 +31,26 @@ The wizard creates `.env.selfhost` with a random secret and restrictive file per
 | PostgreSQL | PostgreSQL (`pg`) | Connection string for a dedicated database |
 | MySQL / MariaDB | `mysql2` | `mysql://USER:PASSWORD@HOST:3306/DATABASE` |
 
-Use a dedicated database/schema and a database user with the table/index creation permissions needed by the initializer. Use an application role with narrower runtime permissions after initialization if your hosting system supports separate migration credentials. PostgreSQL and MySQL connections verify server certificates for every remote database, including when the app itself is running locally. Only a loopback database in local development may use plaintext. For private certificate authorities, configure Node's `NODE_EXTRA_CA_CERTS`; certificate verification is never disabled for public installs. URL-encode special characters in database and SMTP credentials. PostgreSQL hosts must support verified TLS; use the external TLS endpoint when a provider's internal endpoint only supports plaintext.
+Use a dedicated database/schema and a database user with the table/index creation permissions needed by the initializer. Use an application role with narrower runtime permissions after initialization if your hosting system supports separate migration credentials. PostgreSQL and MySQL connections verify server certificates for every remote database, including when the app itself is running locally. Only a loopback database in local development may use plaintext. For PostgreSQL private certificate authorities, set `PIXL_DATABASE_CA_FILE` to the provider's trusted PEM certificate file; Node's `NODE_EXTRA_CA_CERTS` is also supported when set before Node starts. Certificate verification remains enabled. URL-encode special characters in database and SMTP credentials. PostgreSQL hosts must support verified TLS; use the external TLS endpoint when a provider's internal endpoint only supports plaintext.
+
+### Supabase and private PostgreSQL schemas
+
+Use the PostgreSQL connection string from your project's **Connect** dialog. If the direct endpoint is unreachable from your network, use the **Session pooler** connection string. Transaction pooling is not supported with a configured private schema because the schema selection belongs to a database session. Keep `PIXL_APP_URL` set to the address serving PixlPrfct, not the Supabase project API address.
+
+Create a private schema owned by your database role before initialization, then add `PIXL_DATABASE_SCHEMA=pixlprfct` to `.env.selfhost`. Names must contain only lowercase letters, numbers, and underscores, start with a letter or underscore, and be at most 63 characters long. Every new connection selects and verifies this schema before authentication, migrations, or design queries run. A missing or inaccessible schema fails the connection; it never silently falls back to `public`. Leaving this setting unset preserves the database's default schema behavior for existing installations.
+
+For example, using Supabase's `postgres` role in a new installation:
+
+```sql
+CREATE SCHEMA pixlprfct AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA pixlprfct FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pixlprfct
+  REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pixlprfct
+  REVOKE ALL ON SEQUENCES FROM PUBLIC, anon, authenticated;
+```
+
+Keep this schema outside Supabase's exposed API schemas. The desktop and browser connect to the PixlPrfct server; they do not need a Supabase publishable key or database password. If your provider requires a custom CA, download its certificate from the project's database settings and set `PIXL_DATABASE_CA_FILE=/absolute/path/to/provider-ca.crt`. Connection-string SSL options cannot override the server's certificate verification settings. Changing `PIXL_DATABASE_SCHEMA` does not move existing data.
 
 `selfhost:migrate` connects to the chosen database and creates the account/plugin schema and design tables. Running it again preserves existing rows. Back up before upgrades and review release/migration notes. This first portable schema initializer does not migrate an older Cloudflare D1 deployment, change database engines in place, or transfer browser drafts. Import/export design files to move those designs deliberately. MongoDB, SQL Server, and other engines are not supported by this adapter yet.
 
@@ -89,6 +108,6 @@ References: [Better Auth database setup](https://better-auth.com/docs/concepts/d
 
 ### Validation for this implementation
 
-The account suite exercises verified registration, tenant isolation, invitations, team access and revocation, forged identity rejection, CSRF rejection, optimistic conflicts, password-reset session revocation, two-factor enrollment and backup-code reuse, persistent login rate limits, and large-design version restoration. SQLite was tested end to end in the browser. The repository tests, TypeScript check, and framework build pass. PostgreSQL/MySQL connections, real SMTP delivery, and the Docker image still need deployment-specific integration testing.
+The account suite exercises verified registration, tenant isolation, invitations, team access and revocation, forged identity rejection, CSRF rejection, optimistic conflicts, password-reset session revocation, two-factor enrollment and backup-code reuse, persistent login rate limits, and large-design version restoration. SQLite was tested end to end in the browser. Supabase's session pooler was tested with verified TLS, a provider CA file, private-schema initialization, concurrent connections selecting that schema, and account registration/email verification. Other PostgreSQL providers, MySQL connections, real SMTP delivery, and the Docker image still need deployment-specific integration testing.
 
 The dedicated production manifest in `server/package.json` is used by the Docker build so editor development tools are not included in the self-hosted runtime. Its dependency audit reported no known advisories on 2026-10-28. The broader repository audit still reports five moderate findings in existing Next/build-tool dependencies (baseline-browser-mapping and esbuild/Drizzle tooling); no high or critical findings. Do not expose a development server publicly. An audit result is not a substitute for an independent security review.

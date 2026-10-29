@@ -21,8 +21,8 @@ if(!single){app.quit();}else{
  app.whenReady().then(async()=>{
   preferences=readPreferences(app.getPath('userData'));
   installIPC();installMenu();
-  if(initialFiles.length)for(const file of initialFiles)await openNativeFile(file);else createWindow(APP_URL);
-  app.on('activate',()=>{if(!windows.size)createWindow(APP_URL);});
+  if(initialFiles.length)for(const file of initialFiles)await openNativeFile(file);else createWindow(preferences.workspaceServer||APP_URL);
+  app.on('activate',()=>{if(!windows.size)createWindow(preferences.workspaceServer||APP_URL);});
  }).catch(error=>{dialog.showErrorBox('PixlPrfct could not start',error.message);app.quit();});
  app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
 }
@@ -108,7 +108,12 @@ function installIPC(){
   let address;
   try{address=serverURL(value);}catch(error){return {ok:false,error:error.message};}
   // The server has its own isolated browser session and receives no native bridge.
-  createWindow(address);win.close();return {ok:true};
+  const workspace=createWindow(address);
+  workspace.webContents.once('did-finish-load',()=>{
+   try{preferences=writePreferences(app.getPath('userData'),{workspaceServer:address});}
+   catch(error){dialog.showErrorBox('Could not remember workspace',error.message);}
+  });
+  win.close();return {ok:true};
  });
 }
 function installMenu(){
