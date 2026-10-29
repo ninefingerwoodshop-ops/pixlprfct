@@ -90,3 +90,9 @@ Settings, and the invitation dialog. See [ADMIN_CONSOLE.md](ADMIN_CONSOLE.md)
 for the measured geometry, implemented workflows, authorization, and remaining
 parity limits. Admin is reachable from Projects in both server and static builds;
 the local build exposes database setup without implying that a server is connected.
+
+### Reusable effect styles (2026-10-29)
+
+Inspected the live Figma desktop interface in Booking & Scheduler and Territory Track Design System. The Effects header uses the four-dot Apply styles button followed by Add effect. The Effect styles picker has a title, create (+), close, search, and style list. The live Edit effect style panel measures 304 CSS px wide, with a 40 px header, 136 px checkerboard preview, 112 px white circular sample, 16 px content insets, and 24 px name/description controls. Name and Description use a 96 px label-plus-gap column; Properties contains the same editable effect rows as the layer inspector. Create new effect style adds a Create style footer action. These observations are implemented with the shared settings popover, inputs and custom dropdown controls. The picker offers imported styles already present in the document; library publishing and importing continue through Manage libraries.
+
+Reference captures: `figma-edit-effect-style.png` and `figma-create-effect-style.png` in the October 29 task artifact folder. No Figma style content was modified during inspection.

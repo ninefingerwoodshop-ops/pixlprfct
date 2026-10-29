@@ -1,3 +1,4 @@
+import {createEffectStyleControls} from './effect-style-controls.js';
 import {appearance} from './appearance.js';
 import {glassPreset} from './glass-controls.js';
 import {effectEntries,effectNames,addEffect,editEffect,removeEffect,convertEffect,moveShadow} from './effect-editor.js';
@@ -29,7 +30,8 @@ function create(host){
    }
   },(_,body)=>{for(const input of body.querySelectorAll('[data-setting]'))syncInput(input,entry.value[input.dataset.setting]);for(const input of body.querySelectorAll('[data-glass]'))syncInput(input,input.dataset.glass==='stroke_width'?c.shape.stroke_width:style()[input.dataset.glass]);for(const color of body.querySelectorAll('.setting-color-field'))color.sync();});
  }
- c.update=(shape,change)=>{if(c.shape?.id!==shape?.id){popup.close();menu.close();c.pending=null;list.replaceChildren();c.rows.clear();}c.shape=shape;c.change=change;host.hidden=!shape;if(!shape)return;
+ c.update=(shape,change,api)=>{if(c.shape?.id!==shape?.id){popup.close();menu.close();c.pending=null;list.replaceChildren();c.rows.clear();}c.shape=shape;c.change=change;host.hidden=!shape;if(!shape){c.styles?.update(null,api);return;}
+  if(api&&!c.styles)c.styles=createEffectStyleControls(host,heading,renderShadowControls);const linked=c.styles?.update(shape,api);list.hidden=!!linked;add.hidden=!!linked;
   const all=entries();for(const [key,row] of c.rows)if(!all.some(e=>e.key===key)){row.remove();c.rows.delete(key);if(popup.key===key)popup.close();}
   all.forEach((entry,index)=>{let row=c.rows.get(entry.key);if(!row){row=element('div','setting-item effect-item');row.dataset.effect=entry.key;row.setAttribute('role','group');const edit=element('button','effect-edit');edit.type='button';edit.setAttribute('aria-haspopup','dialog');edit.setAttribute('aria-expanded','false');edit.onclick=()=>popup.key===entry.key&&popup.open?popup.close(true):open(entry.key);const eye=action('','eye',()=>{const now=entries().find(e=>e.key===entry.key);save(editEffect(style(),entry.key,{visible:!now.value.visible}));});const remove=action('','minus',()=>{popup.close();save(removeEffect(style(),entry.key));});row.append(edit,eye,remove);c.rows.set(entry.key,row);
     if(entry.key.startsWith('shadow-')){
@@ -46,4 +48,4 @@ function create(host){
  };
  return c;
 }
-export function renderShadowControls(host,shape,change){let c=controllers.get(host);if(!c){c=create(host);controllers.set(host,c);}c.update(shape,change);}
+export function renderShadowControls(host,shape,change,api){let c=controllers.get(host);if(!c){c=create(host);controllers.set(host,c);}c.update(shape,change,api);}

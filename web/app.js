@@ -232,7 +232,7 @@ function pageShapes() { return doc?.shapes.filter(s => s.page_id === doc.active_
 function activePage() { return doc?.pages.find(p => p.id === doc.active_page); }
 
 function toast(message) { $('toast').textContent = message; $('toast').style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').style.display = 'none', 4000); }
-function safe(action) { try { action(); } catch (error) { toast(String(error)); } }
+function safe(action) { try { return action(); } catch (error) { toast(String(error)); } }
 function transformGeometry(s){const measured=cssActive()?(cssGeometry.find(n=>n.id===s.id)??s):worldShape(s,pageShapes());return measured._rotationHit??measured;}
 function current() { return selectedIds.size === 1 ? pageShapes().find(s => selectedIds.has(s.id)) : null; }
 function snapshot() { doc = JSON.parse(editor.snapshot()); for(const font of usedFonts(doc.shapes))loadGoogleFont(font.font_family,font.font_weight).catch(()=>{}); setSelection([...selectedIds].filter(id => pageShapes().some(s => s.id === id)),{preservePrototypeLink:true}); }
@@ -596,7 +596,7 @@ function renderComponentProperties(shape){
   $('detach-instance').textContent=linked&&!context.isRoot?'Detach outer instance':'Detach instance';
   $('reset-instance').textContent=linked&&!context.isRoot?'Reset outer instance overrides':'Reset all overrides';
   $('push-style-overrides').hidden=!linked;
-  const pushFields=['name','text','fill','appearance','typography','hidden','locked','image','stroke_width','layout_grids','guide_style'];
+  const pushFields=['name','text','fill','appearance','typography','hidden','locked','image','stroke_width','layout_grids','guide_style','effect_style'];
   $('push-style-overrides').disabled=!linked||!descendants(doc.shapes,[context.root.id]).some(s=>(s.component?.overrides??[]).some(p=>pushFields.includes(p.split('.')[0])));
   $('push-style-overrides').textContent=linked&&!context.isRoot?'Push outer text and styles to main':'Push text and styles to main';
   $('add-component-property').hidden=!master;
@@ -715,7 +715,12 @@ function renderPropertiesNow() {
     $('multi-fill').value = shapes[0].fill; $('multi-fill-value').textContent = mixed ? 'Mixed' : shapes[0].fill.toUpperCase();
     document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3);
   }
-  renderShadowControls($('shadow-section'),shape,next=>{if(effectBlur(next.appearance,'backdrop_blur')>0)cssCanvasEnabled=true;update(next);});
+  renderShadowControls($('shadow-section'),shape,next=>{if(effectBlur(next.appearance,'backdrop_blur')>0)cssCanvasEnabled=true;update(next);},{
+    styles:doc.effect_styles??[],
+    save:(style,layer)=>safe(()=>{const id=editor.save_effect_style(JSON.stringify(style),layer);refresh();return id;}),
+    apply:id=>safe(()=>{editor.apply_effect_style(JSON.stringify([...selectedIds]),id);refresh();}),
+    remove:id=>safe(()=>{editor.remove_effect_style(id);refresh();})
+  });
   prototypeInteraction=Math.min(prototypeInteraction,Math.max(0,(shape?interactions(shape).length:0)-1));
   renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype,{activeIndex:prototypeInteraction,select:index=>{prototypeInteraction=index;draw();}});
   renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();},{

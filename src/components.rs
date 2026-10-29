@@ -38,6 +38,7 @@ const FIELDS: &[&str] = &[
     "auto_layout",
     "layout_grids",
     "guide_style",
+    "effect_style",
     "prototype",
     "additional_interactions",
     "layout_item",
@@ -104,6 +105,7 @@ pub(crate) fn restore_detached_button_labels(
             label.behaviors.clear();
             label.layout_grids.clear();
             label.guide_style = 0;
+            label.effect_style = 0;
             label.prototype = None;
             label.additional_interactions.clear();
             label.flow_name.clear();
@@ -452,6 +454,15 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
     variables::detach_edited(old, new);
     if new.guide_style == old.guide_style && new.layout_grids != old.layout_grids {
         new.guide_style = 0;
+    }
+    if new.effect_style == old.effect_style
+        && (effect_styles::Effects::from_appearance(new.appearance.as_ref())
+            != effect_styles::Effects::from_appearance(old.appearance.as_ref())
+            || ["appearance.layer_blur", "appearance.backdrop_blur"]
+                .iter()
+                .any(|path| old.variable_bindings.get(*path) != new.variable_bindings.get(*path)))
+    {
+        new.effect_style = 0;
     }
     if old.component != new.component {
         return Err("Use the component actions to change component links".into());
@@ -1093,6 +1104,7 @@ impl Editor {
                         "stroke_width",
                         "layout_grids",
                         "guide_style",
+                        "effect_style",
                     ]
                     .contains(&field)
                 })

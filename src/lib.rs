@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 mod arrangement;
 mod editor_tools;
+mod effect_styles;
 mod grid;
 mod groups;
 mod guide_styles;
@@ -71,6 +72,8 @@ pub struct Shape {
     pub layout_grids: Vec<LayoutGrid>,
     #[serde(default)]
     pub guide_style: u32,
+    #[serde(default)]
+    pub effect_style: u32,
     #[serde(default)]
     pub prototype: Option<Prototype>,
     #[serde(default)]
@@ -765,6 +768,8 @@ pub struct Document {
     #[serde(default)]
     pub guide_styles: Vec<guide_styles::GuideStyle>,
     #[serde(default)]
+    pub effect_styles: Vec<effect_styles::EffectStyle>,
+    #[serde(default)]
     pub component_properties: Vec<component_properties::ComponentProperty>,
 }
 
@@ -871,6 +876,7 @@ fn validate(document: &Document) -> Result<(), String> {
     variables::validate_variables(document)?;
     variants::validate_sets(document)?;
     guide_styles::validate_styles(document)?;
+    effect_styles::validate_styles(document)?;
     if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
         return Err("Unsupported document version or document too large".into());
     }
@@ -1090,9 +1096,7 @@ fn validate(document: &Document) -> Result<(), String> {
                     return Err("Invalid gradient geometry or color stops".into());
                 }
             }
-            if !a.layer_blur.is_finite() || !(0.0..=100_000.0).contains(&a.layer_blur) {
-                return Err("Layer blur must be between 0 and 100000".into());
-            }
+            effect_styles::Effects::from_appearance(Some(a)).validate()?;
             if ![
                 "pass-through",
                 "normal",
@@ -1116,26 +1120,6 @@ fn validate(document: &Document) -> Result<(), String> {
             .contains(&a.blend_mode.as_str())
             {
                 return Err("Unsupported blend mode".into());
-            }
-            if !a.backdrop_blur.is_finite() || !(0.0..=200.0).contains(&a.backdrop_blur) {
-                return Err("Background blur must be between 0 and 200".into());
-            }
-            if a.shadows.len() > 8
-                || a.shadows.iter().any(|shadow| {
-                    !["drop", "inner"].contains(&shadow.kind.as_str())
-                        || [shadow.x, shadow.y, shadow.spread]
-                            .iter()
-                            .any(|v| !v.is_finite() || v.abs() > 100_000.0)
-                        || !shadow.blur.is_finite()
-                        || !(0.0..=100_000.0).contains(&shadow.blur)
-                        || !shadow.opacity.is_finite()
-                        || !(0.0..=1.0).contains(&shadow.opacity)
-                        || shadow.color.len() != 7
-                        || !shadow.color.starts_with('#')
-                        || !shadow.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
-                })
-            {
-                return Err("Invalid drop shadows: use at most eight with bounded geometry, hex colors and 0–1 opacity".into());
             }
             if [a.fill_opacity, a.stroke_opacity]
                 .iter()
@@ -1672,6 +1656,7 @@ impl Editor {
             .collect();
         components::sync(&mut document, &mut next)?;
         guide_styles::resolve(&mut document);
+        effect_styles::resolve(&mut document);
         variables::resolve(&mut document)?;
         sync_paint_stacks(&mut document);
         let after_sync: std::collections::HashSet<_> = document
@@ -1810,6 +1795,7 @@ impl Editor {
                 component_sets: vec![],
                 component_order: vec![],
                 guide_styles: vec![],
+                effect_styles: vec![],
                 component_properties: vec![],
             },
             undo: vec![],
@@ -1855,6 +1841,7 @@ impl Editor {
                 let mut copy = s.clone();
                 copy.component = None;
                 copy.guide_style = 0;
+                copy.effect_style = 0;
                 copy.variable_bindings.clear();
                 copy.variable_modes.clear();
                 copy.retain_interactions(|p| {
@@ -1955,6 +1942,7 @@ impl Editor {
             s.page_id = 1;
             s.component = None;
             s.guide_style = 0;
+            s.effect_style = 0;
             s.variable_bindings.clear();
             s.variable_modes.clear();
         }
@@ -1969,6 +1957,7 @@ impl Editor {
             component_sets: vec![],
             component_order: vec![],
             guide_styles: vec![],
+            effect_styles: vec![],
             component_properties: vec![],
         })?;
         let next = self
@@ -2301,6 +2290,7 @@ impl Editor {
             auto_layout: None,
             layout_grids: vec![],
             guide_style: 0,
+            effect_style: 0,
             prototype: None,
             additional_interactions: vec![],
             flow_name: String::new(),
