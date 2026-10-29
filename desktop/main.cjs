@@ -3,6 +3,7 @@ const {readFile,realpath}=require('node:fs/promises');
 const path=require('node:path');
 const {APP_URL,CSP,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor}=require('./policy.cjs');
 const {readDesign,designExtensions,designFilters}=require('./design-files.cjs');
+const {discoverBridges}=require('./mcp-discovery.cjs');
 const {readPreferences,writePreferences,isOnlineFontURL}=require('./preferences.cjs');
 let preferences={onlineFonts:false};
 const root=__dirname,windows=new Map(),pending=new Map(),configured=new Set();
@@ -96,6 +97,12 @@ function showConnect(parent){
  const win=createWindow(APP_URL+'desktop/connect.html','connection',parent);win.setMenu(null);
 }
 function installIPC(){
+ ipcMain.handle('desktop:mcp-connections',event=>{
+  const record=windows.get(event.sender.id),frame=event.senderFrame;
+  if(!record||!['local','remote'].includes(record.role)||frame!==event.sender.mainFrame||!sameWorkspace(frame.url,record.base))throw new Error('MCP discovery is available only in a PixlPrfct workspace.');
+  const origin=isLocalURL(frame.url)?'pixlprfct://app':new URL(frame.url).origin;
+  return discoverBridges(origin);
+ });
  ipcMain.handle('desktop:open-file',async event=>{
   const {win}=sender(event);const result=await dialog.showOpenDialog(win,{title:'Import design',filters:designFilters,properties:['openFile']});
   return result.canceled?null:readDesign(result.filePaths[0]);

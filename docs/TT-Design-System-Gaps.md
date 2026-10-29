@@ -8,10 +8,11 @@ Last updated: 2026-10-29
 ## Tally checkpoint — 2026-10-29
 
 - Scope confirmed by the user: work on **B (PixlPrfct)**; keep **A and C tracked**.
-- B: **10 of 19 current entries addressed** (7 code fixes, 3 verified/documented behaviors); **9 entries remain open**. This closes 10 of the 12 original reports; 7 more incoming reports were preserved during this pass. B7 is partially completed by PR #28.
+- B: **12 of 22 current checklist entries addressed** (8 local code fixes, 3 verified/documented behaviors, and the separately shipped effect-styles report); **10 entries remain open**. This count reflects the split effect/text-style entries, the newly reported active-page limitation, and the MCP reconnection report. Earlier entries and resolution notes are retained.
 - `[x]` preserves a closed report; the note states whether it is fixed locally, verified existing behavior, or shipped. Never delete completed entries. Append new gaps and retain earlier resolution notes if an item reopens.
 - These new fixes are on `codex/design-system-gaps`, in the managed `design-system-gaps` checkout. **Local closure is not a claim of deployment or installation.** New runtime features need an editor build/reload and an MCP restart. Existing design-file content has not been migrated.
 - Validation: editor build; complete suite of 3 Rust + 885 JavaScript tests after integrating PR #28 and the native-control stroke follow-up; MCP catalog drift check; changed JavaScript lint (0 errors, 2 pre-existing unused-import warnings). Browser import showed a long-label main component at 240 × 40 with both axes Hug and unclipped text. This is functional verification, not certification of pixel-perfect UI parity.
+- MCP reconnect follow-up (2026-10-29): automatic desktop discovery, reconnect/backoff, heartbeat recovery, browser reload/back-navigation recovery, and concurrent agent ports are implemented in [draft PR #29](https://github.com/ninefingerwoodshop-ops/pixlprfct/pull/29). The installed app and running MCP processes still need the updated build; closure here records the tested implementation, not deployment.
 - Authoring details and supported formats: `docs/MCP.md`. Regression coverage: `tests/design-system-gaps.test.mjs` and `tests/mcp-server.test.mjs`.
 - Keep incoming additions from the Desktop source when reconciling this repository snapshot. Update entries in place, preserving history.
 
@@ -64,6 +65,15 @@ Last updated: 2026-10-29
 - [ ] **Select chips use `color-mix(... 10%, transparent)`.** That background has no token.
 - [ ] **Button xs (13px) and lg (17px / 1.0625rem) text sizes** aren't on the type scale.
 
+### Search & tags
+- [ ] **Two search inputs disagree:** the global `.search-input` uses radius 4, 16px text, a `--secondary` focus border and a 2px `--secondary-muted` ring. The shared `tt-search` uses radius 8, 14px text, a navy-400 border and a 4px ring at 20%. The design file follows `tt-search`.
+- [ ] **`tt-search--lg` is 46px**; inputs and selects use 48px for lg. Its lg text stays at 14px.
+- [ ] **`tt-tag` tones use the legacy Tailwind `--badge-*` palette** (e.g. success = #ecfdf5 / #065f46). The semantic `--success-bg` / `--success-text` (#e5f1e1 / #173404) aren't used, so tags and alerts show two different greens, ambers, reds and blues. The design file binds tags to the `status/*` tokens.
+- [ ] **The `tt-tag` neutral tone hard-codes `--tt-navy-900` + `--hero-fg`**, so it doesn't adapt to dark mode.
+- [ ] **`tt-tag` purple and pink tones have no semantic token** (they're Tailwind `--badge-purple/pink`). They were left out of the design file.
+- [ ] **Three badge shapes coexist:** `tt-tag` (pill, 14/500), `tt-type-badge` (radius 4, 13/600) and `.brand-badge` (radius 4, 14/600, `color-mix` colors).
+- [ ] **The tag remove button's hover uses raw `rgb(255 255 255 / 0.18)`**, which is invisible on light tones.
+
 ### Type & spacing
 - [ ] **Body default text (14px) has no token.** It's set directly on `body` in `_base.scss`, while `--text-sm` is 16px.
 - [ ] **No heading-size tokens.** `_tokens.scss` only sets heading font-family (Lato); h1–h6 sizes aren't tokenized.
@@ -92,8 +102,11 @@ Last updated: 2026-10-29
   - B5 — Fixed locally (2026-10-29). MCP create accepts `coordinate_space: "parent"`, converting x/y once from the parent’s stored origin. The backwards-compatible default and update/engine coordinates remain world coordinates. Auto layout still governs flow children. Placement and atomic rejection are tested.
 - [x] ~~**`duplicate` offsets the copy by +24/+24.** It has to be repositioned after duplicating.~~
   - B6 — Fixed locally (2026-10-29). New `duplicate_many_offset(ids, xOffset, yOffset)` supports `0,0` and exact translations while preserving descendants and bindings. Interactive duplicate retains its +24/+24 offset. Verified undo and legacy behavior.
-- [ ] **No saved effect styles or text styles via MCP.** Shadows live as reference cards (copy their effects); typography is only number/string variables.
-  - B7 — Partially closed (2026-10-29). **Effect styles completed in [PR #28](https://github.com/ninefingerwoodshop-ops/pixlprfct/pull/28)** (`save_effect_style`, `apply_effect_style`, `remove_effect_style`); the implementing chat reports desktop 0.1.1-alpha.3 and MCP verified. **Text styles remain open.** Keep this combined original entry until both parts are resolved.
+- [x] **Effect styles: fixed in PixlPrfct 0.1.1-alpha.3.** 14 styles saved and linked: shadow/xs, sm, card, md, lg, xl, 2xl, modal, badge, kanban-card, focus/ring, focus/outline, control/soft, focus/outline + control/soft. Components use them (focus states, select menu, toggle thumbs, checkbox/radio).
+- [ ] **Still no text styles via MCP.** Typography is only number/string variables plus the specimen page.
+  - B7 — Partially closed (2026-10-29). **Effect styles completed in [PR #28](https://github.com/ninefingerwoodshop-ops/pixlprfct/pull/28)** (`save_effect_style`, `apply_effect_style`, `remove_effect_style`); the implementing chat reports desktop 0.1.1-alpha.3 and MCP verified. **Text styles remain open.** The original combined report is now tracked as separate effect- and text-style entries above.
+- [ ] **`save_effect_style` with a layer_id only works when that layer is on the active page** ("Select a layer on this page"). Each page has to be selected first.
+  - B20 — Newly tracked (2026-10-29); not resolved in the reconnect fix.
 - [x] ~~**Stroke color variable bindings export as hard-coded hex** in HTML/CSS export. Fills and text export as `var(...)`.~~
   - B8 — Fixed locally (2026-10-29). HTML/framework exports retain `var(...)` for solid strokes, stacked paints, inside/outside masks, per-side borders and native controls, preserving alpha. Regression covers HTML, React, Vue and Angular. Standalone SVG intentionally remains a resolved snapshot.
 - [x] ~~**Number variables export unitless** (`--px-space-4: 16`, not `16px`). They need `calc(var(...) * 1px)` to use in CSS.~~
@@ -115,6 +128,9 @@ Last updated: 2026-10-29
 
 - [ ] **Pen/vector stroke color is set through `fill`**, not a stroke property. It's unintuitive, but it binds to variables fine.
 
+- [x] ~~**MCP keeps dropping its connection and requires manual reconnection.** It should connect to PixlPrfct automatically.~~
+  - B21 — Fixed locally (2026-10-29). Desktop local and allowed team-server workspaces discover running MCP servers automatically, including changed ports/codes after restarts. Connections recover after interruptions, reloads, back-navigation and silent stalls. Multiple agents can connect without default-port collisions. Explicit Disconnect remains paused until Connect; old sessions cannot edit a different project, and interrupted edits are never replayed. Normal browser editors remember pairing for the current tab/project but still need a fresh code after a server restart. Real WebSocket restart recovery and lifecycle regression tests pass; final validation: 3 Rust + 898 JavaScript tests, editor/desktop bundle build, MCP catalog check, and changed-code lint with zero errors or warnings. Requires an updated desktop/editor and MCP server; the installed build is not yet updated.
+
 ---
 
 ## C. Design file to-dos
@@ -129,8 +145,10 @@ Last updated: 2026-10-29
 - [x] Input component set (Default, Hover, Focus, Error, Disabled, Read-only) + form-field examples — page "Components · Input"
 - [ ] Input sizes: sm (32), lg (48); leading-icon and clear-button slots
 - [x] Select (6 states) + Select menu + Textarea (4 states) — page "Components · Toggle, Select & Textarea"
-- [ ] Search input; Danger button sizes/focus; Input/Select sm & lg sizes
+- [x] Search component set (Default/Hover/Focus/Disabled) + Tag set (Neutral/Success/Warning/Danger/Info) — page "Components · Search & Tag"
+- [ ] Danger button sizes/focus; Input/Select/Search sm & lg sizes; removable Tag; Tag purple/pink (pending token decision)
+- [ ] **No semantic token for the neutral tag** (navy-900 bg). The design file binds it to the primitive `navy/900`; add something like `tag/neutral/bg`.
 - [x] Checkbox + Radio component sets (Off/On × Default/Hover/Focus/Disabled) — page "Components · Checkbox & Radio"
 - [x] Toggle component set (Off/On × Default/Focus/Disabled)
 - [ ] **J:** publish the library from Assets → Manage libraries so other projects can use these components
-- [ ] Badges, cards, nav
+- [ ] Cards, nav, alerts/banners, table rows, modal

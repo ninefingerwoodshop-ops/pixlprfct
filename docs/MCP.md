@@ -47,18 +47,37 @@ This repository does not modify your agent configuration automatically.
 
 ## Live editor
 
+In the desktop app, open your project and start the configured PixlPrfct MCP
+server in your AI client. The editor discovers the server and connects within a
+few seconds, including when the app or server starts first. The agent calls
+`pixlprfct_sessions` to select the intended project. Multiple local agent
+processes are discovered separately; an occupied default port automatically
+falls back to a free loopback port. Explicit `--port` values remain strict.
+
+The same discovery works in desktop team-server windows whose origin is allowed
+by the MCP server. Servers publish a private, per-process record under
+`~/.pixlprfct/mcp` (directory 0700, files 0600 on POSIX). Only the desktop main
+process reads it; renderers receive a token scoped to their own allowed origin.
+Records are removed on normal shutdown; records belonging to dead processes are
+ignored. This direct-distribution desktop workflow does not claim discovery
+across a Mac App Store sandbox boundary.
+
+For an editor in a normal browser:
+
 1. Ask the agent to call `pixlprfct_connection`.
 2. In the intended PixlPrfct project, open **Tools → MCP connection**.
 3. Enter the returned bridge URL and pairing code, then click **Connect**.
 4. The agent calls `pixlprfct_sessions` and chooses that live session.
 
-The code is temporary, stays in memory, and is never stored in the browser or
-placed in a URL. The bridge listens on `127.0.0.1:4317` only. It validates Host,
-Origin, and the pairing code. Each paired tab has its own session. The default
-allowed origins are the desktop app (`pixlprfct://app`) and localhost / 127.0.0.1 on ports 4173, 4174, 4176, and 5173.
-For another editor origin, pass `--origin https://your-editor.example` or set
-`PIXLPRFCT_EDITOR_ORIGIN`. For another bridge port, pass `--port 4318` or set
-`PIXLPRFCT_MCP_PORT`. A second agent process needs its own port.
+Browser pairing is saved in session storage for that tab and project, so a reload
+or interrupted socket reconnects automatically. A server restart rotates the
+code; browser editors require the new code, while desktop editors discover it
+automatically. Codes are never placed in URLs. The bridge listens only on
+`127.0.0.1` and validates Host, Origin and the pairing code. The default allowed
+origins are `pixlprfct://app` and localhost / 127.0.0.1 on ports 4173, 4174, 4176,
+and 5173. For another editor origin, pass `--origin https://your-editor.example`
+or set `PIXLPRFCT_EDITOR_ORIGIN`. Use `--port 4318` or `PIXLPRFCT_MCP_PORT` for
+an explicit bridge port, or `--port 0` for an available port.
 
 The self-hosted editor's CSP permits the loopback WebSocket connection. Restart
 an already running self-host server after upgrading its CSP. Browser mixed-content
@@ -67,8 +86,13 @@ the browser must permit the connection. No certificate or browser protection is
 disabled by this implementation. Hosted MCP over the public internet is not
 implemented: the MCP client and bridge run on the same computer as the browser.
 
-Click **Disconnect** to revoke that tab's access. Reloading or closing the tab
-disconnects it. A project change invalidates the session before the next request.
+Click **Disconnect** to pause agent access to that project. The pause survives
+reloads and app restarts until you click **Connect**. Reconnection uses bounded
+backoff and heartbeat detection, without replaying requests or edits. A project
+change closes the old session before it can receive another request; desktop
+discovery creates a fresh session for the new project. Agents must list sessions
+and read the current revision after a disconnect, since an interrupted edit may
+already have completed.
 The server never receives session cookies or account credentials. Editor changes
 use normal autosave, and cloud permissions and imported-library protection still
 apply. An agent cannot edit while a canvas gesture, inline text edit, or CSS
@@ -96,7 +120,7 @@ in a live editor, where the actual canvas font measurements are used.
 | --- | --- |
 | `pixlprfct_reference` | Search capabilities, commands, models, defaults, icons, frame presets and guides |
 | `pixlprfct_sessions` | List paired tabs, open file sessions and workspace project files |
-| `pixlprfct_connection` | Get temporary live-editor pairing details |
+| `pixlprfct_connection` | Get browser pairing details (desktop connects automatically) |
 | `pixlprfct_open_project` | Open or create a saved-project session |
 | `pixlprfct_read` | Inspect layer summaries, complete properties or the entire document |
 | `pixlprfct_build` | Apply an atomic batch as one undo step |

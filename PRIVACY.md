@@ -30,7 +30,7 @@ The operator controls hosting, database/mail providers, backups, retention, dele
 
 ## AI and MCP connections
 
-MCP is optional and runs separately. Pairing an editor or granting an MCP client access to saved projects lets that client read and change those designs. Your chosen AI application may transmit information to its service under its own settings and privacy policy. Disconnect the bridge and remove filesystem access when no longer needed. PixlPrfct does not select an AI provider or send designs to one on its own.
+MCP is optional and runs separately. Configuring and running the local PixlPrfct MCP server lets it connect automatically to open desktop projects at allowed workspace origins. Normal browser editors require pairing first. These connections, or granting an MCP client access to saved projects, let that client read and change those designs. Your chosen AI application may transmit information to its service under its own settings and privacy policy. Use Tools → MCP connection → Disconnect to pause access to a project across reloads and app restarts; Connect resumes it. Remove filesystem access when no longer needed. Temporary discovery credentials are stored in the user’s private `~/.pixlprfct/mcp` directory and removed on normal server shutdown. Browser pairing is kept in tab session storage and cleared on Disconnect or a project change. PixlPrfct does not select an AI provider or send designs to one on its own.
 
 ## Downloads, support, and changes
 
