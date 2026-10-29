@@ -13,7 +13,7 @@ import init,{Editor} from './pkg/pixlprfct_core.js';
 import {migrateChromeDocument} from './frame-tools.js';
 import {ensureBaseTextDocument} from './base-text.js';
 
-export function mountProjectHome(root){
+export function mountProjectHome(root,{onReady=()=>{},onError=()=>{}}={}){
 let disposed=false,closeDesktop=()=>{};
 root.innerHTML=`<aside class="home-sidebar" aria-label="Workspace navigation">
  <a class="home-brand" href="/"><img class="home-mark" src="/editor/favicon.svg?v=mono" width="34" height="34" alt=""><span>PixlPrfct<small>Design workspace</small></span></a>
@@ -115,7 +115,7 @@ async function start(){
 try{
  if(!drafts.list().length){const legacy=storage?.getItem('pixlprfct.document.v1');if(legacy){const normalized=await normalize(legacy);if(!drafts.list().length)drafts.create(normalized);}}
 }catch(error){report(error);}
-if(disposed)return;await loadWorkspace();if(disposed)return;render();fetchCloud();
+if(disposed)return;await loadWorkspace();if(disposed)return;render();await fetchCloud();if(disposed)return;
 if(window.pixlDesktop?.local){
  root.querySelector('.home-storage-note').textContent='Projects on this device are saved in the desktop app. Save a .pixl copy to keep a portable backup.';
  root.querySelector('[data-scope="cloud"]').hidden=true;
@@ -133,6 +133,6 @@ if(params.has('projectError'))report(new Error('That project could not be opened
 if(params.get('new')==='1'){const query=new URLSearchParams(location.search);query.delete('new');history.replaceState(null,'','/'+(query.size?'?'+query:''));creator.showNew();}
 
 }
-start().catch(report);
+start().then(()=>{if(!disposed)onReady();}).catch(error=>{if(!disposed){report(error);onError(error);}});
 return ()=>{disposed=true;closeDesktop();window.removeEventListener('storage',onStorage);window.removeEventListener('pageshow',onPageShow);creator.destroy();syncDropdowns.destroy();root.replaceChildren();};
 }

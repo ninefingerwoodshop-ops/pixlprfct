@@ -1,3 +1,4 @@
+import {loadingMessage,finishLoading,failLoading} from './loading-screen.js';
 import {installDesktop} from './desktop-integration.js';
 import {readDesignFile} from './design-import.js';
 import {installFigmaInspector} from './figma-inspector.js';
@@ -1846,7 +1847,9 @@ function seed() {
   editor.load(JSON.stringify({ version: 1, name: 'Launch concept', shapes })); editor.clear_history();
 }
 try {
+  loadingMessage('Starting the design engine…');
   await init(); editor = new Editor();
+  loadingMessage('Opening your project…');
   editor.set_text_measurer(json=>{const s=JSON.parse(json);if(s.control?.kind==='button'){const t=s.typography??{font_family:'Arial',font_size:16,font_weight:400,line_height:1.2};measureCtx.font=fontCss(t);return JSON.stringify([Math.max(1,Math.ceil(measureCtx.measureText(s.control.label).width)),Math.max(1,Math.ceil(t.font_size*t.line_height))]);}measureCtx.font=fontCss(textStyle(s));return JSON.stringify([...textSize(s,value=>measureCtx.measureText(value).width),textBaseline(s,measureCtx)]);});
   const requestedProject=projectRoute(location.search);
   let accountRuntime=null,accountIdentity=null;
@@ -1864,9 +1867,12 @@ try {
   else if(!requestedProject&&accountRuntime?.mode!=='self-hosted')cloud.restore();
   libraries=createLibraryManager({getDocument:()=>JSON.parse(editor.snapshot()),getSession:()=>cloud.session,applyDocument:next=>{editor.load(JSON.stringify(next));refresh();},saveCloud:()=>cloud.saveCurrent(),refresh:()=>{renderAssetBrowser();renderProperties();},toast,selfHosted:accountRuntime?.mode==='self-hosted'});
   editor.set_write_guard((before,after,history)=>libraries.guard(JSON.parse(before),JSON.parse(after),history)??'');
+  loadingMessage('Loading project libraries…');
   await libraries.context();
   projectLoading=false;syncProjectAddress();
   if(!recoveryBlocked&&!cloud.session.active)persist();
+  loadingMessage('Preparing your canvas…');
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
   installDesktop({importFile:importDesignFile,report:error=>toast(error.message),commands:{save:()=>$('save').click(),undo:()=>$('undo').click(),redo:()=>$('redo').click()}});
-} catch (error) { if(new URLSearchParams(location.search).has('draft')||new URLSearchParams(location.search).has('cloud')){location.replace('/?projectError=1');} $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }
+  finishLoading();
+} catch (error) { failLoading('Your workspace couldn’t open. Try again, or choose another project.'); $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }
