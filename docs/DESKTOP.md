@@ -87,4 +87,8 @@ Signing, notarization, MAS testing and App Store submission require the owner's 
 
 The universal Mac test app was exercised on Apple Silicon: project creation, frame editing, native Undo/Redo, native Save and Import dialogs, `.pixl` round trips, saved edits after relaunch, connection validation and opening the self-hosted login page. The desktop security-policy tests and local-draft/MCP regression tests pass. Windows x64 installer and ZIP packaging was verified on the Mac build host; execution on Windows, Intel Mac execution and signed MAS behavior still need their respective platform checks.
 
+The `Windows prerelease` workflow additionally checks silent installation, creation of an application window, and silent uninstallation on a Windows runner before artifacts are published. This is a basic native-platform check, not full interactive coverage of every editor feature. Published release notes link the specific successful run.
+
+On October 29, 2026 the full development dependency audit reported four high-severity findings in sharp and the Cloudflare local-development dependency tree (miniflare, undici, and ws). These Node dependencies are not included in the desktop app package. Do not expose a development server to the internet. This prerelease is not an independent security audit or a claim that all development dependencies are advisory-free.
+
 Figma `.fig` files can also be opened through **File → Import design** (Cmd/Ctrl+O), the projects page, or drag-and-drop. They use the same local parser and conversion report as the browser. See [Figma import](FIGMA_IMPORT.md).
