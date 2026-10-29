@@ -42,6 +42,22 @@ test('unchanged saves retain edit order and do not consume storage writes',()=>{
  const storage=memory(),drafts=library(storage),body=newDesign('Original'),first=drafts.save(body);storage.setItem=()=>{throw new Error('Unexpected write');};
  assert.deepEqual(drafts.save(body),first);assert.equal(drafts.get(first.id).updatedAt,first.updatedAt);
 });
+test('Trash preserves project bodies, refuses reopening and stale autosaves, and restores them',()=>{
+ const storage=memory(),a=library(storage),file=a.create(newDesign('Keep my work','desktop'));
+ const b=library(storage);b.activate(file.id);a.setTrashed(file.id,true,file.body);
+ assert.equal(a.list().length,0);assert.equal(a.list({trash:true})[0].body,file.body);
+ assert.equal(new LocalDrafts(storage).restore(),null);
+ assert.throws(()=>b.get(file.id),/Trash/);assert.throws(()=>b.activate(file.id),/Trash/);
+ assert.throws(()=>b.save(newDesign('Unsaved edit')),/Trash/);assert.equal(a.read().files.length,1);
+ a.setTrashed(file.id,false,file.body);assert.equal(a.get(file.id).body,file.body);assert.equal(a.list({trash:true}).length,0);
+ assert.equal(new LocalDrafts(storage).restore(),file.body);
+});
+test('Trash rejects stale project data and preserves records when storage fails',()=>{
+ const storage=memory(),drafts=library(storage),file=drafts.create(newDesign('Original'));
+ drafts.save(newDesign('Changed'));assert.throws(()=>drafts.setTrashed(file.id,true,file.body),/changed/);
+ const saved=storage.getItem(DRAFTS_KEY);storage.setItem=()=>{throw new Error('QuotaExceeded');};
+ assert.throws(()=>drafts.setTrashed(file.id,true),/Could not save/);assert.equal(storage.getItem(DRAFTS_KEY),saved);assert.equal(drafts.list().length,1);
+});
 test('starters produce independent blank, desktop, and mobile documents',()=>{
  assert.deepEqual(JSON.parse(newDesign('   ')).shapes,[]);assert.equal(JSON.parse(newDesign('   ')).name,'Untitled design');
  for(const [preset,width,height] of [['desktop',1440,900],['mobile',390,844]]){const doc=JSON.parse(newDesign('  Hello  ',preset));assert.equal(doc.name,'Hello');assert.equal(doc.shapes[0].width,width);assert.equal(doc.shapes[0].height,height);assert.equal(doc.shapes[0].clip_content,true);}
