@@ -123,3 +123,5 @@ body:has(#project-home) .selection-menu button:hover{background:var(--ui-hover)}
 body:has(#project-home) .selection-menu button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:-2px}
 body:has(#project-home) .selection-menu button:disabled{opacity:.4;cursor:default}
 body:has(#project-home) .selection-menu-separator{height:1px;margin:8px 0}
+#project-home #home-admin{display:flex;align-items:center;gap:var(--ui-space-2);height:28px;padding:4px 8px;color:var(--ui-text-color);border-radius:var(--ui-radius-control);font-size:var(--ui-text);text-decoration:none}
+#project-home #home-admin:hover{background:var(--ui-hover)}

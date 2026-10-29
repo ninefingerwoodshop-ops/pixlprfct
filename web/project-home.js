@@ -19,7 +19,7 @@ let disposed=false,closeDesktop=()=>{};
 root.innerHTML=`<aside class="home-sidebar" aria-label="Workspace navigation">
  <a class="home-brand" href="/"><img class="home-mark" src="/editor/favicon.svg?v=mono" width="34" height="34" alt=""><span>PixlPrfct<small>Design workspace</small></span></a>
  <label class="home-workspace" id="home-workspace-label" hidden>Workspace<select id="home-workspace" aria-label="Workspace"></select></label><span class="home-nav-label">Projects</span>
- <nav aria-label="Project collections"><button data-scope="all" aria-current="page">${icon('layout-grid')}All projects</button><button data-scope="local">${icon('monitor')}On this device</button><button data-scope="cloud">${icon('cloud')}Cloud projects</button><button data-scope="trash">${icon('trash')}Trash</button></nav>
+ <nav aria-label="Project collections"><button data-scope="all" aria-current="page">${icon('layout-grid')}All projects</button><button data-scope="local">${icon('monitor')}On this device</button><button data-scope="cloud">${icon('cloud')}Cloud projects</button><button data-scope="trash">${icon('trash')}Trash</button><a id="home-admin" href="/editor/admin.html">${icon('shield-check')}Admin</a></nav>
  <div class="home-account-links"><a href="/editor/account.html" id="home-account">Account & teams</a><a href="/editor/setup.html">Host your workspace</a></div><div class="home-sidebar-note">A place for your next idea.<span>Create a project, then make it yours.</span></div>
 </aside>
 <main class="home-main">
@@ -122,6 +122,8 @@ async function loadWorkspace(){
   const installation=await api('/api/installation');if(installation.mode!=='self-hosted')return;selfHosted=true;
   $('cloud-signin').href='/editor/account.html';$('cloud-signin').textContent='Sign in or create account';
   const account=await api('/api/workspaces');if(disposed)return;
+  const managed=account.organizations.filter(org=>org.role?.split(',').some(role=>['owner','admin'].includes(role)));const selected=managed.find(org=>workspace==='org:'+org.id||account.teams.some(team=>workspace==='team:'+team.id&&team.organizationId===org.id))??managed[0];
+  $('home-admin').hidden=!selected&&!account.administrator;$('home-admin').href='/editor/admin.html'+(selected?'?organization='+encodeURIComponent(selected.id):'');
   $('home-account').textContent=account.user.name+' · Account & teams';
   const choices=[{value:'personal',label:'Personal workspace'},...account.organizations.map(org=>({value:'org:'+org.id,label:org.name})),...account.teams.map(team=>({value:'team:'+team.id,label:'Team · '+team.name}))];
   const select=$('home-workspace');select.replaceChildren();for(const item of choices){const option=el('option',null,item.label);option.value=item.value;select.append(option);}

@@ -31,7 +31,7 @@ export async function startServer(config,{migrate=false,deliver}={}) {
        res.end(Buffer.from(await response.arrayBuffer()));return;
      }
      if(!['GET','HEAD'].includes(req.method)){res.writeHead(405).end();return;}
-     const routes={'/':'project-home.html','/account':'account.html','/setup':'setup.html'};
+     const routes={'/':'project-home.html','/account':'account.html','/setup':'setup.html','/admin':'admin.html'};
      const relative=routes[url.pathname]??(url.pathname.startsWith('/editor/')?decodeURIComponent(url.pathname.slice(8)):null);
      if(!relative){res.writeHead(404).end('Not found');return;}
      const file=path.resolve(root,relative);

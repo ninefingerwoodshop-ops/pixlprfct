@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {randomBytes} from 'node:crypto';
+import {randomBytes,randomUUID} from 'node:crypto';
 import {readConfig} from '../server/config.mjs';
 import {connectDatabase,migrateDocuments,postgresSQL} from '../server/database.mjs';
 import {createAuth,migrateAuth,smtpOptions} from '../server/auth.mjs';
@@ -66,4 +66,43 @@ test('creator migration is repeatable and does not invent historical shared crea
   assert.equal(rows[0].created_by,'alice');assert.equal(rows[1].created_by,null);
   assert.ok(rows.every(row=>row.body==='{}'&&row.revision===1));
  }finally{await db.close();}
+});
+
+test('admin console scopes summaries, search, pagination and role changes to current organization admins',async()=>{
+ const f=await fixture();try{
+  const {client:owner,user:ownerUser}=await f.register('owner@example.com','Owner');
+  const {client:member}=await f.register('member@example.com','Member');
+  const {client:outsider}=await f.register('outside@example.com','Outside');
+  const org=(await owner.call('/api/auth/organization/create',{name:'Studio',slug:'studio'})).data;
+  const foreign=(await outsider.call('/api/auth/organization/create',{name:'Private',slug:'private'})).data;
+  const invite=(await owner.call('/api/auth/organization/invite-member',{organizationId:org.id,email:'member@example.com',role:'member'})).data;
+  assert.equal((await member.call('/api/auth/organization/accept-invitation',{invitationId:invite.id})).status,200);
+  const query='?organization='+org.id;
+  assert.equal((await f.client().call('/api/admin/overview'+query)).status,401);
+  for(const client of [member,outsider])assert.equal((await client.call('/api/admin/overview'+query,undefined,{headers:{'x-admin':'true','oai-authenticated-user-id':ownerUser.id}})).status,403);
+  assert.equal((await owner.call('/api/admin/overview?organization='+foreign.id)).status,403);
+  assert.equal((await owner.call('/api/workspaces')).data.organizations[0].role,'owner');
+  const summary=(await owner.call('/api/admin/overview'+query)).data;assert.equal(summary.organization.name,'Studio');assert.equal(summary.people,2);
+  const people=(await owner.call('/api/admin/people'+query+'&q=member%40example.com')).data;
+  assert.equal(people.total,1);const target=people.members[0];assert.equal(target.email,'member@example.com');
+  assert.equal((await member.call('/api/auth/organization/update-member-role',{organizationId:org.id,memberId:target.id,role:'admin'})).status,403);
+  assert.equal((await owner.call('/api/auth/organization/update-member-role',{organizationId:org.id,memberId:target.id,role:'admin'})).status,200);
+  assert.equal((await member.call('/api/admin/overview'+query)).status,200);
+  const ownMember=(await owner.call('/api/admin/people'+query+'&role=owner')).data.members[0];
+  assert.notEqual((await owner.call('/api/auth/organization/update-member-role',{organizationId:org.id,memberId:ownMember.id,role:'member'})).status,200);
+  const team=(await member.call('/api/auth/organization/create-team',{organizationId:org.id,name:'Product'})).data;
+  assert.equal((await member.call('/api/auth/organization/update-team',{teamId:team.id,data:{organizationId:org.id,name:'Design'}})).status,200);
+  assert.equal((await member.call('/api/auth/organization/add-team-member',{teamId:team.id,userId:target.userId,organizationId:org.id})).status,200);
+  const teamPeople=await member.call('/api/admin/people'+query+'&team='+team.id);assert.equal(teamPeople.status,200);assert.ok(teamPeople.data.members.some(p=>p.userId===target.userId));
+  assert.equal((await owner.call('/api/admin/people'+query+'&team='+randomUUID())).status,404);
+  for(let i=0;i<51;i++){const userId=randomUUID();await f.db.query('INSERT INTO "user"(id,name,email,emailVerified,createdAt,updatedAt) VALUES(?,?,?,1,?,?)',[userId,i===0?'100% Design':'Person '+String(i).padStart(2,'0'),'person'+i+'@example.com',Date.now(),Date.now()],'run');await f.db.query('INSERT INTO member(id,organizationId,userId,role,createdAt) VALUES(?,?,?,?,?)',[randomUUID(),org.id,userId,'member',Date.now()],'run');}
+  const page=(await owner.call('/api/admin/people'+query)).data;assert.equal(page.members.length,50);assert.equal(page.next,50);assert.equal(page.total,53);
+  const last=(await owner.call('/api/admin/people'+query+'&offset=50')).data;assert.equal(last.members.length,3);assert.equal(last.next,null);
+  assert.equal((await owner.call('/api/admin/people'+query+'&q=%25')).data.total,1);
+  assert.equal((await owner.call('/api/admin/people'+query+'&offset=-1')).status,400);
+  assert.equal((await owner.call('/api/admin/people'+query+'&role=bogus')).status,400);
+  await owner.call('/api/auth/organization/update-member-role',{organizationId:org.id,memberId:target.id,role:'member'});
+  assert.equal((await member.call('/api/admin/people'+query)).status,403);
+  assert.equal((await member.call('/api/installation/check',{})).status,403);
+ }finally{await f.db.close();}
 });

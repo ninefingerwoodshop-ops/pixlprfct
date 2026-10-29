@@ -3,7 +3,7 @@ import {icon} from './icons.js';
 // Shared editor dropdown: retain selects as the value/event API for every panel.
 export function installInspectorDropdowns(root){
  const roots=[root],controller=new AbortController(),signal=controller.signal;let destroyed=false;
- const chrome='.left-panel,.right-panel,.paint-popover,.workspace-window,.variables-workspace,dialog,#project-home,.account-app';
+ const chrome='.left-panel,.right-panel,.paint-popover,.workspace-window,.variables-workspace,dialog,#project-home,#admin-app,.account-app';
  const selects=()=>[...root.querySelectorAll('select:not([multiple])')].filter(select=>select.closest(chrome)&&!select.closest('#workspace,.prototype-player')); 
  const entries=new Map();let active=null,sequence=0,pending=false,typeBuffer='',typeTime=0;
  const menu=document.createElement('div');menu.className='inspector-select-menu';menu.setAttribute('popover','manual');menu.setAttribute('role','listbox');menu.id='inspector-select-menu';document.body.append(menu);

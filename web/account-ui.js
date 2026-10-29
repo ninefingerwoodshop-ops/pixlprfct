@@ -21,5 +21,7 @@ export async function api(path,body){
 export const auth=(path,body)=>api('/api/auth/'+path,body);
 export function shell(root,active){
  root.innerHTML='<aside class="account-sidebar"><a class="account-brand" href="/"><img src="/editor/favicon.svg?v=mono" alt="" width="34" height="34"><strong>PixlPrfct<small>Your design workspace</small></strong></a><nav aria-label="Account navigation"><a href="/">All projects</a><a href="/editor/account.html" data-nav="account">Account & teams</a><a href="/editor/setup.html" data-nav="setup">Host your workspace</a></nav><p>Free to use.<br>Yours to host.</p></aside><main class="account-main"><div id="account-content"></div></main>';
+ const admin=link('Admin','/editor/admin.html');root.querySelector('nav').insertBefore(admin,root.querySelector('[data-nav="setup"]'));
+ if(document.documentElement.dataset.host==='static')root.querySelector('[data-nav="account"]')?.remove();
  root.querySelector('[data-nav="'+active+'"]')?.setAttribute('aria-current','page');return root.querySelector('#account-content');
 }
