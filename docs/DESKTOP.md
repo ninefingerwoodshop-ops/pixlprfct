@@ -21,6 +21,27 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
+## 0.1.1-alpha.1 desktop update
+
+This build includes the animated logo preloader, expanded file-type and rich-text
+icons, recoverable project Trash, and the Admin console. Open **Projects → Admin**
+for local Content/Trash and database setup. **Open a team server** uses the desktop
+connection window, preserving isolated local and remote sessions; people, roles,
+invitations, and teams are managed on the connected server.
+
+To update a direct-distribution build, quit PixlPrfct after the editor reports
+**Saved on this device**, keep a backup of the previous app, and replace the app
+bundle with the new build. Keep the bundle identifier and application name the
+same. Replacing the application must not remove its Application Support profile,
+which contains local projects and workspace sessions. The new version appears in
+**About PixlPrfct**. This remains a prerelease; no automatic updater is included.
+
+The universal Mac bundle was verified on Apple Silicon: the updated version is
+shown in About, existing projects survive replacement and reopen with the Rust
+engine connected, Admin loads from the packaged origin, and its connection button
+opens the native server dialog with HTTPS validation. The bundle signature was
+verified. Windows and Intel Mac execution were not repeated for this update.
+
 ## Privacy
 
 Online fonts are off by default in local desktop designs. Enable **View → Allow online fonts in local designs** and reopen designs to load Google Fonts; disable it to stop new font requests. Team servers use their own settings. Read [Privacy](../PRIVACY.md) and [Code signing policy](../CODE_SIGNING.md) before distributing builds. Both are included in the app package and linked from Help.
