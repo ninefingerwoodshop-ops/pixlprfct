@@ -2,7 +2,7 @@
 
 PixlPrfct is free, with no subscriptions, license server, paid tiers, or dependency on a ChatGPT account for self-hosted installations. Your hosting, database, and email providers may charge for their services.
 
-Open **Host your workspace** from the project home for the configuration builder. One installation uses one database for accounts, organizations, teams, designs, and version history. The browser never receives database credentials. Large design bodies are content-addressed in the same database, so separate object storage is not required. The builder prepares a template; it does not provision provider accounts or remote databases.
+Open **Admin → Database** from the project home for the configuration builder, including in the local static app. **Host your workspace** remains available on server-backed pages. The [Admin console](ADMIN_CONSOLE.md) also provides people, roles, invitations, teams, project/Trash management, and organization settings. One installation uses one database for accounts, organizations, teams, designs, and version history. The browser never receives database credentials. Large design bodies are content-addressed in the same database, so separate object storage is not required. The builder prepares a template; it does not provision provider accounts or remote databases.
 
 ## Quick local trial
 

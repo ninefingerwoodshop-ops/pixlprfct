@@ -12,7 +12,8 @@ test('the static-host build marks every page and leaves out the server-only page
  const pages=['index.html',...(await readdir(path.join(out,'editor'))).filter(name=>name.endsWith('.html')).map(name=>'editor/'+name)];
  assert.ok(pages.includes('editor/index.html'));
  for(const page of pages)assert.match(await readFile(path.join(out,page),'utf8'),/<html data-host="static"/,page);
- for(const page of ['editor/account.html','editor/setup.html','editor/pkg/README.md','editor/pkg/.gitignore'])await assert.rejects(access(path.join(out,page)),page);
+ for(const page of ['editor/account.html','editor/pkg/README.md','editor/pkg/.gitignore'])await assert.rejects(access(path.join(out,page)),page);
+ for(const page of ['editor/admin.html','editor/setup.html'])await access(path.join(out,page));
  await access(path.join(out,'editor/pkg/pixlprfct_core_bg.wasm'));
  await access(path.join(out,'editor/static-host.js'));
  const htaccess=await readFile(path.join(out,'.htaccess'),'utf8');

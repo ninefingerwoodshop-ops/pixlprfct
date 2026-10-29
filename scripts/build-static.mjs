@@ -7,9 +7,10 @@ import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),web=path.join(root,'web'),out=path.resolve(process.argv[2]??path.join(root,'.static'));
 if([path.parse(out).root,root,web].includes(out))throw new Error('Choose an output directory of its own; it is deleted and rebuilt.');
 await access(path.join(web,'pkg/pixlprfct_core_bg.wasm')).catch(()=>{throw new Error('web/pkg is missing. Run npm run build:editor first.');});
-// The account and setup pages need a server. Dotfiles, type declarations and the
+// Account sign-in needs a server; Admin and the setup builder work offline.
+// Dotfiles, type declarations and the
 // README wasm-pack copies into pkg are not part of the app.
-const serverPages=new Set(['account.html','setup.html']);
+const serverPages=new Set(['account.html']);
 const keep=source=>{const name=path.basename(source);return !name.startsWith('.')&&!name.endsWith('.d.ts')&&name!=='README.md'&&!(path.dirname(source)===web&&serverPages.has(name));};
 await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
 await cp(web,path.join(out,'editor'),{recursive:true,filter:source=>source===web||keep(source)});

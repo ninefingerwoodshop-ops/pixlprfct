@@ -82,3 +82,11 @@ columns and checking generated CSS after reload, label and keyboard collapse,
 saved collapsed states, and adding paints/effects/guides from collapsed sections.
 General CSS editing is available for every layer through **CSS & responsive
 layout → Edit CSS**; see [CSS_EDITING.md](CSS_EDITING.md).
+
+## Administration (2026-10-29)
+
+The live team Admin console was inspected in Dashboard, People, Content,
+Settings, and the invitation dialog. See [ADMIN_CONSOLE.md](ADMIN_CONSOLE.md)
+for the measured geometry, implemented workflows, authorization, and remaining
+parity limits. Admin is reachable from Projects in both server and static builds;
+the local build exposes database setup without implying that a server is connected.

@@ -4,6 +4,7 @@ import {libraryService} from './libraries.mjs';
 import QRCode from 'qrcode';
 import {databaseBodyStore} from './database.mjs';
 import {versionApi} from '../lib/document-versions.mjs';
+import {adminData} from './admin.mjs';
 const json=(value,status=200)=>Response.json(value,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 const isAdmin=(session,config)=>session?.user.emailVerified&&session.user.email.toLowerCase()===config.adminEmail;
 export function createApplication({config,db,auth}) {
@@ -31,6 +32,8 @@ export function createApplication({config,db,auth}) {
        return response;
      }
      const session=await sessionFor(request);
+     const adminMatch=path.match(/^\/api\/admin\/(overview|people)$/);
+     if(adminMatch&&request.method==='GET')return json(await adminData(request,db,session,adminMatch[1]));
      if(path==='/api/installation/check'&&request.method==='POST'){
        if(!isAdmin(session,config))throw new DocumentError(403,'Only the installation administrator can check server configuration.');
        await db.query('SELECT 1 AS ready');
@@ -41,6 +44,7 @@ export function createApplication({config,db,auth}) {
        const teams=await auth.api.listUserTeams({headers:request.headers});
        for(const org of organizations){
          const [member]=await db.query('SELECT role FROM member WHERE organizationId=? AND userId=?',[org.id,session.user.id]);
+         org.role=member?.role??'member';
          if(member?.role.split(',').some(role=>['owner','admin'].includes(role))){
            const managed=await db.query('SELECT id,name,organizationId FROM team WHERE organizationId=?',[org.id]);
            for(const team of managed)if(!teams.some(item=>item.id===team.id))teams.push(team);
