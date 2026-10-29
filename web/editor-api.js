@@ -28,6 +28,18 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "add_variant",
+    "readOnly": false,
+    "description": "Add a variant to a main component or component-set frame. Creates the set automatically for a standalone main. Returns the new main component ID. One undo step.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "number"
+  },
+  {
     "name": "align_many",
     "readOnly": false,
     "description": "Array of layer IDs and left/center/right/top/middle/bottom.",
@@ -136,6 +148,18 @@ export const engineCommands=[
     "description": "can undo",
     "args": [],
     "returns": "boolean"
+  },
+  {
+    "name": "combine_variants",
+    "readOnly": false,
+    "description": "Combine at least two sibling main component IDs into a component set with a visible container. Returns its frame ID. One undo step.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "number"
   },
   {
     "name": "copy_layers",
@@ -1541,6 +1565,6 @@ export const modelReference={
   "ComponentSet": {
     "file": "src/variants.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct ComponentSet {\n    pub id: u32,\n    pub name: String,\n    pub properties: Vec<String>,\n    pub variants: Vec<Variant>,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct ComponentSet {\n    pub id: u32,\n    #[serde(default, skip_serializing_if = \"is_zero\")]\n    pub frame_id: u32,\n    pub name: String,\n    pub properties: Vec<String>,\n    pub variants: Vec<Variant>,\n}"
   }
 };

@@ -24,6 +24,8 @@ const notes={
  remove_effect_style:'Delete a saved effect style and detach all linked layers, preserving their current effects. Undoable.',
  save_guide_style:'Save a GuideStyle; frame_id 0 does not apply it to a frame.',
  set_component_property:'Set a component property. json is the structured property value, not an encoded string.',
+ combine_variants:'Combine at least two sibling main component IDs into a component set with a visible container. Returns its frame ID. One undo step.',
+ add_variant:'Add a variant to a main component or component-set frame. Creates the set automatically for a standalone main. Returns the new main component ID. One undo step.',
  create_component:'Turn a layer subtree into a main component.',
  create_instance:'Create an instance of a main component, including descendants.',
  place_instance:'Create an instance inside parent (0 = page root).',

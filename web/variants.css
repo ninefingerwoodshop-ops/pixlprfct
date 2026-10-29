@@ -1,0 +1,52 @@
+/* Live Figma reference: 241px inspector, 16px inset, 24px controls, 8px row gap. */
+#component-panel.component-inspector{padding:16px;border-bottom:1px solid var(--ui-border)}
+#component-panel .component-section-header{display:flex;align-items:center;gap:4px;min-height:24px;margin-bottom:16px}
+#component-heading{font-size:13px;font-weight:600;line-height:24px;color:var(--ui-text-color);margin:0;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#component-panel #add-variant{width:24px;height:24px;flex:0 0 24px;padding:0;border:0}
+#component-panel #add-variant svg{width:24px;height:24px}
+#variant-authoring .variant-section-heading{display:flex;align-items:center;justify-content:space-between;height:24px;color:var(--ui-text-muted);font-size:11px;margin-bottom:8px}
+#variant-authoring .setting-row,#variant-properties .setting-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;min-height:24px;margin:8px 0;font-size:11px}
+#variant-authoring .setting-field{min-width:0;height:24px;display:flex;align-items:center;background:var(--ui-field);border-radius:4px}
+#variant-authoring input{width:100%;min-width:0;height:24px;border:0;background:transparent;padding:0 8px;font:inherit;outline:0}
+#variant-authoring .setting-field:focus-within{outline:1px solid var(--ui-accent)}
+#variant-authoring .variant-definition{display:flex;position:relative;gap:4px;margin:8px 0;min-height:24px;font-size:11px}
+#variant-authoring .variant-definition-name{display:flex;align-items:center;gap:4px;width:100%;min-width:0;height:24px;padding:0 6px;border-radius:4px;background:var(--ui-field);text-align:left}
+#variant-authoring .variant-definition-name svg,#variant-authoring .variant-rename svg{width:16px;height:16px;flex:none;color:var(--ui-text-muted)}
+#variant-authoring .variant-property-label{flex-shrink:0;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#variant-authoring .variant-property-values{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ui-text-muted)}
+#variant-authoring .variant-remove-property{display:none;position:absolute;right:-16px;top:0;width:16px;background:var(--ui-surface)}
+#variant-authoring .variant-definition:hover .variant-remove-property,#variant-authoring .variant-remove-property:focus-visible{display:flex}
+#variant-authoring .variant-rename{width:100%;padding-left:6px}
+#variant-authoring .variant-property-rename{text-align:left;font-size:11px;color:var(--ui-text-muted);padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#variant-authoring .variant-value-field{background:transparent;border:1px solid var(--ui-border)}
+#variant-authoring .variant-value-field input{padding:0 6px}
+#variant-authoring .variant-value-field .inspector-select-trigger{width:24px;flex:0 0 24px;height:22px;background:transparent;border:0;margin:0}
+#variant-properties{padding:0;margin:0 0 16px;border:0}
+#variant-properties .setting-label{color:var(--ui-text-muted)}
+#variant-properties .inspector-select-trigger{width:100%;height:24px;margin:0}
+.variant-create-body .setting-row{grid-template-columns:minmax(0,1fr) 136px;gap:8px;margin:0 0 10px;min-height:24px}
+.variant-create-body input{font-size:11px}
+.variant-create-footer{display:flex;justify-content:flex-end;margin-top:16px}
+.variant-create-footer button{height:24px;padding:0 8px;border-radius:4px;font-size:11px}
+.variant-error{font-size:11px;color:var(--ui-danger);line-height:1.5}
+#layers .layer[data-component-type="set"] :is(.glyph,.layer-name),.frame-label[data-component-type="set"]>button{color:var(--ui-variable)}
+#layers .layer[data-component-type="master"] .glyph svg{fill:currentColor}
+#combine-variants{margin:0;width:100%;height:32px;border:1px solid var(--ui-variable);color:var(--ui-variable);border-radius:4px}
+.right-panel:has(#component-panel[data-component-kind="set"]) .inspector-selection{display:none}
+#component-panel[data-component-kind="master"]>.inspector-details,#component-panel[data-component-kind="set"]>.inspector-details,#component-panel[data-component-kind="master"]>#add-component-property{display:none}
+#component-panel .component-section-header{height:24px}
+#component-panel .component-section-header h3 .inspector-section-toggle{height:24px;min-height:24px;font-size:13px;padding:0}
+#variant-authoring .setting-action{display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px;min-width:24px;width:24px;height:24px;min-height:24px;padding:0;margin:0;background:transparent;border:0}
+#variant-authoring .setting-icon{display:block;width:24px;height:24px}
+#variant-authoring .variant-remove-property{display:none;min-width:16px;width:16px;flex-basis:16px}
+#variant-authoring .variant-definition:hover .variant-remove-property,#variant-authoring .variant-remove-property:focus-visible{display:flex}
+.variant-property-popover .setting-heading{padding-left:16px}
+.variant-property-popover .variant-create-body{padding:16px 16px 8px;gap:10px}
+.variant-property-popover .setting-row{grid-template-columns:minmax(0,1fr) 136px;margin:0}
+.variant-property-popover .variant-create-footer{margin-top:6px}
+#component-panel .component-section-header{height:24px!important;min-height:24px!important}
+#component-panel .component-section-header h3,#component-panel .component-section-header h3 .inspector-section-toggle{height:24px!important;min-height:24px!important;margin:0!important;font-size:13px!important}
+#component-panel #variant-authoring button.setting-action{height:24px!important;min-height:24px!important;max-height:24px!important;padding:0!important}
+#component-panel #variant-authoring .variant-definition-name{height:24px!important;min-height:24px!important;max-height:24px!important;padding:0 6px!important}
+#variant-authoring{margin-left:-16px;padding-left:16px}
+.frame-label[data-component-type="master"] .frame-label-icon svg{fill:currentColor}

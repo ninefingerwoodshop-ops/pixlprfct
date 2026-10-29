@@ -133,7 +133,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_close_project` | Close an in-memory file session without deleting the saved file |
 
 The server also exposes `pixlprfct://reference/<topic>` resources and a
-`build-design` prompt. Its catalog currently covers 85 engine commands and 45
+`build-design` prompt. Its catalog currently covers 87 engine commands and 45
 model definitions, generated from the compiled API and Rust types. Building the
 editor regenerates the catalog; `npm run mcp:check` checks it for drift.
 
@@ -233,3 +233,23 @@ npm run mcp:check
 Tests use a standard MCP client over stdio and an in-memory transport, exercise
 the live bridge's origin/token/session checks, and build/export through the
 same engine. Network tests bind a temporary loopback port.
+
+## Component sets and variants
+
+Create a main with `create_component_selection` (selected layer IDs), then call
+`add_variant` with the main ID. The engine creates a component-set frame and a
+second main in one undo step. `add_variant` also accepts a set's `frame_id`.
+`combine_variants` accepts an array of at least two sibling main component IDs
+and returns the new set-frame ID. Existing artwork stays in place.
+
+`ComponentSet.frame_id` links metadata to its canvas container; legacy files may
+omit it. `save_component_set` edits property names and variant values atomically,
+validates unique combinations, and updates main-layer names. Preserve every
+existing property and variant when editing a set. `set_variant_property` switches
+an instance while preserving compatible overrides. Existing legacy sibling sets
+acquire a visible container when Add variant is used; cross-page legacy sets
+remain supported as metadata.
+
+The editor exposes Add variant in the component header, Combine as variants for
+multiple mains, Properties on a set, and Current variant on a main. Instances
+have custom property dropdowns, and Assets presents one card per set.

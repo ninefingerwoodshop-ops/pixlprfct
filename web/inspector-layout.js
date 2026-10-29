@@ -30,14 +30,14 @@ export function installInspectorLayout() {
  const exports=make('section','property-section');exports.append(make('h3','','Export'));const exportButton=make('button','wide-button','Export artwork…');exportButton.id='export-artwork';exports.append(exportButton);design.append(exports);
  // Put seldom-used stroke settings behind a disclosure, like the advanced panel.
  const strokeAdvanced=details('Advanced stroke');for(const id of ['stroke-dash','stroke-dash-offset','stroke-cap','stroke-join','stroke-miter-limit'])strokeAdvanced.append($(id).closest('label'));strokeAdvanced.append($('stroke-endpoints'));$('stroke-section').append(strokeAdvanced);
- const componentActions=details('Component actions');for(const id of ['create-component','insert-instance','manage-variants','add-variant','go-nested-main','select-instance-root','push-style-overrides','go-main','reset-instance','detach-instance'])componentActions.append($(id));component.append(componentActions);
- const info=details('Instance details');info.append($('component-status'));component.append(info);
+ const componentActions=details('Component actions');for(const id of ['create-component','insert-instance','manage-variants','go-nested-main','select-instance-root','push-style-overrides','go-main','reset-instance','detach-instance'])componentActions.append($(id));component.append(componentActions);
+ const info=details('Instance details');info.append($('instance-controls'),$('component-status'));component.append(info);
  return (shape,count)=>{
   empty.hidden=!!shape;utilities.hidden=!count;sizing.hidden=shape?.kind!=='text';
   const addLayout=$('add-auto-layout');if(shape){if(addLayout.parentElement!==layout)layout.append(addLayout);}else if(addLayout.parentElement!==design)design.insertBefore(addLayout,utilities);
   caption.textContent=count>1?`${count} layers`:shape?.component?.type==='master'?'Component':shape?.component?.type==='instance'?'Instance':shape?.editor_meta?.role?shape.editor_meta.role[0].toUpperCase()+shape.editor_meta.role.slice(1):shape?.kind?shape.kind[0].toUpperCase()+shape.kind.slice(1):'Page';
   // Ordinary layers expose component creation with other layer actions.
-  if(shape?.component){if(component.parentElement!==properties)properties.insertBefore(component,position);}
+  if(shape?.component||component.dataset.componentKind==='set'||count>1){if(component.parentElement!==design)design.insertBefore(component,properties);}
   else if(component.parentElement!==utilities)utilities.append(component);
  };
 }

@@ -2663,6 +2663,7 @@ impl Editor {
             }
         }
         component_properties::duplicate_definitions(&mut document, &mapping)?;
+        variants::duplicate_definitions(&mut document, &mapping)?;
         self.commit(document)?;
         self.next_id = self.next_id.max(next_id);
         Ok(serde_json::to_string(&created).unwrap())
@@ -3649,6 +3650,7 @@ impl Editor {
         document.pages.insert(index + 1, page);
         document.shapes.extend(copies);
         component_properties::duplicate_definitions(&mut document, &mapping)?;
+        variants::duplicate_definitions(&mut document, &mapping)?;
         self.commit(document)?;
         self.next_id = next_id;
         self.next_page_id = next_page_id;

@@ -14,6 +14,7 @@ export function librarySnapshot(doc) {
  const roots=doc.shapes.filter(s=>s.component?.type==='master'&&!imported.has(s.id)).map(s=>s.id);
  if(!roots.length)throw new Error('Create at least one main component before publishing a library.');
  const ids=descendantsOf(doc.shapes,roots);
+ for(const set of doc.component_sets??[])if(set.frame_id&&set.variants.every(v=>ids.has(v.component_id)))ids.add(set.frame_id);
  // Do not republish someone else's library under a different permission policy.
  if(doc.shapes.some(s=>ids.has(s.id)&&s.component?.type==='instance'&&imported.has(s.component.master)))throw new Error('This library contains an instance from another library. Publish its original components separately.');
  const source=clone(doc);source.libraries=[];
@@ -58,7 +59,7 @@ export function mergeLibrary(document,release) {
  doc.shapes=replace(doc.shapes,shapes,'shapes');
  doc.variables.collections=replace(doc.variables.collections,(source.variables?.collections??[]).map(c=>({...c,id:maps.collections[c.id],preset:''})),'collections');
  doc.variables.values=replace(doc.variables.values,(source.variables?.values??[]).map(v=>({...v,id:maps.variables[v.id],collection_id:maps.collections[v.collection_id],values:Object.fromEntries(Object.entries(v.values).map(([mode,val])=>[mode,val&&typeof val==='object'&&'alias' in val?{alias:maps.variables[val.alias]}:val]))})),'variables');
- doc.component_sets=replace(doc.component_sets,(source.component_sets??[]).map(s=>({...s,id:maps.sets[s.id],variants:s.variants.map(v=>({...v,component_id:maps.shapes[v.component_id]}))})),'sets');
+ doc.component_sets=replace(doc.component_sets,(source.component_sets??[]).map(s=>({...s,id:maps.sets[s.id],...(s.frame_id?{frame_id:maps.shapes[s.frame_id]}:{}),variants:s.variants.map(v=>({...v,component_id:maps.shapes[v.component_id]}))})),'sets');
  doc.component_properties=replace(doc.component_properties,(source.component_properties??[]).map(p=>({...p,id:maps.properties[p.id],component_id:maps.shapes[p.component_id],targets:p.targets.map(id=>maps.shapes[id])})),'properties');
  doc.guide_styles=replace(doc.guide_styles,(source.guide_styles??[]).map(s=>({...s,id:maps.guides[s.id]})),'guides');
  // Distinguish imported definitions when another library or a local style uses the same name.

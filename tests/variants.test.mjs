@@ -40,3 +40,41 @@ test('invalid sets are atomic; deletion prunes membership and legacy files defau
  e.remove(a.f);assert.equal(doc(e).component_sets[0].variants.length,1);e.remove(b.f);assert.equal(doc(e).component_sets.length,0);e.undo();assert.equal(doc(e).component_sets[0].variants.length,1);
  const legacy=JSON.parse(saved);delete legacy.component_sets;e.load(JSON.stringify(legacy));assert.deepEqual(doc(e).component_sets,[]);e.free();
 });
+
+test('Add variant creates a visible set from one main in a single undo step',()=>{
+ const e=new Editor(),a=main(e,'Button'),before=e.snapshot();const b=e.add_variant(a.f),set=doc(e).component_sets[0],frame=get(e,set.frame_id);
+ assert.equal(frame.name,'Button');assert.equal(frame.component,null);assert.equal(frame.clip_content,false);assert.equal(frame.appearance.fill_enabled,false);
+ assert.equal(get(e,a.f).parent_id,frame.id);assert.equal(get(e,b).parent_id,frame.id);assert.equal(get(e,b).y,120);assert.equal(get(e,a.t).x,16);assert.equal(frame.height,260);
+ assert.equal(get(e,a.f).name,'Property 1=Default');assert.equal(get(e,b).name,'Property 1=Variant 2');
+ e.undo();assert.equal(e.snapshot(),before);e.redo();const saved=e.snapshot(),restored=new Editor();restored.load(saved);assert.equal(restored.snapshot(),saved);
+ const i=e.create_instance(a.f,400,0),label=children(e,i)[0];edit(e,label.id,{text:'Send'});e.set_variant_property(i,'Property 1','Variant 2');assert.equal(get(e,i).component.master,b);assert.equal(get(e,label.id).text,'Send');
+ const c=e.add_variant(set.frame_id);assert.equal(get(e,c).parent_id,set.frame_id);assert.equal(get(e,c).y,240);assert.equal(get(e,set.frame_id).height,380);
+ e.free();restored.free();
+});
+
+test('Combine as variants infers shared names, preserves artwork and rejects invalid selections atomically',()=>{
+ const e=new Editor(),a=main(e,'Button / Default'),b=main(e,'Button / Hover');edit(e,b.f,{x:300,y:50});const before=e.snapshot(),frame=e.combine_variants(JSON.stringify([a.f,b.f])),set=doc(e).component_sets[0];
+ assert.equal(set.name,'Button');assert.equal(set.frame_id,frame);assert.deepEqual(set.variants.map(v=>v.values),[['Default'],['Hover']]);assert.equal(get(e,b.f).x,300);assert.equal(get(e,b.f).y,50);assert.equal(get(e,a.t).x,16);
+ const combined=e.snapshot();assert.throws(()=>e.combine_variants(JSON.stringify([a.f,b.f])),/already belong/);assert.equal(e.snapshot(),combined);
+ e.undo();assert.equal(e.snapshot(),before);assert.throws(()=>e.combine_variants(JSON.stringify([a.f,a.t])),/main components/);assert.equal(e.snapshot(),before);e.free();
+});
+
+test('property edits update variant layer names, reject duplicate combinations, and preserve instance links',()=>{
+ const e=new Editor(),a=main(e,'Button'),b=e.add_variant(a.f),set=doc(e).component_sets[0],i=e.create_instance(b,400,0);
+ set.properties=['State'];set.variants[1].values=['Hover'];save(e,set);assert.equal(get(e,b).name,'State=Hover');assert.equal(get(e,i).component.master,b);
+ const saved=e.snapshot();set.variants[1].values=['Default'];assert.throws(()=>save(e,set),/unique combination/);assert.equal(e.snapshot(),saved);
+ const frame=get(e,set.frame_id);edit(e,frame.id,{name:'Action button'});assert.equal(doc(e).component_sets[0].name,'Action button');
+ e.remove(b);assert.equal(doc(e).component_sets[0].variants.length,1);e.undo();assert.equal(doc(e).component_sets[0].variants.length,2);e.free();
+});
+
+test('duplicating a component set or its page preserves independent variant definitions',()=>{
+ const e=new Editor(),a=main(e,'Button');e.add_variant(a.f);const original=doc(e).component_sets[0],before=e.snapshot();const ids=JSON.parse(e.duplicate_many(JSON.stringify([original.frame_id]))),copy=doc(e).component_sets.find(s=>s.id!==original.id);
+ assert.equal(copy.frame_id,ids[0]);assert.equal(copy.variants.length,2);assert(copy.variants.every(v=>get(e,v.component_id).parent_id===copy.frame_id));
+ copy.properties=['State'];save(e,copy);assert.deepEqual(doc(e).component_sets.find(s=>s.id===original.id).properties,['Property 1']);e.undo();e.undo();assert.equal(e.snapshot(),before);
+ e.duplicate_page(doc(e).active_page);assert.equal(doc(e).component_sets.length,2);assert(doc(e).component_sets.every(s=>get(e,s.frame_id)));e.free();
+});
+
+test('Add variant upgrades legacy sibling sets without changing their property choices',()=>{
+ const e=new Editor(),a=main(e,'A'),b=main(e,'B');edit(e,b.f,{x:300});const id=save(e,{id:0,name:'Button',properties:['State'],variants:[{component_id:a.f,values:['Default']},{component_id:b.f,values:['Hover']}]});const before=e.snapshot();
+ const c=e.add_variant(a.f),set=doc(e).component_sets.find(s=>s.id===id);assert(set.frame_id);assert.equal(get(e,c).parent_id,set.frame_id);assert.deepEqual(set.variants.slice(0,2).map(v=>v.values),[['Default'],['Hover']]);e.undo();assert.equal(e.snapshot(),before);e.free();
+});
