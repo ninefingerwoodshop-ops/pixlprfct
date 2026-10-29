@@ -236,5 +236,175 @@ export const iconKeywords = {
     "motion",
     "animation",
     "play"
+  ],
+  "briefcase": [
+    "business",
+    "work",
+    "job",
+    "portfolio",
+    "organization"
+  ],
+  "storefront": [
+    "store",
+    "shop",
+    "retail",
+    "business",
+    "merchant"
+  ],
+  "route": [
+    "path",
+    "journey",
+    "trip",
+    "directions",
+    "visits"
+  ],
+  "navigation": [
+    "navigation-arrow",
+    "direction",
+    "gps",
+    "location-arrow"
+  ],
+  "target": [
+    "bullseye",
+    "goal",
+    "focus",
+    "objective",
+    "sales"
+  ],
+  "trend-up": [
+    "growth",
+    "arrow-trend-up",
+    "trending-up",
+    "increase",
+    "performance"
+  ],
+  "megaphone": [
+    "announcement",
+    "campaign",
+    "marketing",
+    "broadcast"
+  ],
+  "id-card": [
+    "identification-card",
+    "identity",
+    "contact",
+    "badge",
+    "business-card",
+    "profile"
+  ],
+  "robot": [
+    "bot",
+    "assistant",
+    "ai",
+    "automation",
+    "artificial-intelligence"
+  ],
+  "newspaper": [
+    "news",
+    "article",
+    "blog",
+    "press",
+    "publication"
+  ],
+  "file-pdf": [
+    "pdf",
+    "document",
+    "portable-document",
+    "export",
+    "acrobat"
+  ],
+  "reply": [
+    "respond",
+    "email",
+    "mail",
+    "arrow-bend-up-left"
+  ],
+  "reply-all": [
+    "respond-all",
+    "email",
+    "mail",
+    "arrow-bend-double-up-left"
+  ],
+  "settings": [
+    "gear",
+    "cog",
+    "preferences",
+    "configuration"
+  ],
+  "plug": [
+    "connection",
+    "integration",
+    "power",
+    "socket",
+    "connect"
+  ],
+  "wrench": [
+    "tool",
+    "repair",
+    "maintenance",
+    "spanner"
+  ],
+  "eraser": [
+    "erase",
+    "clear",
+    "remove",
+    "rubber"
+  ],
+  "lightbulb": [
+    "idea",
+    "insight",
+    "tip",
+    "suggestion",
+    "inspiration"
+  ],
+  "trophy": [
+    "award",
+    "winner",
+    "achievement",
+    "cup",
+    "prize"
+  ],
+  "medal": [
+    "award",
+    "badge",
+    "achievement",
+    "first",
+    "reward"
+  ],
+  "crown": [
+    "premium",
+    "owner",
+    "admin",
+    "vip",
+    "royal"
+  ],
+  "car": [
+    "vehicle",
+    "driving",
+    "mileage",
+    "travel",
+    "transport"
+  ],
+  "hourglass": [
+    "wait",
+    "pending",
+    "duration",
+    "timer",
+    "time"
+  ],
+  "scales": [
+    "balance",
+    "fairness",
+    "legal",
+    "agreement",
+    "weigh"
+  ],
+  "territory-track": [
+    "territorytrack",
+    "territory-track",
+    "brand",
+    "sales",
+    "crm",
+    "map-pin"
   ]
 };

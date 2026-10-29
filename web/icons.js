@@ -382,9 +382,34 @@ export const iconPaths = {
   "measurement": "M4 4h16v16H4ZM4 9h4M4 14h4M9 4v4M14 4v4",
   "media": "M3 4h18v16H3ZM10 8l6 4-6 4Z",
   "design": "M7 3v18M17 3v18M3 7h18M3 17h18",
-  "motion": "M9 4l12 8-12 8ZM3 7v10M6 5v14"
+  "motion": "M9 4l12 8-12 8ZM3 7v10M6 5v14",
+  "briefcase": "M4 7h16a1 1 0 0 1 1 1v12H3V8a1 1 0 0 1 1-1ZM8 7V3h8v4M3 11l9 4 9-4M12 13v4",
+  "storefront": "M3 9l2-6h14l2 6M3 9v2a3 3 0 0 0 6 0V9m0 2a3 3 0 0 0 6 0V9m0 2a3 3 0 0 0 6 0V9M9 3v6m6-6v6M4 14v7h16v-7M9 21v-5h6v5",
+  "route": "M4 4a2 2 0 1 0 4 0 2 2 0 1 0-4 0M8 4h8a4 4 0 0 1 0 8H8a4 4 0 0 0 0 8h8M16 20a2 2 0 1 0 4 0 2 2 0 1 0-4 0",
+  "navigation": "M3 10l18-7-7 18-3-8-8-3ZM11 13l10-10",
+  "target": "M20 11a8 8 0 1 1-7-7M16 11a4 4 0 1 1-5-3M12 12l7-7M16 5h3V2M19 5h3",
+  "trend-up": "M3 18l6-7 5 3 7-10M14 4h7v7",
+  "megaphone": "M3 9h6l11-5v14L9 13H3V9ZM9 9v4M5 13l2 7h4l-2-7M20 9h2v4h-2",
+  "id-card": "M3 4h18v16H3V4ZM6 10a2 2 0 1 0 4 0 2 2 0 1 0-4 0M5 16c0-4 6-4 6 0M15 9h3m-3 4h3",
+  "robot": "M4 7h16v13H4V7ZM12 7V3M9 3h6M2 11v5m20-5v5M8 11v2m8-2v2M9 17h6",
+  "newspaper": "M3 3h15v17a1.5 1.5 0 0 0 3 0V7h-3M3 3v17a2 2 0 0 0 2 2h14M6 7h9M6 12h4v6H6ZM13 12h2m-2 5h2",
+  "file-pdf": "M6 8V2h8l5 5v3M14 2v5h5M6 19v3h13v-3M3 17v-6h2a1.5 1.5 0 0 1 0 3H3M10 11v6h1c3 0 3-6 0-6h-1ZM18 17v-6h4m-4 3h3",
+  "reply": "M10 4 3 10l7 6M3 10h9a9 9 0 0 1 9 9v2",
+  "reply-all": "M7 4 2 10l5 6M13 4l-5 6 5 6M8 10h4a9 9 0 0 1 9 9v2",
+  "settings": "M8.99 5.24 9.581 2.297 14.419 2.297 15.01 5.24 16.35 6.013 19.193 5.053 21.613 9.244 19.359 11.226 19.359 12.774 21.613 14.756 19.193 18.947 16.35 17.987 15.01 18.76 14.419 21.703 9.581 21.703 8.99 18.76 7.65 17.987 4.807 18.947 2.387 14.756 4.641 12.774 4.641 11.226 2.387 9.244 4.807 5.053 7.65 6.013ZM8.5 12a3.5 3.5 0 1 0 7 0 3.5 3.5 0 1 0-7 0",
+  "plug": "M7 3v5m10-5v5M4 8h16M6 8v4a6 6 0 0 0 12 0V8M12 18v4",
+  "wrench": "M20 3l-5 5 1 3 3 1 3-3c0 5-4 8-9 6l-7 7-4-4 7-7c-2-5 2-9 6-9 2 0 4 0 5 1Z",
+  "eraser": "M3 15l11-12 7 6-11 12H7l-4-4v-2ZM8 10l7 6M10 21h11",
+  "lightbulb": "M8 17v-2C1 9 6 2 12 2s11 7 4 13v2H8ZM8 21h8M12 17v-6M9 9l3 2 3-2",
+  "trophy": "M6 3h12v6a6 6 0 0 1-12 0V3ZM6 5H2v3a5 5 0 0 0 5 5M18 5h4v3a5 5 0 0 1-5 5M12 15v6M7 21h10",
+  "medal": "M5 2h5l5 8M19 2h-5l-3 5M9 10 5 2M15 10l4-8M6 16a6 6 0 1 0 12 0 6 6 0 1 0-12 0M12 13v6M10 14l2-1",
+  "crown": "M4 17 2 6l6 5 4-8 4 8 6-5-2 11H4ZM5 21h14",
+  "car": "M4 10l2-6h12l2 6M3 10h18v9H3v-9ZM6 14h2m8 0h2M5 19v3m14-3v3",
+  "hourglass": "M5 3h14M5 21h14M7 3v4c0 3 10 7 10 10v4M17 3v4c0 3-10 7-10 10v4M9 7h6M10 18h4",
+  "scales": "M12 3v18M7 21h10M5 7l14-3M5 7l-3 8h6L5 7ZM19 4l-3 8h6l-3-8ZM2 15a3 3 0 0 0 6 0m8-3a3 3 0 0 0 6 0",
+  "territory-track": "M12 2C16.4 2 20 5.5 20 10C20 14.8 12 22 12 22S4 14.8 4 10C4 5.5 7.6 2 12 2ZM12 5.2C9.6 5.2 7.6 7.2 7.6 9.6S9.6 14 12 14s4.4-2 4.4-4.4S14.4 5.2 12 5.2Z"
 };
-export const filledIcons = ["pixlprfct"];
+export const filledIcons = ["pixlprfct","territory-track"];
 export const iconWeights={light:1,regular:1.5,bold:2.5};
 export function icon(name,weight='regular') { return `<svg class="app-icon" viewBox="0 0 24 24" fill="${filledIcons.includes(name)?'currentColor':'none'}" stroke="${filledIcons.includes(name)?'none':'currentColor'}" stroke-width="${iconWeights[weight]??1.5}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${iconPaths[name] || iconPaths.rectangle}"/></svg>`; }
 export function installIcons() { document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon)); document.querySelectorAll('[data-tool]').forEach(el => el.innerHTML = icon(el.dataset.tool)+(el.dataset.label ? `<span>${el.dataset.label}</span><kbd>${el.querySelector('kbd')?.textContent||''}</kbd>` : '')); for (const id of ['undo','redo']) document.getElementById(id).innerHTML = icon(id); }

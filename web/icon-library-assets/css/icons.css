@@ -1,6 +1,6 @@
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=5e797eaa46e4") format("woff2");font-weight:300;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=6b675bb00f0a") format("woff2");font-weight:400;font-style:normal;font-display:block}
-@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=983c45e63b37") format("woff2");font-weight:700;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-light.woff2?v=b52af6403a98") format("woff2");font-weight:300;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-regular.woff2?v=e50c2d8ff20b") format("woff2");font-weight:400;font-style:normal;font-display:block}
+@font-face{font-family:"PixlPrfct Icons";src:url("../fonts/pixlprfct-icons-bold.woff2?v=ba634b79e7cf") format("woff2");font-weight:700;font-style:normal;font-display:block}
 .pxi{display:inline-block;font-family:"PixlPrfct Icons"!important;font-style:normal;font-weight:400;font-variant:normal;text-transform:none;line-height:1;font-synthesis:none;speak:none;-webkit-font-smoothing:antialiased}
 .pxi-light{font-weight:300}.pxi-regular{font-weight:400}.pxi-bold{font-weight:700}
 .pxi-align-bottom::before{content:"\e900"}
@@ -387,3 +387,28 @@
 .pxi-media::before{content:"\ea7d"}
 .pxi-design::before{content:"\ea7e"}
 .pxi-motion::before{content:"\ea7f"}
+.pxi-briefcase::before{content:"\ea80"}
+.pxi-storefront::before{content:"\ea81"}
+.pxi-route::before{content:"\ea82"}
+.pxi-navigation::before{content:"\ea83"}
+.pxi-target::before{content:"\ea84"}
+.pxi-trend-up::before{content:"\ea85"}
+.pxi-megaphone::before{content:"\ea86"}
+.pxi-id-card::before{content:"\ea87"}
+.pxi-robot::before{content:"\ea88"}
+.pxi-newspaper::before{content:"\ea89"}
+.pxi-file-pdf::before{content:"\ea8a"}
+.pxi-reply::before{content:"\ea8b"}
+.pxi-reply-all::before{content:"\ea8c"}
+.pxi-settings::before{content:"\ea8d"}
+.pxi-plug::before{content:"\ea8e"}
+.pxi-wrench::before{content:"\ea8f"}
+.pxi-eraser::before{content:"\ea90"}
+.pxi-lightbulb::before{content:"\ea91"}
+.pxi-trophy::before{content:"\ea92"}
+.pxi-medal::before{content:"\ea93"}
+.pxi-crown::before{content:"\ea94"}
+.pxi-car::before{content:"\ea95"}
+.pxi-hourglass::before{content:"\ea96"}
+.pxi-scales::before{content:"\ea97"}
+.pxi-territory-track::before{content:"\ea98"}
