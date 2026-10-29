@@ -3,6 +3,27 @@ import test from 'node:test';import assert from 'node:assert/strict';import {Dat
 const database=cloudDatabase;
 const body=JSON.stringify({version:2,name:'Cloud design',shapes:[],pages:[{id:1,name:'Page 1'}],active_page:1});
 function request(method='GET',data=null,owner='alice',revision=null,headers={}){return new Request('https://studio.example/api/documents',{method,headers:{...(owner?{'oai-authenticated-user-id':owner}:{}),...(data?{'content-type':'application/json'}:{}),...(revision?{'if-match':String(revision)}:{}),...headers},...(data?{body:data}:{})});}
+test('creator metadata is immutable and shared lifecycle permissions reject editors and unknown legacy creators',async()=>{
+ const db=database(),creator={userId:'creator',manage:false},editor={userId:'editor',manage:false},admin={userId:'admin',manage:true};
+ const call=(actor,method='GET',id=null,data=null,revision=null)=>documentApi(request(method,data,'org:design',revision,{'x-created-by':'creator','x-admin':'true'}),db,id,null,null,actor);
+ try{
+  const made=await(await call(creator,'POST',null,body)).json();assert.equal(made.created_by,'creator');assert.equal(made.can_delete,true);
+  assert.equal((await(await call(editor)).json()).documents[0].can_delete,false);
+  assert.equal((await(await call(admin)).json()).documents[0].can_delete,true);
+  assert.equal((await call(editor,'DELETE',made.id,null,1)).status,403);
+  assert.equal((await call(editor,'PUT',made.id,JSON.stringify({...JSON.parse(body),created_by:'editor',can_delete:true}),1)).status,200);
+  assert.equal((await(await call(editor,'GET',made.id)).json()).created_by,'creator');
+  assert.equal((await call(creator,'DELETE',made.id,null,1)).status,409);
+  assert.equal((await call(creator,'DELETE',made.id,null,2)).status,200);
+  assert.equal((await call(editor,'PATCH',made.id,null,3)).status,403);
+  assert.equal((await call(creator,'PATCH',made.id,null,3)).status,200);
+  db.exec(`UPDATE documents SET created_by=NULL WHERE id='${made.id}'`);
+  assert.equal((await(await call(creator,'GET',made.id)).json()).can_delete,false);
+  assert.equal((await call(creator,'DELETE',made.id,null,4)).status,403);
+  assert.equal((await call(admin,'DELETE',made.id,null,4)).status,200);
+  assert.equal((await call(admin,'PATCH',made.id,null,5)).status,200);
+ }finally{db.close();}
+});
 test('cloud documents authorize every operation and never expose another owner metadata',async()=>{
  const db=database();try{assert.equal((await documentApi(request('GET',null,null),db)).status,401);const created=await (await documentApi(request('POST',body),db)).json();assert.equal(created.revision,1);
  assert.deepEqual((await (await documentApi(request('GET',null,'bob'),db)).json()).documents,[]);

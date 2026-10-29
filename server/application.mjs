@@ -58,11 +58,14 @@ export function createApplication({config,db,auth}) {
      if(libraryMatch)return await libraries.api(request,await accessFor(request,session),libraryMatch[1]??null,libraryMatch[2]??null);
      const match=path.match(/^\/api\/documents(?:\/([0-9a-f-]{36})(?:\/versions(?:\/([0-9a-f-]{36})(\/restore)?)?)?)?$/i);
      if(match){
-       const access=await accessFor(request,session),owner=access.owner,headers=new Headers(request.headers);const guard=change=>libraries.guard(change,access);
+       const access=await accessFor(request,session),owner=access.owner,headers=new Headers(request.headers);
+       // Project lifecycle permissions are enforced by documentApi. Library
+       // maintainership grants content editing, not permission to delete files.
+       const guard=change=>change.after?libraries.guard(change,access):undefined;
        // Identity is derived from the verified session and membership on EVERY request.
        headers.set('oai-authenticated-user-id',owner);
        const internal=new Request(request,{headers});
-       return path.includes('/versions')?versionApi(internal,db,match[1],match[2]??null,!!match[3],bodies,guard):documentApi(internal,db,match[1]??null,bodies,guard);
+       return path.includes('/versions')?versionApi(internal,db,match[1],match[2]??null,!!match[3],bodies,guard):documentApi(internal,db,match[1]??null,bodies,guard,{userId:session.user.id,manage:access.manage||!!isAdmin(session,config)});
      }
      return json({error:'Not found.'},404);
    } catch(error) {

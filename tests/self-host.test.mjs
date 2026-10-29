@@ -31,6 +31,13 @@ test('verified accounts, tenant isolation, memberships, revocation, and forged i
  r=await b.call('/api/documents/'+shared.id+target,{...document,name:'Edited by team member'},{method:'PUT',headers:{'if-match':'1'}});assert.equal(r.status,200,JSON.stringify(r.data));
  assert.equal((await a.call('/api/documents/'+shared.id+target,document,{method:'PUT',headers:{'if-match':'1'}})).status,409);
  assert.equal((await b.call('/api/documents/'+shared.id+'/versions'+target)).status,200);
+ assert.equal((await b.call('/api/documents/'+shared.id+target)).data.can_delete,false);
+ assert.equal((await b.call('/api/documents/'+shared.id+target,undefined,{method:'DELETE',headers:{'if-match':'2','oai-authenticated-user-id':'user:'+owner.id,'x-admin':'true'}})).status,403);
+ const own=(await b.call('/api/documents'+target,document)).data;
+ assert.equal(own.created_by,other.id);assert.equal(own.can_delete,true);
+ assert.equal((await b.call('/api/documents/'+own.id+target,undefined,{method:'DELETE',headers:{'if-match':'1'}})).status,200);
+ assert.equal((await b.call('/api/documents/'+own.id+target,undefined,{method:'PATCH',headers:{'if-match':'2'}})).status,200);
+ assert.equal((await a.call('/api/documents/'+own.id+target,undefined,{method:'DELETE',headers:{'if-match':'3'}})).status,200);
  assert.equal((await a.call('/api/installation/check',{})).status,200);assert.equal((await b.call('/api/installation/check',{})).status,403);
  assert.equal((await a.call('/api/documents',document,{headers:{origin:'https://evil.example'}})).status,403);
  r=await a.call('/api/auth/organization/remove-team-member',{teamId:team.id,userId:other.id});assert.equal(r.status,200,JSON.stringify(r.data));assert.equal((await b.call('/api/documents/'+shared.id+target)).status,403);assert.equal((await b.call('/api/documents/'+shared.id+'/versions'+target)).status,403);
@@ -48,3 +55,15 @@ test('persistent authentication rate limiting rejects repeated logins',async()=>
 test('large designs and history stay in the shared database without object-storage dependencies',async()=>{const f=await fixture();try{const {client}=await f.register('large@example.com');const body=JSON.stringify({...document,shapes:[{text:'x'.repeat(1_600_000)}]});let result=await client.call('/api/documents',body);assert.equal(result.status,201,JSON.stringify(result.data));const id=result.data.id;assert.equal((await client.call('/api/documents/'+id)).data.body,body);assert.equal((await f.db.query('SELECT id FROM document_bodies')).length,1);result=await client.call('/api/documents/'+id,document,{method:'PUT',headers:{'if-match':'1'}});assert.equal(result.status,200);const versions=(await client.call('/api/documents/'+id+'/versions')).data.versions;assert.equal(versions.length,1);assert.equal((await client.call('/api/documents/'+id+'/versions/'+versions[0].id)).data.body,body);result=await client.call('/api/documents/'+id+'/versions/'+versions[0].id+'/restore',{}, {headers:{'if-match':'2'}});assert.equal(result.status,200);assert.equal(result.data.body,body);}finally{await f.db.close();}});
 
 test('remote databases and SMTP verify TLS even during a local app trial',()=>{const config=readConfig({...base,PIXL_DATABASE_PROVIDER:'supabase',DATABASE_URL:'postgresql://user:password@db.example.com:5432/pixl'});assert.equal(config.databaseTLS,true);assert.equal(readConfig({...base,PIXL_DATABASE_PROVIDER:'postgres',DATABASE_URL:'postgresql://user:password@localhost:5432/pixl'}).databaseTLS,false);assert.throws(()=>readConfig({...base,PIXL_DATABASE_PROVIDER:'postgres',DATABASE_URL:'postgresql://user:password@db.example.com/pixl?sslmode=disable'}),/TLS/);const mail=smtpOptions({...config,smtpUrl:'smtp://user:password@mail.example.com:587?ignoreTLS=true'});assert.equal(mail.requireTLS,true);assert.equal(mail.tls.rejectUnauthorized,true);assert.equal(mail.ignoreTLS,undefined);});
+
+test('creator migration is repeatable and does not invent historical shared creators',async()=>{
+ const db=await connectDatabase(readConfig(base));
+ try{
+  await db.query('CREATE TABLE documents(id TEXT PRIMARY KEY,owner TEXT,name TEXT,body TEXT,revision INTEGER,created_at BIGINT,updated_at BIGINT,deleted_at BIGINT)',[],'run');
+  await db.query("INSERT INTO documents VALUES ('personal','user:alice','Personal','{}',1,1,1,NULL),('shared','org:team','Shared','{}',1,1,1,NULL)",[],'run');
+  await migrateDocuments(db,'sqlite');await migrateDocuments(db,'sqlite');
+  const rows=await db.query('SELECT id,created_by,body,revision FROM documents ORDER BY id');
+  assert.equal(rows[0].created_by,'alice');assert.equal(rows[1].created_by,null);
+  assert.ok(rows.every(row=>row.body==='{}'&&row.revision===1));
+ }finally{await db.close();}
+});

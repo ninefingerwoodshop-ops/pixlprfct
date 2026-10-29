@@ -49,6 +49,11 @@ export async function migrateDocuments(db, engine) {
     `CREATE TABLE IF NOT EXISTS component_library_versions (id VARCHAR(96) PRIMARY KEY,library_id VARCHAR(64) NOT NULL,owner VARCHAR(191) NOT NULL,name VARCHAR(256) NOT NULL,body ${text} NOT NULL,revision INTEGER NOT NULL,created_at BIGINT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS document_bodies (id VARCHAR(128) PRIMARY KEY,body ${text} NOT NULL)`,
   ]) await db.query(sql,[],'run');
+  const columns=engine==='sqlite'?await db.query('PRAGMA table_info(documents)'):engine==='mysql'?await db.query('SHOW COLUMNS FROM documents'):await db.query("SELECT column_name AS name FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='documents'");
+  if(!columns.some(column=>(column.name??column.Field)==='created_by'))await db.query('ALTER TABLE documents ADD COLUMN created_by VARCHAR(191)',[],'run');
+  // A personal file has an unambiguous creator. Historical shared files have
+  // no creator evidence and remain admin-only; never assign the last editor.
+  await db.query("UPDATE documents SET created_by=substr(owner,6) WHERE created_by IS NULL AND owner LIKE 'user:%'",[],'run');
   for (const [name,table,columns] of [['documents_owner_updated','documents','owner,updated_at'],['versions_document_created','document_versions','document_id,created_at,id']]) {
     if (engine==='mysql') { const indexes=await db.query(`SHOW INDEX FROM ${table} WHERE Key_name=?`,[name]);if(!indexes.length)await db.query(`CREATE INDEX ${name} ON ${table} (${columns})`,[],'run'); }
     else await db.query(`CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`,[],'run');
