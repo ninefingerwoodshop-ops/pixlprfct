@@ -8,10 +8,10 @@ Last updated: 2026-10-29
 ## Tally checkpoint — 2026-10-29
 
 - Scope confirmed by the user: work on **B (PixlPrfct)**; keep **A and C tracked**.
-- B: **10 of 12 original entries addressed** (7 code fixes, 3 verified/documented behaviors); **2 entries remain open**, including B7 which is partially completed by PR #28.
+- B: **10 of 19 current entries addressed** (7 code fixes, 3 verified/documented behaviors); **9 entries remain open**. This closes 10 of the 12 original reports; 7 more incoming reports were preserved during this pass. B7 is partially completed by PR #28.
 - `[x]` preserves a closed report; the note states whether it is fixed locally, verified existing behavior, or shipped. Never delete completed entries. Append new gaps and retain earlier resolution notes if an item reopens.
 - These new fixes are on `codex/design-system-gaps`, in the managed `design-system-gaps` checkout. **Local closure is not a claim of deployment or installation.** New runtime features need an editor build/reload and an MCP restart. Existing design-file content has not been migrated.
-- Validation: editor build; complete suite of 3 Rust + 878 JavaScript tests; targeted export tests after the native-control stroke follow-up; MCP catalog drift check; changed JavaScript lint (0 errors, 2 pre-existing unused-import warnings). Browser import showed a long-label main component at 240 × 40 with both axes Hug and unclipped text. This is functional verification, not certification of pixel-perfect UI parity.
+- Validation: editor build; complete suite of 3 Rust + 885 JavaScript tests after integrating PR #28 and the native-control stroke follow-up; MCP catalog drift check; changed JavaScript lint (0 errors, 2 pre-existing unused-import warnings). Browser import showed a long-label main component at 240 × 40 with both axes Hug and unclipped text. This is functional verification, not certification of pixel-perfect UI parity.
 - Authoring details and supported formats: `docs/MCP.md`. Regression coverage: `tests/design-system-gaps.test.mjs` and `tests/mcp-server.test.mjs`.
 - Keep incoming additions from the Desktop source when reconciling this repository snapshot. Update entries in place, preserving history.
 

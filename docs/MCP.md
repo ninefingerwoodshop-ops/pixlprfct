@@ -109,7 +109,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_close_project` | Close an in-memory file session without deleting the saved file |
 
 The server also exposes `pixlprfct://reference/<topic>` resources and a
-`build-design` prompt. Its catalog currently covers 82 engine commands and 43
+`build-design` prompt. Its catalog currently covers 85 engine commands and 45
 model definitions, generated from the compiled API and Rust types. Building the
 editor regenerates the catalog; `npm run mcp:check` checks it for drift.
 
@@ -118,7 +118,7 @@ all 26 native control kinds and their states, fill/stroke stacks and paint modes
 effects, guides, Flexbox, CSS Grid, constraints, responsive layout rules, custom
 CSS, prototypes, motion, and development behaviors. Pages, grouping, stacking,
 components, instances, variants, exposed component properties, variables and
-guide styles have dedicated engine commands. No arbitrary JavaScript evaluation
+guide/effect styles have dedicated engine commands. No arbitrary JavaScript evaluation
 or shell execution is exposed. Development behavior code is stored/exported,
 not executed by the server.
 
