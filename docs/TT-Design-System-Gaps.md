@@ -14,6 +14,7 @@ Last updated: 2026-10-29
 - Validation: editor build; complete suite of 3 Rust + 885 JavaScript tests after integrating PR #28 and the native-control stroke follow-up; MCP catalog drift check; changed JavaScript lint (0 errors, 2 pre-existing unused-import warnings). Browser import showed a long-label main component at 240 × 40 with both axes Hug and unclipped text. This is functional verification, not certification of pixel-perfect UI parity.
 - MCP reconnect follow-up (2026-10-29): automatic desktop discovery, reconnect/backoff, heartbeat recovery, browser reload/back-navigation recovery, and concurrent agent ports are implemented in [draft PR #29](https://github.com/ninefingerwoodshop-ops/pixlprfct/pull/29). The installed app and running MCP processes still need the updated build; closure here records the tested implementation, not deployment.
 - Authoring details and supported formats: `docs/MCP.md`. Regression coverage: `tests/design-system-gaps.test.mjs` and `tests/mcp-server.test.mjs`.
+- Desktop update installed (2026-10-29): **0.1.1-alpha.4** is running on this Mac with the updated local editor assets and MCP runtime. Claude connected automatically; reloading the editor restored the connection without pairing. Two independent stdio MCP launches also discovered and read the same 8-page, 613-layer design automatically. Original app/profile backups were retained. This is a local prerelease installation, not a public release or a merged PR.
 - Keep incoming additions from the Desktop source when reconciling this repository snapshot. Update entries in place, preserving history.
 
 ---
@@ -130,6 +131,7 @@ Last updated: 2026-10-29
 
 - [x] ~~**MCP keeps dropping its connection and requires manual reconnection.** It should connect to PixlPrfct automatically.~~
   - B21 — Fixed locally (2026-10-29). Desktop local and allowed team-server workspaces discover running MCP servers automatically, including changed ports/codes after restarts. Connections recover after interruptions, reloads, back-navigation and silent stalls. Multiple agents can connect without default-port collisions. Explicit Disconnect remains paused until Connect; old sessions cannot edit a different project, and interrupted edits are never replayed. Normal browser editors remember pairing for the current tab/project but still need a fresh code after a server restart. Real WebSocket restart recovery and lifecycle regression tests pass; final validation: 3 Rust + 898 JavaScript tests, editor/desktop bundle build, MCP catalog check, and changed-code lint with zero errors or warnings. Requires an updated desktop/editor and MCP server; the installed build is not yet updated.
+  - Installation follow-up (2026-10-29): installed desktop 0.1.1-alpha.4 plus editor/MCP runtime on this Mac. Verified automatic Claude connection, editor reload recovery, and discovery after two fresh server launches. No manual pairing was required; the design remained at 8 pages and 613 layers.
 
 ---
 

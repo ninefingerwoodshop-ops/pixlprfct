@@ -23,6 +23,19 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
+## 0.1.1-alpha.4 desktop update
+
+This local prerelease includes the MCP design-system authoring fixes and automatic
+MCP discovery/reconnection. The Apple Silicon build was installed on the development
+Mac at the existing app path, with the previous app and profile retained for rollback.
+The local team-server editor assets and configured MCP runtime were updated together.
+
+Native verification: the existing 8-page, 613-layer design reopened; Claude connected
+without entering pairing details; editor reload restored the connection; two fresh
+stdio MCP server launches independently discovered and read that same live design.
+The bundle passed deep/strict signature verification. This is an ad-hoc-signed local
+test build, not a notarized public release. The changes remain in draft PR #29.
+
 ## 0.1.1-alpha.2 desktop update
 
 This build includes the animated logo preloader, expanded file-type and rich-text
