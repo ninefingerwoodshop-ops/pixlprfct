@@ -4,6 +4,7 @@ debug
 target
 node_modules/
 dist/
+.static/
 web/pkg/
 .local/
 

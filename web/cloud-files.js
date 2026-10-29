@@ -1,6 +1,7 @@
 import {recoveryStore} from './recovery-store.js';
 import {CloudSession,cloudRequest} from './cloud-session.js';
 import {openCloudHistory} from './cloud-history.js';
+import {staticHost} from './static-host.js';
 export function cloudFiles({snapshot,load,status,toast,backupLocal:saveDraft,openLocal,recoveryOwner=null}){
  let tabStore,durableStore;try{tabStore=sessionStorage;}catch{}try{durableStore=localStorage;}catch{}
  const recovery=recoveryStore(tabStore,durableStore),workspaceKey=(recoveryOwner?recoveryOwner+':':'')+(new URLSearchParams(location.search).get('workspace')??'personal');
@@ -13,7 +14,7 @@ export function cloudFiles({snapshot,load,status,toast,backupLocal:saveDraft,ope
  const moreButton=button('Load more files',()=>refresh(true));moreButton.hidden=true;
  const close=button('Close',()=>dialog.close());dialog.append(heading,info,actions,searchBox,signIn,list,moreButton,close);document.body.append(dialog);
  let busy=false,trash=false,next=null;
- fetch('/api/installation').then(r=>r.ok?r.json():null).then(config=>{if(config?.mode==='self-hosted'){signIn.href='/editor/account.html';signIn.textContent='Sign in or create account';}}).catch(()=>{});
+ if(!staticHost)fetch('/api/installation').then(r=>r.ok?r.json():null).then(config=>{if(config?.mode==='self-hosted'){signIn.href='/editor/account.html';signIn.textContent='Sign in or create account';}}).catch(()=>{});
  async function run(action){if(busy)return;busy=true;dialog.querySelectorAll('button').forEach(b=>b.disabled=true);try{await action();}catch(error){info.textContent=error.message;signIn.hidden=error.status!==401;}finally{busy=false;dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}}
  function button(text,action){const b=document.createElement('button');b.textContent=text;b.onclick=()=>run(action);return b;}
  function backupLocal(){if(!session.active){if(saveDraft){saveDraft();return;}try{localStorage.setItem('pixlprfct.local-draft',snapshot());}catch{throw new Error('Download a local copy before opening another file; browser recovery storage is full.');}}}
@@ -40,7 +41,7 @@ export function cloudFiles({snapshot,load,status,toast,backupLocal:saveDraft,ope
  const recoverDraft=button('Recover local draft',()=>recoverBody('pixlprfct.local-draft'));
  const history=button('Version history',()=>openCloudHistory({session,useFile:applyFile,closeFiles:()=>dialog.close(),toast}));
  const toggle=button('Show Trash',async()=>{trash=!trash;toggle.textContent=trash?'Show files':'Show Trash';await refresh();});actions.append(create,saveCopy,retry,history,reload,recover,recoverDraft,toggle);
- const trigger=document.getElementById('cloud-files');trigger.onclick=()=>{if(window.pixlDesktop?.local){window.pixlDesktop.connect();return;}dialog.showModal();run(refresh);};
+ const trigger=document.getElementById('cloud-files');trigger.hidden=staticHost;trigger.onclick=()=>{if(window.pixlDesktop?.local){window.pixlDesktop.connect();return;}dialog.showModal();run(refresh);};
  window.addEventListener('online',()=>{if(session.error?.status!==409)session.flush().catch(()=>{});});
  window.addEventListener('pagehide',()=>session.remember());
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){session.remember();session.flush().catch(()=>{});}});

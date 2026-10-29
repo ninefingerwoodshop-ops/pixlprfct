@@ -15,6 +15,7 @@
     "test": "cargo test && node --test tests/*.test.mjs",
     "build:editor": "wasm-pack build --target web --out-dir web/pkg && node scripts/generate-editor-api.mjs && node scripts/build-figma-import.mjs && node scripts/build.mjs",
     "dev:editor": "node scripts/serve.mjs",
+    "build:static": "npm run build:editor && node scripts/build-static.mjs",
     "mcp": "node mcp/server.mjs",
     "mcp:catalog": "node scripts/generate-editor-api.mjs",
     "mcp:check": "node scripts/generate-editor-api.mjs --check && node --test tests/mcp*.test.mjs",
