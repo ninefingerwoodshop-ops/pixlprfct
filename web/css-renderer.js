@@ -3,6 +3,7 @@ import {artworkShapes} from './canvas-tools.js';
 import {resolvePatternPaints} from './paint-textures.js';
 import {effectBlur} from './effect-values.js';
 import {layoutClass} from './layout-class.js';
+import {renderLayerStyles} from './layer-style.js';
 import {responsiveLayoutShapes} from './layout-css.js';
 import {mountMasonry} from './masonry.js';
 import {gridCss} from './grid-model.js';
@@ -38,10 +39,10 @@ function valueFor(vars,v,modes,seen=new Set()){
 export function compileCssScene(shapes,{variables={collections:[],values:[]},pageModes={},textLayout=()=>({lines:[],style:{}}),interactive=false,responsiveExport=false}={}){
  if(!responsiveExport)shapes=responsiveLayoutShapes(shapes);
  shapes=resolvePatternPaints(shapes,(source,box)=>svgDocument(source,box,1,null,textLayout));
- const vars={collections:variables.collections??[],values:variables.values??[]},byId=new Map(shapes.map(s=>[s.id,s])),children=new Map(),rules=[],warnings=new Set(),renderedControls=[];
+ const vars={collections:variables.collections??[],values:variables.values??[]},byId=new Map(shapes.map(s=>[s.id,s])),children=new Map(),rules=[],warnings=new Set(),renderedControls=[],layerCss={};
  for(const s of shapes){const parent=byId.has(s.parent_id)?s.parent_id:0;if(!children.has(parent))children.set(parent,[]);children.get(parent).push(s);}
  const visit=(s,parent,modes=pageModes)=>{
-  if(s.hidden)return '';modes={...modes,...s.variable_modes};const a=appearance(s),layout=s.auto_layout,item=hasHugControlHeight(s)?{...s.layout_item,fill_height:false,min_height:null,max_height:null}:s.layout_item??{},flow=parent?.auto_layout&&!item.absolute;
+  if(s.hidden)return '';const ruleStart=rules.length;modes={...modes,...s.variable_modes};const a=appearance(s),layout=s.auto_layout,item=hasHugControlHeight(s)?{...s.layout_item,fill_height:false,min_height:null,max_height:null}:s.layout_item??{},flow=parent?.auto_layout&&!item.absolute;
   const style={position:flow?'relative':'absolute',width:px(s.width),height:px(s.height),'flex-shrink':'0','border-radius':s.kind==='ellipse'?'50%':radii(s).map(px).join(' ')};
   const bound=(path,fallback,unit='')=>{const v=vars.values.find(v=>v.id===s.variable_bindings?.[path]);return v&&['color','number'].includes(v.kind)?unit?`calc(var(${variableName(v)},${number(fallback)}) * 1${unit})`:`var(${variableName(v)},${fallback})`:unit?`${number(fallback)}${unit}`:String(fallback);};
   for(const v of vars.values){const value=valueFor(vars,v,modes);if(v.kind==='color')style[variableName(v)]=color(value);if(v.kind==='number')style[variableName(v)]=number(value);if(['padding','margin','border_radius','border_width'].includes(v.kind))style[variableName(v)]=String(value).trim().split(/[\s,]+/).map(v=>px(v.replace(/px$/,''))).join(' ');}
@@ -104,6 +105,10 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   if(control?.kind==='button'&&layout)rules.push('.px-node-'+s.id+'>[data-control-text]{display:none}');
   const native=controlMarkup(control,s.id);
   if(control?.width_sizing)rules.push('.px-node-'+s.id+'{width:'+style.width+'!important}');
+  // SVG paint remains editable through ordinary CSS presentation properties.
+  if(vector)for(const attribute of ['fill','stroke','stop-color']){let index=0;content=content.replace(new RegExp('\\s'+attribute+'="(#[a-f\\d]{3,8})"','gi'),(match,value)=>{const part=index++;rules.push(`.px-node-${s.id}>.px-paint [data-px-${attribute}="${part}"]{${attribute}:${value}}`);return match+` data-px-${attribute}="${part}"`;});}
+  if(vector&&s.kind==='text'){const t=textStyle(s);rules.push(`.px-node-${s.id}>.px-paint text{font-family:${quoted(t.font_family)},sans-serif;font-size:${px(t.font_size)};font-weight:${t.font_weight}}`);}
+  layerCss[s.id]=rules.slice(ruleStart).join('\n');
   const controlHtml=interactive?native:native.replaceAll(' class="px-control"',' tabindex="-1" class="px-control"');
   const contentHtml=`<div class="px-node px-node-${s.id} ${layoutClass(s)}" data-px-id="${s.id}" data-layer="${escapeHtml(s.name)}"${layout?.direction==='grid'&&layout.grid?.masonry?` data-masonry="" data-masonry-hug="${!!layout.hug_height&&!item.fill_height}"`:""}${flow&&parent.auto_layout?.direction==='grid'&&parent.auto_layout.grid?.masonry?` data-masonry-item="" data-masonry-column="${(item.grid_cell?.row==null&&!item.grid_cell?.area?item.grid_cell?.column:null)??''}"`:""}${s.kind==='text'?' data-control-text=""':''}${s.component?` data-component="${escapeHtml(s.name)}"`:''}>${content}${(children.get(s.id)??[]).map(c=>visit(c,s,modes)).join('')}${controlHtml}</div>`;
   if(container&&s.rotation&&flow){rules.push(`.px-node-${s.id}{position:absolute;left:${s.x-rotated.x}px;top:${s.y-rotated.y}px}`);return `<div style="position:relative;flex-shrink:0;width:${rotated.width}px;height:${rotated.height}px">${contentHtml}</div>`;}
@@ -112,10 +117,11 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
  if(interactive)for(const shape of shapes)rules.push(motionCss(shape));
  if(responsiveExport)for(const shape of shapes)for(const rule of shape.layout_media??[])rules.push(`@media ${rule.query}{.${layoutClass(shape)}{${Object.entries(rule.declarations).map(([k,v])=>`${k}:${v}`).join(';')}}}`);
  const html=(children.get(0)??[]).map(s=>visit(s,null)).join('');
+ for(const shape of shapes)if(shape.custom_css){try{rules.push(renderLayerStyles(shape));}catch(error){warnings.add(`${shape.name}: ${error.message}`);}}
  const css=`${fontImports([...shapes,...renderedControls])}\n.px-scene{position:relative;font-family:Arial,sans-serif}.px-node{box-sizing:border-box;margin:0;padding:0;min-width:0;min-height:0}.px-paint{position:absolute;inset:0;pointer-events:none}.px-paint>svg{display:block;width:100%;height:100%;overflow:visible}\n${rules.filter(Boolean).join('\n')}`;
  // Geometry must use this same resolved scene. Applying the media cascade a
  // second time can replay Grid declarations onto a frame already using Flex.
- return {html,css,warnings:[...warnings],shapes};
+ return {html,css,warnings:[...warnings],shapes,layerCss};
 }
 
 export function cssExport(shapes,options={}){

@@ -40,7 +40,7 @@ export function cloudFiles({snapshot,load,status,toast,backupLocal:saveDraft,ope
  const recoverDraft=button('Recover local draft',()=>recoverBody('pixlprfct.local-draft'));
  const history=button('Version history',()=>openCloudHistory({session,useFile:applyFile,closeFiles:()=>dialog.close(),toast}));
  const toggle=button('Show Trash',async()=>{trash=!trash;toggle.textContent=trash?'Show files':'Show Trash';await refresh();});actions.append(create,saveCopy,retry,history,reload,recover,recoverDraft,toggle);
- const trigger=document.getElementById('cloud-files');trigger.onclick=()=>{dialog.showModal();run(refresh);};
+ const trigger=document.getElementById('cloud-files');trigger.onclick=()=>{if(window.pixlDesktop?.local){window.pixlDesktop.connect();return;}dialog.showModal();run(refresh);};
  window.addEventListener('online',()=>{if(session.error?.status!==409)session.flush().catch(()=>{});});
  window.addEventListener('pagehide',()=>session.remember());
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){session.remember();session.flush().catch(()=>{});}});

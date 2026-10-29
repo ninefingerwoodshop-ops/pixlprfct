@@ -16,6 +16,7 @@ const FIELDS: &[&str] = &[
     "control_state",
     "control",
     "behaviors",
+    "custom_css",
     "rotation",
     "border_widths",
     "variable_bindings",

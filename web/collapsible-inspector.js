@@ -11,7 +11,7 @@ export function installCollapsibleInspector(current,change){
    const heading=[...section.querySelectorAll('h3')].find(h=>h.closest('.property-section')===section);
    // Embedded layout settings share the visible parent section's disclosure.
    // Their legacy heading is hidden, so a separate collapsed state is unreachable.
-   if(section.classList.contains('figma-core-section')||!heading||heading.classList.contains('layout-legacy')||section.classList.contains('paint-section')||section.classList.contains('canvas-tool-inspector')){
+   if(!heading||heading.hidden||heading.classList.contains('layout-legacy')||section.classList.contains('layout-legacy')){
     section.classList.remove('inspector-collapsible','inspector-collapsed');
     continue;
    }
@@ -34,7 +34,7 @@ export function installCollapsibleInspector(current,change){
   syncOptional();
  };
  panel.addEventListener('click',event=>{
-  const action=event.target.closest('.section-add,.effect-choices button');
+  const action=event.target.closest('.section-add,.effect-choices button,.paint-add,.setting-section-heading > .setting-action');
   const section=action?.closest('.inspector-collapsible');
   if(section?.classList.contains('inspector-collapsed')){saved[section.dataset.collapseKey]=false;persist();sync();}
  },true);

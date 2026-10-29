@@ -16,3 +16,46 @@ test('automatic row order becomes explicit, hidden pinned cells follow, and inva
 test('component track edits propagate with child placement and instances remain protected',()=>{
  const {e,f}=setup();e.create_component(f);const instance=e.create_instance(f,1000,100);e.shift_grid_track(f,'columns',0,1);assert.deepEqual(plan(e,instance).columns,[120,100,140,160]);assert.deepEqual(plan(e,instance).placements.map(p=>p.column),plan(e,f).placements.map(p=>p.column));assert.throws(()=>e.shift_grid_track(instance,'columns',3,-1),/Instance appearance is protected/);assert.deepEqual(plan(e,instance).columns,[120,100,140,160]);assert.deepEqual(plan(e,f).columns,[120,100,140,160]);e.free();
 });
+test('dragging across multiple columns commits one move, including named areas and pinned cells',()=>{
+ const {e,f,ids}=setup();
+ const frame=get(e,f);set(e,f,{auto_layout:{...frame.auto_layout,grid:{...frame.auto_layout.grid,areas:[{name:'feature',column:1,row:1,column_span:1,row_span:1}]}}});
+ const hidden=e.add('rectangle',0,0);e.reparent_many(JSON.stringify([hidden]),f);set(e,hidden,{hidden:true,layout_item:{...get(e,hidden).layout_item,grid_cell:{column:1,row:1}}});
+ const before=e.snapshot();assert.equal(e.move_grid_track(f,'columns',0,4),3);
+ assert.deepEqual(plan(e,f).columns,[120,140,160,100]);
+ assert.deepEqual(plan(e,f).placements.map(p=>p.column),[4,1,2,3,4,1,2,3]);
+ assert.equal(get(e,f).auto_layout.grid.areas[0].column,4);assert.equal(get(e,hidden).layout_item.grid_cell.column,4);assert.equal(get(e,ids[0]).width,100);
+ const moved=e.snapshot();e.undo();assert.equal(e.snapshot(),before);e.redo();assert.equal(e.snapshot(),moved);
+ e.move_grid_track(f,'columns',3,0);assert.deepEqual(plan(e,f).columns,[100,120,140,160]);e.free();
+});
+test('dragging cannot split a spanning source or destination, including named area spans',()=>{
+ const {e,f}=setup(1);const frame=get(e,f);
+ set(e,f,{auto_layout:{...frame.auto_layout,grid:{...frame.auto_layout.grid,areas:[{name:'wide',column:2,row:1,column_span:2,row_span:1}]}}});
+ // Dropping inside a destination span snaps past the whole span.
+ assert.equal(e.move_grid_track(f,'columns',0,2),2);
+ assert.deepEqual(plan(e,f).columns,[120,140,100,160]);assert.equal(get(e,f).auto_layout.grid.areas[0].column,1);
+ // Grabbing either track moves its entire connected span.
+ assert.equal(e.move_grid_track(f,'columns',1,4),3);
+ assert.deepEqual(plan(e,f).columns,[100,160,120,140]);assert.equal(get(e,f).auto_layout.grid.areas[0].column,3);
+ e.free();
+});
+test('row dragging works in both directions and keeps history atomic',()=>{
+ const {e,f}=setup(12);const before=e.snapshot();
+ assert.equal(e.move_grid_track(f,'rows',0,3),2);
+ assert.deepEqual(plan(e,f).placements.map(p=>p.row),[3,3,3,3,1,1,1,1,2,2,2,2]);
+ e.undo();assert.equal(e.snapshot(),before);e.redo();
+ assert.equal(e.move_grid_track(f,'rows',2,0),0);
+ assert.deepEqual(plan(e,f).placements.map(p=>p.row),[1,1,1,1,2,2,2,2,3,3,3,3]);e.free();
+});
+test('invalid drops and same-position drops leave the document and undo history untouched',()=>{
+ const {e,f}=setup();e.clear_history();const before=e.snapshot();
+ for(const [axis,index,slot] of [['bad',0,1],['columns',4,0],['columns',0,5]])assert.throws(()=>e.move_grid_track(f,axis,index,slot));
+ for(const slot of [1,2])assert.equal(e.move_grid_track(f,'columns',1,slot),1);
+ assert.equal(e.snapshot(),before);assert.equal(e.can_undo(),false);e.free();
+});
+test('dragging source tracks propagates to component instances and rejects protected instance edits',()=>{
+ const {e,f}=setup();e.create_component(f);const instance=e.create_instance(f,1000,100);
+ e.move_grid_track(f,'columns',0,4);assert.deepEqual(plan(e,instance).columns,[120,140,160,100]);
+ assert.deepEqual(plan(e,instance).placements.map(p=>p.column),plan(e,f).placements.map(p=>p.column));
+ const before=e.snapshot();assert.throws(()=>e.move_grid_track(instance,'columns',0,4),/Instance appearance is protected/);
+ assert.equal(e.snapshot(),before);e.free();
+});

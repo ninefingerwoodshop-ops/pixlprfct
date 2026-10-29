@@ -22,6 +22,7 @@ const pending=new Map();
 export function loadGoogleFont(family,weight=400){
  if(!validFontFamily(family))return Promise.reject(new Error('Enter a Google Fonts family name.'));
  if(system.has(family))return Promise.resolve();
+ if(globalThis.pixlDesktop?.onlineFonts===false)return Promise.reject(new Error('Enable View → Allow online fonts in local designs, then reopen this design.'));
  const key=family+'|'+weight;if(pending.has(key))return pending.get(key);
  const promise=new Promise((resolve,reject)=>{const link=document.createElement('link');link.rel='stylesheet';link.href=googleFontUrl(family,weight);link.onload=async()=>{try{const faces=await document.fonts.load(`${weight} 16px "${family}"`);if(!faces.length)throw new Error();resolve();}catch{reject(new Error('Font could not load. Check its name and weight.'));}};link.onerror=()=>{link.remove();reject(new Error('Font could not load. Check its name, weight, and connection.'));};document.head.append(link);});
  pending.set(key,promise);promise.catch(()=>pending.delete(key));return promise;
@@ -90,6 +91,7 @@ export const fontWeightNames={100:'Thin',200:'Extra light',300:'Light',400:'Regu
 export function availableFontWeights(family){
  if(fontWeightCatalog[family])return Promise.resolve([...fontWeightCatalog[family]]);
  if(system.has(family))return Promise.resolve([400,700]);
+ if(globalThis.pixlDesktop?.onlineFonts===false)return Promise.reject(new Error('Online fonts are disabled for local designs.'));
  if(!validFontFamily(family))return Promise.reject(new Error('Choose a font family first.'));
  if(weightRequests.has(family))return weightRequests.get(family);
  const request=Promise.all(Object.keys(fontWeightNames).map(async key=>{

@@ -24,6 +24,8 @@ pub struct Shape {
     pub layout_class_generated: bool,
     #[serde(default)]
     pub layout_media: Vec<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub custom_css: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub breakpoint_original: Option<serde_json::Value>,
     #[serde(default)]
@@ -1339,6 +1341,7 @@ fn validate(document: &Document) -> Result<(), String> {
         .contains(&shape.kind.as_str())
             || shape.name.len() > 256
             || shape.text.len() > 10_000
+            || shape.custom_css.len() > 65_536
             || shape.fill.len() != 7
             || !shape.fill.starts_with('#')
             || !shape.fill[1..].bytes().all(|c| c.is_ascii_hexdigit())
@@ -2255,6 +2258,7 @@ impl Editor {
             layout_class: String::new(),
             layout_class_generated: false,
             layout_media: Vec::new(),
+            custom_css: String::new(),
             breakpoint_original: None,
             device_chrome: String::new(),
             device_chrome_breakpoints: None,
@@ -3333,6 +3337,21 @@ impl Editor {
             return Ok(next);
         }
         self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
+        Ok(next)
+    }
+    /// Move a track before a zero-based insertion boundary (track count appends).
+    /// Connected spans move together, and the entire move is one history entry.
+    pub fn move_grid_track(
+        &mut self,
+        id: u32,
+        axis: &str,
+        index: usize,
+        before: usize,
+    ) -> Result<usize, String> {
+        let (changes, next) = grid::move_track(&self.document, id, axis, index, before)?;
+        if !changes.is_empty() {
+            self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
+        }
         Ok(next)
     }
     pub fn delete_grid_area(&mut self, id: u32, name: &str) -> Result<(), String> {
