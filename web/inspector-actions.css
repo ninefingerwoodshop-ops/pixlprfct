@@ -1,0 +1,80 @@
+/* Shared action geometry. Disclosure rows, fields, and canvas-like pickers
+   retain their own interaction sizes. */
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,.workspace-page-controls,:where(#project-home),.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)),:where(#page-switch-menu,#pencil-options)){--inspector-icon-size:16px;--inspector-action-gap:var(--ui-space-1)}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,.workspace-page-controls,:where(#project-home),.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)),:where(#page-switch-menu,#pencil-options)) button:not(:where(.inspector-disclosure-switch,.inspector-accordion-toggle,.inspector-property-switch,.inspector-select-trigger,[role=tab],.paint-picker-trigger,.paint-page-swatch,.grid-picker-map button,.layout-alignment button,.layer,.layer-disclosure,.draft-card,.asset-preview,.variable-alias-chip)){
+ box-sizing:border-box;min-width:0;min-height:var(--ui-control-height)!important;height:auto!important;
+ padding:4px 8px!important;gap:var(--inspector-action-gap);line-height:20px;
+ border:0!important;box-shadow:none!important;background-color:transparent!important;color:var(--ui-text-muted);
+}
+.toolbox>button,
+.toolbox .tool-split>button,
+.toolbox .toolbar-disclosure,
+.right-panel :is(
+ .inspector-icon,.icon-button,.input-variable-trigger,.control-variable-trigger,.eye-toggle,
+ .align-tools button,.layout-flow button,.text-align-tools button,.text-sizing-tools button,
+ #zoom-in,#zoom-out,#present-prototype
+),
+.left-panel :is(
+ .file-chevron,#search-toggle,#clear-page-search,.layer-disclosure,.layer-actions>button
+),
+:is(.workspace-page-controls,:where(#project-home),.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),.variable-alias-picker,.variable-type-menu,dialog:not(:where(.prototype-player,.variables-page,.assets-workspace))) :is(.inspector-icon,.icon-button,.variable-icon-button,.input-variable-trigger,.control-variable-trigger,.dialog-icon,.asset-options-button){
+ align-items:center;justify-content:center;flex:0 0 var(--ui-icon-button)!important;
+ width:var(--ui-icon-button)!important;min-width:var(--ui-icon-button)!important;max-width:var(--ui-icon-button)!important;
+ height:var(--ui-icon-button)!important;min-height:var(--ui-icon-button)!important;max-height:var(--ui-icon-button)!important;
+ padding:4px!important;gap:0;border:0!important;box-shadow:none!important;border-radius:var(--ui-radius-control);
+}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,.workspace-page-controls,:where(#project-home),.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)),:where(#page-switch-menu,#pencil-options)) :is(button:not(:where(.asset-preview)),summary:is(.inspector-icon,.toolbar-disclosure)) svg{
+ width:var(--inspector-icon-size);height:var(--inspector-icon-size);flex:none;
+}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,.workspace-page-controls,:where(#project-home),.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)),:where(#page-switch-menu,#pencil-options)) :is(button:not(:where(.asset-preview)),summary:is(.inspector-icon,.toolbar-disclosure)) svg :is(path,circle,rect,line,polyline,polygon,ellipse){
+ stroke-width:1.25px;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round;
+}
+.right-panel .inspector-select-trigger svg{width:14px;height:14px}
+.right-panel .dimension-field>.inspector-select-trigger svg{width:12px;height:12px}
+
+/* All neutral actions share hover/press feedback; selected, destructive,
+   primary, and bound-variable actions retain their semantic colors. */
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,.workspace-page-controls,:where(#project-home),.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)),:where(#page-switch-menu,#pencil-options)) :is(button:not(:where(.inspector-disclosure-switch,.inspector-accordion-toggle,.inspector-property-switch,.inspector-select-trigger,[role=tab],.paint-picker-trigger,.paint-page-swatch,.grid-picker-map button,.layout-alignment button,.primary,.danger,.is-bound,.layer,.layer-disclosure,.draft-card,.asset-preview,.variable-alias-chip)),summary:is(.inspector-icon,.toolbar-disclosure),.eye-toggle):hover:not(:disabled):not([aria-disabled=true]){background-color:var(--ui-hover)!important}
+.right-panel :is(summary.inspector-icon,.eye-toggle):active{background-color:var(--ui-pressed)!important}
+.right-panel button.primary{background-color:var(--ui-accent)!important;color:white}
+.right-panel button.danger{color:var(--ui-danger)}
+.right-panel .input-variable-trigger.is-bound{background-color:var(--ui-variable-bg)!important;color:var(--ui-variable)}
+.right-panel .input-variable-trigger.is-bound:hover{background-color:var(--ui-variable-bg)!important}
+.right-panel .eye-toggle{background-color:transparent}
+.right-panel .eye-toggle input[type=checkbox]{
+ width:16px!important;height:16px!important;min-width:16px;min-height:16px!important;margin:0!important;
+ background-color:transparent!important;background-size:16px;border:0!important;box-shadow:none!important;
+}
+.right-panel .eye-toggle:has(input:focus-visible){outline:2px solid var(--ui-accent);outline-offset:1px}
+.right-panel .eye-toggle input:focus-visible{outline:none!important}
+.right-panel .variable-manage-link{padding:0 4px;min-height:24px;border-radius:var(--ui-radius-control);text-decoration:none}
+.right-panel .variable-manage-link:hover{background-color:var(--ui-hover);text-decoration:none!important}
+.right-panel .inspector-collapsible>.variable-section-heading:has(>.variable-manage-link){--disclosure-actions-space:54px}
+
+/* Fixed icon slots use a 4px gap, including embedded field actions. */
+.right-panel :is(.align-tools,.rectangle-transform-tools,.grid-track-actions,.text-sizing-tools,.text-align-tools>div,.zoom-control){gap:var(--inspector-action-gap);justify-content:flex-start}
+.right-panel :is(.align-tools,.rectangle-transform-tools){flex-wrap:wrap}
+.right-panel .layout-flow{display:flex;gap:var(--inspector-action-gap);padding:0;background:transparent}
+.right-panel .text-sizing-tools,.right-panel .text-align-tools>div{background:transparent}
+.right-panel .text-align-tools{flex-wrap:wrap;gap:var(--ui-space-2)}
+.right-panel .text-align-tools>div{flex:0 1 auto}
+.right-panel :is(.arrange-row,.distribute-tools,.grid-quick-actions){gap:var(--ui-space-2)}
+.right-panel .inspector-top{gap:var(--inspector-action-gap)}
+.right-panel .input-variable-trigger{right:2px;bottom:2px}
+.right-panel .paint-alpha .input-variable-trigger{right:2px}
+.right-panel .paint-alpha.variable-input-host{width:48px;border-left:1px solid var(--ui-surface)}
+.right-panel .paint-alpha.variable-input-host>input:not([type=checkbox]):not([type=color]){padding-left:6px!important;padding-right:14px!important;border-radius:0!important}
+.right-panel .paint-alpha.variable-input-host>span{right:6px}
+.right-panel :is(.paint-alpha,.stroke-weight-field)>.input-variable-trigger{display:none}
+.right-panel .stroke-weight-field.variable-input-host>input:not([type=checkbox]):not([type=color]){padding-left:24px!important;padding-right:4px!important}
+.right-panel .paint-visibility[aria-pressed]{background:transparent!important;color:var(--ui-text-muted)!important}
+.right-panel .paint-visibility[aria-pressed]:hover{background:var(--ui-hover)!important}
+.right-panel #dimensions-section .dimensions-with-lock{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 24px;align-items:center}
+.right-panel #layer-css-section .layer-css-class-row{align-items:center}
+.right-panel #layer-css-section .layer-css-class-row button{flex-basis:24px}
+.right-panel .grid-quick-actions button{flex-basis:150px}
+
+@container inspector (max-width:220px){
+ .right-panel #dimensions-section .dimensions-with-lock{grid-template-columns:minmax(0,1fr) 24px}
+}
+

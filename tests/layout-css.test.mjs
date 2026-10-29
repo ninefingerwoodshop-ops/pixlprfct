@@ -1,9 +1,18 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {parseLayoutCss,formatLayoutCss,responsiveLayoutShapes} from '../web/layout-css.js';
+import {parseLayoutCss,formatLayoutCss,responsiveLayoutShapes,layoutMediaSource} from '../web/layout-css.js';
 const shape={id:1,name:'Layout',width:1000,auto_layout:{direction:'horizontal',gap:16,cross_gap:8,padding_top:12,padding_right:12,padding_bottom:12,padding_left:12,align:'center',justify:'start',align_content:'start',hug_width:false,hug_height:false,wrap:false}};
 test('Flex formatting round trips and changes shared visual properties',()=>{const next=parseLayoutCss(formatLayoutCss(shape),shape);assert.equal(next.auto_layout.gap,16);assert.equal(next.auto_layout.cross_gap,8);const edited=parseLayoutCss('.layout {display: flex; flex-direction: column; gap: 10px 20px; padding: 4px 8px;}',shape);assert.equal(edited.auto_layout.direction,'vertical');assert.equal(edited.auto_layout.gap,10);assert.equal(edited.auto_layout.cross_gap,20);assert.equal(edited.auto_layout.padding_left,8);});
 test('Grid supports tracks, repeat, minmax and rectangular named areas',()=>{const next=parseLayoutCss('.layout {display:grid; grid-template-columns:repeat(2, 1fr); grid-template-rows:60px auto; grid-template-areas:"header header" "left right"; gap:8px;}',shape);assert.equal(next.auto_layout.grid.columns.length,2);assert.equal(next.auto_layout.grid.areas[0].column_span,2);assert.equal(parseLayoutCss(formatLayoutCss(next),next).auto_layout.grid.columns.length,2);});
 test('media queries cascade at outer frame width without mutating base',()=>{const next=parseLayoutCss('.layout { display:flex; } @media (max-width: 768px) {.layout {flex-direction:column;gap:4px;}}',shape);assert.equal(responsiveLayoutShapes([next])[0].auto_layout.direction,'horizontal');assert.equal(responsiveLayoutShapes([{...next,width:600}])[0].auto_layout.direction,'vertical');assert.equal(next.auto_layout.direction,'horizontal');assert.equal(parseLayoutCss(formatLayoutCss(next),shape).layout_media.length,1);const child={...next,id:2,parent_id:1,width:100};assert.equal(responsiveLayoutShapes([shape,child])[1].auto_layout.direction,'horizontal');});
+test('responsive context follows the nearest ancestor and respects a layer’s own queries',()=>{
+ const parent=parseLayoutCss('.layout {display:grid;} @media (max-width:500px){.layout {gap:8px;}}',shape);
+ const child={id:2,parent_id:1},nested={id:3,parent_id:2};
+ assert.equal(layoutMediaSource(nested,[parent,child,nested]),parent);
+ const own={...child,layout_media:parent.layout_media};
+ assert.equal(layoutMediaSource(nested,[parent,own,nested]),own);
+ assert.equal(layoutMediaSource(undefined,[]),null);
+ assert.equal(layoutMediaSource(child,[{...shape,parent_id:2},child]),null);
+});
 test('invalid or unrepresentable CSS fails rather than being silently discarded',()=>{for(const css of ['.layout {color:red;}','.layout {display:block;}','.layout {grid-template-columns:banana;}','@media (orientation:portrait){.layout {gap:1px;}} .layout {display:flex;}','.layout {padding:2rem;}'])assert.throws(()=>parseLayoutCss(css,shape));});
 import {readFile} from 'node:fs/promises';
 import init,{Editor} from '../web/pkg/pixlprfct_core.js';
@@ -42,6 +51,17 @@ test('active media indicator follows outer frame preview width and cascading que
   assert.equal(state.width,width);assert.equal(state.rules.length,count);assert.equal(state.shape.auto_layout.direction,direction);
  }
  assert.equal(child.auto_layout.direction,'grid');
+});
+
+test('canvas CSS and geometry share one cascade when overlapping Grid queries switch to Flex',()=>{
+ const source=parseLayoutCss('.layout {display:grid;grid-template-columns:210px 1fr;} @media (max-width:500px){.layout {grid-template-columns:110px 1fr;}} @media (max-width:320px){.layout {display:flex;flex-direction:column;}}',shape);
+ for(const [width,direction] of [[500,'grid'],[320,'vertical'],[321,'grid'],[600,'grid']]){
+  const compiled=compileCssScene([{...source,width}]),resolved=compiled.shapes[0];
+  assert.equal(resolved.auto_layout.direction,direction);
+  assert.match(compiled.css,direction==='grid'?/display:grid/:/display:flex;flex-direction:column/);
+  assert.equal(resolved.auto_layout.grid.columns[0].value,width<=500?110:210);
+ }
+ assert.equal(source.auto_layout.direction,'grid');assert.equal(source.auto_layout.grid.columns[0].value,210);
 });
 test('breakpoint width edits target outer frame, preserve Grid base, and undo',async()=>{
  const {layoutMediaState}=await import('../web/layout-css.js');const {fixedResize}=await import('../web/resizing.js');

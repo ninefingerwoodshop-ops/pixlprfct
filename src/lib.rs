@@ -4,9 +4,11 @@ mod starter_defaults;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 mod arrangement;
+mod editor_tools;
 mod grid;
 mod groups;
 mod guide_styles;
+mod paint;
 mod path_join;
 mod path_split;
 mod stacking;
@@ -36,6 +38,8 @@ pub struct Shape {
     pub control_state: String,
     #[serde(default)]
     pub behaviors: Vec<Behavior>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub editor_meta: Option<editor_tools::EditorMeta>,
     #[serde(default)]
     pub border_widths: Option<[f64; 4]>,
     #[serde(default)]
@@ -416,13 +420,46 @@ impl Default for AutoLayout {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Paint {
+    pub id: u32,
+    pub color: String,
+    #[serde(default = "opaque_paint")]
+    pub opacity: f64,
+    #[serde(default = "effect_enabled")]
+    pub visible: bool,
+    #[serde(default)]
+    pub gradient: Option<Gradient>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media: Option<paint::Media>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pattern: Option<paint::Pattern>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shader: Option<paint::Shader>,
+    #[serde(default = "paint::normal")]
+    pub blend_mode: String,
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Appearance {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fills: Option<Vec<Paint>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image_opacity: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub strokes: Option<Vec<Paint>>,
     #[serde(default = "default_blend_mode")]
     pub blend_mode: String,
     #[serde(default)]
     pub backdrop_blur: f64,
+    #[serde(default = "effect_enabled")]
+    pub backdrop_blur_enabled: bool,
+    #[serde(default)]
+    pub backdrop_blur_present: bool,
     #[serde(default)]
     pub layer_blur: f64,
+    #[serde(default = "effect_enabled")]
+    pub layer_blur_enabled: bool,
+    #[serde(default)]
+    pub layer_blur_present: bool,
     #[serde(default)]
     pub shadows: Vec<DropShadow>,
     #[serde(default)]
@@ -434,11 +471,15 @@ pub struct Appearance {
     #[serde(default)]
     pub corner_radii: Option<[f64; 4]>,
     pub fill_enabled: bool,
+    #[serde(default)]
+    pub fill_hidden: bool,
     #[serde(default = "opaque_paint")]
     pub fill_opacity: f64,
     #[serde(default = "opaque_paint")]
     pub stroke_opacity: f64,
     pub stroke_enabled: bool,
+    #[serde(default)]
+    pub stroke_hidden: bool,
     pub stroke_color: String,
     #[serde(default)]
     pub stroke_dash: Vec<f64>,
@@ -456,6 +497,10 @@ pub struct Appearance {
     pub stroke_join: String,
     #[serde(default = "default_miter_limit")]
     pub stroke_miter_limit: f64,
+}
+
+fn effect_enabled() -> bool {
+    true
 }
 
 fn center_stroke() -> String {
@@ -700,6 +745,8 @@ fn default_blend_mode() -> String {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub libraries: Vec<serde_json::Value>,
     #[serde(default)]
     pub variables: variables::Variables,
     pub version: u32,
@@ -721,6 +768,8 @@ pub struct Document {
 
 #[derive(Serialize, Deserialize)]
 struct LayerClipboard {
+    #[serde(default)]
+    protected_library: bool,
     #[serde(default)]
     origin: String,
     #[serde(default)]
@@ -766,11 +815,38 @@ fn clipboard_origin() -> String {
 pub struct Editor {
     clipboard_origin: String,
     text_measurer: Option<js_sys::Function>,
+    write_guard: Option<js_sys::Function>,
     document: Document,
     undo: Vec<Document>,
     redo: Vec<Document>,
     next_id: u32,
     next_page_id: u32,
+}
+
+// Legacy scalar fields remain a summary for layout bounds and older consumers.
+fn sync_paint_stacks(document: &mut Document) {
+    for s in &mut document.shapes {
+        if let Some(a) = &mut s.appearance {
+            if let Some(stack) = &a.fills {
+                a.fill_enabled = stack.iter().any(|p| p.visible);
+                a.fill_hidden = !stack.is_empty() && !a.fill_enabled;
+                a.gradient = stack.first().and_then(|p| p.gradient.clone());
+                a.fill_opacity = stack.first().map_or(1.0, |p| p.opacity);
+                if let Some(p) = stack.first() {
+                    s.fill = p.color.clone();
+                }
+            }
+            if let Some(stack) = &a.strokes {
+                a.stroke_enabled = stack.iter().any(|p| p.visible);
+                a.stroke_hidden = !stack.is_empty() && !a.stroke_enabled;
+                a.stroke_gradient = stack.first().and_then(|p| p.gradient.clone());
+                a.stroke_opacity = stack.first().map_or(1.0, |p| p.opacity);
+                if let Some(p) = stack.first() {
+                    a.stroke_color = p.color.clone();
+                }
+            }
+        }
+    }
 }
 
 fn validate(document: &Document) -> Result<(), String> {
@@ -949,7 +1025,37 @@ fn validate(document: &Document) -> Result<(), String> {
             }
         }
         if let Some(a) = &shape.appearance {
-            for g in a.gradient.iter().chain(a.stroke_gradient.iter()) {
+            if a.image_opacity
+                .is_some_and(|v| !v.is_finite() || !(0.0..=1.0).contains(&v))
+            {
+                return Err("Invalid image opacity".into());
+            }
+            for stack in [&a.fills, &a.strokes].into_iter().flatten() {
+                for p in stack {
+                    paint::validate(p)?;
+                }
+                let mut ids = std::collections::HashSet::new();
+                if stack.len() > 64
+                    || stack.iter().any(|p| {
+                        p.id == 0
+                            || !ids.insert(p.id)
+                            || !p.opacity.is_finite()
+                            || !(0.0..=1.0).contains(&p.opacity)
+                            || p.color.len() != 7
+                            || !p.color.starts_with('#')
+                            || !p.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+                    })
+                {
+                    return Err("Invalid paint stack (up to 64 paints per channel)".into());
+                }
+            }
+            for g in a.gradient.iter().chain(a.stroke_gradient.iter()).chain(
+                a.fills
+                    .iter()
+                    .chain(a.strokes.iter())
+                    .flatten()
+                    .filter_map(|p| p.gradient.as_ref()),
+            ) {
                 if g.radial_transform.is_some_and(|m| {
                     m.iter().any(|v| !v.is_finite() || v.abs() > 100000.0)
                         || (m[0] * m[3] - m[1] * m[2]).abs() < 1e-12
@@ -961,7 +1067,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 {
                     return Err("Invalid radial gradient transform or focal circle".into());
                 }
-                if !["linear", "radial"].contains(&g.kind.as_str())
+                if !["linear", "radial", "angular", "diamond"].contains(&g.kind.as_str())
                     || g.start
                         .iter()
                         .chain(g.end.iter())
@@ -1244,13 +1350,31 @@ fn validate(document: &Document) -> Result<(), String> {
         {
             return Err("Invalid shape data".into());
         }
+        editor_tools::validate(shape)?;
     }
     component_properties::validate_properties(document)?;
+    paint::validate_sources(&document.shapes)?;
     grid::validate(&document.shapes)?;
     Ok(())
 }
 
 impl Editor {
+    fn check_write(&self, document: &Document, history: bool) -> Result<(), String> {
+        if let Some(guard) = &self.write_guard {
+            let result = guard
+                .call3(
+                    &JsValue::NULL,
+                    &JsValue::from_str(&serde_json::to_string(&self.document).unwrap()),
+                    &JsValue::from_str(&serde_json::to_string(document).unwrap()),
+                    &JsValue::from_bool(history),
+                )
+                .map_err(|_| "Library permissions could not be checked")?;
+            if let Some(message) = result.as_string().filter(|s| !s.is_empty()) {
+                return Err(message);
+            }
+        }
+        Ok(())
+    }
     fn reflow_text(&self, document: &mut Document) -> Result<(), String> {
         let baseline_parents: std::collections::HashSet<_> = document
             .shapes
@@ -1429,6 +1553,7 @@ impl Editor {
         let staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: None,
+            write_guard: None,
             document,
             undo: vec![],
             redo: vec![],
@@ -1506,6 +1631,7 @@ impl Editor {
         starter_defaults::sync(&mut document);
         starter_defaults::sync_dropdown(&mut document);
         variables::resolve(&mut document)?;
+        sync_paint_stacks(&mut document);
         validate(&document)?;
         components::validate_links(&document)?;
         if serde_json::to_string(&document)
@@ -1544,6 +1670,7 @@ impl Editor {
         components::sync(&mut document, &mut next)?;
         guide_styles::resolve(&mut document);
         variables::resolve(&mut document)?;
+        sync_paint_stacks(&mut document);
         let after_sync: std::collections::HashSet<_> = document
             .shapes
             .iter()
@@ -1639,6 +1766,7 @@ impl Editor {
         {
             return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
         }
+        self.check_write(&document, false)?;
         if next > base || containers_added {
             self.next_id = self.next_id.max(next);
         }
@@ -1667,7 +1795,9 @@ impl Editor {
         Self {
             clipboard_origin: clipboard_origin(),
             text_measurer: None,
+            write_guard: None,
             document: Document {
+                libraries: vec![],
                 variables: variables::Variables::default(),
                 version: 2,
                 name: "Untitled design".into(),
@@ -1688,6 +1818,10 @@ impl Editor {
 
     pub fn snapshot(&self) -> String {
         serde_json::to_string(&self.document).unwrap()
+    }
+
+    pub fn set_write_guard(&mut self, callback: js_sys::Function) {
+        self.write_guard = Some(callback);
     }
 
     pub fn set_text_measurer(&mut self, callback: js_sys::Function) {
@@ -1732,6 +1866,20 @@ impl Editor {
             })
             .collect();
         serde_json::to_string(&LayerClipboard {
+            protected_library: self.document.shapes.iter().any(|s| {
+                if !ids.contains(&s.id) {
+                    return false;
+                }
+                let master = match s.component {
+                    Some(components::Component::Instance { master, .. }) => master,
+                    _ => s.id,
+                };
+                self.document.libraries.iter().any(|l| {
+                    l["maps"]["shapes"].as_object().is_some_and(|map| {
+                        map.values().any(|id| id.as_u64() == Some(master as u64))
+                    })
+                })
+            }),
             origin: self.clipboard_origin.clone(),
             components: self
                 .document
@@ -1783,6 +1931,12 @@ impl Editor {
             return Err("Invalid clipboard size or position".into());
         }
         let mut payload: LayerClipboard = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if payload.protected_library && payload.origin != self.clipboard_origin {
+            return Err(
+                "Add the library from Assets in this project, then insert its protected component"
+                    .into(),
+            );
+        }
         if payload.format != "pixlprfct.layers" || payload.version != 1 || payload.shapes.is_empty()
         {
             return Err("Unsupported layer clipboard".into());
@@ -1802,6 +1956,7 @@ impl Editor {
             s.variable_modes.clear();
         }
         validate(&Document {
+            libraries: vec![],
             variables: variables::Variables::default(),
             version: 2,
             name: String::new(),
@@ -1834,6 +1989,7 @@ impl Editor {
                     p.target = ids[&p.target];
                 }
             }
+            paint::remap_sources(&mut s, &ids, payload.origin == self.clipboard_origin);
             s.id = ids[&s.id];
             s.page_id = document.active_page;
             if s.parent_id == 0 {
@@ -1876,9 +2032,14 @@ impl Editor {
                 node = self.document.shapes.iter().find(|p| p.id == s.parent_id);
             }
         }
-        let mut template = Editor::new();
-        template.paste_layers(json, 0.0, 0.0, 0)?;
         let payload: LayerClipboard = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let mut template = Editor::new();
+        // Validation uses a temporary editor, but protected clipboard provenance
+        // must be checked against the actual destination document.
+        if payload.protected_library {
+            template.clipboard_origin = self.clipboard_origin.clone();
+        }
+        template.paste_layers(json, 0.0, 0.0, 0)?;
         if payload.origin == self.clipboard_origin {
             for (shape, original) in template.document.shapes.iter_mut().zip(&payload.shapes) {
                 shape.component = payload.components.get(&original.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
@@ -1912,6 +2073,7 @@ impl Editor {
                 .collect();
             for source in shapes {
                 let mut s = source.clone();
+                paint::remap_sources(&mut s, &mapping, true);
                 s.id = mapping[&source.id];
                 s.page_id = document.active_page;
                 s.x += target.x + 16.0 - left;
@@ -1956,9 +2118,14 @@ impl Editor {
             }
         }
         // Validate and normalize the portable payload before allocating any document IDs.
-        let mut template = Editor::new();
-        template.paste_layers(json, 0.0, 0.0, 0)?;
         let payload: LayerClipboard = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let mut template = Editor::new();
+        // Validation uses a temporary editor, but protected clipboard provenance
+        // must be checked against the actual destination document.
+        if payload.protected_library {
+            template.clipboard_origin = self.clipboard_origin.clone();
+        }
+        template.paste_layers(json, 0.0, 0.0, 0)?;
         if payload.origin == self.clipboard_origin {
             for (shape, original) in template.document.shapes.iter_mut().zip(&payload.shapes) {
                 shape.component = payload.components.get(&original.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
@@ -1994,6 +2161,7 @@ impl Editor {
                     .collect();
                 for source in shapes {
                     let mut s = source.clone();
+                    paint::remap_sources(&mut s, &ids, true);
                     s.id = ids[&source.id];
                     s.page_id = target.page_id;
                     s.x += target.x - left;
@@ -2054,6 +2222,7 @@ impl Editor {
             .next_id
             .max(document.shapes.iter().map(|s| s.id).max().unwrap_or(0) + 1);
         variables::resolve(&mut document)?;
+        sync_paint_stacks(&mut document);
         // Upgrade older editable starters once; detached controls stay detached.
         for shape in &mut document.shapes {
             if let Some(control) = &mut shape.control {
@@ -2093,6 +2262,7 @@ impl Editor {
             control: None,
             control_state: String::new(),
             behaviors: Vec::new(),
+            editor_meta: None,
             border_widths: None,
             rotation: 0.0,
             aspect_ratio_locked: false,
@@ -2266,6 +2436,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2398,6 +2569,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2423,6 +2595,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2437,6 +2610,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2526,6 +2700,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2667,6 +2842,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2711,6 +2887,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2763,6 +2940,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -2847,6 +3025,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -3227,6 +3406,34 @@ impl Editor {
             return Ok(());
         }
         area.name = new_name.to_string();
+        for rule in &mut frame.layout_media {
+            let Some(template) = rule
+                .get_mut("declarations")
+                .and_then(|d| d.get_mut("grid-template-areas"))
+            else {
+                continue;
+            };
+            let Some(text) = template.as_str().filter(|text| *text != "none") else {
+                continue;
+            };
+            let separator = |c: char| c.is_whitespace() || c == '"';
+            if text.split(separator).any(|token| token == new_name) {
+                return Err("Area name already exists in a breakpoint template".into());
+            }
+            // Replace whole area names while retaining quoted rows and spacing.
+            let renamed: String = text
+                .split_inclusive(separator)
+                .map(|part| {
+                    let token = part.trim_end_matches(separator);
+                    if token == old_name {
+                        format!("{}{}", new_name, &part[token.len()..])
+                    } else {
+                        part.to_owned()
+                    }
+                })
+                .collect();
+            *template = serde_json::Value::String(renamed);
+        }
         let mut changes = vec![frame];
         for child in self.document.shapes.iter().filter(|s| {
             s.parent_id == id
@@ -3409,6 +3616,7 @@ impl Editor {
             .map(|(i, s)| (s.id, self.next_id + i as u32))
             .collect();
         for shape in &mut copies {
+            paint::remap_sources(shape, &mapping, true);
             shape.id = mapping[&shape.id];
             shape.page_id = page.id;
             shape.parent_id = *mapping.get(&shape.parent_id).unwrap_or(&shape.parent_id);
@@ -3437,6 +3645,7 @@ impl Editor {
         let mut staged = Editor {
             clipboard_origin: self.clipboard_origin.clone(),
             text_measurer: self.text_measurer.clone(),
+            write_guard: self.write_guard.clone(),
             document: self.document.clone(),
             undo: vec![],
             redo: vec![],
@@ -3512,17 +3721,25 @@ impl Editor {
         self.commit(document)
     }
 
-    pub fn undo(&mut self) {
+    pub fn undo(&mut self) -> Result<(), String> {
+        if let Some(document) = self.undo.last() {
+            self.check_write(document, true)?;
+        }
         if let Some(document) = self.undo.pop() {
             self.redo.push(self.document.clone());
             self.document = document;
         }
+        Ok(())
     }
-    pub fn redo(&mut self) {
+    pub fn redo(&mut self) -> Result<(), String> {
+        if let Some(document) = self.redo.last() {
+            self.check_write(document, true)?;
+        }
         if let Some(document) = self.redo.pop() {
             self.undo.push(self.document.clone());
             self.document = document;
         }
+        Ok(())
     }
     pub fn can_undo(&self) -> bool {
         !self.undo.is_empty()
@@ -3544,9 +3761,9 @@ mod tests {
         let mut editor = Editor::new();
         let id = editor.add("rectangle", 10.0, 20.0).unwrap();
         editor.remove(id).unwrap();
-        editor.undo();
+        editor.undo().unwrap();
         assert_eq!(editor.hit_test(20.0, 30.0), id);
-        editor.undo();
+        editor.undo().unwrap();
         editor.add("ellipse", 10.0, 20.0).unwrap();
         assert!(!editor.can_redo());
     }

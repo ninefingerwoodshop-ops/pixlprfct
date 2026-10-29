@@ -1,0 +1,38 @@
+/* Left drawer layout uses the same control sizes and spacing as the inspector.
+   Field and action surfaces are shared in inspector-fields/actions.css. */
+.left-panel .file-heading{grid-template-columns:minmax(0,1fr) var(--ui-icon-button);gap:var(--ui-space-1);padding:var(--ui-space-3) var(--ui-space-4) var(--ui-space-2)}
+.left-panel .file-location{padding-left:var(--ui-space-2)}
+.left-panel .file-location span{font-size:var(--ui-caption);padding:2px var(--ui-space-1)}
+.left-panel .design-navigation{padding:0 var(--ui-space-4) var(--ui-space-2);gap:var(--ui-space-2)}
+.left-panel #browse-drafts{display:flex;align-items:center}
+.left-panel #browse-drafts>[data-icon]{display:flex;flex:none}
+.left-panel .file-tabs{height:36px;gap:var(--ui-space-1)}
+.left-panel .layer-tree-actions{padding:var(--ui-space-1) var(--ui-space-4);gap:var(--ui-space-2)}
+.left-panel .layer-tree-actions button{flex:1 1 0;white-space:nowrap}
+.left-panel #search-panel{padding:var(--ui-space-2) var(--ui-space-4)}
+
+/* The two-line page picker keeps its label and value, with the same borderless
+   surface and state colors as other drawer fields. */
+.left-panel #layers-page-control{margin:var(--ui-space-2) var(--ui-space-4) var(--ui-space-1)}
+.left-panel #layers-page-control #layers-page{gap:var(--ui-space-1);padding:var(--ui-space-2) 32px var(--ui-space-2) var(--ui-space-2);border:0;border-radius:var(--ui-radius-control);background:var(--ui-field)}
+.left-panel #layers-page-control #layers-page:hover{background:var(--ui-hover)!important}
+.left-panel #layers-page-control[open] #layers-page{background:var(--ui-selected)!important}
+.left-panel #layers-page-name{font-size:var(--ui-text);line-height:16px}
+.left-panel #layers-page-control .page-switch-chevron{right:var(--ui-space-2);bottom:var(--ui-space-2)}
+.left-panel #page-switch-menu{top:calc(100% + var(--ui-space-1));padding:var(--ui-space-1)}
+.left-panel #page-search-header{top:calc(-1 * var(--ui-space-1));padding:0 0 var(--ui-space-1)}
+.left-panel #page-search-input{padding-left:32px!important;padding-right:32px!important}
+.left-panel .page-search-field:has(#clear-page-search:not([hidden])) #page-search-input{padding-right:28px!important}
+.left-panel #page-switch-menu .page-search-field #clear-page-search{right:2px}
+.left-panel #page-switch-options .page-inline-rename{min-height:36px;padding:var(--ui-space-1) var(--ui-space-2)}
+.left-panel #page-switch-menu button[aria-checked=true]{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)!important}
+.left-panel #page-switch-menu button[aria-checked=true]:hover{background-color:var(--ui-selected-hover)!important}
+.left-panel #page-switch-menu button[aria-checked=true]:active{background-color:var(--ui-selected-pressed)!important}
+.left-panel .file-chevron[aria-expanded=true]{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)}
+
+/* Layer rows keep their indentation and sticky hover actions. Each action is
+   a 24px target, with a 4px gap inside the shared 36px row rhythm. */
+.left-panel #layers :is(.group-row,.layer-entry,.layer-entry>.layer){min-height:36px}
+.left-panel #layers :is(.group-row,.layer-entry){padding-right:var(--ui-space-4)}
+.left-panel #layers .group-row>.layer-entry{padding-right:0}
+.left-panel #layers .layer-actions{right:var(--ui-space-4);width:calc(2 * var(--ui-icon-button) + var(--ui-space-1));height:36px;gap:var(--ui-space-1)}

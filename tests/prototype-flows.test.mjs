@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import init,{Editor} from '../web/pkg/pixlprfct_core.js';
 import {prototypeState} from '../web/prototype.js';
-import {connectionHandle,connectionHit,connectionTarget,connectedShape} from '../web/prototype-connections.js';
+import {connectionHandle,connectionHit,connectionTarget,connectedShape,connectionCurve,connectionAt} from '../web/prototype-connections.js';
+import {interactions,withInteractions} from '../web/prototype-interactions.js';
 await init({module_or_path:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});
 const doc=e=>JSON.parse(e.snapshot()),get=(e,id)=>doc(e).shapes.find(s=>s.id===id),edit=(e,id,p)=>e.update(JSON.stringify({...get(e,id),...p}));
 test('named flow starts persist and validate atomically without inheriting from main components',()=>{
@@ -19,4 +20,27 @@ test('canvas connections target visible clipped frames, preserve overlay setting
  const before=e.snapshot();e.update(JSON.stringify(connectedShape(s,b)));assert.equal(get(e,a).prototype.target,b);e.undo();assert.equal(e.snapshot(),before);
  const overlay=connectedShape({...s,prototype:{action:'overlay',target:a,close_on_outside:true,overlay_position:'top-left'}},b);assert.equal(overlay.prototype.action,'overlay');assert.equal(overlay.prototype.close_on_outside,true);
  edit(e,b,{hidden:true});assert.equal(connectionTarget(doc(e).shapes,a,{x:550,y:50}),0);e.free();
+});
+test('canvas wire selection resolves the source and interaction at different zoom levels',()=>{
+ const a={id:1,kind:'frame',x:0,y:0,width:200,height:100,prototype:{action:'navigate',target:2}},b={id:2,kind:'frame',x:500,y:160,width:200,height:100};
+ for(const zoom of [.25,1,2]){
+  const curve=connectionCurve(a,b,zoom),mid={x:(curve[0].x+3*curve[1].x+3*curve[2].x+curve[3].x)/8,y:(curve[0].y+3*curve[1].y+3*curve[2].y+curve[3].y)/8};
+  assert.deepEqual(connectionAt([a,b],mid,zoom),{source:1,index:0});
+  assert.equal(connectionAt([a,b],{x:mid.x,y:mid.y+40/zoom},zoom),null);
+  assert.equal(connectionAt([a,{...b,hidden:true}],mid,zoom),null);
+  assert.equal(connectionAt([{...a,prototype:{action:'back',target:2}},b],mid,zoom),null);
+ }
+});
+test('overlapping destinations have independently selectable interaction curves',()=>{
+ const a={id:1,kind:'frame',x:0,y:0,width:200,height:100,prototype:{action:'navigate',target:2},additional_interactions:[{trigger:'mouseenter',action:'overlay',target:2}]},b={id:2,kind:'frame',x:500,y:0,width:200,height:100};
+ assert.deepEqual(connectionAt([a,b],{x:356,y:38},1),{source:1,index:0});
+ assert.deepEqual(connectionAt([a,b],{x:356,y:62},1),{source:1,index:1});
+});
+test('reconnecting and deleting a selected secondary interaction preserve other links and undo',()=>{
+ const e=new Editor(),a=e.add('frame',0,0),b=e.add('frame',500,0),c=e.add('frame',1000,0);
+ const primary={action:'navigate',target:b,transition:'slide-left'},secondary={trigger:'mouseenter',action:'overlay',target:b,transition:'dissolve',duration:700,easing:'ease-out',close_on_outside:true};
+ e.update(JSON.stringify(withInteractions(get(e,a),[primary,secondary])));const before=e.snapshot();
+ e.update(JSON.stringify(connectedShape(get(e,a),c,1)));const links=interactions(get(e,a));assert.equal(links[0].target,b);assert.equal(links[0].transition,'slide-left');assert.equal(links[1].target,c);assert.equal(links[1].action,'overlay');assert.equal(links[1].duration,700);assert.equal(links[1].close_on_outside,true);
+ e.undo();assert.equal(e.snapshot(),before);
+ e.update(JSON.stringify(withInteractions(get(e,a),interactions(get(e,a)).filter((_,index)=>index!==1))));assert.equal(interactions(get(e,a)).length,1);assert.equal(get(e,a).prototype.target,b);e.undo();assert.equal(e.snapshot(),before);e.free();
 });

@@ -14,12 +14,17 @@
     "db:generate": "drizzle-kit generate",
     "test": "cargo test && node --test tests/*.test.mjs",
     "build:editor": "wasm-pack build --target web --out-dir web/pkg && node scripts/build.mjs",
-    "dev:editor": "node scripts/serve.mjs"
+    "dev:editor": "node scripts/serve.mjs",
+    "selfhost:setup": "node scripts/self-host/setup.mjs",
+    "selfhost:migrate": "node --env-file=.env.selfhost scripts/self-host/migrate.mjs",
+    "selfhost:start": "node --env-file=.env.selfhost server/index.mjs",
+    "selfhost:build": "wasm-pack build --target web --out-dir web/pkg"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
     "@shadcn/react": "^0.3.0",
+    "better-auth": "1.7.14",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "^1.1.1",
@@ -28,8 +33,12 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.31.0",
+    "mysql2": "3.24.6",
     "next": "16.4.3",
     "next-themes": "^0.4.6",
+    "nodemailer": "10.2.1",
+    "pg": "8.23.1",
+    "qrcode": "1.5.4",
     "radix-ui": "^1.6.7",
     "react": "19.2.6",
     "react-day-picker": "^10.0.1",
@@ -62,8 +71,8 @@
     "typescript": "5.9.3",
     "vinext": "1.0.0-beta.5",
     "vite": "8.3.5",
-    "wrangler": "4.92.0",
-    "wasm-pack": "^0.15.0"
+    "wasm-pack": "^0.15.0",
+    "wrangler": "4.92.0"
   },
   "type": "module",
   "overrides": {

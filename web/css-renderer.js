@@ -1,7 +1,12 @@
+import {motionCss} from './motion.js';
+import {artworkShapes} from './canvas-tools.js';
+import {resolvePatternPaints} from './paint-textures.js';
+import {effectBlur} from './effect-values.js';
 import {layoutClass} from './layout-class.js';
 import {responsiveLayoutShapes} from './layout-css.js';
 import {mountMasonry} from './masonry.js';
 import {gridCss} from './grid-model.js';
+import {measuredGridPlacement} from './grid-measurement.js';
 import {hasHugControlHeight} from './control-sizing.js';
 import {inputBaseControl} from './input-base.js';
 import {fontImports} from './google-fonts.js';
@@ -32,6 +37,7 @@ function valueFor(vars,v,modes,seen=new Set()){
 // Free-position layers keep coordinates; auto-layout children participate in CSS layout.
 export function compileCssScene(shapes,{variables={collections:[],values:[]},pageModes={},textLayout=()=>({lines:[],style:{}}),interactive=false,responsiveExport=false}={}){
  if(!responsiveExport)shapes=responsiveLayoutShapes(shapes);
+ shapes=resolvePatternPaints(shapes,(source,box)=>svgDocument(source,box,1,null,textLayout));
  const vars={collections:variables.collections??[],values:variables.values??[]},byId=new Map(shapes.map(s=>[s.id,s])),children=new Map(),rules=[],warnings=new Set(),renderedControls=[];
  for(const s of shapes){const parent=byId.has(s.parent_id)?s.parent_id:0;if(!children.has(parent))children.set(parent,[]);children.get(parent).push(s);}
  const visit=(s,parent,modes=pageModes)=>{
@@ -77,11 +83,11 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   if(a.opacity!==undefined&&a.opacity!==1)style.opacity=bound('appearance.opacity',a.opacity);
   if(s.variable_bindings?.['appearance.corner_radius'])style['border-radius']=bound('appearance.corner_radius',a.corner_radius,'px');
   const radiusVar=vars.values.find(v=>v.id===s.variable_bindings?.['appearance.corner_radii']&&v.kind==='border_radius');if(radiusVar)style['border-radius']=`var(${variableName(radiusVar)},${style['border-radius']})`;
-  if(a.backdrop_blur){style['backdrop-filter']=`blur(${px(a.backdrop_blur)})`;style['-webkit-backdrop-filter']=style['backdrop-filter'];}
-  if(a.layer_blur)style.filter=`blur(${px(a.layer_blur/2)})`;
+  if(effectBlur(a,'backdrop_blur')){style['backdrop-filter']=`blur(${px(effectBlur(a,'backdrop_blur'))})`;style['-webkit-backdrop-filter']=style['backdrop-filter'];}
+  if(effectBlur(a,'layer_blur'))style.filter=`blur(${px(effectBlur(a,'layer_blur')/2)})`;
   const shadows=(a.shadows??[]).filter(v=>v.visible!==false).map(v=>`${v.kind==='inner'?'inset ':''}${px(v.x)} ${px(v.y)} ${px(v.blur)} ${px(v.spread)} ${alpha(v.color,v.opacity)}`);if(shadows.length)style['box-shadow']=shadows.join(',');
   const container=['frame','group'].includes(s.kind),rotated=visualBounds(s);if(s.rotation&&!container){style.width=px(rotated.width);style.height=px(rotated.height);if(!flow){style.left=px(rotated.x-(parent?.x??0));style.top=px(rotated.y-(parent?.y??0));}}
-  let content='';const vector=(!container&&s.rotation)||s.points?.length||a.gradient||a.stroke_gradient||s.kind==='image'||(a.stroke_dash?.length);
+  let content='';const vector=s.editor_meta?.text_path||a.fills||a.strokes||(!container&&s.rotation)||s.points?.length||a.gradient||a.stroke_gradient||s.kind==='image'||(a.stroke_dash?.length);
   if(vector){const paint={...s,rotation:container?0:s.rotation,parent_id:0,appearance:{...a,opacity:1,shadows:[],layer_blur:0,backdrop_blur:0,blend_mode:'pass-through'}};content=`<span class="px-paint" aria-hidden="true">${svgDocument([paint],container?s:rotated,1,null,textLayout)}</span>`;warnings.add('Vector paths, images and gradient paint remain inline SVG inside CSS layout.');}
   else {
    if(s.kind==='text'){const t=textStyle(s);style.color=a.fill_enabled?`rgb(from ${bound('fill',color(s.fill))} r g b / ${a.fill_opacity??1})`:'transparent';style['font-family']=quoted(t.font_family)+', sans-serif';style['font-size']=bound('typography.font_size',t.font_size,'px');style['font-weight']=t.font_weight;style['line-height']=t.line_height;style['text-align']=t.align;style['white-space']=t.wrap?'pre-wrap':'pre';style['overflow-wrap']='anywhere';if(t.sizing==='width'&&!item.fill_width)style.width='max-content';if(t.sizing!=='fixed'&&!item.fill_height)style.height='auto';if(t.vertical_align&&t.vertical_align!=='top'){style.display='flex';style['flex-direction']='column';style['justify-content']=t.vertical_align==='center'?'center':'flex-end';}content=escapeHtml(s.text);}
@@ -103,13 +109,17 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   if(container&&s.rotation&&flow){rules.push(`.px-node-${s.id}{position:absolute;left:${s.x-rotated.x}px;top:${s.y-rotated.y}px}`);return `<div style="position:relative;flex-shrink:0;width:${rotated.width}px;height:${rotated.height}px">${contentHtml}</div>`;}
   return contentHtml;
  };
+ if(interactive)for(const shape of shapes)rules.push(motionCss(shape));
  if(responsiveExport)for(const shape of shapes)for(const rule of shape.layout_media??[])rules.push(`@media ${rule.query}{.${layoutClass(shape)}{${Object.entries(rule.declarations).map(([k,v])=>`${k}:${v}`).join(';')}}}`);
  const html=(children.get(0)??[]).map(s=>visit(s,null)).join('');
- const css=`${fontImports([...shapes,...renderedControls])}\n.px-scene{position:relative;font-family:Arial,sans-serif}.px-node{box-sizing:border-box;margin:0;padding:0;min-width:0;min-height:0}.px-paint{position:absolute;inset:0;pointer-events:none}.px-paint>svg{display:block;width:100%;height:100%;overflow:visible}\n${rules.join('\n')}`;
- return {html,css,warnings:[...warnings]};
+ const css=`${fontImports([...shapes,...renderedControls])}\n.px-scene{position:relative;font-family:Arial,sans-serif}.px-node{box-sizing:border-box;margin:0;padding:0;min-width:0;min-height:0}.px-paint{position:absolute;inset:0;pointer-events:none}.px-paint>svg{display:block;width:100%;height:100%;overflow:visible}\n${rules.filter(Boolean).join('\n')}`;
+ // Geometry must use this same resolved scene. Applying the media cascade a
+ // second time can replay Grid declarations onto a frame already using Flex.
+ return {html,css,warnings:[...warnings],shapes};
 }
 
 export function cssExport(shapes,options={}){
+ shapes=artworkShapes(shapes);
  const roots=shapes.filter(s=>!shapes.some(p=>p.id===s.parent_id)),x=roots.length?Math.min(...roots.map(s=>visualBounds(s).x)):0,y=roots.length?Math.min(...roots.map(s=>visualBounds(s).y)):0;
  const source=new Map((options.sourceShapes??shapes).map(s=>[s.id,s]));
  const inherited=s=>{const chain=[],seen=new Set();let node=source.get(s.id);while(node&&!seen.has(node.id)){seen.add(node.id);chain.unshift(node.variable_modes??{});node=source.get(node.parent_id);}return Object.assign({},...chain,s.variable_modes);};
@@ -117,7 +127,7 @@ export function cssExport(shapes,options={}){
  return {...result,html:`<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(options.name??'PixlPrfct components')}</title><link rel="stylesheet" href="styles.css"></head><body><main class="px-scene">${result.html}</main></body></html>`,css:`${result.css}\nbody{margin:0}.px-scene{min-height:${height}px;min-width:${width}px}`};
 }
 
-function measuredGrid(node,s){
+function measuredGrid(node,s,shapes){
  if(s.auto_layout?.direction!=='grid')return null;
  const css=getComputedStyle(node),tracks=text=>(text.match(/[-.\d]+px/g)??[]).map(parseFloat),columns=tracks(css.gridTemplateColumns),rows=tracks(css.gridTemplateRows);
  let column_gap=parseFloat(css.columnGap)||0,row_gap=parseFloat(css.rowGap)||0;
@@ -127,9 +137,18 @@ function measuredGrid(node,s){
  const dist=(mode,sizes,available,gap)=>{const free=Math.max(0,available-sizes.reduce((a,b)=>a+b,0)-Math.max(0,sizes.length-1)*gap),n=sizes.length;if(mode==='center')return [free/2,gap];if(mode==='end')return [free,gap];if(mode==='space-between'&&n>1)return [0,gap+free/(n-1)];if(mode==='space-around'&&n)return [free/(2*n),gap+free/n];if(mode==='space-evenly'&&n)return [free/(n+1),gap+free/(n+1)];return [0,gap];};
  const [offset_x,gx]=dist(css.justifyContent,columns,width,column_gap),[offset_y,gy]=dist(css.alignContent,rows,height,row_gap);
  if(s.auto_layout.grid?.masonry)rows.splice(0,rows.length,height);
- return {columns,rows,column_gap:gx,row_gap:gy,offset_x,offset_y};
+ const plan={columns,rows,column_gap:gx,row_gap:gy,offset_x,offset_y};
+ // Masonry positions come from its runtime, not CSS grid line placement.
+ if(s.auto_layout.grid?.masonry)return plan;
+ plan.placements=shapes.filter(child=>child.parent_id===s.id&&!child.hidden&&!child.layout_item?.absolute).flatMap(child=>{
+  const item=node.querySelector(`[data-px-id="${child.id}"]`);if(!item)return [];
+  const style=getComputedStyle(item),ml=parseFloat(style.marginLeft)||0,mr=parseFloat(style.marginRight)||0,mt=parseFloat(style.marginTop)||0,mb=parseFloat(style.marginBottom)||0;
+  const box={x:item.offsetLeft-parseFloat(css.paddingLeft)-offset_x-ml,y:item.offsetTop-parseFloat(css.paddingTop)-offset_y-mt,width:item.offsetWidth+ml+mr,height:item.offsetHeight+mt+mb};
+  return [{...measuredGridPlacement(child,s.auto_layout.grid??{},plan,box,style),x:s.x+item.offsetLeft,y:s.y+item.offsetTop,width:item.offsetWidth,height:item.offsetHeight}];
+ });
+ return plan;
 }
 export function mountCssCanvas(canvas,onLayout=()=>{}){
  const host=document.createElement('div');host.style.cssText='position:absolute;inset:0;overflow:hidden;pointer-events:none';canvas.before(host);const shadow=host.attachShadow({mode:'open'}),style=document.createElement('style'),scene=document.createElement('div');scene.className='px-scene';scene.style.transformOrigin='0 0';shadow.append(style,scene);const masonry=mountMasonry(scene,onLayout);let previous='',geometry=[];
- return {hide(){host.hidden=true;},render(shapes,options,pan,zoom){shapes=responsiveLayoutShapes(shapes);host.hidden=false;const result=compileCssScene(shapes,options),key=result.html+result.css;if(key!==previous){style.textContent=result.css;scene.innerHTML=result.html;previous=key;}scene.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`;masonry.layout();const origin=host.getBoundingClientRect();geometry=shapes.map(s=>{const node=scene.querySelector(`[data-px-id="${s.id}"]`);if(!node)return {...s,hidden:true};const _gridLayout=measuredGrid(node,s);const inherited=ancestorsOf(s,shapes).some(p=>p.rotation),pose=worldShape(s,shapes);if(inherited||(['frame','group'].includes(s.kind)&&s.rotation)){const b=visualBounds(pose);return {...b,rotation:0,_rotationHit:{...pose,_gridLayout},_gridLayout};}const r=node.getBoundingClientRect();const x=(r.x-origin.x-pan.x)/zoom,y=(r.y-origin.y-pan.y)/zoom,b=visualBounds(s);return {...s,_gridLayout,rotation:0,x,y,width:r.width/zoom,height:r.height/zoom,_rotationHit:s.rotation?{...s,x:s.x+x-b.x,y:s.y+y-b.y}:null};});return geometry;},hit(p){return [...geometry].reverse().find(s=>s.kind!=='group'&&!s.hidden&&!s.locked&&(!s._rotationHit||rotatedContains(s._rotationHit,p))&&p.x>=s.x&&p.x<=s.x+s.width&&p.y>=s.y&&p.y<=s.y+s.height&&(()=>{let parent=geometry.find(n=>n.id===s.parent_id);while(parent){if(parent.clip_content&&(parent._rotationHit?!rotatedContains(parent._rotationHit,p):(p.x<parent.x||p.x>parent.x+parent.width||p.y<parent.y||p.y>parent.y+parent.height)))return false;parent=geometry.find(n=>n.id===parent.parent_id);}return true;})())?.id??0;}};
+ return {hide(){host.hidden=true;},render(shapes,options,pan,zoom){host.hidden=false;const result=compileCssScene(shapes,options),key=result.html+result.css;shapes=result.shapes;if(key!==previous){style.textContent=result.css;scene.innerHTML=result.html;previous=key;}scene.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`;masonry.layout();const origin=host.getBoundingClientRect();geometry=shapes.map(s=>{const node=scene.querySelector(`[data-px-id="${s.id}"]`);if(!node)return {...s,hidden:true};const _gridLayout=measuredGrid(node,s,shapes);const inherited=ancestorsOf(s,shapes).some(p=>p.rotation),pose=worldShape(s,shapes);if(inherited||(['frame','group'].includes(s.kind)&&s.rotation)){const b=visualBounds(pose);return {...b,rotation:0,_rotationHit:{...pose,_gridLayout},_gridLayout};}const r=node.getBoundingClientRect();const x=(r.x-origin.x-pan.x)/zoom,y=(r.y-origin.y-pan.y)/zoom,b=visualBounds(s);return {...s,_gridLayout,rotation:0,x,y,width:r.width/zoom,height:r.height/zoom,_rotationHit:s.rotation?{...s,x:s.x+x-b.x,y:s.y+y-b.y}:null};});return geometry;},hit(p){return [...geometry].reverse().find(s=>s.kind!=='group'&&!s.hidden&&!s.locked&&(!s._rotationHit||rotatedContains(s._rotationHit,p))&&p.x>=s.x&&p.x<=s.x+s.width&&p.y>=s.y&&p.y<=s.y+s.height&&(()=>{let parent=geometry.find(n=>n.id===s.parent_id);while(parent){if(parent.clip_content&&(parent._rotationHit?!rotatedContains(parent._rotationHit,p):(p.x<parent.x||p.x>parent.x+parent.width||p.y<parent.y||p.y>parent.y+parent.height)))return false;parent=geometry.find(n=>n.id===parent.parent_id);}return true;})())?.id??0;}};
 }

@@ -11,6 +11,14 @@
 .right-panel .variable-section-heading{margin-bottom:var(--ui-space-3)}
 .right-panel :is(input:not([type=checkbox]):not([type=color]),select,.inspector-select-trigger){min-height:var(--ui-control-height)}
 .right-panel :is(.property-grid input,.paint-alpha input){height:var(--ui-control-height)}
+/* Full field labels sit above their controls. Short prefixes and icon-only
+   compound fields keep their inline layout. This also covers generated fields. */
+.right-panel label:has(> :is(input:not([type=checkbox]):not([type=radio]),select,textarea,.inspector-select-trigger)):not(.inline-number,.paint-alpha,.size-limit-field,.layout-padding-pair label){display:block;min-width:0}
+.right-panel label:not(.inline-number,.paint-alpha,.size-limit-field,.layout-padding-pair label)>:is(input:not([type=checkbox]):not([type=radio]),select,textarea){display:block;width:100%;min-width:0;max-width:100%;margin-top:var(--ui-space-1)}
+.right-panel label:not(.inline-number,.paint-alpha,.size-limit-field,.layout-padding-pair label)>.inspector-select-trigger{width:100%;min-width:0;margin-top:var(--ui-space-1)}
+.right-panel .property-grid label:not(.inline-number){padding-left:0;background:transparent}
+.right-panel #dimensions-section .layout-margin{margin-top:var(--ui-space-3);color:var(--ui-text-muted)}
+.right-panel .inspector-optional-fields{display:block;margin:0;min-width:0}
 .right-panel .inspector-section-actions,.layer-tree-actions{gap:var(--ui-space-2);padding:var(--ui-space-1) var(--ui-space-3)}
 .right-panel .inspector-section-actions button,.layer-tree-actions button{padding:var(--ui-space-1);min-height:var(--ui-control-height)}
 .left-panel :is(.file-tabs,.panel-heading){padding-left:var(--ui-space-4);padding-right:var(--ui-space-4)}
@@ -28,7 +36,7 @@
 .paint-popover-fields,.paint-page-colors{gap:var(--ui-space-2)}
 .paint-popover label{margin:var(--ui-space-2) 0}
 .dialog-actions{gap:var(--ui-space-2);margin-top:var(--ui-space-4)}
-dialog:not(.workspace-window):not(.variables-workspace):not(.variables-dialog){padding:var(--ui-space-6)}
+dialog:not(.workspace-window):not(.variables-workspace):not(.variables-dialog):not(.drafts-dialog):not(.new-design-dialog){padding:var(--ui-space-6)}
 .variables-dialog header,.variables-dialog footer{padding:var(--ui-space-4);gap:var(--ui-space-3)}
 .variables-workspace .variable-window-header{padding:0 var(--ui-space-2) 0 0;gap:0}
 .variables-workspace .variable-searchbar{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-2)}

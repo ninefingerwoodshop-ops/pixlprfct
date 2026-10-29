@@ -1,0 +1,127 @@
+/* Measured against Figma's dark paint picker at 100% browser zoom.
+   Keep these tokens local: changing paint modes must not restyle the editor. */
+.figma-paint-picker{
+ --ui-surface:#2c2c2c;--ui-field:#383838;--ui-hover:#444;--ui-pressed:#505050;--ui-border:#444;--ui-border-hover:#666;--ui-text-color:#fff;--ui-text-strong:#fff;--ui-text-muted:#ffffffb3;--ui-accent:#0d99ff;--ui-accent-text:#fff;--ui-selected:#ffffff14;--ui-selected-hover:#ffffff1f;--ui-selected-pressed:#ffffff29;--ui-danger:#ff9d98;--ui-control-height:24px;--ui-icon-button:24px;--ui-radius-menu:12px;--ui-radius-control:5px;--ui-regular:450;--ui-semibold:550;--inspector-icon-size:24px;
+ color-scheme:dark;
+}
+.paint-popover.figma-paint-picker{width:240px;padding:0;border:0!important;border-radius:12px!important;background:#2c2c2c;color:#fff;box-sizing:border-box;box-shadow:0 2px 14px #0006,0 0 0 1px #0002;font:450 11px/16px Inter,Arial,sans-serif;overflow:auto;scrollbar-width:thin;scrollbar-color:#666 transparent}
+.figma-paint-picker [hidden]{display:none!important}
+.figma-paint-picker .paint-popover-heading{height:40px;min-height:40px;padding:8px;gap:4px;border-bottom:1px solid #444;background:#2c2c2c;box-sizing:border-box;z-index:4}
+.figma-paint-picker .paint-popover-tabs{display:flex;flex:1;min-width:0;padding:0;gap:4px}
+.figma-paint-picker .paint-popover-tabs button{min-width:0;height:24px;padding:0 8px!important;border:0;font-size:11px!important;line-height:16px!important;border-radius:5px;background:transparent!important;color:#ffffffb3!important;font-weight:450}
+.figma-paint-picker .paint-popover-tabs button[aria-selected=true]{background:#383838!important;color:#fff!important;font-weight:550}
+.figma-paint-picker .paint-popover-tabs button:hover{background:#383838!important;color:#fff!important}
+.figma-paint-picker .paint-custom{padding:0 16px 16px}
+.figma-paint-picker .inspector-icon,.figma-paint-picker .paint-modes button{width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important;flex:0 0 24px!important;border:0!important;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;background:transparent!important;color:#fff!important}
+.figma-paint-picker .paint-ui-icon{width:24px!important;height:24px!important;flex:none}
+.figma-paint-picker .paint-ui-icon :is(path,circle,rect){stroke-width:1px;vector-effect:none}
+.figma-paint-picker .app-icon{width:16px;height:16px;flex:none}
+.figma-paint-picker button:hover:not(:disabled):not(.paint-page-swatch):not(.paint-stop-swatch){background-color:#383838!important}
+.figma-paint-picker button:active:not(:disabled):not(.paint-page-swatch):not(.paint-stop-swatch){background-color:#484848!important}
+.figma-paint-picker button:focus-visible{outline:1px solid #0d99ff!important;outline-offset:-1px!important}
+.figma-paint-picker button:disabled{opacity:.4}
+.figma-paint-picker .paint-mode-toolbar{display:flex;align-items:center;gap:4px;height:41px;margin:0 -16px 16px;padding:8px;box-sizing:border-box;border-bottom:1px solid #444}
+.figma-paint-picker .paint-modes{display:flex;gap:4px;flex:1;margin:0;padding:0}
+.figma-paint-picker .paint-modes button[aria-checked=true]{background:#383838!important;color:#fff!important}
+.figma-paint-picker .paint-spectrum{height:208px}
+.figma-paint-picker .color-saturation{height:208px;width:208px;border-radius:5px;overflow:visible}
+.figma-paint-picker .color-reticle{box-sizing:border-box;width:16px;height:16px;border:3px solid white;box-shadow:0 0 0 1px #0004,0 1px 4px #0008;background:var(--reticle-color)}
+.figma-paint-picker .paint-sliders{display:flex;align-items:center;gap:12px;height:52px;margin:8px 0}
+.figma-paint-picker .paint-slider-rails{display:flex;flex-direction:column;gap:12px;flex:1;min-width:0;padding:4px 0}
+.figma-paint-picker input:is(.color-hue,.color-opacity){appearance:none;width:100%;height:16px;min-height:16px;padding:0!important;margin:0!important;border:0!important;border-radius:8px;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff0d}
+.figma-paint-picker input.color-hue{background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.figma-paint-picker input:is(.color-hue,.color-opacity)::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:var(--thumb-color,white);border:4px solid #fff;box-shadow:0 0 0 1px #0003;border-radius:50%}
+.figma-paint-picker input:is(.color-hue,.color-opacity)::-moz-range-thumb{width:8px;height:8px;background:var(--thumb-color,white);border:4px solid #fff;box-shadow:0 0 0 1px #0003;border-radius:50%}
+.figma-paint-picker .paint-color-row{display:flex;gap:0;align-items:center;height:24px;margin:0 0 16px}
+.paint-popover.figma-paint-picker .paint-color-row>.inspector-select-trigger{width:56px;flex:0 0 56px;padding:0 8px!important;gap:4px;background:transparent!important;margin-right:8px;box-shadow:inset 0 0 0 1px #444!important}
+.figma-paint-picker .inspector-select-trigger svg{width:12px!important;height:12px!important}
+.figma-paint-picker .paint-color-channels{display:flex;min-width:0;flex:1;gap:0}
+.figma-paint-picker .paint-color-channels input{width:0;min-width:0;flex:1;padding:0 8px!important;border-radius:5px 0 0 5px;background:#383838!important}
+.figma-paint-picker .paint-color-channels input+input{border-radius:0;border-left:1px solid #444!important}
+.figma-paint-picker label.paint-picker-alpha{display:flex;align-items:center;gap:0;flex:0 0 56px;min-width:0;height:24px;margin:0!important;border-radius:0 5px 5px 0;background:#383838;padding-right:5px;border-left:1px solid #2c2c2c;box-sizing:border-box;color:#ffffffb3}
+.figma-paint-picker .paint-picker-alpha input{width:100%!important;min-width:0;margin:0!important;background:transparent!important;padding:0 0 0 7px!important;border-radius:0;text-align:left}
+.figma-paint-picker input[type=number]{appearance:textfield}
+.figma-paint-picker input::-webkit-inner-spin-button,.figma-paint-picker input::-webkit-outer-spin-button{appearance:none;margin:0}
+.figma-paint-picker input:not([type=range]):not([type=file]),.figma-paint-picker .inspector-select-trigger{height:24px!important;min-height:24px!important;font:450 11px/16px Inter,Arial,sans-serif!important;color:#fff!important}
+.figma-paint-picker .paint-palette-section{border-top:1px solid #444;margin:0 -16px;padding:12px 16px 0}
+.paint-popover.figma-paint-picker .paint-palette-section>.inspector-select-trigger{width:100%;background:transparent!important;padding:0 8px!important;margin-bottom:8px;font-size:11px!important;box-shadow:inset 0 0 0 1px #444!important}
+.figma-paint-picker .paint-page-colors{display:grid;grid-template-columns:repeat(9,16px);gap:8px;margin:0}
+.figma-paint-picker .paint-page-swatch{width:16px!important;height:16px!important;min-height:16px!important;padding:0!important;border:0;border-radius:3px;box-shadow:inset 0 0 0 1px #ffffff12}
+.figma-paint-picker .paint-page-swatch:hover{outline:1px solid #fff;outline-offset:2px}
+.figma-paint-picker .paint-mode-settings:empty{display:none}
+.figma-paint-picker .paint-gradient-tools{margin:-8px -8px 0}
+.figma-paint-picker .paint-gradient-heading{display:flex;gap:4px;align-items:center;height:32px;margin:0 0 24px;padding:0 0 0 8px}
+.paint-popover.figma-paint-picker .paint-gradient-heading>.inspector-select-trigger{width:96px;flex:none;min-width:0;margin-right:auto;background:transparent!important;padding:0 8px!important;box-shadow:inset 0 0 0 1px #444!important}
+.figma-paint-picker .paint-gradient-bar{position:relative;height:32px;margin:0 8px 8px;border-radius:5px;touch-action:none}
+.figma-paint-picker .paint-gradient-handle{position:absolute;top:-16px;width:24px!important;min-width:24px!important;height:28px!important;min-height:28px!important;padding:0!important;border:0!important;border-radius:5px!important;background:#444!important;transform:translateX(-50%);touch-action:none;clip-path:polygon(0 0,100% 0,100% 80%,65% 80%,50% 100%,35% 80%,0 80%)}
+.figma-paint-picker .paint-gradient-handle:after{content:'';position:absolute;inset:5px 5px 9px;background:var(--stop-color);border-radius:2px;box-shadow:0 0 0 1px #ffffff40}
+.figma-paint-picker .paint-gradient-handle[aria-pressed=true]{background:#0d99ff!important}
+.figma-paint-picker .paint-stops-heading{height:32px;display:flex;align-items:center;justify-content:space-between;padding-left:8px;margin-bottom:4px;font-weight:550}
+.figma-paint-picker .paint-stop-row{display:flex;align-items:center;gap:8px;height:32px;padding:4px 0 4px 8px;box-sizing:border-box;margin:0 -8px 0 -8px;padding-left:16px;padding-right:8px}
+.figma-paint-picker .paint-stop-row.selected{background:#4a5878}
+.figma-paint-picker .paint-stop-position{width:48px;flex:none;margin:0!important}
+.figma-paint-picker .paint-stop-position input{width:100%;padding:0 8px!important;background:#383838!important}
+.figma-paint-picker .paint-stop-values{height:24px;display:flex;align-items:center;min-width:0;flex:1;background:#383838;border-radius:5px;padding-left:4px}
+.figma-paint-picker .paint-stop-swatch{width:16px!important;min-width:16px!important;min-height:16px!important;height:16px!important;flex:none;padding:0!important;border-radius:3px}
+.figma-paint-picker .paint-stop-values input{padding:0 4px!important;min-width:0;width:0;flex:1;background:transparent!important}
+.figma-paint-picker .paint-stop-values input[type=number]{flex:0 0 32px;width:32px;padding:0 0 0 4px!important;border-left:1px solid #2c2c2c!important;border-radius:0}
+.figma-paint-picker .paint-stop-values>span{color:#ffffffb3;padding-right:4px}
+.figma-paint-picker .paint-stop-anchor{position:absolute;left:0;top:40px;width:0;height:0;pointer-events:none}
+.figma-paint-picker .paint-stop-body{padding:16px 16px 16px}
+.figma-paint-picker .paint-stop-body>.paint-palette-section{margin-bottom:0}
+.figma-paint-picker .paint-library{padding:0;height:388px;overflow:auto}
+.figma-paint-picker .paint-library-search{display:flex;align-items:center;height:40px;padding:0 12px;border-bottom:1px solid #444;gap:0}
+.figma-paint-picker .paint-library-search input{flex:1;width:0;background:transparent!important;padding:0 4px!important}
+.figma-paint-picker .paint-library-toolbar{display:flex;align-items:center;justify-content:space-between;height:44px;border-bottom:1px solid #444;padding:0 12px 0 8px}
+.figma-paint-picker .paint-library-toolbar>.inspector-select-trigger{width:auto;max-width:176px;background:transparent!important;box-shadow:inset 0 0 0 1px #444!important}
+.figma-paint-picker .paint-variable-list{margin:8px 0 0}
+.figma-paint-picker .paint-variable-choice{display:flex;align-items:center;gap:12px;width:100%;padding:0 20px!important;height:32px!important;min-height:32px!important;font-size:11px!important;text-align:left;background:transparent!important;color:#fff!important;border:0;border-radius:0}
+.figma-paint-picker .paint-variable-choice[aria-pressed=true]{background:#383838!important}
+.figma-paint-picker .paint-library-swatch{width:16px;height:16px;border:1px solid #ffffff12;border-radius:3px;flex:none}
+.figma-paint-picker .paint-variable-choice>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.figma-paint-picker .paint-library-grid .paint-variable-list{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 16px}
+.figma-paint-picker .paint-library-grid .paint-variable-choice{height:40px!important;padding:0!important}
+.figma-paint-picker .paint-library-grid .paint-variable-choice>span:last-child{display:none}
+.figma-paint-picker .paint-library-grid .paint-library-swatch{width:100%;height:40px}
+.figma-paint-picker .paint-empty{padding:16px;color:#ffffffb3;line-height:16px}
+.figma-paint-picker .paint-bound-variable{display:flex;align-items:center;gap:4px;margin:0 0 12px;padding:4px;background:#383838;border-radius:5px}
+.figma-paint-picker .paint-variable-name{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d6bbfb!important}
+.figma-paint-picker .paint-setting-row{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:8px;min-height:32px;margin:0!important}
+.figma-paint-picker .paint-setting-row>span{font-size:11px;color:#ffffffb3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.figma-paint-picker .paint-setting-row>input,.figma-paint-picker .paint-setting-row>.inspector-select-trigger{margin:0!important;width:100%;min-width:0}
+.figma-paint-picker .paint-media-heading{display:flex;align-items:center;gap:4px;height:24px;margin-bottom:12px}
+.paint-popover.figma-paint-picker .paint-media-heading>.inspector-select-trigger{width:96px;margin-right:auto;background:transparent!important;box-shadow:inset 0 0 0 1px #444!important}
+.figma-paint-picker .paint-media-stage{position:relative;width:208px;height:208px;border-radius:5px;overflow:hidden;background:repeating-conic-gradient(#999 0 25%,#bbb 0 50%) 0/24px 24px;margin-bottom:8px}
+.figma-paint-picker .paint-media-preview{display:block;width:100%;height:100%;object-fit:contain;aspect-ratio:1;border-radius:5px}
+.figma-paint-picker .paint-upload{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.figma-paint-picker .paint-upload button{pointer-events:auto;background:#0d99ff!important;color:white!important;height:24px!important;padding:0 12px!important;border-radius:5px;font-size:11px}
+.figma-paint-picker .paint-media-stage.has-media .paint-upload{opacity:0;transition:opacity .1s}
+.figma-paint-picker .paint-media-stage.has-media:hover .paint-upload,.figma-paint-picker .paint-media-stage:focus-within .paint-upload{opacity:1}
+.figma-paint-picker .paint-adjustments{margin:0;padding:0}
+.figma-paint-picker .paint-adjustment{display:grid;grid-template-columns:80px 1fr;align-items:center;gap:8px;height:32px;color:#ffffffb3}
+.figma-paint-picker .paint-adjustment span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.figma-paint-picker .paint-adjustment input{appearance:none;height:16px;min-height:16px;padding:0!important;background:#383838;border:1px solid #666;border-radius:8px}
+.figma-paint-picker .paint-adjustment input::-webkit-slider-thumb{appearance:none;width:16px;height:16px;background:white;border:0;border-radius:50%;box-shadow:0 1px 3px #0005}
+.figma-paint-picker .paint-pattern-preview{display:flex;align-items:center;justify-content:center;height:208px;background:#161616;border:1px solid #444;border-radius:5px;margin-bottom:16px}
+.figma-paint-picker .paint-pattern-preview>.inspector-select-trigger{max-width:170px;width:auto}
+.figma-paint-picker .paint-pattern-options{margin:0 -16px -16px;padding:8px 16px;border-top:1px solid #444}
+.figma-paint-picker .paint-tile-types{display:flex;background:#383838;border-radius:5px;height:24px}
+.figma-paint-picker .paint-tile-types button{flex:1;padding:0!important;height:24px!important;border-radius:5px;border:0;background:transparent!important;color:#ffffffb3}
+.figma-paint-picker .paint-tile-types button[aria-pressed=true]{background:#2c2c2c!important;box-shadow:inset 0 0 0 1px #444!important}
+.figma-paint-picker .paint-anchor-grid{height:64px;display:grid;grid-template-columns:repeat(3,1fr);background:#383838;border-radius:5px;padding:4px;margin:4px 0}
+.figma-paint-picker .paint-anchor-grid button{display:grid;place-content:center;padding:0!important;min-height:0!important;height:18px!important;border:0;background:transparent!important}
+.figma-paint-picker .paint-anchor-grid button:after{content:'';width:2px;height:2px;background:#aaa;border-radius:1px}
+.figma-paint-picker .paint-anchor-grid button[aria-checked=true]:after{width:8px;height:8px;background:#80caff}
+.figma-paint-picker .paint-shader-code{border-top:1px solid #444;margin-top:8px;padding-top:8px}
+.figma-paint-picker summary{cursor:pointer;font-size:11px;padding:4px 0}
+.figma-paint-picker textarea{width:100%;box-sizing:border-box;min-height:160px;resize:vertical;font:11px/1.5 monospace!important;padding:8px;border:0;border-radius:5px;background:#383838;color:white}
+.figma-paint-picker .paint-blend,.figma-paint-picker .paint-contrast{border-bottom:1px solid #444;padding-bottom:12px;margin-bottom:12px}
+.figma-paint-picker .paint-contrast{display:grid;grid-template-columns:1fr 90px;gap:8px;font-size:11px;align-items:center}
+.figma-paint-picker .paint-contrast output{grid-column:1/-1;font-size:12px;font-weight:550}
+.figma-paint-picker .paint-error{font-size:11px;color:#ff9d98;overflow-wrap:anywhere}
+.figma-paint-picker .paint-create-variable{padding:12px 16px;border-bottom:1px solid #444}
+.figma-paint-picker .popover-drag-handle{cursor:grab;touch-action:none;user-select:none}
+.figma-paint-picker .popover-drag-handle:active{cursor:grabbing}
+.figma-paint-picker .popover-drag-handle button{cursor:pointer}
+.figma-paint-picker .paint-file-drop{outline:2px dashed #0d99ff;outline-offset:-3px}
+.figma-paint-picker .inspector-select-menu{background:#2c2c2c;color:white;border-color:#444}

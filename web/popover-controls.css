@@ -1,0 +1,54 @@
+/* Floating editor controls use the drawers' shared field/action styles.
+   Menu lists have a 4px inset; form popovers have the same 16px content inset
+   and 8px row gaps as the inspector. Artwork and color previews stay separate. */
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),:where(#page-switch-menu,#pencil-options)){
+ box-sizing:border-box;font:var(--ui-regular) var(--ui-text)/16px var(--ui-font);
+ color:var(--ui-text-color);background-color:var(--ui-surface);
+ border:1px solid var(--ui-border);border-radius:var(--ui-radius-menu);box-shadow:var(--ui-shadow-overlay);
+}
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,#page-switch-menu){padding:var(--ui-space-1)}
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.variable-alias-picker,.blend-popover-body,.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),#page-switch-menu) button:not(:where(.paint-page-swatch,.paint-picker-trigger,.inspector-select-trigger)){
+ font-family:var(--ui-font)!important;font-size:var(--ui-text)!important;font-weight:var(--ui-regular);
+ line-height:20px;gap:var(--ui-space-1);border-radius:var(--ui-radius-control);
+}
+/* Paint popovers can contain a dropdown's listbox in the top layer. Explicit
+   row alignment also keeps its checkmark in the same place as other menus. */
+.inspector-select-menu [role=option]{justify-content:space-between;gap:var(--ui-space-2)}
+:is(.selection-menu,.menu-panel,.tool-options) button{gap:var(--ui-space-2)}
+:is(.selection-menu,.menu-panel,.tool-options) kbd{flex:none;margin-left:auto;padding:0;border:0;background:none;font:var(--ui-regular) var(--ui-caption)/16px var(--ui-font);color:var(--ui-text-muted)}
+:is(.menu-panel>strong,.selection-menu-heading,.inspector-select-group){padding:var(--ui-space-2);font:var(--ui-semibold) var(--ui-text)/16px var(--ui-font);color:var(--ui-text-muted)}
+:is(.selection-menu-separator,.page-menu-separator){margin:var(--ui-space-1) 0;background:var(--ui-border)}
+
+/* Keyboard navigation and hover share the neutral state. Selection, disabled
+   items, and destructive actions retain distinct feedback. */
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,#page-switch-menu) button:focus:not(:disabled):not([aria-disabled=true]):not(.inspector-select-trigger){background-color:var(--ui-hover)!important}
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),#page-switch-menu) button:is([aria-selected=true],[aria-pressed=true],[aria-checked=true],.active):not(:disabled):not(.paint-page-swatch){background-color:var(--ui-selected)!important;color:var(--ui-accent-text)!important}
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),#page-switch-menu) button:is([aria-selected=true],[aria-pressed=true],[aria-checked=true],.active):hover:not(:disabled):not(.paint-page-swatch){background-color:var(--ui-selected-hover)!important}
+:is(.selection-menu,.inspector-select-menu,.menu-panel,.tool-options,.effect-choices,.variable-type-menu,.paint-popover:not(.figma-paint-picker):not(.inspector-settings-popover),#page-switch-menu) button:is([aria-selected=true],[aria-pressed=true],[aria-checked=true],.active):active:not(:disabled):not(.paint-page-swatch){background-color:var(--ui-selected-pressed)!important}
+
+.paint-popover{padding:0;max-width:calc(100vw - 16px)}
+.paint-popover-heading{min-height:40px;padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-1)}
+.paint-popover-heading strong{font-size:var(--ui-text);font-weight:var(--ui-semibold)}
+.paint-popover-tabs{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-1)}
+:is(.paint-custom,.paint-library){padding:0 var(--ui-space-4) var(--ui-space-4)}
+.paint-popover :is(label,.inspector-field-caption){font-size:var(--ui-text);line-height:16px;margin:0;color:var(--ui-text-muted)}
+.paint-popover label>:is(input:not([type=color]):not([type=range]),.inspector-select-trigger){width:100%;margin-top:var(--ui-space-1)}
+.paint-popover label>input:not([type=color]):not([type=range]){display:block}
+.paint-popover :is(.paint-popover-fields,.gradient-geometry,.gradient-colors,.gradient-stop,.paint-page-colors){gap:var(--ui-space-2)}
+.paint-popover .paint-popover-fields{grid-template-columns:minmax(0,1fr) 80px}
+.paint-popover :is(.paint-popover-fields,.gradient-geometry,.gradient-stop,.inspector-field-caption,.wide-button,.paint-variable-list){margin-top:var(--ui-space-2)}
+.paint-popover .gradient-stop{padding:var(--ui-space-2) 0}
+.paint-popover .gradient-stop.active{padding:var(--ui-space-2)}
+.paint-popover .inspector-field-caption{margin-bottom:var(--ui-space-1)}
+.paint-popover .paint-page-swatch{width:var(--ui-control-height);height:var(--ui-control-height);padding:0;border-radius:var(--ui-radius-control)}
+.paint-popover .input-variable-trigger{right:2px;bottom:2px}
+.paint-popover .variable-input-host>input{padding-right:28px!important}
+:is(.blend-popover-body,.variable-alias-picker){padding:var(--ui-space-4)}
+.blend-popover-body label{margin:0}
+.blend-popover>.blend-popover-body .inspector-select-trigger{margin-top:var(--ui-space-1)!important}
+.variable-alias-picker>input{margin:var(--ui-space-2) 0}
+.variable-alias-picker>strong{display:inline-flex;align-items:center;min-height:var(--ui-icon-button);font-weight:var(--ui-semibold)}
+#pencil-options{padding:var(--ui-space-2) var(--ui-space-4)}
+/* Long paint editors scroll inside the viewport; keep their close action reachable. */
+.paint-popover{overflow:auto;overscroll-behavior:contain}
+.paint-popover-heading{position:sticky;top:0;z-index:2;background:var(--ui-surface)}

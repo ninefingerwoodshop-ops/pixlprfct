@@ -74,7 +74,22 @@ fn compatible_property_kind(path: &str, kind: &str) -> bool {
             && path.contains(".parts.")
             && path.ends_with(".radius"))
 }
+fn paint_property(path: &str) -> Option<(&str, u32)> {
+    let rest = path.strip_prefix("appearance.")?;
+    let (channel, rest) = rest.split_once('.')?;
+    if !["fills", "strokes"].contains(&channel) {
+        return None;
+    }
+    let (id, field) = rest.split_once('.')?;
+    if field != "color" {
+        return None;
+    }
+    Some((channel, id.parse().ok()?))
+}
 pub fn property_kind(path: &str) -> Option<&'static str> {
+    if paint_property(path).is_some() {
+        return Some("color");
+    }
     if let Some(key) = path
         .strip_prefix("control.left_adornment.")
         .or_else(|| path.strip_prefix("control.right_adornment."))
@@ -417,6 +432,24 @@ fn modes_for(doc: &Document, s: &Shape) -> BTreeMap<u32, u32> {
     modes
 }
 fn assign(shape: &mut Shape, path: &str, value: Value) -> Result<(), String> {
+    if let Some((channel, id)) = paint_property(path) {
+        let a = shape.appearance.as_mut().ok_or("Paint is missing")?;
+        let stack = if channel == "fills" {
+            &mut a.fills
+        } else {
+            &mut a.strokes
+        };
+        let paint = stack
+            .as_mut()
+            .and_then(|s| s.iter_mut().find(|p| p.id == id))
+            .ok_or("Paint is missing")?;
+        paint.color = value.as_str().ok_or("Invalid color")?.into();
+        paint.gradient = None;
+        paint.media = None;
+        paint.pattern = None;
+        paint.shader = None;
+        return Ok(());
+    }
     if let Some(rest) = path.strip_prefix("control.") {
         if let Some((side, key)) = rest.split_once('.') {
             if side == "left_adornment" || side == "right_adornment" {
@@ -547,6 +580,26 @@ fn assign(shape: &mut Shape, path: &str, value: Value) -> Result<(), String> {
         json["appearance"]["fill_enabled"] = Value::Bool(true);
     }
     *shape = serde_json::from_value(json).map_err(|e| e.to_string())?;
+    if let Some(a) = &mut shape.appearance {
+        if path == "fill" {
+            if let Some(p) = a.fills.as_mut().and_then(|s| s.first_mut()) {
+                p.color = shape.fill.clone();
+                p.gradient = None;
+                p.media = None;
+                p.pattern = None;
+                p.shader = None;
+            }
+        }
+        if path == "appearance.stroke_color" {
+            if let Some(p) = a.strokes.as_mut().and_then(|s| s.first_mut()) {
+                p.color = a.stroke_color.clone();
+                p.gradient = None;
+                p.media = None;
+                p.pattern = None;
+                p.shader = None;
+            }
+        }
+    }
     Ok(())
 }
 pub fn resolve(doc: &mut Document) -> Result<(), String> {
@@ -578,6 +631,27 @@ pub fn detach_edited(old: &Shape, new: &mut Shape) {
     new.variable_bindings.retain(|path, id| {
         if old.variable_bindings.get(path) != Some(id) {
             return true;
+        }
+        if let Some((channel, paint_id)) = paint_property(path) {
+            let color = |json: &Value| {
+                json["appearance"][channel]
+                    .as_array()
+                    .and_then(|stack| {
+                        stack
+                            .iter()
+                            .find(|p| p["id"].as_u64() == Some(paint_id as u64))
+                    })
+                    .map(|p| {
+                        (
+                            p["color"].clone(),
+                            p["gradient"].clone(),
+                            p["media"].clone(),
+                            p["pattern"].clone(),
+                            p["shader"].clone(),
+                        )
+                    })
+            };
+            return color(&a).is_some() && color(&a) == color(&b);
         }
         if path == "auto_layout.padding" {
             return [

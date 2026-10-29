@@ -2,7 +2,7 @@
 #control-inspector .control-fields{display:grid;gap:8px;min-width:0}
 #control-inspector .control-group{margin-top:16px;padding-top:12px;border-top:1px solid var(--ui-border)}
 #control-inspector .control-fields h4{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px;font-size:11px;font-weight:600;color:var(--ui-text-strong)}
-#control-inspector label.control-field{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:8px;margin:0;padding:0;font-size:11px;color:var(--ui-text-muted);min-width:0;line-height:1.4}
+#control-inspector label.control-field{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:4px;margin:0;padding:0;font-size:11px;color:var(--ui-text-muted);min-width:0;line-height:1.4}
 #control-inspector .control-field>span{min-width:0}
 #control-inspector .control-field :is(input,select,textarea,.inspector-select-trigger){width:100%;min-width:0;margin:0;font-size:11px}
 #control-inspector .control-field textarea{min-height:84px;resize:vertical}
@@ -18,7 +18,7 @@
 #control-inspector .control-style-value{display:grid;gap:4px;min-width:0}
 #control-inspector .control-style-value input[type=color]{height:28px;min-height:28px;padding:3px;cursor:pointer}
 #control-inspector .control-field:has(.control-style-value){align-items:start}
-#control-inspector .control-field:has(.control-style-value)>span{padding-top:7px}
+#control-inspector .control-field:has(.control-style-value)>span{padding-top:0}
 #control-inspector .control-source-row{display:flex;align-items:center;gap:4px;min-width:0}
 #control-inspector .control-source-row>.inspector-select-trigger{flex:1;width:0;min-width:0}
 #control-inspector .control-variable-trigger{position:static;flex:0 0 24px;width:24px;height:24px;padding:4px}

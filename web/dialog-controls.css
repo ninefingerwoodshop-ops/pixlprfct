@@ -1,0 +1,85 @@
+/* Dialog controls share the drawers' field and action rules. Presentation
+   canvases and docked workspace pages keep their own content geometry. */
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)){
+ box-sizing:border-box;font:var(--ui-regular) var(--ui-text)/16px var(--ui-font);
+ color:var(--ui-text-color);background:var(--ui-surface);border:1px solid var(--ui-border);
+ border-radius:var(--ui-radius-dialog);box-shadow:var(--ui-shadow-dialog);
+}
+dialog:not(:where(.prototype-player,.workspace-window,.variables-workspace,.new-design-dialog,.drafts-dialog)){
+ padding:var(--ui-space-4)!important;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);overflow:auto;
+}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) :is(button,input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),textarea,.inspector-select-trigger){box-sizing:border-box;border-radius:var(--ui-radius-control)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button{font:var(--ui-regular) var(--ui-text)/20px var(--ui-font)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary{background-color:var(--ui-accent)!important;color:white;font-weight:var(--ui-semibold)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary:hover:not(:disabled){background-color:var(--ui-accent-text)!important}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary:active:not(:disabled){background-color:var(--ui-primary-pressed)!important}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.danger{color:var(--ui-danger)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) .dialog-icon{display:inline-flex;align-items:center;justify-content:center;flex:none}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) .app-icon{width:16px!important;height:16px!important;flex:none}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) h2{font:var(--ui-semibold) var(--ui-title)/20px var(--ui-font);letter-spacing:0;margin:0 0 var(--ui-space-4)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) p{font-size:var(--ui-text);line-height:16px;margin:var(--ui-space-2) 0}
+
+/* Full field labels use a 4px gap. Checkbox/radio rows and card choices keep
+   their existing layout, rather than acquiring full-width input geometry. */
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) label:has(>:is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),textarea,.inspector-select-trigger)){
+ display:block;min-width:0;margin-bottom:var(--ui-space-2);font-size:var(--ui-text);line-height:16px;
+}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) label>:where(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),textarea,.inspector-select-trigger){width:100%;min-width:0;max-width:100%;margin-top:var(--ui-space-1)!important}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) label[for]{margin-bottom:var(--ui-space-1)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) label[for]+input{margin-top:0}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) :is(.dialog-actions,.variant-actions,.cloud-actions,.drafts-actions){gap:var(--ui-space-2);flex-wrap:wrap}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) :is(.dialog-actions,.variant-actions){margin-top:var(--ui-space-4)}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) :is(.cloud-actions,.cloud-list,.variant-matrix){margin:var(--ui-space-2) 0}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) .cloud-row{padding:var(--ui-space-2) 0;gap:var(--ui-space-2);flex-wrap:wrap}
+dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) .cloud-row>div{flex-basis:180px}
+dialog#export-dialog>label{margin-bottom:var(--ui-space-2)}
+dialog#export-dialog>label:has(>input[type=checkbox]){display:flex;align-items:center;gap:var(--ui-space-2);min-height:var(--ui-control-height)}
+dialog#export-dialog #export-code-option{margin-bottom:var(--ui-space-2)}
+dialog#shortcuts-dialog dl{gap:var(--ui-space-2) var(--ui-space-4);margin:0 0 var(--ui-space-4)}
+
+/* Settings have description rows, but use the same 16px content insets and
+   8px row spacing. Reserve the unit suffix inside the increment field. */
+dialog#snapping-dialog{padding:0!important}
+dialog#snapping-dialog .settings-header{padding:var(--ui-space-4);gap:var(--ui-space-2)}
+dialog#snapping-dialog h2{margin:0;line-height:20px}
+dialog#snapping-dialog .settings-header p{margin:var(--ui-space-1) 0 0;line-height:16px}
+dialog#snapping-dialog .settings-body{padding:var(--ui-space-2) var(--ui-space-4) var(--ui-space-4)}
+dialog#snapping-dialog .settings-row{margin:0;padding:var(--ui-space-2) 0;gap:var(--ui-space-2)}
+dialog#snapping-dialog .settings-row strong{font-size:var(--ui-text);line-height:16px;font-weight:var(--ui-semibold)}
+dialog#snapping-dialog .settings-number input{padding-right:28px!important}
+dialog#snapping-dialog .settings-shortcuts{padding-top:var(--ui-space-2);line-height:16px}
+dialog#snapping-dialog .settings-footer{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-2);flex-wrap:wrap}
+
+/* New-design dialogs are shared by the editor and both project-home hosts. */
+dialog:is(.new-design-dialog,.drafts-dialog){padding:0}
+dialog .design-dialog-header{padding:var(--ui-space-4);gap:var(--ui-space-2)}
+dialog .design-dialog-header h2{margin:0 0 var(--ui-space-1);line-height:20px;letter-spacing:0}
+dialog .design-dialog-header p{margin:0;line-height:16px}
+dialog .new-design-body{padding:var(--ui-space-4)}
+dialog .new-design-body>label{margin:0 0 var(--ui-space-4)!important}
+dialog .design-starters{gap:var(--ui-space-2)}
+dialog .design-starters legend{margin-bottom:var(--ui-space-2)}
+dialog .design-starter{padding:var(--ui-space-2);margin:0}
+dialog .design-starter:hover{background:var(--ui-hover)}
+dialog .design-starter:has(input:checked){background:var(--ui-selected)}
+dialog .design-starter:has(input:checked):hover{background:var(--ui-selected-hover)}
+dialog .design-starter strong{font-size:var(--ui-text);line-height:16px}
+dialog:is(.new-design-dialog,.drafts-dialog) footer{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-2);flex-wrap:wrap}
+dialog .drafts-toolbar{padding:var(--ui-space-4);gap:var(--ui-space-2)}
+dialog .drafts-grid{padding:0 var(--ui-space-4) var(--ui-space-4);gap:var(--ui-space-4)}
+
+/* Floating export dialogs retain scrolling content and a reachable footer. */
+dialog.code-export-window .variable-window-header{height:40px;gap:var(--ui-space-1);padding-right:var(--ui-space-2)}
+dialog.code-export-window h2{margin:0}
+dialog.code-export-window .code-export-main{padding:var(--ui-space-4)}
+dialog.code-export-window .code-export-intro h3{margin:0 0 var(--ui-space-1);letter-spacing:0}
+dialog.code-export-window .code-export-intro p{margin:0}
+dialog.code-export-window .code-export-main h4{margin:var(--ui-space-4) 0 var(--ui-space-2)}
+dialog.code-export-window .code-page-choice{display:block;margin:var(--ui-space-2) 0 0}
+dialog.code-export-window .code-scope-option{padding:var(--ui-space-2)!important;gap:var(--ui-space-1)}
+dialog.code-export-window .code-scope-option strong{font-size:var(--ui-text)}
+dialog.code-export-window .code-package-preview{margin:var(--ui-space-4) 0 var(--ui-space-2)}
+dialog.code-export-window .code-package-heading{padding:var(--ui-space-2)}
+dialog.code-export-window .code-file-list{padding:var(--ui-space-1) var(--ui-space-2)}
+dialog.code-export-window .code-file-row{padding:var(--ui-space-1) 0;gap:var(--ui-space-2)}
+dialog.code-export-window .code-export-footer{padding:var(--ui-space-2) var(--ui-space-4);gap:var(--ui-space-2);flex-wrap:wrap}

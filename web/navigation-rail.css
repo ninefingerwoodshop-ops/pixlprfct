@@ -1,0 +1,30 @@
+/* Labeled navigation keeps the shared 16px icons and 4px action rhythm,
+   with enough width for every caption, including Variables. */
+:root{--rail:56px}
+.navigation-rail{
+ width:var(--rail);padding:var(--ui-space-2) var(--ui-space-1);gap:var(--ui-space-1);
+ background:var(--ui-surface);border-color:var(--ui-border);
+}
+.navigation-rail>.rail-button{
+ flex:none;align-items:center;justify-content:center;width:100%;
+ height:44px!important;min-height:44px!important;padding:var(--ui-space-1) 0!important;
+ gap:var(--ui-space-1);line-height:16px;border-radius:var(--ui-radius-control);
+}
+.navigation-rail>.rail-button:not(.active){color:var(--ui-text-muted)}
+.navigation-rail>.rail-button>span:last-child{line-height:16px;white-space:nowrap}
+.navigation-rail>.rail-button.active::before{content:none}
+.navigation-rail .rail-button svg{width:var(--inspector-icon-size);height:var(--inspector-icon-size);flex:none}
+.navigation-rail>.rail-bottom{margin-top:auto}
+
+/* The brand mark stays distinct from action icons and uses the same 24px
+   size as the inspector logo. Its menu clears the edge of the rail. */
+.navigation-rail>.file-menu{width:100%;flex:none}
+.navigation-rail>.file-menu>summary{
+ box-sizing:border-box;height:32px;padding:var(--ui-space-1);border:0;
+ border-radius:var(--ui-radius-control);box-shadow:none;list-style:none;
+}
+.navigation-rail>.file-menu>summary::marker{content:''}
+.navigation-rail .app-mark{width:var(--ui-icon-button);height:var(--ui-icon-button);border-radius:var(--ui-radius-control)}
+.navigation-rail .file-menu[open]>summary{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)}
+.navigation-rail .file-menu[open]>summary:hover{background-color:var(--ui-selected-hover)!important}
+.navigation-rail .file-menu>.menu-panel{left:calc(var(--rail) + var(--ui-space-1));top:0}

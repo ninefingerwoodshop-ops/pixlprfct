@@ -1,0 +1,41 @@
+/* Drawing tools share icon geometry and interaction states with inspector
+   actions. Split tools stay together as the available canvas width changes. */
+.toolbox{
+ width:max-content;max-width:calc(100% - 32px);flex-wrap:wrap;justify-content:center;
+ gap:var(--ui-space-1);padding:var(--ui-space-2);
+ background:var(--ui-surface);border:1px solid var(--ui-border);
+ border-radius:var(--ui-radius-dialog);box-shadow:var(--ui-shadow-overlay);
+}
+.toolbox .tool-split{display:inline-flex;align-items:center;flex:none;gap:var(--ui-space-1)}
+.toolbox .tool-group{position:static;margin:0;flex:none}
+.toolbox :is(.tool-split>button,.toolbar-disclosure){display:inline-flex}
+.toolbox .toolbar-disclosure{background:transparent;color:var(--ui-text-muted);list-style:none;cursor:pointer}
+.toolbox .toolbar-disclosure::marker{content:''}
+#workspace .toolbox .tool-group:is([open],:has(.active))>summary.toolbar-disclosure{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)}
+#workspace .toolbox .tool-group:is([open],:has(.active))>summary.toolbar-disclosure:hover{background-color:var(--ui-selected-hover)!important}
+#workspace .toolbox .tool-group:is([open],:has(.active))>summary.toolbar-disclosure:active{background-color:var(--ui-selected-pressed)!important}
+.toolbox>i{flex:0 0 1px;width:1px;height:16px;margin:0 var(--ui-space-1);background:var(--ui-border)}
+
+/* Anchor menus to the full bar so every tool's options remain inside the
+   canvas, even when the toolbar wraps between wider drawers. */
+.toolbox .tool-group .tool-options{
+ left:50%;bottom:calc(100% + var(--ui-space-2));transform:translateX(-50%);
+ width:210px;max-width:100%;max-height:calc(100dvh - 160px);overflow-y:auto;
+}
+/* Figma-style toolbelt: seven compact split groups and a mode segment. */
+#workspace .toolbox{gap:4px;padding:6px;max-width:calc(100% - 24px);border-radius:14px;bottom:28px}
+#workspace .toolbox .tool-split{gap:0}
+#workspace .toolbox .tool-split>button,#workspace .toolbox>button,#workspace .toolbelt-modes>button{width:30px;height:32px;padding:7px;border:0;flex:none}
+#workspace .toolbox .toolbar-disclosure{height:32px;width:12px;border:0;border-radius:5px}
+#workspace .toolbox .tool-options{width:224px;max-width:calc(100vw - 24px);padding:4px}
+#workspace .toolbox .tool-options button{height:32px;gap:10px;border:0;border-radius:5px;white-space:nowrap;font-size:12px}
+#workspace .toolbox button:hover,#workspace .toolbox summary:hover{background:var(--ui-hover)}
+#workspace .toolbox button:active{background:var(--ui-pressed)}
+#workspace .toolbox button.active{background:var(--ui-selected);color:var(--ui-accent-text)}
+#workspace .toolbox .toolbelt-modes{display:flex;gap:2px;border-radius:8px;background:var(--ui-field-bg,#f5f5f5);padding:2px}
+#workspace .toolbox .toolbelt-modes button{width:28px;height:28px;padding:6px}
+#workspace .toolbelt-modes [data-editor-mode=dev].active{color:var(--ui-success);background:var(--ui-success-bg)}
+.canvas-tool-inspector textarea{width:100%;min-height:64px;resize:vertical;font:inherit;line-height:1.5;background:var(--ui-field-bg,#f5f5f5);border:1px solid transparent;border-radius:5px;padding:8px}
+.canvas-tool-inspector p{font-size:11px;line-height:1.5;color:var(--ui-text-muted)}
+.comment-reply{display:flex;align-items:start;gap:8px;border-bottom:1px solid var(--ui-border)}
+.comment-reply p{flex:1;white-space:pre-wrap;overflow-wrap:anywhere}.comment-reply button{width:24px;height:24px;padding:4px}

@@ -1,3 +1,4 @@
+import {icon} from './icons.js';
 export function componentSet(doc,master){return doc.component_sets?.find(s=>s.variants.some(v=>v.component_id===master));}
 const element=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e;};
 export function renderVariantProperties(host,doc,master,onChange){
@@ -26,7 +27,7 @@ export function editVariantSet(doc,master,onSave,onRemove){
   const render=()=>{
     const table=element('table'),head=element('thead'),row=element('tr');row.append(element('th','Main component'));
     draft.properties.forEach((p,index)=>{const th=element('th'),input=element('input');input.value=p;input.maxLength=128;input.setAttribute('aria-label',`Property ${index+1} name`);input.oninput=()=>draft.properties[index]=input.value;
-      const remove=element('button','×');remove.title='Remove property';remove.setAttribute('aria-label',`Remove property ${index+1}`);remove.disabled=draft.properties.length===1;remove.onclick=()=>{draft.properties.splice(index,1);draft.variants.forEach(v=>v.values.splice(index,1));render();};th.append(input,remove);row.append(th);
+      const remove=element('button');remove.className='dialog-icon';remove.innerHTML=icon('close');remove.title='Remove property';remove.setAttribute('aria-label',`Remove property ${index+1}`);remove.disabled=draft.properties.length===1;remove.onclick=()=>{draft.properties.splice(index,1);draft.variants.forEach(v=>v.values.splice(index,1));render();};th.append(input,remove);row.append(th);
     });row.append(element('th',''));head.append(row);table.append(head);
     const body=element('tbody');draft.variants.forEach((v,vi)=>{
       const tr=element('tr'),td=element('td'),select=element('select');select.setAttribute('aria-label',`Variant ${vi+1} component`);

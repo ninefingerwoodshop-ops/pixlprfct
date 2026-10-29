@@ -1,3 +1,4 @@
+import {canvasTexture,canvasSvgPaint} from './paint-textures.js';
 import {strokePadding} from './stroke-tips.js';
 export function defaultGradient(color,kind='linear') {
  return {kind,start:kind==='radial'?[.5,.5]:[0,.5],end:[1,.5],stops:[{position:0,color,opacity:1},{position:1,color:'#7c3aed',opacity:1}]};
@@ -21,7 +22,9 @@ export function moveGradientPoint(g,key,point){
 }
 const radialSurfaces=new Map();let radialPixels=0;
 export function canvasFill(ctx,s,channel='fill') {
+ if(s.appearance?.[channel+'_texture'])return canvasTexture(ctx,s,channel);
  const g=channel==='stroke'?s.appearance?.stroke_gradient:s.appearance?.gradient;if(!g)return channel==='stroke'?(s.appearance?.stroke_color??(s.points?.length?s.fill:'#000000')):s.fill;
+ if(['angular','diamond'].includes(g.kind))return canvasSvgPaint(ctx,s,gradientSvg(s,channel),`${channel==='stroke'?'stroke-gradient':'gradient'}-${s.id}`);
  const p=gradientGeometry(s,g);let paint;
  if(g.kind==='radial') {
   // CanvasGradient has no independent transform. Paint the ellipse into a
@@ -46,6 +49,7 @@ function addStops(paint,g){
 }
 export function gradientSvg(s,channel='fill') {
  const g=channel==='stroke'?s.appearance?.stroke_gradient:s.appearance?.gradient;if(!g||!s.appearance[channel+'_enabled'])return '';
+ if(['angular','diamond'].includes(g.kind))return extendedGradientSvg(s,g,channel);
  const p=gradientGeometry(s,g),stops=g.stops.map(t=>`<stop offset="${t.position}" stop-color="${t.color}" stop-opacity="${t.opacity}"/>`).join('');
  const radial=radialGeometry(g);
  const common=`id="${channel==='stroke'?'stroke-gradient':'gradient'}-${s.id}" gradientUnits="userSpaceOnUse" color-interpolation="sRGB"`;
@@ -58,4 +62,16 @@ export function insertGradientStop(g) {
  // Interpolate premultiplied colors so adding a stop preserves transparency.
  const color='#'+[1,3,5].map(i=>Math.round(opacity?((parseInt(a.color.slice(i,i+2),16)*a.opacity+parseInt(b.color.slice(i,i+2),16)*b.opacity)/2/opacity):0).toString(16).padStart(2,'0')).join('');
  return {...g,stops:[...g.stops.slice(0,slot+1),{position:(a.position+b.position)/2,color,opacity},...g.stops.slice(slot+1)]};
+}
+
+export function sampleGradient(g,t){
+ const upper=g.stops.findIndex(s=>s.position>=t),b=upper<0?g.stops.at(-1):g.stops[upper],a=upper<=0?b:g.stops[upper-1],mix=b.position===a.position?0:Math.max(0,Math.min(1,(t-a.position)/(b.position-a.position))),opacity=a.opacity*(1-mix)+b.opacity*mix;
+ return {color:'#'+[1,3,5].map(i=>Math.round(opacity?(parseInt(a.color.slice(i,i+2),16)*a.opacity*(1-mix)+parseInt(b.color.slice(i,i+2),16)*b.opacity*mix)/opacity:0).toString(16).padStart(2,'0')).join(''),opacity};
+}
+function extendedGradientSvg(s,g,channel){
+ const cx=g.start[0],cy=g.start[1],angle=Math.atan2(g.end[1]-cy,g.end[0]-cx),radius=Math.hypot(g.end[0]-cx,g.end[1]-cy),reach=Math.max(...[[0,0],[0,1],[1,0],[1,1]].map(([x,y])=>Math.hypot(x-cx,y-cy)))*2;
+ let content='';const point=(x,y)=>`${(cx+x)*s.width},${(cy+y)*s.height}`,paint=t=>{const c=sampleGradient(g,t);return `fill="${c.color}" fill-opacity="${c.opacity}"`;};
+ if(g.kind==='angular'){for(let i=0;i<512;i++){const a=angle+i/512*Math.PI*2,b=angle+(i+1.05)/512*Math.PI*2;content+=`<path d="M ${point(0,0)} L ${point(Math.cos(a)*reach,Math.sin(a)*reach)} ${point(Math.cos(b)*reach,Math.sin(b)*reach)} Z" ${paint(i/512)}/>`;}}
+ else{for(let i=256;i>=0;i--){const r=reach*i/256,c=Math.cos(angle),n=Math.sin(angle);content+=`<polygon points="${[[r,0],[0,r],[-r,0],[0,-r]].map(([x,y])=>point(c*x-n*y,n*x+c*y)).join(' ')}" ${paint(Math.min(1,r/radius))}/>`;}}
+ return `<pattern id="${channel==='stroke'?'stroke-gradient':'gradient'}-${s.id}" patternUnits="userSpaceOnUse" x="${s.x}" y="${s.y}" width="${s.width}" height="${s.height}">${content}</pattern>`;
 }

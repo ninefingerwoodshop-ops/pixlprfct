@@ -96,5 +96,145 @@ export const iconKeywords = {
     "finance",
     "payment",
     "bank"
+  ],
+  "rotate-right": [
+    "rotate",
+    "rotate 90",
+    "clockwise",
+    "turn"
+  ],
+  "flip-horizontal": [
+    "flip",
+    "mirror",
+    "reflect",
+    "horizontal"
+  ],
+  "flip-vertical": [
+    "flip",
+    "mirror",
+    "reflect",
+    "vertical"
+  ],
+  "bounding-box": [
+    "edit object",
+    "transform",
+    "resize",
+    "handles",
+    "selection"
+  ],
+  "droplet": [
+    "blend mode",
+    "opacity",
+    "fill",
+    "ink",
+    "water"
+  ],
+  "layers": [
+    "stack",
+    "layer panel",
+    "levels",
+    "arrange"
+  ],
+  "swatches": [
+    "styles",
+    "color variables",
+    "palette",
+    "library"
+  ],
+  "corners": [
+    "independent corners",
+    "corner radius",
+    "radii",
+    "fit"
+  ],
+  "blend-mode": [
+    "blend",
+    "paint",
+    "opacity"
+  ],
+  "keyframe": [
+    "animation",
+    "timeline",
+    "motion"
+  ],
+  "timeline-collapse": [
+    "timeline",
+    "panel",
+    "collapse"
+  ],
+  "mode-draw": [
+    "draw",
+    "brush",
+    "mode"
+  ],
+  "mode-design": [
+    "design",
+    "selection",
+    "mode"
+  ],
+  "mode-motion": [
+    "motion",
+    "animation",
+    "mode"
+  ],
+  "mode-dev": [
+    "development",
+    "code",
+    "mode"
+  ],
+  "section": [
+    "section",
+    "organize",
+    "region"
+  ],
+  "slice": [
+    "slice",
+    "export",
+    "region"
+  ],
+  "text-path": [
+    "text",
+    "path",
+    "curve"
+  ],
+  "code": [
+    "code",
+    "development",
+    "braces"
+  ],
+  "spec": [
+    "specification",
+    "document",
+    "handoff"
+  ],
+  "comment": [
+    "comment",
+    "conversation",
+    "feedback"
+  ],
+  "annotation": [
+    "annotation",
+    "notes",
+    "label"
+  ],
+  "measurement": [
+    "measurement",
+    "dimensions",
+    "ruler"
+  ],
+  "media": [
+    "media",
+    "video",
+    "play"
+  ],
+  "design": [
+    "frame",
+    "design",
+    "layout"
+  ],
+  "motion": [
+    "motion",
+    "animation",
+    "play"
   ]
 };

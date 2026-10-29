@@ -1,5 +1,6 @@
 export async function cloudRequest(path='',options={}){
- const response=await fetch('/api/documents'+path,{signal:AbortSignal.timeout(20000),...options,headers:{...(options.body?{'content-type':'application/json'}:{}),...options.headers}});
+ const url=new URL('/api/documents'+path,globalThis.location?.origin??'http://localhost');const workspace=new URLSearchParams(globalThis.location?.search??'').get('workspace');if(workspace)url.searchParams.set('workspace',workspace);
+ const response=await fetch(url.pathname+url.search,{signal:AbortSignal.timeout(20000),...options,headers:{...(options.body?{'content-type':'application/json'}:{}),...options.headers}});
  let data;try{data=await response.json();}catch{throw new Error('Cloud files are unavailable on this server.');}
  if(!response.ok){const error=new Error(data.error??'Cloud request failed.');error.status=response.status;throw error;}return data;
 }

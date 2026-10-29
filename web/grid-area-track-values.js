@@ -5,12 +5,24 @@ export function areaTrackValues(shape,plan){
  return [['columns','Column',cell.column,cell.column_span],['rows','Row',cell.row,cell.row_span]].flatMap(([axis,label,start,span])=>
   Array.from({length:span},(_,i)=>({key:`${axis}-${start+i}`,label:`${label} ${start+i} (px)`,value:Number((plan[axis][start+i-1]??0).toFixed(2))})));
 }
-export function updateAreaTrackValues(panel,shape,plan){
- for(const track of areaTrackValues(shape,plan)){
-  const input=panel.querySelector(`[data-area-track="${track.key}"]`);
-  if(input&&(!input.dataset?.trackMode||input.dataset.trackMode==='fixed')&&input!==panel.ownerDocument?.activeElement&&input.value!==String(track.value))input.value=track.value;
-  const measured=panel.querySelector(`[data-area-track-measured="${track.key}"]`);
-  if(measured)measured.textContent=`${track.value} px on canvas`;
+export const areaPlacementKey=cell=>cell?[cell.column,cell.row,cell.column_span,cell.row_span].join(','):'';
+export function updateAreaTrackValues(panel,shape,plan,{preview=false,parent}={}){
+ for(const measured of panel.querySelectorAll('[data-area-track-measured]')){
+  const key=measured.dataset.areaTrackMeasured,[axis,number]=key.split('-'),value=plan?.[axis]?.[Number(number)-1];
+  const input=panel.querySelector(`[data-area-track="${key}"]`);
+  // Base values remain editable while a media query changes measured sizes.
+  const size=value==null?null:Number(value.toFixed(2));
+  if(preview&&size!=null&&input&&(!input.dataset?.trackMode||input.dataset.trackMode==='fixed')&&input!==panel.ownerDocument?.activeElement&&input.value!==String(size))input.value=size;
+  measured.textContent=!plan?'Not in active Grid':size==null?'Not present at this breakpoint':`${size} px on canvas`;
+ }
+ const active=panel.querySelector('.grid-active-area');
+ if(active&&!preview){
+  const cell=plan?.placements.find(p=>p.id===shape.id),name=shape.layout_item?.grid_cell?.area;
+  const omitted=parent?.auto_layout?.direction==='grid'&&name&&!parent.auto_layout.grid?.areas?.some(a=>a.name===name);
+  active.hidden=!!plan&&!omitted&&areaPlacementKey(cell)===active.dataset.basePlacement;
+  const status=active.querySelector('.grid-active-placement'),tracks=active.querySelector('.grid-active-tracks');
+  status.textContent=!plan?'On canvas: not in active Grid.':!cell?'On canvas: not placed.':`On canvas: Column ${cell.column} · Row ${cell.row} · ${cell.column_span} × ${cell.row_span}${omitted?` · “${name}” is not defined here; contents use automatic placement.`:''}`;
+  tracks.textContent=areaTrackValues(shape,plan).map(t=>`${t.label.replace(' (px)','')}: ${t.value}px`).join(' · ');
  }
 }
 

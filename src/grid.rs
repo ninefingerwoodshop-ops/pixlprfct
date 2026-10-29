@@ -392,7 +392,7 @@ fn resolved(t: &GridTrack, available: f64, font: f64) -> GridTrack {
             } else if ["auto", "min-content", "max-content"].contains(&maxunit) {
                 r.mode = "hug".into();
             } else {
-                r.mode = "hug".into();
+                r.mode = "minmax".into();
                 r.max = Some(unit(t.value, maxunit, available, font).max(r.min.unwrap_or(0.0)));
             }
         }
@@ -462,7 +462,11 @@ fn tracks(
         for _ in start..end {
             let grow: Vec<_> = (start..end)
                 .filter(|&i| {
-                    config[i].mode != "fixed" && sizes[i] < config[i].max.unwrap_or(1e6) - 1e-7
+                    config[i].mode != "fixed"
+                        && (config[i].mode != "minmax"
+                            || ["auto", "min-content", "max-content"]
+                                .contains(&config[i].min_unit.as_str()))
+                        && sizes[i] < config[i].max.unwrap_or(1e6) - 1e-7
                 })
                 .collect();
             if grow.is_empty() || deficit < 1e-7 {
@@ -474,6 +478,30 @@ fn tracks(
                 sizes[i] += add;
                 deficit -= add;
             }
+        }
+    }
+    // Finite minmax tracks use available space up to their growth limits,
+    // before fractional tracks receive the remainder (CSS Grid §11.6).
+    // A hugging container is measured under a max-content constraint.
+    let mut free = if hug {
+        f64::INFINITY
+    } else {
+        (available - extent(&sizes, gap)).max(0.0)
+    };
+    for _ in 0..config.len() {
+        let grow: Vec<_> = (0..config.len())
+            .filter(|&i| {
+                config[i].mode == "minmax" && sizes[i] < config[i].max.unwrap_or(1e6) - 1e-7
+            })
+            .collect();
+        if grow.is_empty() || free < 1e-7 {
+            break;
+        }
+        let share = free / grow.len() as f64;
+        for i in grow {
+            let add = share.min(config[i].max.unwrap_or(1e6) - sizes[i]);
+            sizes[i] += add;
+            free -= add;
         }
     }
     let fractions: Vec<_> = (0..config.len())

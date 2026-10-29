@@ -1,0 +1,16 @@
+{
+  "name": "pixlprfct-selfhost",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "better-auth": "1.7.14",
+    "pg": "8.23.1",
+    "mysql2": "3.24.6",
+    "nodemailer": "10.2.1",
+    "qrcode": "1.5.4"
+  }
+}

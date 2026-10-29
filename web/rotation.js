@@ -16,6 +16,18 @@ export function rotateFromDrag(s,start,end,snap=false){
  return {...next,x:center.x-offset.x,y:center.y-offset.y};
 }
 
+// Inspector rotation uses the same counter-clockwise model and center pivot
+// as canvas rotation. Keeping dimensions intact also preserves frame children.
+export function rotateToAngle(shape,angle){
+ const center=worldPoint(shape,{x:shape.x+shape.width/2,y:shape.y+shape.height/2});
+ const rotation=((angle+180)%360+360)%360-180;
+ const offset=worldPoint({x:0,y:0,rotation},{x:shape.width/2,y:shape.height/2});
+ return {...shape,x:center.x-offset.x,y:center.y-offset.y,rotation,
+  layout_item:{...shape.layout_item,fill_width:false,fill_height:false}};
+}
+
+export const rotateQuarterTurn=shape=>rotateToAngle(shape,(shape.rotation??0)-90);
+
 export function ancestorsOf(s,shapes){const byId=new Map(shapes.map(n=>[n.id,n])),chain=[];let p=byId.get(s.parent_id);while(p){chain.push(p);p=byId.get(p.parent_id);}return chain;}
 export function worldShape(s,shapes){let result={...s};for(const p of ancestorsOf(s,shapes)){result={...result,...worldPoint(p,result),rotation:(result.rotation??0)+(p.rotation??0)};}return result;}
 export function sceneToWorld(shapes){return shapes.map(s=>worldShape(s,shapes));}

@@ -1,3 +1,4 @@
+import {editorShape} from './canvas-tools.js';
 export const vectorTools = ['line','arrow','polygon','star','pen','pencil'];
 export function fromPoints(kind, points, closed = false) {
   const all=points.flatMap(p=>[p,p.in??p,p.out??p]);
@@ -15,6 +16,7 @@ export function reshape(shape, points) {
   return {...shape,x:geometry.x,y:geometry.y,width:geometry.width,height:geometry.height,points:geometry.points,handles:geometry.handles};
 }
 export function drawnShape(kind, start, end, {shiftKey=false,altKey=false}={}) {
+  if(['section','slice','comment','annotation','measurement','spec'].includes(kind))return editorShape(kind,start,end);
   let dx=end.x-start.x,dy=end.y-start.y;
   if (shiftKey) {
     if (kind==='line'||kind==='arrow') { const angle=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*Math.PI/4, length=Math.hypot(dx,dy); dx=Math.cos(angle)*length; dy=Math.sin(angle)*length; }
@@ -44,10 +46,10 @@ export function vectorSvg(shape) {
  const d=vectorPath(shape),a=shape.appearance??{},tips=strokeTips(shape);
  if(!tips.length||a.stroke_enabled===false)return `<path d="${d}" ${paintAttributes(shape)}/>`;
  const pad=strokePadding(shape),box=`x="${shape.x-pad}" y="${shape.y-pad}" width="${shape.width+pad*2}" height="${shape.height+pad*2}"`;
- const strokeOnly={...shape,appearance:{...a,fill_enabled:false,stroke_enabled:true,stroke_color:'#ffffff',stroke_cap:'butt',stroke_gradient:null,stroke_opacity:1}};
+ const strokeOnly={...shape,appearance:{...a,fill_enabled:false,stroke_enabled:true,stroke_color:'#ffffff',stroke_cap:'butt',stroke_gradient:null,stroke_texture:null,stroke_opacity:1}};
  const mask=`<mask id="tips-${shape.id}" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" ${box}><path d="${d}" ${paintAttributes(strokeOnly)}/>${tips.filter(t=>t.cut).map(t=>`<path d="${t.cut}" fill="black"/>`).join('')}${tips.map(t=>`<path d="${t.d}" fill="${t.closed?'white':'none'}" stroke="${t.closed?'none':'white'}" stroke-width="${shape.stroke_width??2}" stroke-linecap="${a.stroke_cap??'round'}" stroke-linejoin="round"/>`).join('')}</mask>`;
  const fill=`<path d="${d}" ${paintAttributes({...shape,appearance:{...a,fill_enabled:a.fill_enabled??!!shape.closed,stroke_enabled:false}})}/>`;
- return `${fill}<defs>${mask}</defs><rect ${box} mask="url(#tips-${shape.id})" fill="${a.stroke_gradient?`url(#stroke-gradient-${shape.id})`:a.stroke_color??shape.fill}" opacity="${a.stroke_opacity??1}"/>`;
+ return `${fill}<defs>${mask}</defs><rect ${box} mask="url(#tips-${shape.id})" fill="${a.stroke_texture?`url(#stroke-texture-${shape.id})`:a.stroke_gradient?`url(#stroke-gradient-${shape.id})`:a.stroke_color??shape.fill}" opacity="${a.stroke_opacity??1}"/>`;
 }
 import {paintAttributes} from './appearance.js';
 

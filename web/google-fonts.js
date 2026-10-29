@@ -1,3 +1,4 @@
+import {positionPopover} from './popover-position.js';
 import {fontWeightCatalog} from './font-weight-catalog.js';
 // Google Fonts CSS2 loads only the families/weights used by the document.
 export const fontSuggestions=['Manrope','DM Sans','Inter','Roboto','Open Sans','Lato','Montserrat','Poppins','Nunito','Raleway','Ubuntu','Work Sans','Outfit','Space Grotesk','Plus Jakarta Sans','Source Sans 3','Noto Sans','Noto Serif','Merriweather','Lora','Playfair Display','Roboto Slab','Libre Baskerville','Oswald','Bebas Neue','Fira Sans','Fira Code','JetBrains Mono','Roboto Mono','Georgia','monospace'];
@@ -38,13 +39,7 @@ export function fontInput(value,apply){
   try{await loadGoogleFont(family);if(request===revision&&input.isConnected){input.setCustomValidity('');apply(family);}}
   catch(error){if(request===revision&&input.isConnected){input.setCustomValidity(error.message);input.reportValidity();}}
  };
- const position=()=>{
-  if(!menu)return;
-  const r=input.getBoundingClientRect(),width=Math.min(Math.max(r.width,220),innerWidth-16);
-  const below=innerHeight-r.bottom-12,above=r.top-12,height=Math.min(320,Math.max(below,above));
-  Object.assign(menu.style,{width:width+'px',maxHeight:Math.max(40,height)+'px',left:Math.max(8,Math.min(r.left,innerWidth-width-8))+'px'});
-  menu.style.top=(below>=Math.min(320,menu.scrollHeight)||below>=above?r.bottom+4:Math.max(8,r.top-Math.min(menu.scrollHeight,height)-4))+'px';
- };
+ const position=()=>{if(menu){const r=input.getBoundingClientRect();positionPopover(menu,r,{placement:'below',width:Math.max(r.width,220),maxHeight:320,gap:4});}};
  const render=query=>{
   if(!menu)return;menu.replaceChildren();active=-1;input.removeAttribute('aria-activedescendant');
   const matches=fontSuggestions.filter(f=>f.toLowerCase().includes(query.trim().toLowerCase()));

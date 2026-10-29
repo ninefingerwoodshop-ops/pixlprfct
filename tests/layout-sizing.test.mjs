@@ -45,3 +45,13 @@ test('input and dropdown heights stay Hug through mode, limit and resize edits',
   assert.ok(!scene.css.includes('max-height:500px'),kind);
  }
 });
+
+test('text dimension menus and auto width/height tools agree on Hug and Fixed',()=>{
+ const text={kind:'text',width:180,height:40,typography:{font_family:'Inter',font_size:16,line_height:1.2,font_weight:400,sizing:'width',wrap:false}};
+ assert.equal(sizingOptions([text],[]).hug,true);
+ assert.equal(sizingMode(text,'width'),'hug');assert.equal(sizingMode(text,'height'),'hug');
+ const widthFixed=sizingPatch(text,'width','fixed');assert.equal(sizingMode(widthFixed,'width'),'fixed');assert.equal(sizingMode(widthFixed,'height'),'hug');assert.equal(widthFixed.typography.wrap,true);
+ const heightFixed=sizingPatch(widthFixed,'height','fixed');assert.equal(sizingMode(heightFixed,'height'),'fixed');assert.equal(heightFixed.width,180);
+ const hug=sizingPatch(heightFixed,'width','hug');assert.equal(hug.typography.sizing,'width');assert.equal(hug.typography.wrap,false);
+ const fill=sizingPatch(text,'width','fill');assert.equal(sizingMode(fill,'width'),'fill');assert.equal(fill.typography.sizing,'height');assert.equal(sizingMode(fill,'height'),'hug');
+});

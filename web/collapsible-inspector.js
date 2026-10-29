@@ -1,5 +1,7 @@
+import {disclosureButton,setDisclosureExpanded,installOptionalInspector} from './inspector-disclosure.js';
 // Keep existing sections and control nodes intact: inspector renderers own them.
-export function installCollapsibleInspector(){
+export function installCollapsibleInspector(current,change){
+ const syncOptional=installOptionalInspector(current,change);
  const panel=document.querySelector('.right-panel'),storageKey='pixlprfct.inspector.collapsed';
  let saved={};try{saved=JSON.parse(localStorage.getItem(storageKey)??'{}')??{};}catch{}
  const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch{}};
@@ -9,7 +11,7 @@ export function installCollapsibleInspector(){
    const heading=[...section.querySelectorAll('h3')].find(h=>h.closest('.property-section')===section);
    // Embedded layout settings share the visible parent section's disclosure.
    // Their legacy heading is hidden, so a separate collapsed state is unreachable.
-   if(!heading||heading.classList.contains('layout-legacy')){
+   if(section.classList.contains('figma-core-section')||!heading||heading.classList.contains('layout-legacy')||section.classList.contains('paint-section')||section.classList.contains('canvas-tool-inspector')){
     section.classList.remove('inspector-collapsible','inspector-collapsed');
     continue;
    }
@@ -22,16 +24,14 @@ export function installCollapsibleInspector(){
    section.classList.toggle('inspector-collapsed',isCollapsed(key)===true);
    let toggle=heading.querySelector('.inspector-section-toggle');
    if(!toggle){
-    toggle=document.createElement('button');toggle.type='button';toggle.className='inspector-section-toggle';
-    toggle.textContent=title;heading.replaceChildren(toggle);
-    toggle.onclick=()=>{
-     const collapsed=section.classList.toggle('inspector-collapsed');saved[key]=collapsed;
-     toggle.setAttribute('aria-expanded',String(!collapsed));
+    toggle=disclosureButton(title,expanded=>{
+     section.classList.toggle('inspector-collapsed',!expanded);saved[key]=!expanded;
      persist();
-    };
+    });toggle.classList.add('inspector-section-toggle');heading.replaceChildren(toggle);
    }
-   toggle.setAttribute('aria-expanded',String(isCollapsed(key)!==true));
+   setDisclosureExpanded(toggle,isCollapsed(key)!==true);
   }
+  syncOptional();
  };
  panel.addEventListener('click',event=>{
   const action=event.target.closest('.section-add,.effect-choices button');
@@ -45,13 +45,13 @@ export function installCollapsibleInspector(){
    for(const key of Object.keys(saved))saved[key]=collapsed;
    saved['*']=collapsed;
    for(const section of panel.querySelectorAll('[data-collapse-key]'))saved[section.dataset.collapseKey]=collapsed;
-   // Open disclosure sections too, without opening effect/action menus.
-   for(const details of panel.querySelectorAll('details:not(.effect-add-menu)'))details.open=!collapsed;
    persist();sync();
+   // Expand/collapse only accordions. Optional properties keep their enabled state.
+   for(const toggle of panel.querySelectorAll('.inspector-accordion-toggle:not(.inspector-section-toggle)'))if(toggle.isConnected&&toggle.getAttribute('aria-expanded')===String(collapsed))toggle.click();
   };
   toolbar.append(button);
  }
- panel.querySelector('.inspector-tabs').after(toolbar);
+ document.getElementById('inspector-layer-actions').append(toolbar);
  // Sections such as effects, variables and prototype interactions are rebuilt.
  const observer=new MutationObserver(sync);observer.observe(panel,{childList:true,subtree:true});sync();
 }

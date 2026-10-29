@@ -1,0 +1,62 @@
+/* Measured from Figma's Manage libraries: 760 × 640, 40px header,
+   200px navigation, 16px content inset, 24px controls, 74px file rows. */
+dialog.library-manager{--ui-control-height:24px;--ui-icon-button:24px;--ui-regular:450;--ui-semibold:550;width:760px;height:640px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0!important;border:0;border-radius:13px;background:#2c2c2c;overflow:hidden;box-shadow:0 8px 24px #0006;font-size:11px}
+dialog.library-manager::backdrop{background:transparent}
+dialog.library-manager .library-manager-header{height:40px;box-sizing:border-box;padding:0 8px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #444}
+dialog.library-manager .library-manager-header h2{font-size:11px;line-height:16px;font-weight:550;margin:0}
+dialog.library-manager .library-manager-layout{display:grid;grid-template-columns:200px minmax(0,1fr);height:calc(100% - 40px)}
+dialog.library-manager .library-manager-nav{padding:8px;border-right:1px solid #444;overflow:auto}
+dialog.library-manager .library-manager-nav input{width:100%;margin-bottom:16px}
+dialog.library-manager .library-nav-item{display:flex;align-items:center;gap:8px;width:100%;height:24px;padding:0 4px;margin-bottom:8px;text-align:left;border:0;background:transparent}
+dialog.library-manager .library-nav-item[aria-current=page]{background:#383838}
+dialog.library-manager .library-nav-label{margin:16px 0 12px;padding:0 4px;color:#b5b5b5;font-size:11px}
+dialog.library-manager .library-manager-content{padding:16px;overflow:auto;min-width:0}
+dialog.library-manager h3{font-size:11px;font-weight:450;margin:0 0 12px;line-height:16px}
+dialog.library-manager .library-list-row+h3{margin-top:12px}
+dialog.library-manager .library-list-row{display:flex;align-items:center;gap:16px;min-height:74px;margin-bottom:0}
+dialog.library-manager .library-thumbnail{flex:none;width:102px;height:58px;display:grid;place-items:center;border-radius:4px;background:#383838;color:#b5b5b5}
+dialog.library-manager .library-thumbnail .app-icon{width:28px!important;height:28px!important}
+dialog.library-manager .library-row-copy{min-width:0;flex:1}
+dialog.library-manager .library-row-copy strong{display:block;font-size:13px;font-weight:450;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog.library-manager .library-row-copy small{display:block;color:#b5b5b5;font-size:11px;line-height:16px;margin-top:2px}
+dialog.library-manager .library-action,dialog.library-manager button.primary{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap;height:24px;min-height:24px;padding:0 8px;border:1px solid #444;border-radius:5px;font-size:11px;line-height:16px;color:#fff;background:transparent;flex:none}
+dialog.library-manager .library-action:hover:not(:disabled),dialog.library-manager .library-nav-item:hover{background:#383838}
+dialog.library-manager .library-icon{display:inline-grid;place-items:center;width:24px;height:24px;min-height:24px;padding:0;border:0;background:none;flex:none}
+dialog.library-manager .library-icon:hover{background:#383838}
+dialog.library-manager .library-empty{color:#b5b5b5;margin:0 0 16px;line-height:18px}
+dialog.library-manager .library-status{color:#ffb8ae;margin:0 0 16px}
+dialog.library-manager .library-permission-group{padding:12px 0;border-bottom:1px solid #444}
+dialog.library-manager h4{font-size:11px;font-weight:550;margin:0 0 8px}
+dialog.library-manager .library-maintainers{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+dialog.library-manager .library-member{display:flex;align-items:center;gap:4px;padding-left:8px;background:#383838;border-radius:5px}
+dialog.library-manager .library-permissions-form>button{margin:16px 0}
+dialog.library-manager .library-permission-group>.inspector-select-trigger{width:100%}
+.left-panel.showing-assets>.file-heading,.left-panel.showing-assets>.design-navigation{display:none}
+#assets-panel>.panel-heading{height:48px;min-height:48px;padding:0 16px;border-bottom:1px solid var(--ui-border)}
+#assets-panel .assets-browser-toolbar{padding:12px 16px 8px;display:flex;flex-direction:column;gap:8px}
+#assets-panel .assets-browser-toolbar>input,#assets-panel .assets-browser-toolbar>select{margin:0;width:100%;max-width:none}
+#assets-panel .assets-browser-toolbar>.inspector-select-trigger{width:100%}
+#assets-panel .assets-collection-heading{padding:8px 16px;margin:0;gap:4px}
+#assets-panel .assets-collection-heading h3{font-size:11px;font-weight:450}
+#assets-panel #asset-results{margin:0;padding:0}
+#assets-panel #asset-cards{padding:8px 16px 16px;flex:1}
+#assets-panel .asset-card{border:0;border-radius:0;padding:0;gap:6px;margin:0 0 20px;background:none}
+#assets-panel .asset-preview{height:116px;border:0;border-radius:4px;padding:12px}
+#assets-panel .asset-caption{display:flex;align-items:center;gap:4px}
+#assets-panel .asset-caption strong{font-size:11px;font-weight:450;flex:1}
+#assets-panel .asset-options-button{width:24px;height:24px;min-height:24px;padding:4px}
+#assets-panel .asset-library-note{font-size:10px;color:var(--ui-text-muted);display:flex;gap:4px;align-items:center}
+#assets-panel .asset-library-note svg{width:12px;height:12px}
+#assets-panel .assets-starters{border:0;border-top:1px solid var(--ui-border);border-radius:0;padding:12px 16px;display:block;background:none}
+#assets-panel .assets-starters summary{cursor:pointer;font-size:11px;margin-bottom:8px}
+#assets-panel .assets-starter-actions{display:flex;flex-direction:column;gap:8px}
+.library-selection-notice{padding:12px 16px;border-bottom:1px solid var(--ui-border);font-size:11px;line-height:16px;color:var(--ui-text-muted)}
+@media(max-width:650px){dialog.library-manager .library-manager-layout{grid-template-columns:150px minmax(0,1fr)}dialog.library-manager .library-thumbnail{display:none}dialog.library-manager .library-list-row{flex-wrap:wrap;gap:8px;padding:8px 0}}
+/* Override the app's global dialog/action defaults only inside this measured UI. */
+dialog.library-manager{border:0!important}
+dialog.library-manager .library-manager-header h2{font-size:11px!important;font-weight:550!important}
+dialog#library-manager #library-manager-nav .library-nav-item{height:24px!important;min-height:24px!important;justify-content:flex-start!important;padding:0 4px!important;color:var(--ui-text-color)!important}
+dialog#library-manager #library-manager-nav .library-nav-item[aria-current=page]{background:#383838!important}
+dialog#library-manager :is(#library-manager-header,#library-manager-content) :is(.library-action,button.primary,.library-icon){height:24px!important;min-height:24px!important;padding-top:0!important;padding-bottom:0!important}
+#assets-panel .assets-browser-toolbar>.inspector-select-trigger{width:100%!important;max-width:none!important;min-width:0!important}
+.library-selection-notice button{display:block;margin-top:8px}

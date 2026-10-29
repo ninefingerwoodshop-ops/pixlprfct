@@ -11,6 +11,9 @@ export function inspectorRenderer(render,root,selectionKey){
    const eligible=panel?.contains(active)&&active.matches('input,textarea,select,button');
    const state=eligible?{id:active.id,label:active.getAttribute('aria-label'),tag:active.tagName,type:active.type,text:active.tagName==='BUTTON'?active.textContent:null,value:active.value,dirty:dirty.has(active),start:active.selectionStart,end:active.selectionEnd,direction:active.selectionDirection}:null;
    render();
+   // Adding an effect/guide intentionally opens and focuses its settings. Do
+   // not pull focus back to the Add button after that new popup has opened.
+   if(document.activeElement!==active&&document.activeElement?.closest('.inspector-settings-popover:popover-open'))return;
    if(!state||key!==selectionKey())return;
    const candidates=[...panel.querySelectorAll(state.tag.toLowerCase())].filter(el=>state.id?el.id===state.id:state.label?el.getAttribute('aria-label')===state.label:state.text?el.textContent===state.text:false);
    if(candidates.length!==1)return;const next=candidates[0];if(next.disabled||!next.getClientRects().length||next.closest('[hidden]'))return;

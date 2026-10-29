@@ -9,14 +9,14 @@ export function hsvToHex([h,s,v]){
  return '#'+rgb.map(n=>Math.round((n+m)*255).toString(16).padStart(2,'0')).join('');
 }
 export function installColorPicker(host,label,commit){
- let hsv=[0,0,1],dragging=false;
+ let hsv=[0,0,1],dragging=null;
  const area=document.createElement('div');area.className='color-saturation';area.tabIndex=0;area.setAttribute('role','slider');area.setAttribute('aria-label',label+' saturation and brightness');area.setAttribute('aria-valuemin','0');area.setAttribute('aria-valuemax','100');
  const cursor=document.createElement('span');cursor.className='color-reticle';area.append(cursor);
  const hue=document.createElement('input');hue.type='range';hue.min='0';hue.max='360';hue.step='1';hue.className='color-hue';hue.setAttribute('aria-label',label+' hue');host.append(area,hue);
- const render=()=>{area.style.backgroundColor=hsvToHex([hsv[0],1,1]);cursor.style.left=hsv[1]*100+'%';cursor.style.top=(1-hsv[2])*100+'%';area.setAttribute('aria-valuenow',String(Math.round(hsv[1]*100)));area.setAttribute('aria-valuetext',`Saturation ${Math.round(hsv[1]*100)}%, brightness ${Math.round(hsv[2]*100)}%`);hue.value=hsv[0];};
+ const render=()=>{area.style.backgroundColor=hsvToHex([hsv[0],1,1]);cursor.style.setProperty('--reticle-color',hsvToHex(hsv));hue.style.setProperty('--thumb-color',hsvToHex([hsv[0],1,1]));cursor.style.left=hsv[1]*100+'%';cursor.style.top=(1-hsv[2])*100+'%';area.setAttribute('aria-valuenow',String(Math.round(hsv[1]*100)));area.setAttribute('aria-valuetext',`Saturation ${Math.round(hsv[1]*100)}%, brightness ${Math.round(hsv[2]*100)}%`);hue.value=hsv[0];};
  const move=e=>{const r=area.getBoundingClientRect();hsv[1]=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));hsv[2]=1-Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));render();};
- area.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();dragging=true;area.setPointerCapture(e.pointerId);area.focus();move(e);};area.onpointermove=e=>{if(dragging)move(e);};area.onpointerup=e=>{if(!dragging)return;move(e);dragging=false;commit(hsvToHex(hsv));};area.onpointercancel=()=>{dragging=false;};
- area.onkeydown=e=>{const step=e.shiftKey?.1:.01;if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();hsv[e.key==='ArrowLeft'||e.key==='ArrowRight'?1:2]=Math.max(0,Math.min(1,hsv[e.key==='ArrowLeft'||e.key==='ArrowRight'?1:2]+(['ArrowLeft','ArrowDown'].includes(e.key)?-step:step)));render();commit(hsvToHex(hsv));};
+ area.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();dragging={id:e.pointerId,start:[...hsv]};area.setPointerCapture(e.pointerId);area.focus();move(e);};area.onpointermove=e=>{if(dragging)move(e);};const finish=cancel=>{if(!dragging)return;const previous=dragging;dragging=null;if(cancel){hsv=previous.start;render();}if(area.hasPointerCapture(previous.id))area.releasePointerCapture(previous.id);if(!cancel)commit(hsvToHex(hsv));};area.onpointerup=e=>{if(!dragging)return;move(e);finish(false);};area.onpointercancel=()=>finish(true);area.onlostpointercapture=()=>finish(true);
+ area.onkeydown=e=>{if(e.key==='Escape'&&dragging){e.preventDefault();e.stopPropagation();finish(true);return;}const step=e.shiftKey?.1:.01;if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();hsv[e.key==='ArrowLeft'||e.key==='ArrowRight'?1:2]=Math.max(0,Math.min(1,hsv[e.key==='ArrowLeft'||e.key==='ArrowRight'?1:2]+(['ArrowLeft','ArrowDown'].includes(e.key)?-step:step)));render();commit(hsvToHex(hsv));};
  hue.oninput=()=>{hsv[0]=Number(hue.value);render();};hue.onchange=()=>commit(hsvToHex(hsv));
  return color=>{const next=hexToHsv(color);if(!next[1]||!next[2])next[0]=hsv[0];hsv=next;render();};
 }

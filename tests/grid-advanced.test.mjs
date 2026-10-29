@@ -9,6 +9,22 @@ test('dense placement fills earlier holes and content alignment offsets tracks',
 test('named areas reserve spans, reject overlaps, and export template areas',()=>{const {e,f,grid,plan,set,get,ids}=setup(2);const areas=[{name:'header',column:1,row:1,column_span:2,row_span:1},{name:'sidebar',column:1,row:2,column_span:1,row_span:2}];grid({areas});set(ids[0],{layout_item:{...get(ids[0]).layout_item,grid_cell:{area:'sidebar'}}});assert.equal(plan().placements[0].row_span,2);assert.equal(plan().placements[0].row,2);const g=get(f).auto_layout.grid;assert.equal(gridCss(g)['grid-template-areas'],'"header header" "sidebar ." "sidebar ."');const saved=e.snapshot();assert.throws(()=>grid({areas:[...areas,{name:'overlap',column:1,row:1,column_span:1,row_span:1}]}));assert.equal(e.snapshot(),saved);e.free();});
 test('inherited stretch applies unless the child sets its own alignment',()=>{const {e,grid,plan,set,get,ids}=setup(1);grid({columns:[t('fixed',100)],rows:[t('fixed',80)],justify_items:'stretch',align_items:'center'});assert.equal(plan().placements[0].width,100);assert.equal(plan().placements[0].y,30);set(ids[0],{width:20,layout_item:{...get(ids[0]).layout_item,grid_cell:{align_x:'end'}}});assert.equal(plan().placements[0].width,20);assert.equal(plan().placements[0].x,80);e.free();});
 test('track serializer supports all reference sizing modes without CSS injection',()=>{for(const mode of ['auto','min-content','max-content'])assert.equal(gridTrackCss(t(mode)),mode);assert.equal(gridTrackCss(t('minmax',200,{min:2,min_unit:'em',max_unit:'px'})),'minmax(2em,200px)');assert.equal(gridTrackCss(t('fixed','red; color:red')),'0px');});
+test('finite minmax tracks grow to their limits before fractional tracks',()=>{
+ const {e,f,grid,plan,set}=setup(0);
+ const bounded=t('minmax',180,{min:80,min_unit:'px',max_unit:'px'});
+ grid({columns:[bounded,t('fr')],rows:[t('minmax',100,{min:40,min_unit:'px',max_unit:'px'})]});
+ assert.deepEqual(plan().columns,[180,220]);assert.deepEqual(plan().rows,[100]);
+ set(f,{width:120});assert.deepEqual(plan().columns,[120,0]);
+ set(f,{width:60});assert.deepEqual(plan().columns,[80,0]);
+ e.free();
+});
+test('finite minmax tracks share constrained space and stop at each growth limit',()=>{
+ const {e,f,grid,plan,set}=setup(0);
+ grid({columns:[t('minmax',120,{min:100,min_unit:'px',max_unit:'px'}),t('minmax',200,{min:50,min_unit:'px',max_unit:'px'})]});
+ set(f,{width:250});assert.deepEqual(plan().columns,[120,130]);
+ set(f,{width:400});assert.deepEqual(plan().columns,[120,200]);
+ e.free();
+});
 test('browser-resolved drop cells are atomic and work for protected instances',()=>{const {e,f,grid,get,ids}=setup(2);grid({columns:[t('fr'),t('fr')],rows:[t('fixed',100),t('fixed',100)]});const main=e.add('frame',600,600);e.create_component(main);const instance=e.create_instance(main,500,500),before=e.snapshot();e.move_into_cells(JSON.stringify([{...get(instance),x:300,y:140}]),f,JSON.stringify([[instance,2,2]]));assert.equal(get(instance).layout_item.grid_cell.column,2);assert.equal(get(instance).layout_item.grid_cell.row,2);const placed=JSON.parse(e.grid_layout(f)).placements.find(p=>p.id===instance);assert.equal(placed.column,2);assert.equal(placed.row,2);e.undo();assert.equal(e.snapshot(),before);e.free();});
 test('dropping into a named area binds it, follows area edits, and clears outside it',()=>{const {e,f,grid,get,set,ids}=setup(1);const area={name:'content',column:1,row:1,column_span:2,row_span:1};grid({areas:[area],rows:[t('fixed',80),t('fixed',80)]});const before=e.snapshot();e.move_into_cells(JSON.stringify([get(ids[0])]),f,JSON.stringify([[ids[0],2,1]]));assert.equal(get(ids[0]).layout_item.grid_cell.area,'content');assert.equal(JSON.parse(e.grid_layout(f)).placements[0].column_span,2);e.undo();assert.equal(e.snapshot(),before);e.redo();set(f,{auto_layout:{...get(f).auto_layout,grid:{...get(f).auto_layout.grid,areas:[{...area,row_span:2}]}}});assert.equal(JSON.parse(e.grid_layout(f)).placements[0].row_span,2);e.move_into_cells(JSON.stringify([get(ids[0])]),f,JSON.stringify([[ids[0],1,3]]));assert.equal(get(ids[0]).layout_item.grid_cell.area,'');e.free();});
 test('renaming an area updates all its children atomically and preserves other assignments',()=>{const {e,f,grid,get,set,ids,plan}=setup(3);grid({areas:[{name:'content',column:1,row:1,column_span:2,row_span:1},{name:'footer',column:1,row:2,column_span:2,row_span:1}]});for(const id of ids.slice(0,2))set(id,{layout_item:{...get(id).layout_item,grid_cell:{area:'content'}}});set(ids[2],{layout_item:{...get(ids[2]).layout_item,grid_cell:{area:'footer'}}});const before=e.snapshot(),positions=plan().placements;e.rename_grid_area(f,'content','main');assert.deepEqual(ids.map(id=>get(id).layout_item.grid_cell.area),['main','main','footer']);assert.deepEqual(plan().placements,positions);const after=e.snapshot();e.undo();assert.equal(e.snapshot(),before);e.redo();assert.equal(e.snapshot(),after);assert.throws(()=>e.rename_grid_area(f,'main','footer'));assert.equal(e.snapshot(),after);assert.throws(()=>e.rename_grid_area(f,'main','bad name'));assert.equal(e.snapshot(),after);e.free();});
@@ -252,14 +268,15 @@ test('area resize previews and commits preserve minmax rules and ordinary track 
  grid({cell_containers:true,columns:[bounded,t('fixed',100,{min:60,max:140})],rows:[t('minmax',100,{min:40,min_unit:'px',max_unit:'px'})],areas:[{name:'body',column:1,row:1,column_span:2,row_span:1}]});
  const wrapper=JSON.parse(e.snapshot()).shapes.find(s=>s.layout_item.grid_cell?.area==='body');
  const before=e.snapshot();
+ assert.equal(wrapper.width,280);assert.equal(wrapper.height,100);
  for(const width of [5,1000]){
   const patch={...get(wrapper.id),width,height:1000};
   const preview=JSON.parse(e.preview_layout_update(JSON.stringify([patch]),f));
   const parent=preview.document.shapes.find(s=>s.id===f);
   assert.deepEqual(parent.auto_layout.grid.columns[0],get(f).auto_layout.grid.columns[0]);
   assert.deepEqual(parent.auto_layout.grid.rows,get(f).auto_layout.grid.rows);
-  assert.ok(preview.grid.columns[0]>=80&&preview.grid.columns[0]<=180);
-  assert.ok(preview.grid.columns[1]>=60&&preview.grid.columns[1]<=140);
+  assert.deepEqual(preview.grid.columns,[180,width===5?60:140]);
+  assert.deepEqual(preview.grid.rows,[100]);
   assert.equal(e.snapshot(),before);
  }
  set(wrapper.id,{width:1000,height:1000});

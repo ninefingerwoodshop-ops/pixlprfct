@@ -1,25 +1,21 @@
 /* Editor chrome only: authored canvas colors remain document content. */
 .navigation-rail .rail-button:not(.active),.current-page-label,.variable-sidebar-heading,
-:is(.navigation-rail,.toolbox,.left-panel,.right-panel,dialog) kbd{color:#595959}
-.frame-label:not([data-component-type])>button{color:#595959}
+:is(.navigation-rail,.toolbox,.left-panel,.right-panel,dialog) kbd{color:var(--ui-text-muted)}
+.frame-label:not([data-component-type])>button{color:var(--ui-text-muted)}
 .user-avatar{color:#254f5e}
 #css-canvas[aria-pressed=true]{color:var(--ui-accent-text);background:var(--ui-selected)}
 :is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog) input::placeholder,
-:is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog) textarea::placeholder{color:#666;opacity:1}
-:is(.left-panel,.right-panel,dialog) :is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),select,textarea,.inspector-select-trigger){border:1px solid #858585}
-:is(.left-panel,.right-panel,dialog) :is(input,select,textarea):not(:disabled):hover{border-color:#666}
+:is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog) textarea::placeholder{color:var(--ui-text-muted);opacity:1}
+:is(.left-panel,.right-panel,dialog) :is(input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),select,textarea,.inspector-select-trigger){border:1px solid var(--ui-border-hover)}
+:is(.left-panel,.right-panel,dialog) :is(input,select,textarea):not(:disabled):hover{border-color:var(--ui-text-muted)}
 :is(.left-panel,.right-panel,dialog) :is(input[type=checkbox],input[type=radio],input[type=range]){accent-color:var(--ui-accent)}
-#layers-page .current-page-label,.workspace-actions .action-result>span{color:#595959}
-.development-panel .snippet-choice>small,.snippet-choice>small{color:#595959}
-.frame-label[data-component-type=""]>button{color:#595959}
+#layers-page .current-page-label,.workspace-actions .action-result>span{color:var(--ui-text-muted)}
+.development-panel .snippet-choice>small,.snippet-choice>small{color:var(--ui-text-muted)}
+.frame-label[data-component-type=""]>button{color:var(--ui-text-muted)}
 .editor-tooltip{pointer-events:auto}
 #page-switch-options button[aria-checked=true]{color:var(--ui-accent-text);background:var(--ui-selected)}
-.code-scope-option>span,.code-zip-badge,.code-file-row>span:nth-child(2){color:#595959}
+.code-scope-option>span,.code-zip-badge,.code-file-row>span:nth-child(2){color:var(--ui-text-muted)}
 
-/* Every field in the variables grid stays quiet until interaction. */
-.variables-workspace table :is(input,textarea,.inspector-select-trigger){border-color:transparent!important;background:transparent!important;box-shadow:none!important}
-.variables-workspace table :is(input,textarea,.inspector-select-trigger):not(:disabled):hover{border-color:#858585!important;background:var(--ui-field)!important}
-.variables-workspace table :is(input,textarea,.inspector-select-trigger):focus-visible{border-color:var(--ui-accent)!important;outline:2px solid var(--ui-accent);outline-offset:1px}
 /* Cell boundaries remain visible independently of editable field hover. */
 .variables-workspace table :is(th,td){border-right:1px solid var(--ui-border)!important;border-bottom:1px solid var(--ui-border)!important}
 .variables-workspace table tr>:last-child{border-right:0!important}

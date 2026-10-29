@@ -1,6 +1,6 @@
 /* Motion for editor chrome only; authored prototype timing stays independent. */
 :root{--ui-motion-fast:120ms;--ui-motion-enter:160ms;--ui-motion-ease:cubic-bezier(.2,0,0,1)}
-:is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.menu-panel,.tool-options) :is(button,summary,input,select,textarea,a){
+:is(:where(#project-home),.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.menu-panel,.tool-options) :is(button,summary,input,select,textarea,a){
  transition-property:background-color,border-color,color,opacity;
  transition-duration:var(--ui-motion-fast);
  transition-timing-function:var(--ui-motion-ease);
@@ -14,7 +14,7 @@ dialog[open]:not(.variables-page):not(.prototype-player){animation:ui-overlay-en
 .editor-tooltip:popover-open{animation:ui-overlay-enter var(--ui-motion-fast) var(--ui-motion-ease)}
 /* No layout/position tweening: canvas manipulation and resizing remain immediate. */
 @media(prefers-reduced-motion:reduce){
- :is(.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.menu-panel,.tool-options) :is(button,summary,input,select,textarea,a),
+ :is(:where(#project-home),.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.menu-panel,.tool-options) :is(button,summary,input,select,textarea,a),
  #layers-page-control #layers-page,.inspector-section-toggle::before,#inspector-layer-actions>summary::before,.layer-disclosure::before,.toolbar-disclosure::before,.inspector-select-trigger>svg{transition:none!important}
  :is(.selection-menu,.paint-popover,.inspector-select-menu,.variable-type-menu,.variable-alias-picker,.editor-tooltip),
  details[open]>:is(.menu-panel,.tool-options,.effect-choices,.blend-popover-body,#page-switch-menu),dialog[open]{animation:none!important}
