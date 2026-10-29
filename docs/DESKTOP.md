@@ -23,6 +23,21 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
+## 0.1.1-alpha.5 desktop update
+
+Adds direct Add variant and Combine as variants workflows, editable variant
+properties, component-set containers and grouped Assets. The Apple Silicon test
+build and matching local editor assets are installed; native About and inspector
+checks pass, and the existing 8-page, 613-layer design remains intact. The alpha.4
+app and profile were retained for rollback.
+
+MCP upgrade verification requires fully quitting and reopening Claude Desktop.
+A window reload left a pre-update server alive alongside the new server, giving
+Claude an empty session list despite the app showing Connected. Full relaunch
+removed the old processes; both new processes were discovered and connected
+automatically. A read-only check from the original Claude conversation then confirmed
+one live session and 613 layers, with no edits. See [MCP.md](MCP.md).
+
 ## 0.1.1-alpha.4 desktop update
 
 This local prerelease includes the MCP design-system authoring fixes and automatic

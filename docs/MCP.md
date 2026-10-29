@@ -62,6 +62,15 @@ Records are removed on normal shutdown; records belonging to dead processes are
 ignored. This direct-distribution desktop workflow does not claim discovery
 across a Mac App Store sandbox boundary.
 
+After updating the MCP code or engine, fully quit and reopen the MCP host so every
+server process loads the new files. In the verified Claude Desktop setup, **View →
+Reload** restarted one MCP process but left another process from before the update
+running. That older process could report no sessions while PixlPrfct was connected
+to the newer one. A full quit/relaunch restarted both, and the desktop automatically
+connected to both without pairing. Verify `pixlprfct_sessions` from the affected
+conversation; a generic Connected indicator or an independent test client alone
+does not establish which server that conversation uses.
+
 For an editor in a normal browser:
 
 1. Ask the agent to call `pixlprfct_connection`.
