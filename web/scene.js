@@ -1,4 +1,4 @@
-import {visualBounds,sceneToWorld} from './rotation.js';
+import {visualBounds,sceneToWorld,localPoint,worldPoint} from './rotation.js';
 import {strokePadding} from './stroke-tips.js';
 import {paintOrder} from './stacking.js';
 import {visibleInTree,lockedInTree} from './selection.js';
@@ -17,7 +17,13 @@ export function paintBounds(shape,shapes) {
   return right>left&&bottom>top?{...shape,x:left,y:top,width:right-left,height:bottom-top}:null;
 }
 export function frameAt(shapes,point) {
-  return paintOrder(shapes).reverse().find(s=>s.kind==='frame'&&s.component?.type!=='instance'&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
+  return paintOrder(shapes).reverse().find(s=>s.kind==='frame'&&(s.component?.type!=='instance'||s.slot)&&visibleInTree(s,shapes)&&!lockedInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,point)))?.id??0;
+}
+export function fullyEncloses(frame,shape) {
+  return [[0,0],[shape.width,0],[0,shape.height],[shape.width,shape.height]].every(([x,y])=>{
+    const p=localPoint(frame,worldPoint(shape,{x:shape.x+x,y:shape.y+y})),epsilon=1e-7;
+    return p.x>=frame.x-epsilon&&p.y>=frame.y-epsilon&&p.x<=frame.x+frame.width+epsilon&&p.y<=frame.y+frame.height+epsilon;
+  });
 }
 export function clipDefinitions(shapes) {
  shapes=sceneToWorld(shapes);
@@ -35,5 +41,5 @@ export function dropParent(shapes,previews,selectedIds) {
   if(!roots.length)return null;
   const left=Math.min(...roots.map(s=>s.x)),top=Math.min(...roots.map(s=>s.y));
   const right=Math.max(...roots.map(s=>s.x+s.width)),bottom=Math.max(...roots.map(s=>s.y+s.height));
-  return frameAt(shapes.filter(s=>!moved.has(s.id)),{x:(left+right)/2,y:(top+bottom)/2});
+  return frameAt(shapes.filter(s=>!moved.has(s.id)&&!roots.some(root=>root.kind==='frame'&&fullyEncloses(root,s))),{x:(left+right)/2,y:(top+bottom)/2});
 }

@@ -1,3 +1,8 @@
+mod slots;
+fn is_zero_id(v: &u32) -> bool {
+    *v == 0
+}
+mod frame_enclosure;
 mod layer_drop;
 mod rotation;
 mod starter_defaults;
@@ -20,6 +25,10 @@ mod variables;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Shape {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slot: Option<slots::SlotState>,
+    #[serde(default, skip_serializing_if = "is_zero_id")]
+    pub slot_origin: u32,
     #[serde(default)]
     pub layout_class: String,
     #[serde(default)]
@@ -1595,6 +1604,7 @@ impl Editor {
                     && removed.contains(&p.target))
             });
         }
+        slots::prepare(&self.document, &mut document);
         groups::prune_empty(&mut document);
         variants::prune(&mut document);
         component_properties::prune(&mut document);
@@ -1880,6 +1890,9 @@ impl Editor {
                 .filter_map(|s| {
                     let mut ancestor = Some(s);
                     while let Some(node) = ancestor {
+                        if node.id != s.id && node.slot.is_some() {
+                            break;
+                        }
                         if ids.contains(&node.id)
                             && node.component == Some(components::Component::Master)
                         {
@@ -1981,6 +1994,10 @@ impl Editor {
         let mut roots = vec![];
         let mut document = self.document.clone();
         for mut s in payload.shapes {
+            if payload.origin != self.clipboard_origin {
+                s.slot = None;
+                s.slot_origin = 0;
+            }
             if payload.origin == self.clipboard_origin {
                 s.component = payload.components.get(&s.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
             }
@@ -2252,6 +2269,8 @@ impl Editor {
             _ => (160.0, 120.0, "#d9d9d9"),
         };
         document.shapes.push(Shape {
+            slot: None,
+            slot_origin: 0,
             layout_class: String::new(),
             layout_class_generated: false,
             layout_media: Vec::new(),

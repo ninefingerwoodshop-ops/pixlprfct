@@ -50,6 +50,7 @@ export function mergeLibrary(document,release) {
  const remapInteraction=p=>p?{...p,target:maps.shapes[p.target]??0}:p;
  const shapes=source.shapes.map(original=>{
   const s=clone(original);s.id=maps.shapes[s.id];s.page_id=link.page_id;s.parent_id=maps.shapes[s.parent_id]??0;s.layout_class='';s.layout_class_generated=true;
+  if(s.slot)s.slot.property=maps.properties[s.slot.property];if(s.slot_origin)s.slot_origin=maps.shapes[s.slot_origin]??0;
   if(s.component?.type==='instance'){s.component.master=maps.shapes[s.component.master];s.component.source=maps.shapes[s.component.source];}
   s.variable_bindings=Object.fromEntries(Object.entries(s.variable_bindings??{}).map(([path,id])=>[path,maps.variables[id]]));s.variable_modes=modeMap(s.variable_modes,maps);
   s.guide_style=maps.guides[s.guide_style]??0;s.effect_style=maps.effects[s.effect_style]??0;s.text_style=maps.texts[s.text_style]??0;for(const shadow of s.appearance?.shadows??[])shadow.color_variable=maps.variables[shadow.color_variable]??0;if(s.control?.base_collection)s.control.base_collection=maps.collections[s.control.base_collection]??0;
@@ -60,7 +61,7 @@ export function mergeLibrary(document,release) {
  doc.variables.collections=replace(doc.variables.collections,(source.variables?.collections??[]).map(c=>({...c,id:maps.collections[c.id],preset:''})),'collections');
  doc.variables.values=replace(doc.variables.values,(source.variables?.values??[]).map(v=>({...v,id:maps.variables[v.id],collection_id:maps.collections[v.collection_id],values:Object.fromEntries(Object.entries(v.values).map(([mode,val])=>[mode,val&&typeof val==='object'&&'alias' in val?{alias:maps.variables[val.alias]}:val]))})),'variables');
  doc.component_sets=replace(doc.component_sets,(source.component_sets??[]).map(s=>({...s,id:maps.sets[s.id],...(s.frame_id?{frame_id:maps.shapes[s.frame_id]}:{}),variants:s.variants.map(v=>({...v,component_id:maps.shapes[v.component_id]}))})),'sets');
- doc.component_properties=replace(doc.component_properties,(source.component_properties??[]).map(p=>({...p,id:maps.properties[p.id],component_id:maps.shapes[p.component_id],targets:p.targets.map(id=>maps.shapes[id])})),'properties');
+ doc.component_properties=replace(doc.component_properties,(source.component_properties??[]).map(p=>({...p,id:maps.properties[p.id],component_id:maps.shapes[p.component_id],targets:p.targets.map(id=>maps.shapes[id]),...(p.slot_settings?{slot_settings:{...p.slot_settings,preferred_instances:(p.slot_settings.preferred_instances??[]).map(id=>maps.shapes[id]).filter(Boolean)}}:{})})),'properties');
  doc.guide_styles=replace(doc.guide_styles,(source.guide_styles??[]).map(s=>({...s,id:maps.guides[s.id]})),'guides');
  // Distinguish imported definitions when another library or a local style uses the same name.
  const effectNames=new Set(doc.effect_styles.filter(s=>!Object.values(maps.effects).includes(s.id)).map(s=>s.name.trim().toLowerCase()));
@@ -103,11 +104,14 @@ export function protectedInstanceError(before,after) {
   const root=roots.find(n=>n.component.master===c.master&&tree(n.id).has(s.id));
   if(!root)return 'Library instance structure is invalid.';
   const a=content(source),b=content(s);
-  for(const value of [a,b])for(const key of ['id','page_id','parent_id','component','x','y','flow_name'])delete value[key];
-  if(!equal(a,b)||c.overrides?.some(p=>!['x','y'].includes(p)))return 'Library instance properties are protected. Ask a maintainer to update the source.';
+  for(const value of [a,b])for(const key of ['id','page_id','parent_id','component','x','y','flow_name','slot_origin'])delete value[key];
+  const slot=source.slot&&s.slot&&source.slot.property===s.slot.property;
+  const slotFields=['name','fill','appearance','stroke_width','effect_style','variable_bindings','hidden','locked'];
+  if(slot){delete a.slot;delete b.slot;for(const field of slotFields){delete a[field];delete b[field];}}
+  if(!equal(a,b)||c.overrides?.some(p=>!['x','y',...(slot?slotFields:[])].includes(p.split('.')[0])))return 'Library instance properties are protected. Ask a maintainer to update the source.';
   if(Math.abs((s.x-root.x)-(source.x-master.x))>0.01||Math.abs((s.y-root.y)-(source.y-master.y))>0.01)return 'Internal library layers cannot be moved.';
   if(s.id!==root.id){const parent=byId.get(s.parent_id);if(parent?.component?.source!==source.parent_id)return 'Library instance structure is protected.';}
-  if(!checked.has(root.id)){checked.add(root.id);const expected=tree(c.master),actual=[...tree(root.id)].map(id=>byId.get(id));
+  if(!checked.has(root.id)){checked.add(root.id);const structure=id=>{const ids=tree(id),hidden=new Set();for(const node of after.shapes)if(ids.has(node.id)&&node.slot)for(const child of tree(node.id))if(child!==node.id)hidden.add(child);return new Set([...ids].filter(id=>!hidden.has(id)));};const expected=structure(c.master),actual=[...structure(root.id)].map(id=>byId.get(id));
    if(actual.length!==expected.size||new Set(actual.map(n=>n.component?.source)).size!==expected.size||actual.some(n=>!expected.has(n.component?.source)))return 'Library instance structure is protected.';
   }
  }

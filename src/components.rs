@@ -434,7 +434,9 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
                 }
             }
             None => {
-                if matches!(parent, Some(Component::Instance { .. })) {
+                if matches!(parent, Some(Component::Instance { .. }))
+                    && by_id.get(&s.parent_id).is_none_or(|p| p.slot.is_none())
+                {
                     return Err("Detach the instance before adding layers".into());
                 }
             }
@@ -444,6 +446,9 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
         {
             let mut p = s.parent_id;
             while let Some(ancestor) = by_id.get(&p) {
+                if ancestor.slot.is_some() && s.component != Some(Component::Master) {
+                    break;
+                }
                 if matches!(ancestor.component, Some(Component::Instance { .. }))
                     || (s.component == Some(Component::Master)
                         && ancestor.component == Some(Component::Master))
@@ -484,6 +489,9 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
                 .any(|path| old.variable_bindings.get(*path) != new.variable_bindings.get(*path)))
     {
         new.effect_style = 0;
+    }
+    if old.slot != new.slot || old.slot_origin != new.slot_origin {
+        return Err("Use the slot actions to change slot definitions".into());
     }
     if old.component != new.component {
         return Err("Use the component actions to change component links".into());
@@ -556,7 +564,17 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
                     }
                     before == after
                 }
-                _ => false,
+                _ => {
+                    old.slot.is_some()
+                        && matches!(
+                            *field,
+                            "fill"
+                                | "appearance"
+                                | "stroke_width"
+                                | "effect_style"
+                                | "variable_bindings"
+                        )
+                }
             };
             if !allowed {
                 return Err(
@@ -715,6 +733,9 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
     }
     for id in roots {
         let old = subtree(&doc.shapes, id);
+        if old.is_empty() {
+            continue;
+        }
         let root = &old[0];
         let Some(Component::Instance { master, .. }) = root.component else {
             unreachable!()
@@ -737,11 +758,21 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
             *next = next.checked_add(1).ok_or("Shape ID limit reached")?;
             Ok(id)
         };
+        let old_slot_children: HashSet<_> = old
+            .iter()
+            .filter(|s| s.slot.is_some())
+            .flat_map(|s| subtree(&old, s.id).into_iter().skip(1).map(|s| s.id))
+            .collect();
         let mut built: Vec<Shape> = vec![];
         let mut map = HashMap::new();
-        for src in &source {
+        let slot_children: HashSet<_> = source
+            .iter()
+            .filter(|s| s.slot.is_some())
+            .flat_map(|s| subtree(&source, s.id).into_iter().skip(1).map(|s| s.id))
+            .collect();
+        for src in source.iter().filter(|s| !slot_children.contains(&s.id)) {
             let previous = old.iter().find(
-                |s| matches!(&s.component,Some(Component::Instance{source,..}) if *source==src.id),
+                |s| !old_slot_children.contains(&s.id) && matches!(&s.component,Some(Component::Instance{source,..}) if *source==src.id),
             );
             let new_id = if let Some(p) = previous {
                 p.id
@@ -836,7 +867,18 @@ pub fn sync(doc: &mut Document, next: &mut u32) -> Result<(), String> {
                 source: src.id,
                 overrides,
             });
+            if let Some(slot) = &mut shape.slot {
+                slot.modified = previous
+                    .and_then(|p| p.slot.as_ref())
+                    .is_some_and(|p| p.modified);
+            }
+            let content = if shape.slot.is_some() {
+                slots::build_content(&source, &old, src, &shape, next)?
+            } else {
+                vec![]
+            };
             built.push(shape);
+            built.extend(content);
         }
         let ids: HashSet<_> = old.iter().map(|s| s.id).collect();
         let slot = doc.shapes.iter().position(|s| s.id == id).unwrap();
@@ -915,9 +957,26 @@ impl Editor {
             .iter()
             .map(|s| s.id)
             .collect();
+        let master = self
+            .document
+            .shapes
+            .iter()
+            .find(|s| s.id == root)
+            .and_then(|s| s.component.as_ref())
+            .and_then(|c| {
+                if let Component::Instance { master, .. } = c {
+                    Some(*master)
+                } else {
+                    None
+                }
+            })
+            .unwrap();
         let mut doc = self.document.clone();
         for s in &mut doc.shapes {
-            if ids.contains(&s.id) {
+            if ids.contains(&s.id)
+                && matches!(s.component,Some(Component::Instance{master:m,..}) if m==master)
+            {
+                s.slot = None;
                 s.component = None;
             }
         }
@@ -1009,6 +1068,22 @@ impl Editor {
         }
         let mut mapping = HashMap::from([(old_master, master)]);
         match_children(&original, &target, old_master, master, &mut mapping);
+        for property in self
+            .document
+            .component_properties
+            .iter()
+            .filter(|p| p.component_id == old_master && p.kind == "slot")
+        {
+            if let Some(replacement) =
+                self.document.component_properties.iter().find(|p| {
+                    p.component_id == master && p.kind == "slot" && p.name == property.name
+                })
+            {
+                for (old, new) in property.targets.iter().zip(&replacement.targets) {
+                    mapping.insert(*old, *new);
+                }
+            }
+        }
         let mut kept = vec![];
         for mut s in old.clone() {
             if let Some(Component::Instance {
@@ -1023,6 +1098,12 @@ impl Editor {
                     });
                     kept.push(s);
                 }
+            }
+        }
+        let kept_ids: HashSet<_> = kept.iter().map(|s| s.id).collect();
+        for s in &old {
+            if s.slot.as_ref().is_some_and(|v| v.modified) && kept_ids.contains(&s.id) {
+                kept.extend(subtree(&old, s.id).into_iter().skip(1));
             }
         }
         let ids: HashSet<_> = old.iter().map(|s| s.id).collect();
@@ -1089,12 +1170,15 @@ impl Editor {
         let mut doc = self.document.clone();
         for s in &mut doc.shapes {
             if ids.contains(&s.id) {
+                if let Some(slot) = &mut s.slot {
+                    slot.modified = false;
+                }
                 if let Some(Component::Instance { overrides, .. }) = &mut s.component {
                     overrides.clear();
                 }
             }
         }
-        self.commit(doc)
+        self.commit_document(doc)
     }
 
     pub fn push_style_overrides(&mut self, id: u32) -> Result<(), String> {

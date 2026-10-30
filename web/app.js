@@ -1,3 +1,4 @@
+import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay} from './slots.js';
 import {loadingMessage,finishLoading,failLoading} from './loading-screen.js';
 import {installDesktop} from './desktop-integration.js';
 import {readDesignFile} from './design-import.js';
@@ -104,7 +105,7 @@ import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradi
 import {renderGradientControls} from './gradient-controls.js';
 import { fontBaseline, textBaseline, textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
 import { bounds, marqueeSelection, layerRange, selectionRoots, selectionTarget, childSelection, parentSelection, siblingSelection, descendants, visibleInTree, lockedInTree, canvasSelection } from './selection.js';
-import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
+import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent,fullyEncloses} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
 import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-edit.js';
 import {exportSize,svgDocument} from './export.js';
@@ -219,9 +220,9 @@ const pageViews = new Map();
 let layerDragDestination=0;
 const collapsedFrames=new Set();
 function insertAt(shape,start){
- const scene=pageShapes().map(s=>({...s,...transformGeometry(s)})),parent_id=editorRole(shape)?0:frameAt(scene,start),parent=scene.find(s=>s.id===parent_id);
+ const scene=pageShapes().map(s=>({...s,...transformGeometry(s)})),parent_id=editorRole(shape)?0:frameAt(scene.filter(s=>shape.kind!=='frame'||!fullyEncloses(shape,s)),start),parent=scene.find(s=>s.id===parent_id);
  const placed=gridCreationPlacement({...shape,parent_id,clip_content:shape.kind==='frame'&&editorRole(shape)!=='section'},parent,parent?.auto_layout?.direction==='grid'?gridPlan(parent):null,start);
- return editor.insert(JSON.stringify(placed));
+ return shape.kind==='frame'&&!editorRole(shape)?editor.insert_enclosing_frame(JSON.stringify(placed)):editor.insert(JSON.stringify(placed));
 }
 function transformedSelection(){return descendants(pageShapes(),[...selectedIds]);}
 function inheritedLock(s){return !!s.parent_id&&lockedInTree(pageShapes().find(p=>p.id===s.parent_id),pageShapes());}
@@ -330,12 +331,27 @@ function renameCanvasArea(){
   input.oninput=()=>input.setCustomValidity('');input.onblur=()=>close(false);input.focus();input.select();
 }
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
+function openComponentPropertyMenu(event,button){const rect=button.getBoundingClientRect(),save=p=>{editor.save_component_property(JSON.stringify(p));refresh();};showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Text',run:()=>editComponentProperty(doc,selected,null,save)},{label:'Boolean',run:()=>editComponentProperty(doc,selected,{id:0,component_id:selected,name:'Visible',kind:'boolean',targets:[]},save)},{label:'Slot',run:()=>editSlotProperty(doc,selected,null,save)}],button,{label:'Create property',heading:'Create property'});}
+function addSlotContent(slot){slotInstancePicker(doc,slot,master=>{editor.place_instance(master,slot.x,slot.y,slot.id);setSelection([slot.id]);refresh();},{preview:id=>assetAppearance(doc,id,textLayout)});}
+function convertSelectionToSlot(){safe(()=>{const owner=slotOwner(doc,current());if(!owner)throw new Error('Select layers inside a main component');let name='Slot',n=2;while((doc.component_properties??[]).some(p=>p.component_id===owner.id&&p.name===name))name='Slot '+n++;setSelection([editor.wrap_in_slot(selectionJson(),name)]);refresh();});}
+function assignSlotMenu(event,button){const shape=current(),owner=slotOwner(doc,shape);if(!owner)return;const rect=button.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[...(doc.component_properties??[]).filter(p=>p.component_id===owner.id&&p.kind==='slot').map(p=>({label:p.name,run:()=>safe(()=>{editor.save_component_property(JSON.stringify({...p,targets:[...new Set([...p.targets,shape.id])]}));refresh();})})),{label:'Create property…',run:()=>editSlotProperty(doc,owner.id,{id:0,component_id:owner.id,name:shape.name,kind:'slot',targets:[shape.id],slot_settings:{}},p=>{editor.save_component_property(JSON.stringify(p));refresh();})}],button,{label:'Convert to slot',heading:'Properties in '+owner.name});}
+function renderSlotInspector(shape){let host=$('slot-inspector');if(!host){host=document.createElement('section');host.id='slot-inspector';host.className='property-section';$('component-panel').after(host);}host.replaceChildren();const property=slotProperty(doc,shape),owner=slotOwner(doc,shape);host.hidden=!property&&!(owner&&shape?.kind==='frame'&&!shape.component);if(host.hidden)return;
+ if(!property){const convert=document.createElement('button');convert.textContent='Convert to slot';convert.onclick=event=>assignSlotMenu(event,convert);host.append(convert);return;}
+ const header=document.createElement('div');header.className='slot-inspector-header';const name=document.createElement('strong');name.textContent=property.name;header.append(name);const action=(label,run)=>{const b=document.createElement('button');b.textContent=label;b.onclick=run;return b;};
+ if(shape.component?.type==='instance'){header.append(action('＋',()=>addSlotContent(shape)));header.lastChild.setAttribute('aria-label','Add instances to '+property.name);const more=action('…',event=>{const rect=more.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Reset slot',enabled:shape.slot.modified,run:()=>safe(()=>{editor.reset_slot(shape.id);refresh();})},{label:'Delete contents',run:()=>safe(()=>{editor.clear_slot(shape.id);refresh();})}],more,{label:'Slot actions'});});more.setAttribute('aria-label','Slot actions');header.append(more);
+ }else{const edit=action('Edit',()=>editSlotProperty(doc,property.component_id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}));edit.setAttribute('aria-label','Edit slot property');header.append(edit);}
+ host.append(header);if(property.slot_settings?.description){const description=document.createElement('p');description.textContent=property.slot_settings.description;host.append(description);}const warnings=slotWarnings(doc,shape);if(warnings.length){const warning=document.createElement('p');warning.className='slot-inspector-warning';warning.textContent='Limits · '+warnings.join(' · ');host.append(warning);}
+}
+let slotOverlay=null;
 function selectionActions(){
   const shapes=selectionShapes(),shape=current(),context=instanceContext(doc,shape);
   const available={'create-component':!shape?.component||(shape.component.type==='instance'&&shape.component.master===shape.component.source),'add-auto-layout':!shape?.auto_layout,'group-layers':shapes.length>0,'ungroup-layers':shapes.some(s=>['group','frame'].includes(s.kind)&&!s.component),'insert-instance':shape?.component?.type==='master','go-main':shape?.component?.type==='instance','reset-instance':shape?.component?.type==='instance','detach-instance':shape?.component?.type==='instance','forward':!!shape,'backward':!!shape};
   const button=(id,label,shortcut)=>({label,shortcut,enabled:!!available[id],run:()=>$(id).click()});
   return [
     {label:'Edit text',shortcut:'Enter',visible:shape?.kind==='text',enabled:canvasEditable(),run:()=>beginText(current())},
+    {label:shapes.length===1&&shape?.kind==='frame'?'Convert to slot':'Wrap in new slot',shortcut:'Ctrl/⌘ Shift S',visible:!!slotOwner(doc,shape)&&!shape?.slot,run:convertSelectionToSlot},
+    {label:'Reset slot',visible:!!shape?.slot&&shape.component?.type==='instance',enabled:!!shape?.slot?.modified,run:()=>safe(()=>{editor.reset_slot(shape.id);refresh();})},
+    {label:'Delete contents',visible:!!shape?.slot,run:()=>safe(()=>{editor.clear_slot(shape.id);refresh();})},
     button('create-component','Create component','Ctrl/⌘ Alt K'),
     {label:'Combine as variants',visible:canCombineVariants(doc,shapes),run:combineVariantSelection},
     {label:'Add variant',visible:shape?.component?.type==='master'||!!componentSetFrame(doc,shape?.id),run:addVariantSelection},
@@ -494,6 +510,7 @@ function renderLayers() {
     const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(editorRole(shape)|| (shape.editor_meta?.text_path?'text-path':layoutIcon?'layout-'+direction:shape.kind));
     if(layoutIcon){glyph.title=direction==='grid'?'Grid Layout':direction==='horizontal'?'Flex Layout · Horizontal':'Flex Layout · Vertical';glyph.dataset.layout=direction;}
     if(componentType){glyph.innerHTML=icon(componentType==='set'?'component':'instance');glyph.classList.add('component-glyph');glyph.title=[glyph.title,componentType==='set'?'Component set':componentType==='master'?'Main component':'Component instance'].filter(Boolean).join(' · ');}
+    if(shape.slot){button.classList.add('slot-layer');glyph.innerHTML='<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M5 8h6M8 5v6"/></svg>';glyph.title='Slot';}
     const name = document.createElement('span'); name.className = 'layer-name'; name.textContent = shape.name;
     button.append(glyph, name);
     button.classList.toggle('is-hidden',!!shape.hidden);
@@ -610,13 +627,17 @@ function renderComponentProperties(shape){
     change:(property,value)=>safe(()=>{editor.set_component_property(selected,property,JSON.stringify(value));refresh();}),
     reset:property=>safe(()=>{editor.reset_component_property(selected,property);refresh();}),
     edit:property=>editComponentProperty(doc,shape.id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}),
+    create:openComponentPropertyMenu,
+    selectSlot:id=>{if(id){setSelection([id]);refresh(false);}},
+    addSlot:addSlotContent,
+    clearSlot:id=>safe(()=>{editor.clear_slot(id);refresh();}),
     remove:property=>safe(()=>{editor.remove_component_property(property);refresh();})
   });
-  $('component-panel').hidden=!selectedIds.size;
+  $('component-panel').hidden=!selectedIds.size||!!shape?.slot;
   $('instance-actions').hidden=!linked&&!master&&!setFrame;
   $('instance-actions').setAttribute('aria-label',linked?'Instance actions':'Component actions');
   $('instance-actions').title=linked?'Instance actions':'Component actions';
-  $('component-heading').textContent=setFrame?.name??componentSet(doc,master?shape.id:c?.master)?.name??(master?shape.name:linked?'Instance':'Component');
+  $('component-heading').textContent=setFrame?.name??componentSet(doc,master?shape.id:c?.master)?.name??(master?shape.name:linked?context.main?.name??'Instance':'Component');
   $('component-panel').dataset.componentKind=setFrame?'set':master?'master':linked?'instance':'';
   $('combine-variants').hidden=!canCombineVariants(doc,selectionShapes());
   $('create-component').hidden=!!setFrame||master||(linked&&c.master!==c.source);$('create-component').textContent=linked?'Create component around instance':'Create component';$('insert-instance').hidden=!master&&!setFrame;
@@ -639,7 +660,7 @@ function renderComponentProperties(shape){
   }
   let root=shape;
   while(root?.component?.type==='instance'&&root.component.master!==root.component.source)root=doc.shapes.find(s=>s.id===root.parent_id);
-  const count=linked?descendants(doc.shapes,[root.id]).reduce((n,s)=>n+(displayedOverrides(s).filter(f=>s.id!==root.id||(f!=='x'&&f!=='y')).length),0):0;
+  const count=linked?descendants(doc.shapes,[root.id]).reduce((n,s)=>n+(s.slot?.modified?1:0)+(displayedOverrides(s).filter(f=>s.id!==root.id||(f!=='x'&&f!=='y')).length),0):0;
   $('reset-instance').disabled=!count;
   $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · Updates automatically${count?' · '+count+' overrides':''}.`:'Create a reusable component from the selected layers. Ctrl/⌘ Alt K.';
   if(setFrame)$('component-status').textContent=setFrame.variants.length+' variants';
@@ -647,8 +668,11 @@ function renderComponentProperties(shape){
 }
 const libraryDisabled=new Map();
 function renderLibraryProtection(){
+ const slot=current()?.slot&&current()?.component?.type==='instance';
+ if(slot){for(const id of ['position-section','dimensions-section','constraints-panel','layout-guides-panel'])for(const field of $(id)?.querySelectorAll('input,select,button')??[]){if(field.matches('.inspector-accordion-toggle,.inspector-section-toggle'))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}}
  const shapes=selectionShapes(),link=shapes.map(s=>libraryForShape(doc,s)).find(Boolean);
  const sourceLocked=libraries?.locked(shapes)??false;
+ if(!sourceLocked&&shapes.length===1&&shapes[0].slot&&shapes[0].component?.type==='instance')return;
  if(link){$('swap-component-help').textContent='This library protects component choices and instance properties. Use the source project to make changes.';$('component-status').textContent=link.name+' · Release '+link.revision+' · Updates are accepted in Manage libraries.';}
  let notice=$('library-selection-notice');if(!notice){notice=document.createElement('div');notice.id='library-selection-notice';notice.className='library-selection-notice';$('design-inspector').prepend(notice);}
  notice.hidden=!link&&!sourceLocked;notice.replaceChildren();
@@ -679,9 +703,10 @@ function renderPropertiesNow() {
   updateVariables();
   const shapes = selectionShapes(), shape = current();
   if($('edit-layout-css'))$('edit-layout-css').hidden=!shape?.auto_layout||shape.component?.type==='instance';
-  document.querySelector('.right-panel').classList.toggle('protected-instance',shapes.some(s=>s.component?.type==='instance'));
+  document.querySelector('.right-panel').classList.toggle('protected-instance',shapes.some(s=>s.component?.type==='instance'&&!s.slot));
   document.querySelector('.right-panel').classList.toggle('native-control-editor',!!shape?.control);
   renderComponentProperties(shape);
+  renderSlotInspector(shape);
   const lockTargets=shapes.filter(s=>!inheritedLock(s));$('lock-panel').hidden=!shapes.length;$('toggle-lock').disabled=!lockTargets.length;$('toggle-lock').textContent=lockTargets.length?(lockTargets.every(s=>s.locked)?'Unlock selection':'Lock selection'):'Locked by parent';$('lock-status').textContent=shapes.some(s=>lockedInTree(s,pageShapes()))?'Locked layers cannot be edited on the canvas. Use the inspector or unlock their parent.':'Ctrl/Cmd Shift L';
   if(!canvasEditable()){editingGradient=0;activeGradient=null;editingPath=0;activeNode=-1;}
   if(!editingPaint(shape,gradientChannel)?.appearance?.[gradientField()]||!visibleInTree(shape,pageShapes())){editingGradient=0;activeGradient=null;}
@@ -859,6 +884,7 @@ function draw() {
   renderDeviceChrome(scene,pan,zoom);
   const chromeStatus=deviceChromeStatus(selectedIds.size===1?scene.find(s=>selectedIds.has(s.id)):null,scene);
   if($('device-chrome-active').textContent!==chromeStatus)$('device-chrome-active').textContent=chromeStatus;
+  slotOverlay=renderSlotOverlay(slotOverlay,doc,scene,pan,zoom,selectedIds,addSlotContent,gridHoverPointer?point(gridHoverPointer):null);
   renderFrameLabels(scene.filter(s=>editorRole(s)!=='section'),pan,zoom,selectedIds,tool==='select'&&!space,doc.component_sets);
   for(const set of doc.component_sets??[]){const frame=scene.find(s=>s.id===set.frame_id);if(!frame||!visibleInTree(frame,scene))continue;ctx.save();ctx.strokeStyle='#9747ff';ctx.lineWidth=1/zoom;ctx.setLineDash([6/zoom,4/zoom]);ctx.strokeRect(frame.x,frame.y,frame.width,frame.height);ctx.restore();}
   drawEditorMarks(ctx,scene,zoom);if(gesture?.preview&&editorRole(gesture.preview))drawEditorMarks(ctx,[gesture.preview],zoom);
@@ -875,7 +901,7 @@ function draw() {
   const shape = bounds(visibleSelection);
   if (shape && !editingPath && !editingGradient) {
     const componentSelection=visibleSelection.every(s=>s.component||componentSetFrame(doc,s.id));
-    ctx.strokeStyle = componentSelection?'#9747ff':'#0d99ff'; ctx.lineWidth = 1 / zoom;
+    ctx.strokeStyle = visibleSelection.every(s=>s.slot)?'#e539b9':componentSelection?'#9747ff':'#0d99ff'; ctx.lineWidth = 1 / zoom;
     for (const item of visibleSelection) {
       const oriented=item._rotationHit??item;
       ctx.save();ctx.translate(oriented.x,oriented.y);ctx.rotate(-(oriented.rotation??0)*Math.PI/180);
@@ -1087,7 +1113,7 @@ function bind() {
   $('combine-variants').onclick=combineVariantSelection;
   $('manage-variants').onclick=()=>{const set=componentSet(doc,selected);if(set?.frame_id){setSelection([set.frame_id]);refresh(false);}};
   $('add-variant').onclick=addVariantSelection;
-  $('add-component-property').onclick=()=>editComponentProperty(doc,selected,null,p=>{editor.save_component_property(JSON.stringify(p));refresh();});
+  $('add-component-property').onclick=event=>openComponentPropertyMenu(event,$('add-component-property'));
   $('go-nested-main').onclick=()=>{const main=instanceContext(doc,current())?.nestedMain;if(main)goToMain(main.id);};
   $('select-instance-root').onclick=()=>{const context=instanceContext(doc,current());if(context){setSelection([context.root.id]);refresh(false);}};
   $('push-style-overrides').onclick=()=>safe(()=>{editor.push_style_overrides(selected);refresh();toast('Text and style overrides applied to main component');});
@@ -1579,7 +1605,7 @@ function bind() {
     if(!canvasEditable()){toast('Unlock the selection before moving it on canvas');return;}
     gesture = {type:'move',targets:pageShapes().map(s=>({...s,...transformGeometry(s)})),start:p,originals:transformedSelection().map(s=>({...s})),previews:transformedSelection().map(s=>({...s}))};
   });
-  canvas.onpointerleave = () => { gridHoverPointer=null; draw(); };
+  canvas.onpointerleave = event => { if(event.relatedTarget?.closest?.('#slot-overlays'))return;gridHoverPointer=null; draw(); };
   canvas.onpointermove = event => {
     gridHoverPointer={clientX:event.clientX,clientY:event.clientY};
     if(!gesture)scheduleViewportDraw();
@@ -1683,8 +1709,10 @@ function bind() {
     // Translation edits only roots; the engine moves their protected children.
     const moveRoots=type==='move'&&previews?new Set(selectionRoots(previews,previews.map(s=>s.id))):null;
     const moves=moveRoots?previews.filter(s=>moveRoots.has(s.id)):previews;
+    const enclosing=moves?.some(s=>s.kind==='frame'&&!s.component&&!s.layout_item?.grid_container&&!editorRole(s));
     if(moved&&stackDrop) safe(()=>{if(stackDrop.parent)editor.move_into_before(JSON.stringify(moves.map(s=>s.id)),stackDrop.parent,stackDrop.before);else editor.move_into_cells(JSON.stringify(moves),stackDrop.grid,JSON.stringify(moves.map(s=>[s.id,stackDrop.cell.column,stackDrop.cell.row])));refresh();});
-    else if(moved&&parent!==null) safe(()=>{const frame=pageShapes().find(s=>s.id===parent);if(frame?.auto_layout?.direction==='grid'){const measured=dropTargets?.find(s=>s.id===parent)??transformGeometry(frame),plan=gridPlan(measured),cells=moves.map(s=>{const c=gridCellAt(measured,plan,{x:s.x+s.width/2,y:s.y+s.height/2});return c?[s.id,c.column,c.row]:null;}).filter(Boolean);editor.move_into_cells(JSON.stringify(moves),parent,JSON.stringify(cells));}else editor.move_into(JSON.stringify(moves),parent);refresh();});
+    else if(moved&&parent!==null) safe(()=>{const frame=pageShapes().find(s=>s.id===parent);if(frame?.auto_layout?.direction==='grid'){const measured=dropTargets?.find(s=>s.id===parent)??transformGeometry(frame),plan=gridPlan(measured),cells=moves.map(s=>{const c=gridCellAt(measured,plan,{x:s.x+s.width/2,y:s.y+s.height/2});return c?[s.id,c.column,c.row]:null;}).filter(Boolean);editor.move_into_cells(JSON.stringify(moves),parent,JSON.stringify(cells));}else if(enclosing)editor.move_and_enclose(JSON.stringify(moves),parent,true);else editor.move_into(JSON.stringify(moves),parent);refresh();});
+    else if(moved&&enclosing) safe(()=>{editor.move_and_enclose(JSON.stringify(moves),0,false);refresh();});
     else if (moves) updateMany(moves); else if (preview) update(preview); else draw(); };
   const cancelGesture = () => { if (gesture?.type === 'marquee') setSelection(gesture.base);if(gesture?.type==='gradient')activeGradient=null; gesture = null; renderLayers(); renderProperties(); draw(); };
   // Previews never touch the document: discard them before other Escape handlers
@@ -1814,6 +1842,7 @@ function bind() {
     if(mod && key==='g') {event.preventDefault(); if(selectedIds.size)(event.shiftKey?ungroupSelection:groupSelection)();return;}
     if (mod && key === 'a') { event.preventDefault(); setSelection(pageShapes().filter(s=>s.parent_id===(current()?.parent_id??0)&&visibleInTree(s,pageShapes())&&!lockedInTree(s,pageShapes())).map(s=>s.id)); refresh(false); return; }
     if (event.altKey && !mod && selectedIds.size > 1 && ['a','d','w','s'].includes(key)) { event.preventDefault(); safe(() => { editor.align_many(selectionJson(),{a:'left',d:'right',w:'top',s:'bottom'}[key]); refresh(); }); return; }
+    if(mod&&event.shiftKey&&key==='s'){event.preventDefault();convertSelectionToSlot();return;}
     if (mod && ['z', 'y', 's', 'd'].includes(key)) { event.preventDefault(); if (key === 'z') (event.shiftKey ? $('redo') : $('undo')).click(); if (key === 'y') $('redo').click(); if (key === 's') $('save').click(); if (key === 'd') $('duplicate').click(); return; }
     if (event.code === 'Space' && !event.target.closest('button,summary')) { event.preventDefault(); space = true; return; }
     if(key==='enter' && tool==='pen') {event.preventDefault(); finishPen(false); return;}

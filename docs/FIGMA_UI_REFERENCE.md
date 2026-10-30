@@ -144,3 +144,66 @@ No new inspector layouts were introduced in this patch. Text-style and shadow
 variable authoring is available through MCP; corresponding inspector pickers
 remain a separate parity gap. Headless font metrics are approximate, and this
 comparison is not a claim of exact rendering for every font/platform.
+
+## Frame enclosure — live reference 2026-10-30
+
+Tested in the native Figma app on a temporary page (removed after inspection).
+Drawing a 100 × 75 frame around an existing 50 × 25 rectangle nests the rectangle
+without changing its canvas position. The Layers panel indents it under the
+frame. Moving that existing frame over a second rectangle leaves the second
+rectangle outside its hierarchy in the observed Figma build.
+
+The user explicitly requests that moving a frame over elements also adopt them.
+PixlPrfct therefore supports enclosure on drawing and moving ordinary frames;
+the move behavior is an intentional extension to the observed reference.
+Only fully enclosed, visible, unlocked sibling trees are adopted. Groups,
+components and nested frames remain intact, and rotated geometry is preserved.
+Component instances, component sets, sections and generated grid cells do not
+automatically capture layers as destination frames. Existing grid drop behavior
+remains unchanged. No new interface controls or layout changes were introduced.
+
+Browser verification covered drawing, frame-label dragging, the resulting layer
+hierarchy, one-step undo/redo, and reload persistence. Reference and result
+screenshots are retained in `.local/frame-containment/`.
+
+## Component slots — live reference 2026-10-30
+
+Inspected the native Figma app using temporary component/slot pages, removed
+again after capture. Reference captures: `.local/slots/figma-create-property.png`,
+`figma-slot-inspector.png`, `figma-instance.png`, `figma-picker.png`, and
+`figma-picker-results.png`.
+
+Observed workflow: Properties → + → Slot creates a property, including an
+unbound property. A nested frame can Convert to slot and choose an existing
+property or create one. Slots have a pink square-plus layer icon and empty
+canvas target; the instance property displays Default/Modified with Add instances
+and reset/delete-content actions. Main-component layout stays authoritative;
+slot contents can contain ordinary layers and independent component instances.
+The settings popover is 304 CSS px wide with a 40 px header, 16 px body inset,
+24 px controls, dark #2c2c2c surface, Name/Description, layer limits, preferred
+instances, empty display, and counter-axis fill. The Add instances picker is
+240 px wide, with search, a library dropdown, page folders, component thumbnails,
+and List/Grid/Show subfolders options.
+
+Implemented the native slot model, authoring, content editing, advisory limits,
+preferred component selection, canvas insertion targets, main/default propagation,
+reset, clear, copy/paste, duplication, library remapping/protection, and same-name
+slot preservation on variant swaps. The editor uses its shared custom dropdowns.
+The browser check created an unbound property, drew a rectangle directly into
+an instance slot, inserted a linked Badge, reset the slot, and inspected settings
+and the folder-based picker. Captures: `.local/slots/pixlprfct-verified.png`,
+`pixlprfct-create-slot.png`, and `pixlprfct-picker.png`.
+
+This is working slot functionality, not a certification of exhaustive Figma
+parity. Rich-text description formatting, bulk slot authoring across several
+variants, and preservation of native Figma slot metadata during .fig import
+remain unverified/unimplemented. Descriptions currently use plain text. Existing
+Territory Track component definitions have not been migrated automatically.
+
+Installed locally as desktop **0.1.1-alpha.10** in both existing app bundles.
+Native About confirms the version (`.local/slots/desktop-version.png`), both
+strict/deep signature checks passed, and the saved Territory Track design was
+reopened at its original draft URL. Final checks: 3 Rust + 946 JavaScript tests
+pass; API catalog and Rust formatting are current; changed-code lint has zero
+errors (13 existing app.js warnings). Changes remain local on
+`codex/frame-containment`, alongside the frame-enclosure work.
