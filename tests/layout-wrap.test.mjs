@@ -36,7 +36,7 @@ test('nested wrapping gets new fill width before measuring hugged height',()=>{
 test('auto width text stops at max width and grows vertically with wrapped lines',()=>{
  const e=new Editor();e.set_text_measurer(raw=>JSON.stringify(textSize(JSON.parse(raw),s=>s.length*10)));const t=e.add('text',0,0);
  edit(e,t,{text:'Hello world hello',typography:{font_size:20,font_family:'Manrope',font_weight:400,align:'left',line_height:1.2,wrap:false,sizing:'width'},layout_item:{max_width:60}});
- assert.deepEqual([get(e,t).width,get(e,t).height],[60,68]);const before=e.snapshot();edit(e,t,{layout_item:{max_width:200}});assert.deepEqual([get(e,t).width,get(e,t).height],[170,20]);e.undo();assert.equal(e.snapshot(),before);e.free();
+ assert.deepEqual([get(e,t).width,get(e,t).height],[60,72]);const before=e.snapshot();edit(e,t,{layout_item:{max_width:200}});assert.deepEqual([get(e,t).width,get(e,t).height],[170,24]);e.undo();assert.equal(e.snapshot(),before);e.free();
 });
 test('drag reorder follows the targeted wrapped row or column and restores with undo',()=>{
  for(const direction of ['horizontal','vertical']){

@@ -1095,12 +1095,18 @@ pub(crate) fn infer(doc: &mut Document, id: u32, single_wrapper: bool) {
                 layout.gap = layout.gap.round();
             }
         }
-        layout.hug_width = horizontal;
+        // An intrinsically sized label must not be converted to Fill: doing so
+        // changes it to auto-height and creates a Hug/Fill dependency cycle.
+        let intrinsic_text = |s: &Shape| {
+            s.kind == "text" && s.typography.as_ref().is_some_and(|t| t.sizing == "width")
+        };
+        layout.hug_width = horizontal || items.iter().all(intrinsic_text);
         if !horizontal {
             doc.shapes[index].width = right - x + 2.0 * px;
             for child in &mut items {
-                child.layout_item.fill_width =
-                    child.rotation == 0.0 && (child.width - (right - x)).abs() < 0.01;
+                child.layout_item.fill_width = !intrinsic_text(child)
+                    && child.rotation == 0.0
+                    && (child.width - (right - x)).abs() < 0.01;
                 child.layout_item.fill_height = false;
                 child.layout_item.absolute = false;
             }

@@ -23,6 +23,72 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
+## 0.1.1-alpha.7 performance update
+
+This local update reduces redundant color/instance resolution, MCP commits and
+connection-status serialization, retains frame-label DOM, coalesces pointer redraws,
+and caches unchanged canvas artwork within a fixed memory budget. See
+`docs/PERFORMANCE.md` for measured results and remaining large-layout costs.
+The Apple Silicon package passes deep/strict signature verification. The previous
+alpha.6 app and app profile are retained in `.local/alpha-7-update-backup/`.
+Native About confirms alpha.7, the saved project reopened, and a new real MCP
+client automatically connected and read all 727 layers / 10 pages with the
+original 87 components, 121 variables and 14 effect styles. The open browser
+editor was also reloaded. Proof: `.local/ui-audit-2026-10-30/live-mcp-alpha7-proof.json`.
+This is a local ad-hoc-signed build, not a public release.
+
+## 0.1.1-alpha.6 desktop update
+
+Adds complete line-height text alignment, paged MCP reads, page-scoped writes,
+named variant parsing and visible directly saved sibling sets, core/MCP text
+styles, and variable-bound shadow colors. Renderer background throttling is
+disabled, stalled discovery no longer blocks reconnect work, and reconnecting
+the same tab/project to a running server retains its session ID.
+
+The Apple Silicon test app is installed at the existing local path; About
+confirms alpha.6, and the Territory Track project reopens with Saved on this
+device and Rust engine connected. The alpha.5 app and profile are preserved in
+`.local/alpha-6-update-backup/`; the replacement passes deep/strict signature
+verification. This is a local ad-hoc-signed installation, not a public release.
+The full suite passes (3 Rust / 919 JavaScript). Simulated sleep and real socket
+recovery are covered; a long real OS-sleep soak is still pending. Text-style and
+shadow-variable inspector pickers remain pending.
+
+Live verification used a real stdio client: all 727 layers arrived over 15 paged
+reads, with the original 87 components, 121 variables, 14 effect styles and 10
+pages. Page navigation preserved revisions; editor reload preserved the session
+ID and invalidated old revision/cursor tokens. Claude was fully restarted and
+its old MCP processes exited. Its original conversation was restored without
+sending a prompt; acceptance from that conversation remains a separate check.
+
+## 0.1.1-alpha.5 desktop update
+
+Adds direct Add variant and Combine as variants workflows, editable variant
+properties, component-set containers and grouped Assets. The Apple Silicon test
+build and matching local editor assets are installed; native About and inspector
+checks pass, and the existing 8-page, 613-layer design remains intact. The alpha.4
+app and profile were retained for rollback.
+
+MCP upgrade verification requires fully quitting and reopening Claude Desktop.
+A window reload left a pre-update server alive alongside the new server, giving
+Claude an empty session list despite the app showing Connected. Full relaunch
+removed the old processes; both new processes were discovered and connected
+automatically. A read-only check from the original Claude conversation then confirmed
+one live session and 613 layers, with no edits. See [MCP.md](MCP.md).
+
+## 0.1.1-alpha.4 desktop update
+
+This local prerelease includes the MCP design-system authoring fixes and automatic
+MCP discovery/reconnection. The Apple Silicon build was installed on the development
+Mac at the existing app path, with the previous app and profile retained for rollback.
+The local team-server editor assets and configured MCP runtime were updated together.
+
+Native verification: the existing 8-page, 613-layer design reopened; Claude connected
+without entering pairing details; editor reload restored the connection; two fresh
+stdio MCP server launches independently discovered and read that same live design.
+The bundle passed deep/strict signature verification. This is an ad-hoc-signed local
+test build, not a notarized public release. The changes remain in draft PR #29.
+
 ## 0.1.1-alpha.2 desktop update
 
 This build includes the animated logo preloader, expanded file-type and rich-text
@@ -56,11 +122,11 @@ Online fonts are off by default in local desktop designs. Enable **View → Allo
 - **File → Save a copy** / Cmd/Ctrl+S and exports show the native Save dialog. Existing browser file upload controls use the native Open dialog.
 - Transfer browser projects by saving `.pixl` files in the browser and importing them in the desktop app. Browser local storage is not automatically migrated.
 - A team connection opens the server's own editor and account pages. HTTPS is required except for localhost / loopback development servers. Each origin receives its own persistent browser session. External links open in the default browser; cross-origin redirects are blocked. External OAuth/deep-link sign-in is not integrated; use the self-hosted email/password flow.
-- Live MCP pairing uses `pixlprfct://app` as the desktop origin. Run the MCP server separately as described in [MCP.md](MCP.md).
+- Live MCP connects automatically to separately running local servers, including after reloads and restarts. Allowed team-server windows also use automatic discovery; normal browsers use manual pairing. See [MCP.md](MCP.md).
 
 ## Security boundaries
 
-The renderer has sandboxing and context isolation enabled, with Node integration and webviews disabled. A standard secure `pixlprfct://app` protocol serves only bundled assets with a Content Security Policy; no broad `file://` privileges or network listener is needed. The local bridge exposes only selected-file import, pending OS file opens, native menu events and the connection dialog. IPC checks the sender window, main frame and packaged origin. Remote workspaces receive menu commands only, with no exposed native bridge. Other device permissions are denied; local clipboard access supports editor copy/paste.
+The renderer has sandboxing and context isolation enabled, with Node integration and webviews disabled. A standard secure `pixlprfct://app` protocol serves only bundled assets with a Content Security Policy; no broad `file://` privileges or network listener is needed. The local bridge exposes only selected-file import, pending OS file opens, native menu events and the connection dialog. IPC checks the sender window, main frame and packaged origin. Remote workspaces receive menu commands and MCP discovery limited to the current main frame and allowed workspace origin. Discovery exposes only an origin-scoped loopback credential, never filesystem access or the master pairing code. Other device permissions are denied; local clipboard access supports editor copy/paste.
 
 Packaged Electron fuses disable Run-as-Node, Node environment options, inspector arguments and extra file-protocol privileges, and require the bundled ASAR with integrity validation. Public builds require platform signing; self-hosted team security still depends on the server's authentication and permission checks.
 

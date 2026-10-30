@@ -11,3 +11,12 @@ The user requires a pixel-perfect facsimile of Figma's interface for equivalent 
 - Use the PixlPrfct logo and branding rather than Figma's branding.
 
 See `docs/FIGMA_UI_REFERENCE.md` for current observations and verification expectations.
+
+# Running gap tally
+
+Keep `docs/TT-Design-System-Gaps.md` current when working its reported gaps.
+Preserve completed entries: check/strike them through and append a dated resolution
+with verification evidence. Distinguish local fixes from shipped changes and
+workarounds from full resolution. Reconcile incoming versions without dropping
+new or unresolved items. TerritoryIQ code and design-file work remain tracked
+separately from PixlPrfct fixes unless the user expands the scope.

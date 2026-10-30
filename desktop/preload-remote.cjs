@@ -1,4 +1,4 @@
-const {ipcRenderer}=require('electron');
+const {contextBridge,ipcRenderer}=require('electron');
 // Remote workspaces get menu commands, never the local filesystem bridge.
 ipcRenderer.on('desktop:command',(_event,command)=>{
  const actions={open:'open',save:'save',undo:'undo',redo:'redo'};
@@ -8,3 +8,6 @@ ipcRenderer.on('desktop:command',(_event,command)=>{
  const target=document.getElementById(actions[command])??(command==='open'?document.getElementById('home-import'):null);
  target?.click();
 });
+
+// Only bridge credentials scoped to this workspace origin are discoverable.
+contextBridge.exposeInMainWorld('pixlMcp',Object.freeze({connections:()=>ipcRenderer.invoke('desktop:mcp-connections')}));

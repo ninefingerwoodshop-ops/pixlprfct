@@ -382,6 +382,21 @@ pub fn validate_variables(doc: &Document) -> Result<(), String> {
             }
         }
     }
+    for shadow in doc
+        .shapes
+        .iter()
+        .flat_map(|s| s.appearance.iter().flat_map(|a| &a.shadows))
+        .chain(doc.effect_styles.iter().flat_map(|s| &s.effects.shadows))
+    {
+        if shadow.color_variable != 0
+            && !vars
+                .values
+                .iter()
+                .any(|v| v.id == shadow.color_variable && v.kind == "color")
+        {
+            return Err("Shadow color must reference a color variable".into());
+        }
+    }
     for s in &doc.shapes {
         for (collection, mode) in &s.variable_modes {
             if !vars
@@ -432,6 +447,39 @@ fn modes_for(doc: &Document, s: &Shape) -> BTreeMap<u32, u32> {
     modes
 }
 fn assign(shape: &mut Shape, path: &str, value: Value) -> Result<(), String> {
+    // Color bindings dominate design-system documents. Resolve them in place:
+    // serializing the entire layer for each color made every drag reparse it.
+    if path == "fill" || path == "appearance.stroke_color" {
+        let color = value.as_str().ok_or("Invalid color")?;
+        if path == "fill" {
+            shape.fill = color.into();
+        } else if shape.appearance.is_none() {
+            shape.appearance = Some(
+                serde_json::from_value(components::effective_value(shape)["appearance"].clone())
+                    .map_err(|e| e.to_string())?,
+            );
+        }
+        if let Some(a) = &mut shape.appearance {
+            let stack = if path == "fill" {
+                a.gradient = None;
+                a.fill_enabled = true;
+                &mut a.fills
+            } else {
+                a.stroke_color = color.into();
+                a.stroke_gradient = None;
+                a.stroke_enabled = true;
+                &mut a.strokes
+            };
+            if let Some(p) = stack.as_mut().and_then(|s| s.first_mut()) {
+                p.color = color.into();
+                p.gradient = None;
+                p.media = None;
+                p.pattern = None;
+                p.shader = None;
+            }
+        }
+        return Ok(());
+    }
     if let Some((channel, id)) = paint_property(path) {
         let a = shape.appearance.as_mut().ok_or("Paint is missing")?;
         let stack = if channel == "fills" {
@@ -568,38 +616,10 @@ fn assign(shape: &mut Shape, path: &str, value: Value) -> Result<(), String> {
         if path == "appearance.corner_radius" {
             json[field]["corner_radii"] = Value::Null;
         }
-        if path == "appearance.stroke_color" {
-            json[field]["stroke_gradient"] = Value::Null;
-            json[field]["stroke_enabled"] = Value::Bool(true);
-        }
     } else {
         json[path] = value;
     }
-    if path == "fill" && json["appearance"].is_object() {
-        json["appearance"]["gradient"] = Value::Null;
-        json["appearance"]["fill_enabled"] = Value::Bool(true);
-    }
     *shape = serde_json::from_value(json).map_err(|e| e.to_string())?;
-    if let Some(a) = &mut shape.appearance {
-        if path == "fill" {
-            if let Some(p) = a.fills.as_mut().and_then(|s| s.first_mut()) {
-                p.color = shape.fill.clone();
-                p.gradient = None;
-                p.media = None;
-                p.pattern = None;
-                p.shader = None;
-            }
-        }
-        if path == "appearance.stroke_color" {
-            if let Some(p) = a.strokes.as_mut().and_then(|s| s.first_mut()) {
-                p.color = a.stroke_color.clone();
-                p.gradient = None;
-                p.media = None;
-                p.pattern = None;
-                p.shader = None;
-            }
-        }
-    }
     Ok(())
 }
 pub fn resolve(doc: &mut Document) -> Result<(), String> {
@@ -609,6 +629,21 @@ pub fn resolve(doc: &mut Document) -> Result<(), String> {
     let mut shapes = doc.shapes.clone();
     for s in &mut shapes {
         let modes = modes_for(doc, s);
+        if let Some(a) = &mut s.appearance {
+            for shadow in &mut a.shadows {
+                if shadow.color_variable != 0 {
+                    shadow.color = resolved(
+                        &doc.variables,
+                        shadow.color_variable,
+                        &modes,
+                        &mut HashSet::new(),
+                    )?
+                    .as_str()
+                    .ok_or("Invalid shadow color variable")?
+                    .into();
+                }
+            }
+        }
         for (path, id) in s.variable_bindings.clone() {
             assign(
                 s,
@@ -622,6 +657,17 @@ pub fn resolve(doc: &mut Document) -> Result<(), String> {
 }
 // A direct property edit detaches its token, retaining the new literal value.
 pub fn detach_edited(old: &Shape, new: &mut Shape) {
+    if let (Some(before), Some(after)) = (&old.appearance, &mut new.appearance) {
+        for shadow in &mut after.shadows {
+            if shadow.color_variable != 0
+                && before.shadows.iter().any(|prior| {
+                    prior.color_variable == shadow.color_variable && prior.color != shadow.color
+                })
+            {
+                shadow.color_variable = 0;
+            }
+        }
+    }
     let a = components::effective_value(old);
     let b = components::effective_value(new);
     let stroke_changed = old.stroke_width != new.stroke_width;
@@ -687,6 +733,36 @@ impl Editor {
         let vars: Variables = serde_json::from_str(json).map_err(|e| e.to_string())?;
         let mut doc = self.document.clone();
         doc.variables = vars;
+        for shape in &mut doc.shapes {
+            if let Some(a) = &mut shape.appearance {
+                for shadow in &mut a.shadows {
+                    if shadow.color_variable != 0
+                        && !doc
+                            .variables
+                            .values
+                            .iter()
+                            .any(|v| v.id == shadow.color_variable)
+                    {
+                        shadow.color_variable = 0;
+                        shape.effect_style = 0;
+                    }
+                }
+            }
+        }
+        for style in &mut doc.effect_styles {
+            for shadow in &mut style.effects.shadows {
+                if shadow.color_variable != 0
+                    && !doc
+                        .variables
+                        .values
+                        .iter()
+                        .any(|v| v.id == shadow.color_variable)
+                {
+                    shadow.color_variable = 0;
+                }
+            }
+        }
+
         for page in &mut doc.pages {
             page.variable_modes.retain(|c, m| {
                 doc.variables

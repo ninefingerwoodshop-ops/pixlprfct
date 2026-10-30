@@ -96,3 +96,51 @@ the local build exposes database setup without implying that a server is connect
 Inspected the live Figma desktop interface in Booking & Scheduler and Territory Track Design System. The Effects header uses the four-dot Apply styles button followed by Add effect. The Effect styles picker has a title, create (+), close, search, and style list. The live Edit effect style panel measures 304 CSS px wide, with a 40 px header, 136 px checkerboard preview, 112 px white circular sample, 16 px content insets, and 24 px name/description controls. Name and Description use a 96 px label-plus-gap column; Properties contains the same editable effect rows as the layer inspector. Create new effect style adds a Create style footer action. These observations are implemented with the shared settings popover, inputs and custom dropdown controls. The picker offers imported styles already present in the document; library publishing and importing continue through Manage libraries.
 
 Reference captures: `figma-edit-effect-style.png` and `figma-create-effect-style.png` in the October 29 task artifact folder. No Figma style content was modified during inspection.
+
+## Components and variants — live reference 2026-10-29
+
+Inspected the native Figma app in Territory Track Design System, button page:
+https://www.figma.com/design/wsDTBgrzPpnKyaJlMOakOG/Territory-Track-Design-System?node-id=10-607
+The selected set has four-diamond layer/canvas glyphs, a purple dashed boundary,
+and a purple variant-count badge. Its 241px right inspector has a 16px inset,
+a 13px component title, a diamond-plus Add variant button, and a Properties list.
+Rows are 208px wide and 24px high, with 8px gaps, 11px text, a hollow diamond,
+property name, and muted comma-separated values. Clicking a property name edits
+it inline. A selected main instead shows Current variant, a select-set action,
+and two-column property-name / editable-value fields.
+
+Create property → Variant opens a 304px popover to the left of the inspector:
+40px title bar, 16px content inset, Name and Value fields, default Property /
+Default values, and a right-aligned Create property button. Use the shared
+settings popover and custom dropdowns. Interface colors are #2c2c2c and #383838;
+component canvas paint remains authored document data.
+
+Verification: the updated editor's title measured 13px, property rows 208×24px,
+action buttons 24×24px, and inspector inset 16px. Browser interaction verified
+creation, combining, renaming, multiple properties, instance switching, Assets
+grouping, and reload persistence. This is the core variant-authoring workflow;
+advanced Figma component features and whole-interface pixel parity are not
+claimed. The existing editor panel remains 240px wide.
+
+## Text alignment — live reference 2026-10-30
+
+Inspected the native Figma Territory Track Design System button page at 100%
+zoom, label node `10:609` within main `10:608`. Its Open Sans SemiBold 14 label
+has a 14px line-height/text box, centered at y=13 inside a 40px parent. The
+typography inspector exposes horizontal and vertical alignment independently.
+The existing PixlPrfct design uses different authored dimensions (including
+16px text in 42px buttons); those document choices were preserved.
+
+The PixlPrfct canvas painted fixed-box labels about 4px above its CSS preview:
+it used a top-origin font baseline and omitted the final line's leading from
+text measurement. It now uses full line boxes and a measured alphabetic
+baseline for Canvas/SVG, with the same vertical offset in inline editing.
+Canvas and CSS screenshots of the actual Button page at the same 90% zoom
+confirm the visible shift is gone. Reference and result captures are in
+`.local/ui-audit-2026-10-30/`. Automated checks cover line wrapping, blank lines,
+top/center/bottom offsets, Hug measurements and baseline alignment.
+
+No new inspector layouts were introduced in this patch. Text-style and shadow
+variable authoring is available through MCP; corresponding inspector pickers
+remain a separate parity gap. Headless font metrics are approximate, and this
+comparison is not a claim of exact rendering for every font/platform.

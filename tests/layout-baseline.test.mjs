@@ -13,9 +13,13 @@ test('wrapped rows align baselines independently; hidden and absolute children d
 test('baseline alignment ignores vertical flow and component instances inherit the toggle and reject overrides',()=>{
  const {e,f,a,b}=setup();e.create_component(f);const i=e.create_instance(f,500,100);const before=e.snapshot();assert.throws(()=>set(e,i,{auto_layout:{...get(e,i).auto_layout,text_baseline:false}}),/protected/);assert.equal(e.snapshot(),before);set(e,f,{auto_layout:{...layout,gap:30,text_baseline:false}});assert.equal(get(e,i).auto_layout.text_baseline,false);assert.equal(get(e,i).auto_layout.gap,30);set(e,f,{auto_layout:{...layout,direction:'vertical'}});assert.equal(get(e,i).auto_layout.text_baseline,true);assert.equal(get(e,a).x,110);assert.equal(get(e,b).x,110);e.free();
 });
-test('browser baseline helper measures the top-to-alphabetic difference and restores context',()=>{
- const ctx={font:'original',textBaseline:'middle',save(){this.saved=[this.font,this.textBaseline];},restore(){[this.font,this.textBaseline]=this.saved;},measureText(){return{actualBoundingBoxAscent:this.textBaseline==='alphabetic'?29:-3};}};
- const s={height:40,typography:{font_size:40,font_family:'Georgia',font_weight:400,sizing:'fixed'}};assert.equal(textBaseline(s,ctx),32);assert.equal(ctx.font,'original');assert.equal(ctx.textBaseline,'middle');ctx.measureText=()=>({});assert.equal(textBaseline(s,ctx),32);
+test('browser baselines include line leading and vertical alignment, restoring context',()=>{
+ const ctx={font:'original',textBaseline:'middle',save(){this.saved=[this.font,this.textBaseline];},restore(){[this.font,this.textBaseline]=this.saved;},measureText(){return{width:20,fontBoundingBoxAscent:36,fontBoundingBoxDescent:10};}};
+ const s={x:0,y:0,width:100,height:80,text:'Hg',typography:{font_size:40,font_family:'Georgia',font_weight:400,line_height:1.5,sizing:'fixed',vertical_align:'center',wrap:false}};
+ // A 60px line box: 7px leading + 36px ascent, inside 10px top space.
+ assert.equal(textBaseline(s,ctx),53);assert.equal(ctx.font,'original');assert.equal(ctx.textBaseline,'middle');
+ assert.equal(textBaseline({...s,typography:{...s.typography,sizing:'width'}},ctx),43);
+ ctx.measureText=()=>({width:20});assert.equal(textBaseline(s,ctx),52);
 });
 test('invalid baseline measurements reject edits atomically',()=>{
  const {e,f}=setup(),saved=e.snapshot();e.set_text_measurer(json=>{const s=JSON.parse(json);return JSON.stringify([s.width,s.height,-1]);});assert.throws(()=>set(e,f,{width:500}),/baseline/);assert.equal(e.snapshot(),saved);e.free();

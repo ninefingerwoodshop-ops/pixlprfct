@@ -77,10 +77,11 @@ export function installDeviceChrome(canvas){
  const layer=document.createElement('div');layer.className='device-chrome-overlay';layer.setAttribute('aria-hidden','true');layer.style.cssText='position:absolute;inset:0;overflow:hidden;pointer-events:none';canvas.after(layer);
  const entries=new Map();
  return (scene,pan,zoom)=>{
-  const box=canvas.getBoundingClientRect(),host=canvas.parentElement.getBoundingClientRect();
-  layer.style.left=box.left-host.left+'px';layer.style.top=box.top-host.top+'px';layer.style.width=box.width+'px';layer.style.height=box.height+'px';
   const frames=scene.filter(s=>showsDeviceChrome(s,scene)),live=new Set(frames.map(s=>s.id));
   for(const [id,node] of entries)if(!live.has(id)){node.remove();entries.delete(id);}
+  if(!frames.length)return;
+  const box=canvas.getBoundingClientRect(),host=canvas.parentElement.getBoundingClientRect();
+  layer.style.left=box.left-host.left+'px';layer.style.top=box.top-host.top+'px';layer.style.width=box.width+'px';layer.style.height=box.height+'px';
   for(const frame of frames){
    let node=entries.get(frame.id);if(!node){node=document.createElement('div');node.style.cssText='position:absolute;pointer-events:none;transform-origin:0 0;box-shadow:0 12px 24px #0003';layer.append(node);entries.set(frame.id,node);}
    const pose=frame._rotationHit??frame,[top,right,bottom,left]=chromeInsets(frame.device_chrome,pose.width,pose.height,frame.device_chrome_breakpoints),key=[frame.device_chrome,pose.width,pose.height,JSON.stringify(frame.device_chrome_breakpoints)].join(':');

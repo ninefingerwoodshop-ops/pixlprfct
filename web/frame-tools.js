@@ -32,7 +32,7 @@ export function installFramePresets(panel,create){
 }
 export function installFrameLabels(canvas,{select,rename,beginDrag}){
  const overlay=document.createElement('div');overlay.className='frame-labels';canvas.after(overlay);const entries=new Map();
- return (scene,pan,zoom,selected,enabled)=>{
+ return (scene,pan,zoom,selected,enabled,sets=[])=>{
   const box=canvas.getBoundingClientRect(),parent=canvas.parentElement.getBoundingClientRect();overlay.style.left=box.left-parent.left+'px';overlay.style.top=box.top-parent.top+'px';overlay.style.width=box.width+'px';overlay.style.height=box.height+'px';
   const byId=new Map(scene.map(s=>[s.id,s]));
   const frames=scene.filter(s=>{
@@ -55,12 +55,14 @@ export function installFrameLabels(canvas,{select,rename,beginDrag}){
      input.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();finish(true);}if(e.key==='Escape'){e.preventDefault();finish(false);}};input.onblur=()=>finish(true);input.focus();input.select();
     };
    }
-   const button=row.firstElementChild,type=componentLabelType(frame);
-   row.dataset.componentType=type;
-   button.replaceChildren();
-   if(type){const glyph=document.createElement('span');glyph.className='frame-label-icon';glyph.setAttribute('aria-hidden','true');glyph.innerHTML=icon(type==='master'?'component':'instance');button.append(glyph);}
-   const name=document.createElement('span');name.className='frame-label-name';name.textContent=frame.name;button.append(name);
-   button.setAttribute('aria-label','Select frame '+frame.name);button.title='Double-click to rename';row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+frame.y*zoom-chromeInsets(frame.device_chrome_hidden?'none':frame.device_chrome,frame.width,frame.height,frame.device_chrome_breakpoints)[0]*zoom-25+'px';row.style.maxWidth=Math.max(80,frame.width*zoom)+'px';row.style.pointerEvents=enabled?'auto':'none';
+   const button=row.firstElementChild,type=componentLabelType(frame,sets);
+   if(row.dataset.componentType!==type||row.dataset.name!==frame.name){
+    row.dataset.componentType=type;row.dataset.name=frame.name;button.replaceChildren();
+    if(type){const glyph=document.createElement('span');glyph.className='frame-label-icon';glyph.setAttribute('aria-hidden','true');glyph.innerHTML=icon(type==='set'?'component':'instance');button.append(glyph);}
+    const name=document.createElement('span');name.className='frame-label-name';name.textContent=frame.name;button.append(name);
+    button.setAttribute('aria-label','Select frame '+frame.name);button.title='Double-click to rename';
+   }
+   row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+frame.y*zoom-chromeInsets(frame.device_chrome_hidden?'none':frame.device_chrome,frame.width,frame.height,frame.device_chrome_breakpoints)[0]*zoom-25+'px';row.style.maxWidth=Math.max(80,frame.width*zoom)+'px';row.style.pointerEvents=enabled?'auto':'none';
   }
  };
 }

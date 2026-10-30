@@ -552,4 +552,4 @@ export function icon(name,weight='regular') { return `<svg class="app-icon" view
 export function installIcons() { document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon)); document.querySelectorAll('[data-tool]').forEach(el => el.innerHTML = icon(el.dataset.tool)+(el.dataset.label ? `<span>${el.dataset.label}</span><kbd>${el.querySelector('kbd')?.textContent||''}</kbd>` : '')); for (const id of ['undo','redo']) document.getElementById(id).innerHTML = icon(id); }
 
 // Starters use component identity while remaining freely editable controls.
-export function componentLabelType(shape){return shape.component?.type??'';}
+export function componentLabelType(shape,sets=[]){return sets.some(s=>s.frame_id===shape.id)?'set':shape.component?.type??'';}

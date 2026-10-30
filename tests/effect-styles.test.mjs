@@ -12,7 +12,7 @@ const save=(e,id=0,name='Elevation / Card',layer=0,values=effects())=>e.save_eff
 test('effect styles propagate across pages and duplicates without changing paints or geometry; undo and files retain links',()=>{
  const e=new Editor(),a=e.add('rectangle',0,0),before=e.snapshot(),id=save(e,0,'  Elevation / Card  ',a);
  assert.equal(shape(e,a).effect_style,id);assert.equal(doc(e).effect_styles[0].name,'Elevation / Card');e.undo();assert.equal(e.snapshot(),before);e.redo();
- const b=JSON.parse(e.duplicate_many(JSON.stringify([a])))[0];e.add_page();const c=e.add('ellipse',200,0);e.apply_effect_style(JSON.stringify([c]),id);
+ const b=JSON.parse(e.duplicate_many(JSON.stringify([a])))[0];e.add_page();const c=e.add('ellipse',200,0);e.apply_effect_style(JSON.stringify([c]),id);save(e,id,'Elevation / Card',a);assert.equal(doc(e).active_page,2);assert.equal(shape(e,a).effect_style,id);
  e.update(JSON.stringify({...shape(e,c),fill:'#abcdef',appearance:{...shape(e,c).appearance,opacity:.5,corner_radius:12}}));assert.equal(shape(e,c).effect_style,id);
  const old=e.snapshot();save(e,id,'Elevation / Raised',0,effects(24));for(const n of [a,b,c])assert.equal(shape(e,n).appearance.shadows[0].blur,24);
  assert.equal(shape(e,c).fill,'#abcdef');assert.equal(shape(e,c).appearance.opacity,.5);assert.equal(shape(e,c).appearance.corner_radius,12);

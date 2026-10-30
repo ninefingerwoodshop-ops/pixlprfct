@@ -28,6 +28,18 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "add_variant",
+    "readOnly": false,
+    "description": "Add a variant to a main component or component-set frame. Creates the set automatically for a standalone main. Returns the new main component ID. One undo step.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "number"
+  },
+  {
     "name": "align_many",
     "readOnly": false,
     "description": "Array of layer IDs and left/center/right/top/middle/bottom.",
@@ -76,6 +88,22 @@ export const engineCommands=[
     "returns": "void"
   },
   {
+    "name": "apply_text_style",
+    "readOnly": false,
+    "description": "Apply a text style to text layer IDs across pages. style_id 0 detaches, retaining typography.",
+    "args": [
+      {
+        "name": "selection",
+        "type": "json"
+      },
+      {
+        "name": "style_id",
+        "type": "number"
+      }
+    ],
+    "returns": "void"
+  },
+  {
     "name": "arrange_many",
     "readOnly": false,
     "description": "Array of layer IDs and front/back/forward/backward.",
@@ -102,6 +130,26 @@ export const engineCommands=[
       }
     ],
     "returns": "number"
+  },
+  {
+    "name": "bind_shadow_color",
+    "readOnly": false,
+    "description": "Bind a color variable to a shadow by zero-based index. variable 0 detaches. Binding travels with the shadow when reordered. For reusable styles, set effects.shadows[index].color_variable in save_effect_style.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "index",
+        "type": "number"
+      },
+      {
+        "name": "variable",
+        "type": "number"
+      }
+    ],
+    "returns": "void"
   },
   {
     "name": "bind_variable",
@@ -136,6 +184,18 @@ export const engineCommands=[
     "description": "can undo",
     "args": [],
     "returns": "boolean"
+  },
+  {
+    "name": "combine_variants",
+    "readOnly": false,
+    "description": "Combine at least two sibling main component IDs into a component set with a visible container. Parses Property=Value pairs (including multiple comma-separated properties). Returns its frame ID. One undo step.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "number"
   },
   {
     "name": "copy_layers",
@@ -349,6 +409,26 @@ export const engineCommands=[
       {
         "name": "json",
         "type": "json"
+      }
+    ],
+    "returns": "string"
+  },
+  {
+    "name": "duplicate_many_offset",
+    "readOnly": false,
+    "description": "Array of layer IDs and explicit x/y translation. Use 0,0 to duplicate in place; hierarchy, variable bindings and exposed component properties are preserved. Flow children remain governed by auto layout. duplicate and duplicate_many retain the interactive +24/+24 offset.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "x",
+        "type": "number"
+      },
+      {
+        "name": "y",
+        "type": "number"
       }
     ],
     "returns": "string"
@@ -861,6 +941,18 @@ export const engineCommands=[
     "returns": "void"
   },
   {
+    "name": "remove_text_style",
+    "readOnly": false,
+    "description": "Delete a text style and detach linked layers without changing their appearance.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "void"
+  },
+  {
     "name": "rename_grid_area",
     "readOnly": false,
     "description": "rename grid area",
@@ -1035,7 +1127,7 @@ export const engineCommands=[
   {
     "name": "save_component_set",
     "readOnly": false,
-    "description": "save component set",
+    "description": "Save a ComponentSet definition. Sibling main components receive a visible container automatically; legacy cross-page definitions remain logical sets.",
     "args": [
       {
         "name": "json",
@@ -1071,6 +1163,22 @@ export const engineCommands=[
       },
       {
         "name": "frame_id",
+        "type": "number"
+      }
+    ],
+    "returns": "number"
+  },
+  {
+    "name": "save_text_style",
+    "readOnly": false,
+    "description": "Create/update TextStyle {id,name,description?,typography}. ID 0 creates. layer_id 0 saves without binding; otherwise applies across pages. Shares family, size, weight and line height, preserving alignment, wrapping and sizing.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "layer_id",
         "type": "number"
       }
     ],
@@ -1163,7 +1271,7 @@ export const engineCommands=[
   {
     "name": "set_variant_property",
     "readOnly": false,
-    "description": "set variant property",
+    "description": "On a main component, edit its property value; on an instance, switch to the closest matching variant. Unknown properties and duplicate combinations fail atomically.",
     "args": [
       {
         "name": "id",
@@ -1371,7 +1479,7 @@ export const modelReference={
   "Shape": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shape {\n    #[serde(default)]\n    pub layout_class: String,\n    #[serde(default)]\n    pub layout_class_generated: bool,\n    #[serde(default)]\n    pub layout_media: Vec<serde_json::Value>,\n    #[serde(default, skip_serializing_if = \"String::is_empty\")]\n    pub custom_css: String,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub breakpoint_original: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome: String,\n    #[serde(default)]\n    pub device_chrome_breakpoints: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome_hidden: bool,\n    #[serde(default)]\n    pub control: Option<Control>,\n    #[serde(default)]\n    pub control_state: String,\n    #[serde(default)]\n    pub behaviors: Vec<Behavior>,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub editor_meta: Option<editor_tools::EditorMeta>,\n    #[serde(default)]\n    pub border_widths: Option<[f64; 4]>,\n    #[serde(default)]\n    pub rotation: f64,\n    #[serde(default)]\n    pub aspect_ratio_locked: bool,\n    #[serde(default)]\n    pub variable_bindings: std::collections::BTreeMap<String, u32>,\n    #[serde(default)]\n    pub variable_modes: std::collections::BTreeMap<u32, u32>,\n    pub id: u32,\n    #[serde(default = \"first_page\")]\n    pub page_id: u32,\n    #[serde(default)]\n    pub parent_id: u32,\n    #[serde(default)]\n    pub clip_content: bool,\n    #[serde(default)]\n    pub image: Option<RasterImage>,\n    #[serde(default)]\n    pub constraints: Constraints,\n    #[serde(default)]\n    pub appearance: Option<Appearance>,\n    #[serde(default)]\n    pub auto_layout: Option<AutoLayout>,\n    #[serde(default)]\n    pub layout_grids: Vec<LayoutGrid>,\n    #[serde(default)]\n    pub guide_style: u32,\n    #[serde(default)]\n    pub effect_style: u32,\n    #[serde(default)]\n    pub prototype: Option<Prototype>,\n    #[serde(default)]\n    pub additional_interactions: Vec<Prototype>,\n    #[serde(default)]\n    pub flow_name: String,\n    #[serde(default)]\n    pub layout_item: LayoutItem,\n    pub kind: String,\n    pub name: String,\n    pub x: f64,\n    pub y: f64,\n    pub width: f64,\n    pub height: f64,\n    pub fill: String,\n    pub text: String,\n    pub hidden: bool,\n    #[serde(default)]\n    pub locked: bool,\n    #[serde(default)]\n    pub component: Option<components::Component>,\n    #[serde(default)]\n    pub typography: Option<Typography>,\n    #[serde(skip)]\n    pub measured_baseline: Option<f64>,\n    #[serde(default)]\n    pub points: Vec<[f64; 2]>,\n    #[serde(default)]\n    pub handles: Vec<[[f64; 2]; 2]>,\n    #[serde(default)]\n    pub closed: bool,\n    #[serde(default = \"default_stroke\")]\n    pub stroke_width: f64,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shape {\n    #[serde(default)]\n    pub layout_class: String,\n    #[serde(default)]\n    pub layout_class_generated: bool,\n    #[serde(default)]\n    pub layout_media: Vec<serde_json::Value>,\n    #[serde(default, skip_serializing_if = \"String::is_empty\")]\n    pub custom_css: String,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub breakpoint_original: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome: String,\n    #[serde(default)]\n    pub device_chrome_breakpoints: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome_hidden: bool,\n    #[serde(default)]\n    pub control: Option<Control>,\n    #[serde(default)]\n    pub control_state: String,\n    #[serde(default)]\n    pub behaviors: Vec<Behavior>,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub editor_meta: Option<editor_tools::EditorMeta>,\n    #[serde(default)]\n    pub border_widths: Option<[f64; 4]>,\n    #[serde(default)]\n    pub rotation: f64,\n    #[serde(default)]\n    pub aspect_ratio_locked: bool,\n    #[serde(default)]\n    pub variable_bindings: std::collections::BTreeMap<String, u32>,\n    #[serde(default)]\n    pub variable_modes: std::collections::BTreeMap<u32, u32>,\n    pub id: u32,\n    #[serde(default = \"first_page\")]\n    pub page_id: u32,\n    #[serde(default)]\n    pub parent_id: u32,\n    #[serde(default)]\n    pub clip_content: bool,\n    #[serde(default)]\n    pub image: Option<RasterImage>,\n    #[serde(default)]\n    pub constraints: Constraints,\n    #[serde(default)]\n    pub appearance: Option<Appearance>,\n    #[serde(default)]\n    pub auto_layout: Option<AutoLayout>,\n    #[serde(default)]\n    pub layout_grids: Vec<LayoutGrid>,\n    #[serde(default)]\n    pub guide_style: u32,\n    #[serde(default)]\n    pub effect_style: u32,\n    #[serde(default)]\n    pub text_style: u32,\n    #[serde(default)]\n    pub prototype: Option<Prototype>,\n    #[serde(default)]\n    pub additional_interactions: Vec<Prototype>,\n    #[serde(default)]\n    pub flow_name: String,\n    #[serde(default)]\n    pub layout_item: LayoutItem,\n    pub kind: String,\n    pub name: String,\n    pub x: f64,\n    pub y: f64,\n    pub width: f64,\n    pub height: f64,\n    pub fill: String,\n    pub text: String,\n    pub hidden: bool,\n    #[serde(default)]\n    pub locked: bool,\n    #[serde(default)]\n    pub component: Option<components::Component>,\n    #[serde(default)]\n    pub typography: Option<Typography>,\n    #[serde(skip)]\n    pub measured_baseline: Option<f64>,\n    #[serde(default)]\n    pub points: Vec<[f64; 2]>,\n    #[serde(default)]\n    pub handles: Vec<[[f64; 2]; 2]>,\n    #[serde(default)]\n    pub closed: bool,\n    #[serde(default = \"default_stroke\")]\n    pub stroke_width: f64,\n}"
   },
   "Behavior": {
     "file": "src/lib.rs",
@@ -1436,7 +1544,7 @@ export const modelReference={
   "DropShadow": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct DropShadow {\n    #[serde(default = \"shadow_kind\")]\n    pub kind: String,\n    pub x: f64,\n    pub y: f64,\n    pub blur: f64,\n    #[serde(default)]\n    pub spread: f64,\n    pub color: String,\n    pub opacity: f64,\n    #[serde(default = \"shadow_visible\")]\n    pub visible: bool,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct DropShadow {\n    #[serde(default = \"shadow_kind\")]\n    pub kind: String,\n    pub x: f64,\n    pub y: f64,\n    pub blur: f64,\n    #[serde(default)]\n    pub spread: f64,\n    pub color: String,\n    #[serde(default)]\n    pub color_variable: u32,\n    pub opacity: f64,\n    #[serde(default = \"shadow_visible\")]\n    pub visible: bool,\n}"
   },
   "Gradient": {
     "file": "src/lib.rs",
@@ -1466,12 +1574,12 @@ export const modelReference={
   "Typography": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Typography {\n    #[serde(default = \"default_vertical_align\")]\n    pub vertical_align: String,\n    #[serde(default = \"fixed_text\")]\n    pub sizing: String,\n    pub font_size: f64,\n    pub font_family: String,\n    pub font_weight: u16,\n    pub align: String,\n    pub line_height: f64,\n    pub wrap: bool,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\n#[serde(default)]\npub struct Typography {\n    #[serde(default = \"default_vertical_align\")]\n    pub vertical_align: String,\n    #[serde(default = \"fixed_text\")]\n    pub sizing: String,\n    pub font_size: f64,\n    pub font_family: String,\n    pub font_weight: u16,\n    pub align: String,\n    pub line_height: f64,\n    pub wrap: bool,\n}"
   },
   "Document": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Document {\n    #[serde(default, skip_serializing_if = \"Vec::is_empty\")]\n    pub libraries: Vec<serde_json::Value>,\n    #[serde(default)]\n    pub variables: variables::Variables,\n    pub version: u32,\n    pub name: String,\n    pub shapes: Vec<Shape>,\n    #[serde(default = \"default_pages\")]\n    pub pages: Vec<Page>,\n    #[serde(default = \"first_page\")]\n    pub active_page: u32,\n    #[serde(default)]\n    pub component_sets: Vec<variants::ComponentSet>,\n    #[serde(default)]\n    pub component_order: Vec<String>,\n    #[serde(default)]\n    pub guide_styles: Vec<guide_styles::GuideStyle>,\n    #[serde(default)]\n    pub effect_styles: Vec<effect_styles::EffectStyle>,\n    #[serde(default)]\n    pub component_properties: Vec<component_properties::ComponentProperty>,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Document {\n    #[serde(default, skip_serializing_if = \"Vec::is_empty\")]\n    pub libraries: Vec<serde_json::Value>,\n    #[serde(default)]\n    pub variables: variables::Variables,\n    pub version: u32,\n    pub name: String,\n    pub shapes: Vec<Shape>,\n    #[serde(default = \"default_pages\")]\n    pub pages: Vec<Page>,\n    #[serde(default = \"first_page\")]\n    pub active_page: u32,\n    #[serde(default)]\n    pub component_sets: Vec<variants::ComponentSet>,\n    #[serde(default)]\n    pub component_order: Vec<String>,\n    #[serde(default)]\n    pub guide_styles: Vec<guide_styles::GuideStyle>,\n    #[serde(default)]\n    pub effect_styles: Vec<effect_styles::EffectStyle>,\n    #[serde(default)]\n    pub text_styles: Vec<text_styles::TextStyle>,\n    #[serde(default)]\n    pub component_properties: Vec<component_properties::ComponentProperty>,\n}"
   },
   "Page": {
     "file": "src/lib.rs",
@@ -1492,6 +1600,11 @@ export const modelReference={
     "file": "src/paint.rs",
     "kind": "struct",
     "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shader {\n    pub preset: String,\n    pub color: String,\n    pub scale: f64,\n    pub time: f64,\n    pub seed: f64,\n    pub code: String,\n    pub snapshot: String,\n}"
+  },
+  "TextStyle": {
+    "file": "src/text_styles.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct TextStyle {\n    pub id: u32,\n    pub name: String,\n    #[serde(default)]\n    pub description: String,\n    pub typography: Typography,\n}"
   },
   "Variables": {
     "file": "src/variables.rs",
@@ -1521,6 +1634,6 @@ export const modelReference={
   "ComponentSet": {
     "file": "src/variants.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct ComponentSet {\n    pub id: u32,\n    pub name: String,\n    pub properties: Vec<String>,\n    pub variants: Vec<Variant>,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct ComponentSet {\n    pub id: u32,\n    #[serde(default, skip_serializing_if = \"is_zero\")]\n    pub frame_id: u32,\n    pub name: String,\n    pub properties: Vec<String>,\n    pub variants: Vec<Variant>,\n}"
   }
 };

@@ -97,3 +97,10 @@ test('server enforces source grants, locked instances, tenant access, releases, 
   await db.query('DELETE FROM member WHERE userId=?',['consumer'],'run');assert.equal((await call('consumer','/api/libraries/'+id)).status,403);e.free();
  }finally{await db.close();}
 });
+
+test('component-set containers and variant metadata remap together in published libraries',()=>{
+ const sourceEditor=new Editor();sourceEditor.load(JSON.stringify(source()));sourceEditor.add_variant(1);const original=snapshot(sourceEditor),set=original.component_sets[0],r=release(original);
+ assert(r.body.shapes.some(s=>s.id===set.frame_id));const target=new Editor();target.add('rectangle',0,0);target.load(JSON.stringify(mergeLibrary(snapshot(target),r)));
+ const doc=snapshot(target),link=doc.libraries[0],imported=doc.component_sets[0];assert.equal(imported.frame_id,link.maps.shapes[set.frame_id]);assert(imported.variants.every(v=>doc.shapes.find(s=>s.id===v.component_id).parent_id===imported.frame_id));
+ assert.equal(importedContentError(doc,mergeLibrary(doc,r)),null);sourceEditor.free();target.free();
+});

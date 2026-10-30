@@ -97,12 +97,12 @@ import {prototypeFrames,renderPrototypeControls,presentPrototype} from './protot
 import {interactions,withInteractions} from './prototype-interactions.js';
 import {drawLayoutGuides,renderGuideControls} from './layout-guides.js';
 import init, { Editor } from './pkg/pixlprfct_core.js';
-import {componentSet,renderVariantProperties,editVariantSet} from './variants.js';
+import {componentSet,componentSetFrame,canCombineVariants,renderVariantProperties,renderVariantAuthoring} from './variants.js';
 import {renderComponentProperties as renderExposedProperties,editComponentProperty} from './component-properties.js';
 import {canvasFill} from './gradients.js';
 import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradientStopAt,drawGradientHandles} from './gradient-edit.js';
 import {renderGradientControls} from './gradient-controls.js';
-import { textBaseline, textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
+import { fontBaseline, textBaseline, textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
 import { bounds, marqueeSelection, layerRange, selectionRoots, selectionTarget, childSelection, parentSelection, siblingSelection, descendants, visibleInTree, lockedInTree, canvasSelection } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
@@ -110,6 +110,8 @@ import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-e
 import {exportSize,svgDocument} from './export.js';
 import {LAYER_MIME,layerPayload,createPasteContext} from './clipboard.js';
 import {appearance,radii,roundedContains,paintAttributes,drawScene,sceneSvg,withPaintOpacity} from './appearance.js';
+import {createViewportRenderer} from './viewport-renderer.js';
+const viewportRenderer=createViewportRenderer(drawScene);
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons, componentLabelType } from './icons.js';
@@ -136,7 +138,7 @@ const needsControlRenderer=()=>pageShapes().some(s=>s.control||s.auto_layout?.di
 const cssActive=()=>!!layoutCssPreview||!!layerCssPreview||needsControlRenderer()||(cssCanvasEnabled??pageShapes().some(s=>effectBlur(s.appearance,'backdrop_blur')>0));
 const canvasHit=(x,y)=>cssActive()?cssCanvas.hit({x,y}):editor.hit_test(x,y);
 const measureCtx = document.createElement('canvas').getContext('2d');
-function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
+function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width, fontBaseline(textStyle(shape),measureCtx)); }
 function agentEditor(){const instance=new Editor();instance.set_text_measurer(json=>{const shape=JSON.parse(json);if(shape.control?.kind==='button'){const style=shape.typography??{font_family:'Arial',font_size:16,font_weight:400,line_height:1.2};measureCtx.font=fontCss(style);return JSON.stringify([Math.max(1,Math.ceil(measureCtx.measureText(shape.control.label).width)),Math.max(1,Math.ceil(style.font_size*style.line_height))]);}measureCtx.font=fontCss(textStyle(shape));return JSON.stringify([...textSize(shape,value=>measureCtx.measureText(value).width),textBaseline(shape,measureCtx)]);});return instance;}
 const KEY = 'pixlprfct.document.v1';
 let textEditing=null;
@@ -149,7 +151,7 @@ let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, 
 // Trackpad pinch emits small wheel deltas; amplify these while anchoring at the pointer.
 const TRACKPAD_PAN_SPEED = 1;
 let viewportDrawPending = false;
-window.addEventListener('paint-texture-ready',()=>scheduleViewportDraw());
+window.addEventListener('paint-texture-ready',()=>{viewportRenderer.invalidate();scheduleViewportDraw();});
 function scheduleViewportDraw() {
   if (viewportDrawPending) return;
   viewportDrawPending = true;
@@ -297,7 +299,9 @@ function refresh(save = true) {
 function update(shape) { safe(() => { editor.update(JSON.stringify(reconcilePaints(shape,doc.shapes.find(s=>s.id===shape.id)))); refresh(); }); }
 function updateMany(shapes) { safe(() => { editor.update_many(JSON.stringify(shapes.map(s=>reconcilePaints(s,doc.shapes.find(old=>old.id===s.id))))); refresh(); }); }
 function frameSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.frame_selection(selectionJson())]);refresh();toast('Selection framed');});}
-function createComponentSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.create_component_selection(selectionJson())]);refresh();showAssets();toast('Component created · insert linked copies from Assets');});}
+function createComponentSelection(){safe(()=>{if(!selectedIds.size)return;setSelection([editor.create_component_selection(selectionJson())]);refresh();toast('Component created');});}
+function combineVariantSelection(){safe(()=>{setSelection([editor.combine_variants(selectionJson())]);refresh();toast('Component set created');});}
+function addVariantSelection(){safe(()=>{setSelection([editor.add_variant(selected)]);refresh();fit();toast('Variant added');});}
 function arrangeSelection(direction){safe(()=>{if(!selectedIds.size)return;editor.arrange_many(selectionJson(),direction);refresh();});}
 function removeAutoLayout(){const shapes=selectionShapes().filter(s=>s.auto_layout);if(shapes.length)updateMany(shapes.map(s=>({...s,auto_layout:null})));}
 function toggleSelectionVisibility(){const shapes=selectionShapes();if(!shapes.length)return;const hidden=shapes.some(s=>!s.hidden);gesture=null;updateMany(shapes.map(s=>({...s,hidden})));}
@@ -333,6 +337,8 @@ function selectionActions(){
   return [
     {label:'Edit text',shortcut:'Enter',visible:shape?.kind==='text',enabled:canvasEditable(),run:()=>beginText(current())},
     button('create-component','Create component','Ctrl/⌘ Alt K'),
+    {label:'Combine as variants',visible:canCombineVariants(doc,shapes),run:combineVariantSelection},
+    {label:'Add variant',visible:shape?.component?.type==='master'||!!componentSetFrame(doc,shape?.id),run:addVariantSelection},
     {label:'Frame selection',shortcut:'Ctrl/⌘ Alt G',run:frameSelection},
     button('add-auto-layout','Add Flex Layout','Shift A'),
     {label:'Remove layout',visible:!!shape?.auto_layout,run:()=>update({...shape,auto_layout:null})},
@@ -352,7 +358,7 @@ function selectionActions(){
 }
 function showSelectionMenu(event,id){event.preventDefault();if(id&&!selectedIds.has(id)){setSelection([id]);refresh(false);}if(!selectedIds.size)return;showContextMenu(event,selectionActions(),canvas);}
 
-function duplicateSelection() { safe(() => { if (selectedIds.size) { setSelection(JSON.parse(editor.duplicate_many(selectionJson()))); refresh(); } }); }
+function duplicateSelection() { if(selectedIds.size===1&&current()?.component?.type==='master'&&componentSet(doc,selected)){addVariantSelection();return;}safe(() => { if (selectedIds.size) { setSelection(JSON.parse(editor.duplicate_many(selectionJson()))); refresh(); } }); }
 function deleteSelection() { safe(() => { if (selectedIds.size) { editor.remove_many(selectionJson()); gesture=null; refresh(); } }); }
 function switchPage(id) { safe(() => { editor.select_page(id); refresh(); }); }
 function focusPage(id) {
@@ -480,14 +486,14 @@ function renderLayers() {
   const layerButton = shape => {
     const button = document.createElement('button');
     button.dataset.layerId=shape.id;
-    const componentType=componentLabelType(shape);
+    const componentType=componentLabelType(shape,doc.component_sets);
     if(componentType)button.dataset.componentType=componentType;
     button.className = 'layer' + (selectedIds.has(shape.id) ? ' active' : '');
     button.setAttribute('aria-pressed', String(selectedIds.has(shape.id)));
     const direction=shape.auto_layout?.direction,layoutIcon=['horizontal','vertical','grid'].includes(direction);
     const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(editorRole(shape)|| (shape.editor_meta?.text_path?'text-path':layoutIcon?'layout-'+direction:shape.kind));
     if(layoutIcon){glyph.title=direction==='grid'?'Grid Layout':direction==='horizontal'?'Flex Layout · Horizontal':'Flex Layout · Vertical';glyph.dataset.layout=direction;}
-    if(componentType){glyph.innerHTML=icon(componentType==='master'?'component':'instance');glyph.classList.add('component-glyph');glyph.title=[glyph.title,componentType==='master'?'Main component':'Component instance'].filter(Boolean).join(' · ');}
+    if(componentType){glyph.innerHTML=icon(componentType==='set'?'component':'instance');glyph.classList.add('component-glyph');glyph.title=[glyph.title,componentType==='set'?'Component set':componentType==='master'?'Main component':'Component instance'].filter(Boolean).join(' · ');}
     const name = document.createElement('span'); name.className = 'layer-name'; name.textContent = shape.name;
     button.append(glyph, name);
     button.classList.toggle('is-hidden',!!shape.hidden);
@@ -588,7 +594,7 @@ function renderAssetBrowser(){
   renderAssets($('asset-cards'),assets,{page:$('asset-page').value,insert:id=>{assetsWindow?.close();insertInstance(id);},goMain:id=>{assetsWindow?.close();goToMain(id);},dragStart:startAssetDrag,dragEnd:clearAssetDrag,preview:id=>assetAppearance(doc,id,textLayout),library:id=>libraryForMaster(doc,id)});
 }
 function renderComponentProperties(shape){
-  const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master',context=instanceContext(doc,shape);
+  const c=shape?.component,linked=c?.type==='instance',master=c?.type==='master',context=instanceContext(doc,shape),setFrame=componentSetFrame(doc,shape?.id);
   $('go-nested-main').hidden=!context?.nestedMain;$('select-instance-root').hidden=!linked||context.isRoot;
   $('swap-component').disabled=!!linked&&!context.isRoot;
   $('swap-component-help').textContent=linked&&!context.isRoot?'Select the outer instance to swap the whole component. Independent nested-instance swapping is not available yet.':'Overrides carry over on matching layer names and hierarchy.';
@@ -607,11 +613,16 @@ function renderComponentProperties(shape){
     remove:property=>safe(()=>{editor.remove_component_property(property);refresh();})
   });
   $('component-panel').hidden=!selectedIds.size;
-  $('instance-actions').hidden=!linked;
-  $('component-heading').textContent=master?'◆ Main component':linked?'◇ Instance':'Component';
-  $('create-component').hidden=master||(linked&&c.master!==c.source);$('create-component').textContent=linked?'Create component around instance':'Create component';$('insert-instance').hidden=!master;
+  $('instance-actions').hidden=!linked&&!master&&!setFrame;
+  $('instance-actions').setAttribute('aria-label',linked?'Instance actions':'Component actions');
+  $('instance-actions').title=linked?'Instance actions':'Component actions';
+  $('component-heading').textContent=setFrame?.name??componentSet(doc,master?shape.id:c?.master)?.name??(master?shape.name:linked?'Instance':'Component');
+  $('component-panel').dataset.componentKind=setFrame?'set':master?'master':linked?'instance':'';
+  $('combine-variants').hidden=!canCombineVariants(doc,selectionShapes());
+  $('create-component').hidden=!!setFrame||master||(linked&&c.master!==c.source);$('create-component').textContent=linked?'Create component around instance':'Create component';$('insert-instance').hidden=!master&&!setFrame;
   const variantSet=componentSet(doc,master?shape.id:c?.master);
-  $('manage-variants').hidden=!master;$('manage-variants').textContent=variantSet?'Edit variant set':'Create variant set';$('add-variant').hidden=!master||!variantSet;
+  $('manage-variants').hidden=!variantSet&&!setFrame;$('manage-variants').textContent='Select component set';$('manage-variants').disabled=!(variantSet??setFrame)?.frame_id;$('add-variant').hidden=!master&&!setFrame;
+  renderVariantAuthoring($('variant-authoring'),doc,shape,{save:set=>{editor.save_component_set(JSON.stringify(set));refresh();},selectSet:set=>{setSelection([set.frame_id]);refresh(false);}});
   renderVariantProperties($('variant-properties'),doc,linked&&context.isRoot?c.master:0,(property,value)=>safe(()=>{setSelection([editor.set_variant_property(selected,property,value)]);refresh();}));
   for(const id of ['go-main','reset-instance','detach-instance'])$(id).hidden=!linked;
   $('instance-controls').hidden=!linked;
@@ -631,6 +642,7 @@ function renderComponentProperties(shape){
   const count=linked?descendants(doc.shapes,[root.id]).reduce((n,s)=>n+(displayedOverrides(s).filter(f=>s.id!==root.id||(f!=='x'&&f!=='y')).length),0):0;
   $('reset-instance').disabled=!count;
   $('component-status').textContent=master?'Edits update linked instances across all pages.':linked?`${doc.shapes.find(s=>s.id===c.master)?.name??'Component'} · Updates automatically${count?' · '+count+' overrides':''}.`:'Create a reusable component from the selected layers. Ctrl/⌘ Alt K.';
+  if(setFrame)$('component-status').textContent=setFrame.variants.length+' variants';
   if(master&&variantSet){const v=variantSet.variants.find(v=>v.component_id===shape.id);$('component-status').textContent=variantSet.name+' · '+variantSet.properties.map((p,i)=>p+': '+v.values[i]).join(', ')+'. Edits update linked instances.';}
 }
 const libraryDisabled=new Map();
@@ -775,7 +787,7 @@ function renderPropertiesNow() {
 }
 function rasterEntry(data){
  let entry=imageCache.get(data);if(entry)return entry;const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);
- entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
+ entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);viewportRenderer.invalidate();draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
 }
 function playPrototype(){safe(()=>{const frames=prototypeFrames(doc);if(!frames.length){toast('Add a frame to present a prototype');return;}let chosen=current();while(chosen&&chosen.kind!=='frame')chosen=doc.shapes.find(s=>s.id===chosen.parent_id);const start=frames.find(s=>s.id===chosen?.id)??frames.find(s=>s.flow_name&&s.page_id===doc.active_page)??frames.find(s=>s.flow_name)??frames.find(s=>s.page_id===doc.active_page)??frames[0];presentPrototype(doc,start.id,editor,drawShape,async shapes=>{await Promise.all(shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url).promise));});});}
 function drawShape(shape, target=ctx) {
@@ -789,7 +801,7 @@ function drawShape(shape, target=ctx) {
   if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);fill(()=>ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh));}else{ctx.fillStyle='#e5e7eb';fill(()=>ctx.fillRect(shape.x,shape.y,shape.width,shape.height));}}
   else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)fill(()=>ctx.fill(path));if(a.stroke_enabled)stroke(()=>shape.closed?drawAlignedStroke(ctx,shape,{stroke:c=>c.stroke(path),fill:c=>c.fill(path)}):drawVectorStroke(ctx,shape,path)); }
   else if (shape.kind === 'text') {
-    const layout = textLayout(shape),glyphs=(c,kind)=>{if(shape.editor_meta?.text_path){c.save();c.font=fontCss(layout.style);c.textBaseline='alphabetic';c.textAlign='center';for(const glyph of pathGlyphs(shape,text=>c.measureText(text).width)){c.save();c.translate(glyph.x,glyph.y);c.rotate(glyph.angle);c[kind+'Text'](glyph.text,0,0);c.restore();}c.restore();return;}c.save();c.beginPath();c.rect(shape.x,shape.y,shape.width,shape.height);c.clip();c.font=fontCss(layout.style);c.textBaseline='top';c.textAlign=layout.style.align;for(const line of layout.lines)c[kind+'Text'](line.text,line.x,line.y);c.restore();};
+    const layout = textLayout(shape),glyphs=(c,kind)=>{if(shape.editor_meta?.text_path){c.save();c.font=fontCss(layout.style);c.textBaseline='alphabetic';c.textAlign='center';for(const glyph of pathGlyphs(shape,text=>c.measureText(text).width)){c.save();c.translate(glyph.x,glyph.y);c.rotate(glyph.angle);c[kind+'Text'](glyph.text,0,0);c.restore();}c.restore();return;}c.save();c.beginPath();c.rect(shape.x,shape.y,shape.width,shape.height);c.clip();c.font=fontCss(layout.style);c.textBaseline='alphabetic';c.textAlign=layout.style.align;for(const line of layout.lines)c[kind+'Text'](line.text,line.x,line.y+layout.baseline);c.restore();};
     if(a.fill_enabled)fill(()=>glyphs(ctx,'fill'));if(a.stroke_enabled)stroke(()=>drawAlignedStroke(ctx,shape,{stroke:c=>glyphs(c,'stroke'),fill:c=>glyphs(c,'fill')}));
   } else {
     if(a.fill_enabled)fill(()=>ctx.fill(outline));
@@ -821,14 +833,12 @@ function draw() {
   scene=motionTools?.preview(scene)??scene;
   scene=resolvePatternPaints(previewPaints(scene),(source,box)=>svgDocument(source,box,1,null,textLayout));
   renderLayerCssInspector?.responsive(scene);
-  if(cssActive()){scene=cssCanvas.render(scene,{variables:doc.variables,pageModes:activePage()?.variable_modes,textLayout},pan,zoom);cssGeometry=scene;}else{cssCanvas.hide();drawScene(scene,ctx,drawShape);scene=sceneToWorld(scene);}
+  if(cssActive()){scene=cssCanvas.render(scene,{variables:doc.variables,pageModes:activePage()?.variable_modes,textLayout},pan,zoom);cssGeometry=scene;}else{cssCanvas.hide();viewportRenderer.draw(scene,ctx,drawShape);scene=sceneToWorld(scene);}
   if(textEditing){
     const item=scene.find(s=>s.id===textEditing.id),pose=item?item._rotationHit??item:null;
     if(pose){
-      const layout=textLayout(pose),t=layout.style;measureCtx.font=fontCss(t);
-      const metrics=measureCtx.measureText('Hg'),ascent=metrics.fontBoundingBoxAscent??t.font_size*.8,descent=metrics.fontBoundingBoxDescent??t.font_size*.2;
-      const baselineOffset=textBaseline(pose,measureCtx)-((t.font_size*t.line_height-ascent-descent)/2+ascent);
-      inlineText.render(pose,{pan,zoom,layout,css:cssActive()&&!pose.rotation,baselineOffset});
+      const layout=textLayout(pose);
+      inlineText.render(pose,{pan,zoom,layout});
       for(const axis of ['width','height'])$(axis).value=Number(pose[axis].toFixed(2));
     }
   }
@@ -849,7 +859,8 @@ function draw() {
   renderDeviceChrome(scene,pan,zoom);
   const chromeStatus=deviceChromeStatus(selectedIds.size===1?scene.find(s=>selectedIds.has(s.id)):null,scene);
   if($('device-chrome-active').textContent!==chromeStatus)$('device-chrome-active').textContent=chromeStatus;
-  renderFrameLabels(scene.filter(s=>editorRole(s)!=='section'),pan,zoom,selectedIds,tool==='select'&&!space);
+  renderFrameLabels(scene.filter(s=>editorRole(s)!=='section'),pan,zoom,selectedIds,tool==='select'&&!space,doc.component_sets);
+  for(const set of doc.component_sets??[]){const frame=scene.find(s=>s.id===set.frame_id);if(!frame||!visibleInTree(frame,scene))continue;ctx.save();ctx.strokeStyle='#9747ff';ctx.lineWidth=1/zoom;ctx.setLineDash([6/zoom,4/zoom]);ctx.strokeRect(frame.x,frame.y,frame.width,frame.height);ctx.restore();}
   drawEditorMarks(ctx,scene,zoom);if(gesture?.preview&&editorRole(gesture.preview))drawEditorMarks(ctx,[gesture.preview],zoom);
   if(guidesVisible)drawLayoutGuides(ctx,scene,zoom);
   if(tool==='select')for(const frame of scene.filter(s=>s.auto_layout?.direction==='grid'&&visibleInTree(s,scene)&&(editingGridAreas===s.id||(s.layout_item?.grid_container&&scene.some(child=>child.parent_id===s.id&&selectedIds.has(child.id)&&!child.layout_item?.absolute))||(gridHoverPointer&&(()=>{const pose=s._rotationHit??s,p=localPoint(pose,point(gridHoverPointer));return p.x>=pose.x&&p.x<=pose.x+pose.width&&p.y>=pose.y&&p.y<=pose.y+pose.height;})()))))drawGridCells(ctx,frame,gesture?.type==='grid-span'&&gesture.parent.id===frame.id?gesture.grid:gridPlan(frame),zoom,editingGridAreas===frame.id,!!frame.layout_item?.grid_container&&scene.some(child=>child.parent_id===frame.id&&selectedIds.has(child.id)&&!child.layout_item?.absolute),selectedIds);
@@ -863,17 +874,20 @@ function draw() {
   const visibleSelection = selectionShapes().filter(s => visibleInTree(s,pageShapes())).map(s => scene.find(p => p.id === s.id) || s);
   const shape = bounds(visibleSelection);
   if (shape && !editingPath && !editingGradient) {
-    ctx.strokeStyle = '#0d99ff'; ctx.lineWidth = 1 / zoom;
+    const componentSelection=visibleSelection.every(s=>s.component||componentSetFrame(doc,s.id));
+    ctx.strokeStyle = componentSelection?'#9747ff':'#0d99ff'; ctx.lineWidth = 1 / zoom;
     for (const item of visibleSelection) {
       const oriented=item._rotationHit??item;
       ctx.save();ctx.translate(oriented.x,oriented.y);ctx.rotate(-(oriented.rotation??0)*Math.PI/180);
-      ctx.strokeRect(0,0,oriented.width,oriented.height);
+      if(componentSetFrame(doc,item.id))ctx.setLineDash([6/zoom,4/zoom]);
+      ctx.strokeRect(0,0,oriented.width,oriented.height);ctx.setLineDash([]);
       const size=6/zoom;
       if(!textEditing&&visibleSelection.length===1&&(item.component?.type!=='instance'||gridSpanParent(item))&&canvasEditable())for(const [cx,cy] of resizeHandles.filter(([,y])=>gridSpanParent(item)||!hasHugControlHeight(item)||y===.5)){const x=cx*oriented.width,y=cy*oriented.height;ctx.fillStyle='#fff';ctx.fillRect(x-size/2,y-size/2,size,size);ctx.strokeRect(x-size/2,y-size/2,size,size);}
       ctx.restore();
     }
     if(visibleSelection.length>1)ctx.strokeRect(shape.x,shape.y,shape.width,shape.height);
-    ctx.fillStyle = '#0d99ff'; ctx.font = `${10 / zoom}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${Math.round(shape.width)} × ${Math.round(shape.height)}`, shape.x + shape.width / 2, shape.y + shape.height + 10 / zoom); ctx.textAlign = 'left';
+    ctx.fillStyle = componentSelection?'#9747ff':'#0d99ff'; ctx.font = `${10 / zoom}px Inter,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; const selectedSet=visibleSelection.length===1?componentSetFrame(doc,visibleSelection[0].id):null;
+    if(selectedSet){const label=selectedSet.variants.length+' Variants',width=ctx.measureText(label).width+8/zoom,x=shape.x+shape.width/2-width/2,y=shape.y+shape.height+8/zoom;ctx.beginPath();ctx.roundRect(x,y,width,18/zoom,3/zoom);ctx.fill();ctx.fillStyle='#fff';ctx.fillText(label,shape.x+shape.width/2,y+3/zoom);}else ctx.fillText(`${Math.round(shape.width)} × ${Math.round(shape.height)}`,shape.x+shape.width/2,shape.y+shape.height+10/zoom);ctx.textAlign='left';
   }
   if (gesture?.type === 'marquee') {
     const box = bounds([{x:gesture.start.x,y:gesture.start.y,width:0,height:0},{x:gesture.end.x,y:gesture.end.y,width:0,height:0}]);
@@ -1052,25 +1066,27 @@ function bind() {
   syncInspectorDropdowns=installInspectorDropdowns(document.body);
   const componentHeader=document.createElement('div');componentHeader.className='component-section-header';
   $('component-heading').before(componentHeader);componentHeader.append($('component-heading'));
-  const instanceActions=document.createElement('button');instanceActions.id='instance-actions';instanceActions.type='button';instanceActions.className='inspector-icon';instanceActions.setAttribute('aria-label','Instance actions');instanceActions.setAttribute('aria-haspopup','menu');instanceActions.title='Instance actions';instanceActions.innerHTML='<svg class="app-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="13" cy="8" r="1"/></svg>';componentHeader.append(instanceActions);
+  const instanceActions=document.createElement('button');instanceActions.id='instance-actions';instanceActions.type='button';instanceActions.className='inspector-icon';instanceActions.setAttribute('aria-label','Instance actions');instanceActions.setAttribute('aria-haspopup','menu');instanceActions.title='Instance actions';instanceActions.innerHTML='<svg class="app-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="3" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="13" cy="8" r="1"/></svg>';componentHeader.append($('add-variant'),instanceActions);
   instanceActions.onclick=event=>{
-    const shape=current();if(shape?.component?.type!=='instance')return;
+    const shape=current(),set=componentSetFrame(doc,shape?.id);if(!shape?.component&&!set)return;
     const action=id=>({label:$(id).textContent,visible:!$(id).hidden,enabled:!$(id).disabled,run:()=>$(id).click()});
     const rect=instanceActions.getBoundingClientRect();
+    if(shape.component?.type!=='instance'){showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.right,clientY:rect.bottom},[action('insert-instance'),action('manage-variants'),action('add-component-property')],instanceActions,{label:'Component actions'});return;}
     showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.right,clientY:rect.bottom},[
       action('go-main'),action('go-nested-main'),action('select-instance-root'),
       {label:'Swap component…',enabled:!$('swap-component').disabled,run:()=>{
         if($('component-panel').classList.contains('inspector-collapsed'))$('component-heading').querySelector('button')?.click();
-        $('swap-component').nextElementSibling?.click();
+        const details=$('instance-controls').closest('details');if(details&&!details.open){const toggle=details.querySelector('summary button');if(toggle)toggle.click();else details.open=true;}syncInspectorDropdowns();$('swap-component').nextElementSibling?.click();
       }},action('reset-instance'),action('detach-instance')
     ],instanceActions,{label:'Instance actions',heading:doc.shapes.find(s=>s.id===shape.component.master)?.name??'Component'});
   };
   $('toggle-lock').onclick=toggleSelectionLock;
   $('create-component').onclick=createComponentSelection;
   $('nav-assets').onclick=showAssets;$('manage-libraries').onclick=()=>libraries?.open();$('asset-library').onchange=renderAssetBrowser;$('asset-search').oninput=renderAssetBrowser;$('asset-page').onchange=renderAssetBrowser;
-  $('insert-instance').onclick=()=>insertInstance(selected);
-  $('manage-variants').onclick=()=>editVariantSet(doc,selected,set=>{editor.save_component_set(JSON.stringify(set));refresh();},id=>{editor.remove_component_set(id);refresh();});
-  $('add-variant').onclick=()=>safe(()=>{setSelection([editor.duplicate_variant(selected)]);refresh();fit();toast('Variant added. Edit its properties in Edit variant set.');});
+  $('insert-instance').onclick=()=>insertInstance(componentSetFrame(doc,selected)?.variants[0].component_id??selected);
+  $('combine-variants').onclick=combineVariantSelection;
+  $('manage-variants').onclick=()=>{const set=componentSet(doc,selected);if(set?.frame_id){setSelection([set.frame_id]);refresh(false);}};
+  $('add-variant').onclick=addVariantSelection;
   $('add-component-property').onclick=()=>editComponentProperty(doc,selected,null,p=>{editor.save_component_property(JSON.stringify(p));refresh();});
   $('go-nested-main').onclick=()=>{const main=instanceContext(doc,current())?.nestedMain;if(main)goToMain(main.id);};
   $('select-instance-root').onclick=()=>{const context=instanceContext(doc,current());if(context){setSelection([context.root.id]);refresh(false);}};
@@ -1153,14 +1169,14 @@ function bind() {
   const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-help']) $(id).onclick = showShortcuts;
   const toolActions=[['select','Move','V'],['scale','Scale','K'],['hand','Hand / pan','H'],['frame','Frame','F'],['rectangle','Rectangle','R'],['ellipse','Ellipse','O'],['line','Line','L'],['arrow','Arrow','Shift L'],['polygon','Polygon',''],['star','Star',''],['pen','Pen','P'],['pencil','Pencil','Shift P'],['text','Text','T']].map(([tool,label,shortcut])=>({label,shortcut,category:'Drawing',run:()=>{setTool(tool);canvas.focus();}}));
-  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add Flex Layout','Layout','Shift A','Select layers without a layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['menu-new-design','New design','Files'],['browse-drafts','All projects','Files'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export-artwork','Export artwork','Files'],['export','Export pages / project','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].filter(([id])=>!staticHost||id!=='cloud-files').map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&(['undo','redo','place-image'].includes(id)||![...document.querySelectorAll('[hidden]')].some(el=>!['file-panel','pages-panel','assets-panel'].includes(el.id)&&el.contains(b)));},run:()=>$(id).click()}));
+  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['combine-variants','Combine as variants','Components','','Select two or more main components'],['add-variant','Add variant','Components','','Select a main component or component set'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add Flex Layout','Layout','Shift A','Select layers without a layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['menu-new-design','New design','Files'],['browse-drafts','All projects','Files'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export-artwork','Export artwork','Files'],['export','Export pages / project','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].filter(([id])=>!staticHost||id!=='cloud-files').map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&(['undo','redo','place-image'].includes(id)||![...document.querySelectorAll('[hidden]')].some(el=>!['file-panel','pages-panel','assets-panel'].includes(el.id)&&el.contains(b)));},run:()=>$(id).click()}));
   commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Remove layout',category:'Layout',shortcut:'Alt Shift A',enabled:()=>selectionShapes().some(s=>s.auto_layout),unavailable:'Select a Flex Layout or Grid Layout frame',run:removeAutoLayout});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
   commands.push(...[['front','Bring to front',']'],['back','Send to back','['],['forward','Bring forward','Ctrl/⌘ ]'],['backward','Send backward','Ctrl/⌘ [']].map(([direction,label,shortcut])=>({label,shortcut,category:'Layers',enabled:()=>selectedIds.size>0,unavailable:'Select layers',run:()=>arrangeSelection(direction)})));
   const showIconLibrary=installIconLibrary({insert:(svg,name)=>safe(()=>placeSvg(parseSvg(svg,name))),notify:toast});
   commands.push({label:'PixlPrfct Icon Library',category:'Libraries',run:showIconLibrary});
-  const showAgentConnection=installAgentConnection({editor,identity:()=>location.search,createEditor:agentEditor,guard:(before,after,history)=>libraries?.guard(before,after,history)??(projectLoading?'Wait for the project to finish loading.':null),options:()=>({textLayout}),finalize:instance=>{let next=JSON.parse(instance.snapshot());if(next.shapes.some(s=>s.component?.type!=='instance'&&!s.layout_item?.grid_container&&s.auto_layout?.direction==='grid'&&!s.auto_layout.grid?.cell_containers))instance.enable_grid_containers();next=ensureBaseTextDocument(JSON.parse(instance.snapshot()));if(next)instance.load(JSON.stringify(next));},changed:()=>{setSelection([...selectedIds].filter(id=>JSON.parse(editor.snapshot()).shapes.some(s=>s.id===id)));refresh();},busy:()=>projectLoading||!!gesture||!!textEditing||!!layoutCssPreview||!!layerCssPreview||!!gridPickerPreview,selection:()=>[...selectedIds],select:(ids,page)=>{editor.select_page(page);refresh(false);setSelection(ids);renderLayers();renderProperties();draw();}});
+  const showAgentConnection=installAgentConnection({editor,documentName:()=>doc?.name??'Untitled',identity:()=>location.search,createEditor:agentEditor,guard:(before,after,history)=>libraries?.guard(before,after,history)??(projectLoading?'Wait for the project to finish loading.':null),options:()=>({textLayout}),finalize:instance=>{let next=JSON.parse(instance.snapshot());if(next.shapes.some(s=>s.component?.type!=='instance'&&!s.layout_item?.grid_container&&s.auto_layout?.direction==='grid'&&!s.auto_layout.grid?.cell_containers))instance.enable_grid_containers();next=ensureBaseTextDocument(JSON.parse(instance.snapshot()));if(next)instance.load(JSON.stringify(next));},changed:()=>{setSelection([...selectedIds].filter(id=>JSON.parse(editor.snapshot()).shapes.some(s=>s.id===id)));refresh();},busy:()=>projectLoading||!!gesture||!!textEditing||!!layoutCssPreview||!!layerCssPreview||!!gridPickerPreview,selection:()=>[...selectedIds],select:(ids,page)=>{editor.select_page(page);refresh(false);setSelection(ids);renderLayers();renderProperties();draw();}});
   commands.push({label:'MCP connection',category:'Development',keywords:'agent AI automation bridge',run:showAgentConnection});
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
@@ -1414,7 +1430,7 @@ function bind() {
     }
     else if(current()?.points?.length) $('edit-path').click();
   };
-  document.fonts.addEventListener('loadingdone', () => safe(()=>{editor.refresh_text_layout();refresh();}));
+  document.fonts.addEventListener('loadingdone', () => safe(()=>{viewportRenderer.invalidate();editor.refresh_text_layout();refresh();}));
   $('add-page').onclick = () => safe(() => { editor.add_page(); refresh(); setTool('select'); toast('New page added — pick a tool to start designing'); });
   $('duplicate-page').onclick = () => safe(() => { editor.duplicate_page(doc.active_page); refresh(); setTool('select'); toast('Page duplicated'); });
   $('delete-page').onclick = () => safe(() => { editor.delete_page(doc.active_page); refresh(); toast('Page deleted. Use Undo to restore it.'); });
@@ -1577,40 +1593,40 @@ function bind() {
     if (gesture.type === 'pan') {
       pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; scheduleViewportDraw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
-    if(gesture.type==='text-create'){gesture.preview=drawnText(gesture.start,p,zoom);draw();return;}
+    if(gesture.type==='text-create'){gesture.preview=drawnText(gesture.start,p,zoom);scheduleViewportDraw();return;}
     if(gesture.type==='grid-area'){canvas.style.cursor=gesture.initial&&gesture.cx==null?'grabbing':canvas.style.cursor;gesture.area=gesture.initial?(gesture.cx==null?moveArea(gesture.frame,gesture.plan,gesture.initial,gesture.start,p):resizeArea(gesture.frame,gesture.plan,gesture.initial,p,gesture.cx,gesture.cy)):areaFromDrag(gesture.frame,gesture.plan,gesture.start,p,gesture.name);gesture.valid=validArea(gesture.areas,gesture.area);
       const areaKey=JSON.stringify(gesture.area);
       if(gesture.initial&&gesture.valid){if(gesture.previewKey!==areaKey){const frame={...gesture.original,auto_layout:{...gesture.original.auto_layout,grid:{...gesture.original.auto_layout.grid,areas:gesture.areas.map(a=>a.name===gesture.name?gesture.area:a)}}};try{const result=JSON.parse(editor.preview_layout_update(JSON.stringify([frame]),frame.id));gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.previewKey=areaKey;}catch{gesture.scene=null;gesture.previewKey=null;}}}
       else {gesture.scene=null;gesture.previewKey=null;}
-      draw();return;}
-    if(gesture.type==='grid-span'){gesture.preview=gridSpanResize(original,gesture.parent,gesture.plan,p,gesture.cx,gesture.cy);try{const result=JSON.parse(editor.preview_layout_update(JSON.stringify([gesture.preview]),gesture.parent.id));gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{gesture.scene=null;}draw();return;}
-    if(gesture.type==='rotate'){gesture.preview=shapeToLocal(rotateFromDrag(original,gesture.start,p,event.shiftKey),pageShapes());draw();return;}
-    if(gesture.type==='layout-spacing'){const next=changeSpacing(original,gesture.handle,p[gesture.handle.axis]-gesture.start[gesture.handle.axis],event);try{const result=next.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify([next]),next.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify([next]))),grid:null};gesture.preview=next;gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch(error){toast(String(error));}draw();return;}
-    if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes().map(transformGeometry),gesture.source.id,p);draw();return;}
-    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey,gradientField());gesture.preview=result.shape;activeGradient=result.active;draw();return;}
+      scheduleViewportDraw();return;}
+    if(gesture.type==='grid-span'){gesture.preview=gridSpanResize(original,gesture.parent,gesture.plan,p,gesture.cx,gesture.cy);try{const result=JSON.parse(editor.preview_layout_update(JSON.stringify([gesture.preview]),gesture.parent.id));gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{gesture.scene=null;}scheduleViewportDraw();return;}
+    if(gesture.type==='rotate'){gesture.preview=shapeToLocal(rotateFromDrag(original,gesture.start,p,event.shiftKey),pageShapes());scheduleViewportDraw();return;}
+    if(gesture.type==='layout-spacing'){const next=changeSpacing(original,gesture.handle,p[gesture.handle.axis]-gesture.start[gesture.handle.axis],event);try{const result=next.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify([next]),next.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify([next]))),grid:null};gesture.preview=next;gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch(error){toast(String(error));}scheduleViewportDraw();return;}
+    if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes().map(transformGeometry),gesture.source.id,p);scheduleViewportDraw();return;}
+    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey,gradientField());gesture.preview=result.shape;activeGradient=result.active;scheduleViewportDraw();return;}
     if(gesture.type==='scale') {
       const dx=gesture.start.x-gesture.origin.x,dy=gesture.start.y-gesture.origin.y;
       let factor=Math.max(.01,((p.x-gesture.origin.x)*dx+(p.y-gesture.origin.y)*dy)/Math.max(1,dx*dx+dy*dy));
       if(event.shiftKey) factor=Math.max(.1,Math.round(factor*10)/10);
-      gesture.previews=scaleShapes(gesture.originals,gesture.origin,factor); draw(); return;
+      gesture.previews=scaleShapes(gesture.originals,gesture.origin,factor); scheduleViewportDraw(); return;
     }
-    if(gesture.type==='pen-handle') { const a=penPoints[gesture.index]; a.out={...p}; a.in={x:2*a.x-p.x,y:2*a.y-p.y}; draw(); return; }
+    if(gesture.type==='pen-handle') { const a=penPoints[gesture.index]; a.out={...p}; a.in={x:2*a.x-p.x,y:2*a.y-p.y}; scheduleViewportDraw(); return; }
     if(gesture.type==='node') {
       const nodes=structuredClone(gesture.nodes),a=nodes[gesture.index],part=gesture.part;
       if(part==='anchor') { const dx=p.x-gesture.start.x,dy=p.y-gesture.start.y; a.x+=dx;a.y+=dy; for(const h of [a.in,a.out]) {h.x+=dx;h.y+=dy;} }
       else if(part==='smooth') {a.out={...p};a.in={x:2*a.x-p.x,y:2*a.y-p.y};}
       else a[part]={...p};
-      gesture.preview=reshape(original,nodes);draw();return;
+      gesture.preview=reshape(original,nodes);scheduleViewportDraw();return;
     }
     if (gesture.type === 'create') {
       if(gesture.kind==='pencil') { if(gesture.points.length<4096 && Math.hypot(p.x-gesture.points.at(-1).x,p.y-gesture.points.at(-1).y)>1/zoom) gesture.points.push(p); gesture.preview=fromPoints('pencil',gesture.points); }
       else gesture.preview=drawnShape(gesture.kind,gesture.start,p,event);
-      draw(); return;
+      scheduleViewportDraw(); return;
     }
     if (gesture.type === 'marquee') {
       gesture.end = p;
       setSelection([...new Set([...gesture.base,...canvasSelection(pageShapes(),marqueeSelection(pageShapes().map(s=>paintBounds(s,pageShapes())).filter(Boolean),gesture.start,p),{deep:gesture.deep})])]);
-      renderLayers(); renderProperties(); draw(); return;
+      renderLayers(); renderProperties(); scheduleViewportDraw(); return;
     }
     if (gesture.type === 'move') {
       let dx = p.x - gesture.start.x, dy = p.y - gesture.start.y;
@@ -1640,7 +1656,7 @@ function bind() {
       gesture.preview=shapeToLocal(resizeWorldBox(original,gesture.preview),pageShapes());
       gesture.preview=resizeText(gesture.preview,gesture.preview.width!==original.width,gesture.preview.height!==original.height);
     }
-    draw();
+    scheduleViewportDraw();
   };
   canvas.onpointerup = event => {
     if(gesture?.type==='text-create'){

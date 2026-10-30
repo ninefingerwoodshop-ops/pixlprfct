@@ -1,5 +1,5 @@
 export const effectNames={inner:'Inner shadow',drop:'Drop shadow',layer_blur:'Layer blur',backdrop_blur:'Background blur'};
-export const defaultShadow=(kind='drop')=>({kind,x:0,y:4,blur:4,spread:0,color:'#000000',opacity:.25,visible:true});
+export const defaultShadow=(kind='drop')=>({kind,x:0,y:4,blur:4,spread:0,color:'#000000',color_variable:0,opacity:.25,visible:true});
 export function moveShadow(style,from,to){const shadows=[...(style.shadows??[])];if(from<0||from>=shadows.length||to<0||to>=shadows.length)return style;shadows.splice(to,0,...shadows.splice(from,1));return {...style,shadows};}
 export function effectEntries(style){return [...(style.shadows??[]).map((value,index)=>({key:'shadow-'+index,type:value.kind,value,index})),...['layer_blur','backdrop_blur'].filter(key=>style[key]>0||style[key+'_present']||style[key+'_enabled']===false).map(key=>({key,type:key,value:{blur:style[key]??0,visible:style[key+'_enabled']!==false}}))];}
 export function editEffect(style,key,patch){if(key.startsWith('shadow-')){const index=Number(key.slice(7));return {...style,shadows:style.shadows.map((s,i)=>i===index?{...s,...patch}:s)};}return {...style,[key+'_present']:true,...('blur' in patch?{[key]:patch.blur}:{}),...('visible' in patch?{[key+'_enabled']:patch.visible}:{})};}

@@ -10,13 +10,23 @@ export function textSize(shape, measure) {
   return [width,Math.max(1,Math.ceil(layoutText({...shape,width},measure).height))];
 }
 
-// Measure the alphabetic baseline relative to the same top origin used by
-// canvas text rendering. The difference avoids assuming a font ascent ratio.
+// CSS centers the font's ascent/descent within each complete line box. Canvas
+// "top" and SVG "text-before-edge" use different font origins, so use an
+// explicit alphabetic baseline for every painted representation instead.
+export function fontBaseline(style, ctx) {
+  let metrics={};
+  if(ctx){ctx.save();ctx.font=fontCss(style);ctx.textBaseline='alphabetic';metrics=ctx.measureText('Hg');ctx.restore();}
+  const ascent=Number.isFinite(metrics.fontBoundingBoxAscent)?metrics.fontBoundingBoxAscent:style.font_size*.8;
+  const descent=Number.isFinite(metrics.fontBoundingBoxDescent)?metrics.fontBoundingBoxDescent:style.font_size*.2;
+  return (style.font_size*(style.line_height??1.2)-ascent-descent)/2+ascent;
+}
+
 export function textBaseline(shape, ctx) {
-  ctx.save();ctx.font=fontCss(textStyle(shape));ctx.textBaseline='alphabetic';
-  const alphabetic=ctx.measureText('Hg').actualBoundingBoxAscent;
-  ctx.textBaseline='top';const top=ctx.measureText('Hg').actualBoundingBoxAscent;ctx.restore();
-  const offset=alphabetic-top;return Number.isFinite(offset)&&offset>=0?offset:textStyle(shape).font_size*.8;
+  const style=textStyle(shape),baseline=fontBaseline(style,ctx);
+  ctx.save();ctx.font=fontCss(style);
+  const layout=layoutText(shape,text=>ctx.measureText(text).width,baseline);ctx.restore();
+  // Auto sizing has not yet committed its new height during engine measurement.
+  return baseline+(style.sizing==='fixed'?layout.lines[0].y-shape.y:0);
 }
 
 export function resizeText(shape, widthChanged, heightChanged) {
@@ -33,12 +43,12 @@ export function fontCss(style) {
 // Measure is injected so the same line layout drives Canvas and SVG output.
 // Hard line breaks and blank lines are retained. Long words break at grapheme
 // boundaries, avoiding split emoji and combining marks.
-export function layoutText(shape, measure) {
+export function layoutText(shape, measure, baseline=fontBaseline(textStyle(shape))) {
   const style = textStyle(shape), lines = [];
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
   for (const paragraph of shape.text.replace(/\r\n?/g, '\n').split('\n')) {
     if (!style.wrap || !paragraph) { lines.push(paragraph); continue; }
-    let line = '';
+    let line = '', paragraphStart=lines.length;
     for (const token of paragraph.match(/\S+|\s+/gu) || []) {
       if (measure(line + token) <= shape.width) { line += token; continue; }
       if (line) { lines.push(line.trimEnd()); line = ''; }
@@ -48,14 +58,14 @@ export function layoutText(shape, measure) {
         line += segment;
       }
     }
-    if (line || !lines.length) lines.push(line.trimEnd());
+    if (line || lines.length===paragraphStart) lines.push(line.trimEnd());
   }
   const step = style.font_size * style.line_height;
-  const height = Math.max(style.font_size, (lines.length - 1) * step + style.font_size);
+  const height = lines.length * step;
   const fraction = style.align === 'center' ? .5 : style.align === 'right' ? 1 : 0;
   const verticalOffset=Math.max(0,shape.height-height)*(style.vertical_align==='center'?.5:style.vertical_align==='bottom'?1:0);
   return {
-    style, height,
+    style, height, baseline,
     overflow: height > shape.height + .01 || lines.some(line => measure(line) > shape.width + .01),
     lines: lines.map((text, index) => ({ text, x: shape.x + fraction * shape.width, y: shape.y + verticalOffset + index * step })),
   };
@@ -64,10 +74,10 @@ export function layoutText(shape, measure) {
 export function escapeXml(value) { return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c])); }
 
 export function textSvg(shape, layout) {
-  const { style, lines } = layout;
+  const { style, lines, baseline=fontBaseline(layout.style) } = layout;
   if(shape.editor_meta?.text_path){const p=shape.editor_meta.text_path,points=p.reverse?[...p.points].reverse():p.points,d=points.map(([x,y],i)=>(i?'L':'M')+(shape.x+x*shape.width)+' '+(shape.y+y*shape.height)).join(' '),offset=style.align==='center'?50:style.align==='right'?100:p.offset*100;return `<defs><path id="text-path-${shape.id}" d="${d}"/></defs><text ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${style.align==='center'?'middle':style.align==='right'?'end':'start'}"><textPath href="#text-path-${shape.id}" startOffset="${offset}%">${escapeXml(shape.text)}</textPath></text>`;}
 
   const anchor = { left: 'start', center: 'middle', right: 'end' }[style.align];
-  return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${anchor}" dominant-baseline="text-before-edge" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
+  return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${anchor}" dominant-baseline="alphabetic" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y+baseline}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
 }
 import {paintAttributes} from './appearance.js';

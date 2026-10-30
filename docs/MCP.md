@@ -47,18 +47,53 @@ This repository does not modify your agent configuration automatically.
 
 ## Live editor
 
+In the desktop app, open your project and start the configured PixlPrfct MCP
+server in your AI client. The editor discovers the server and connects within a
+few seconds, including when the app or server starts first. The agent calls
+`pixlprfct_sessions` to select the intended project. Multiple local agent
+processes are discovered separately; an occupied default port automatically
+falls back to a free loopback port. Explicit `--port` values remain strict.
+
+The same discovery works in desktop team-server windows whose origin is allowed
+by the MCP server. Servers publish a private, per-process record under
+`~/.pixlprfct/mcp` (directory 0700, files 0600 on POSIX). Only the desktop main
+process reads it; renderers receive a token scoped to their own allowed origin.
+Records are removed on normal shutdown; records belonging to dead processes are
+ignored. This direct-distribution desktop workflow does not claim discovery
+across a Mac App Store sandbox boundary.
+
+After updating the MCP code or engine, fully quit and reopen the MCP host so every
+server process loads the new files. In the verified Claude Desktop setup, **View →
+Reload** restarted one MCP process but left another process from before the update
+running. That older process could report no sessions while PixlPrfct was connected
+to the newer one. A full quit/relaunch restarted both, and the desktop automatically
+connected to both without pairing. Verify `pixlprfct_sessions` from the affected
+conversation; a generic Connected indicator or an independent test client alone
+does not establish which server that conversation uses.
+
+For an editor in a normal browser:
+
 1. Ask the agent to call `pixlprfct_connection`.
 2. In the intended PixlPrfct project, open **Tools → MCP connection**.
 3. Enter the returned bridge URL and pairing code, then click **Connect**.
 4. The agent calls `pixlprfct_sessions` and chooses that live session.
 
-The code is temporary, stays in memory, and is never stored in the browser or
-placed in a URL. The bridge listens on `127.0.0.1:4317` only. It validates Host,
-Origin, and the pairing code. Each paired tab has its own session. The default
-allowed origins are the desktop app (`pixlprfct://app`) and localhost / 127.0.0.1 on ports 4173, 4174, 4176, and 5173.
-For another editor origin, pass `--origin https://your-editor.example` or set
-`PIXLPRFCT_EDITOR_ORIGIN`. For another bridge port, pass `--port 4318` or set
-`PIXLPRFCT_MCP_PORT`. A second agent process needs its own port.
+Browser pairing is saved in session storage for that tab and project, so a reload
+or interrupted socket reconnects automatically. A server restart rotates the
+code; browser editors require the new code, while desktop editors discover it
+automatically. Codes are never placed in URLs. The bridge listens only on
+`127.0.0.1` and validates Host, Origin and the pairing code. The default allowed
+origins are `pixlprfct://app` and localhost / 127.0.0.1 on ports 4173, 4174, 4176,
+and 5173. For another editor origin, pass `--origin https://your-editor.example`
+or set `PIXLPRFCT_EDITOR_ORIGIN`. Use `--port 4318` or `PIXLPRFCT_MCP_PORT` for
+an explicit bridge port, or `--port 0` for an available port.
+
+As of alpha.6, reconnecting the same tab/project to a running server preserves
+its live session ID. Server restarts still require listing sessions again.
+Discovery runs independently of heartbeat/retry checks, so a stalled discovery
+call cannot block socket recovery. Focus, online and visibility events trigger
+recovery; desktop renderer timers also continue while the window is hidden.
+Interrupted writes are never replayed. Read the revision before retrying them.
 
 The self-hosted editor's CSP permits the loopback WebSocket connection. Restart
 an already running self-host server after upgrading its CSP. Browser mixed-content
@@ -67,8 +102,13 @@ the browser must permit the connection. No certificate or browser protection is
 disabled by this implementation. Hosted MCP over the public internet is not
 implemented: the MCP client and bridge run on the same computer as the browser.
 
-Click **Disconnect** to revoke that tab's access. Reloading or closing the tab
-disconnects it. A project change invalidates the session before the next request.
+Click **Disconnect** to pause agent access to that project. The pause survives
+reloads and app restarts until you click **Connect**. Reconnection uses bounded
+backoff and heartbeat detection, without replaying requests or edits. A project
+change closes the old session before it can receive another request; desktop
+discovery creates a fresh session for the new project. Agents must list sessions
+and read the current revision after a disconnect, since an interrupted edit may
+already have completed.
 The server never receives session cookies or account credentials. Editor changes
 use normal autosave, and cloud permissions and imported-library protection still
 apply. An agent cannot edit while a canvas gesture, inline text edit, or CSS
@@ -96,9 +136,9 @@ in a live editor, where the actual canvas font measurements are used.
 | --- | --- |
 | `pixlprfct_reference` | Search capabilities, commands, models, defaults, icons, frame presets and guides |
 | `pixlprfct_sessions` | List paired tabs, open file sessions and workspace project files |
-| `pixlprfct_connection` | Get temporary live-editor pairing details |
+| `pixlprfct_connection` | Get browser pairing details (desktop connects automatically) |
 | `pixlprfct_open_project` | Open or create a saved-project session |
-| `pixlprfct_read` | Inspect layer summaries, complete properties or the entire document |
+| `pixlprfct_read` | Inspect paged layer summaries/properties and document metadata |
 | `pixlprfct_build` | Apply an atomic batch as one undo step |
 | `pixlprfct_command` | Execute one of the catalogued engine commands |
 | `pixlprfct_css` | Read generated and custom CSS for any layer |
@@ -109,7 +149,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_close_project` | Close an in-memory file session without deleting the saved file |
 
 The server also exposes `pixlprfct://reference/<topic>` resources and a
-`build-design` prompt. Its catalog currently covers 81 engine commands and 43
+`build-design` prompt. Its catalog currently covers 91 engine commands and 46
 model definitions, generated from the compiled API and Rust types. Building the
 editor regenerates the catalog; `npm run mcp:check` checks it for drift.
 
@@ -118,7 +158,7 @@ all 26 native control kinds and their states, fill/stroke stacks and paint modes
 effects, guides, Flexbox, CSS Grid, constraints, responsive layout rules, custom
 CSS, prototypes, motion, and development behaviors. Pages, grouping, stacking,
 components, instances, variants, exposed component properties, variables and
-guide styles have dedicated engine commands. No arbitrary JavaScript evaluation
+guide/effect/text styles have dedicated engine commands. No arbitrary JavaScript evaluation
 or shell execution is exposed. Development behavior code is stored/exported,
 not executed by the server.
 
@@ -130,6 +170,27 @@ custom CSS or backdrop blur; use HTML/framework exports. Prototype interactions
 are saved in `.pixl` but are not converted to JavaScript by the code exporter.
 
 ## Build operations
+
+### Paged reads and page-scoped writes
+
+`pixlprfct_read` returns 50 layers by default. Use `limit` (1–200) and the returned
+`pagination.nextCursor` for subsequent pages, retaining the same `page`, `ids`,
+`query`, `details` and `full` filters. `pagination` includes `total`, `offset`,
+`limit` and `hasMore`. An explicit zero-based `offset` is also supported. A cursor
+rejects if document content changed; restart the read instead of mixing revisions.
+
+`details:true` returns complete properties for the current layer page.
+`full:true` adds document metadata, variables, styles and sets, with the same
+paged `document.shapes`. `partial:true` means it is a subset: **do not load it as
+a replacement document**. Full `.pixl` export remains available separately and
+can be large; export results are not yet chunked.
+
+Page navigation alone no longer changes the revision. Content edits still do.
+Revisions are opaque strings, scoped to the renderer/runtime lifetime: a reload
+invalidates pre-reload writes even when the live session ID is retained.
+Supply `page` on `pixlprfct_build` or a mutating `pixlprfct_command` to target a
+specific page while preserving the user's visible page. Without it, creation
+uses the active page at execution time; explicitly scope multi-user work.
 
 Always read first and supply the returned `revision`. Use `create` for a layer,
 `update` for a deep property patch, `command` for an engine operation, `css` for
@@ -154,6 +215,74 @@ batch. IDs are never guessed. Read `commands` for ordered command arguments:
 JSON arguments are structured objects/arrays, not strings containing JSON.
 Read `defaults`, `models`, and the relevant guide before authoring nested fields.
 
+Model queries accept an array of searches, comma-separated names, or a single
+search string. For example, `{"topic":"models","query":["Typography","Value"]}`
+returns both the declarations and their accepted values.
+
+### Design-system authoring
+
+- **Variable aliases:** a mode value may be `{"alias":1}`, where `1` is the
+  primitive variable's ID. The kinds must match. Cross-collection aliases resolve
+  using the target collection's inherited mode and update when primitives change.
+  `save_variables` replaces the complete object; read and preserve unrelated values.
+- **Text sizing:** `typography.sizing` stores `"width"` (auto width), `"height"`
+  (auto height), or `"fixed"`. MCP create/update also accept `"auto_width"` and
+  `"auto_height"`. Use auto width for labels and `layout_item.fill_width:false`.
+  Fill width intentionally changes a text layer to auto height. Auto-layout
+  inference preserves auto-width text; fixed full-width children may become Fill.
+- **Hugged buttons:** set the parent `auto_layout.hug_width:true` and keep label
+  `fill_width:false`. Creating a component preserves these settings. A Fill child
+  prevents its parent from hugging on that axis, regardless of component status.
+- **Coordinates:** stored `x/y`, update patches and engine commands use document
+  coordinates. Create defaults to `coordinate_space:"world"`; use
+  `coordinate_space:"parent"` with a parent ID/ref for offsets from that parent's
+  stored origin. Auto layout still controls flow children. This is an offset from
+  the unrotated origin, not a transformed screen coordinate.
+- **Duplication:** `duplicate` and `duplicate_many` retain the interactive 24px
+  offset. `duplicate_many_offset` takes `[ids, xOffset, yOffset]`; `[ids,0,0]`
+  duplicates in place. It preserves hierarchy and bindings and returns all copied
+  IDs in document order. Auto-layout flow remains in effect.
+- **Stroke alpha:** MCP create/update accept `appearance.stroke_color:"#102a4780"`
+  and store `#102a47` plus `stroke_opacity:128/255`. Explicit `stroke_opacity` wins.
+  Raw engine commands and serialized project files use separate color and opacity.
+- **Exported variables:** generic number tokens remain unitless. Length bindings
+  add `calc(var(--px-space-3,16) * 1px)` automatically, while opacity and line height
+  use unitless values. Manually authored CSS must choose the appropriate unit.
+  Solid stroke color bindings survive HTML/framework export, including stacked,
+  aligned, and per-side borders. Standalone SVG remains a resolved visual snapshot.
+
+Long unbreakable words in a constrained text box currently break at grapheme
+boundaries. Auto-width text avoids this unless a maximum width is set. A separate
+word-breaking policy is not yet implemented.
+
+### Text styles and variable-bound effects
+
+`save_text_style` takes `[style, layer_id]`, with `id:0` to create and `layer_id:0`
+to save without applying. Example style:
+
+```json
+{"id":0,"name":"Body / Regular","description":"Default body copy","typography":{"font_family":"Open Sans","font_size":16,"font_weight":400,"line_height":1.5}}
+```
+
+Use `apply_text_style` with `[[textLayerIds], styleId]`; style ID zero detaches.
+`remove_text_style` detaches linked layers while retaining their resolved type.
+Changing a definition propagates across pages and instances. Font edits detach
+the link; alignment, wrapping and text-box sizing remain local. Applying a style
+replaces variable bindings on its four shared font fields. Styles persist in
+projects and remap/protect their IDs in imported libraries. This is core/MCP
+authoring; a Figma-matched text-style picker is still pending, as are letter
+spacing and text case.
+
+Shadows accept `color_variable` with a color token ID (zero means literal color).
+For an existing shadow use `bind_shadow_color` with `[layerId, shadowIndex, tokenId]`.
+The index is zero-based; the binding moves with the shadow during reordering.
+For reusable styles, include it in `effects.shadows` passed to `save_effect_style`.
+`save_effect_style` can now apply to a layer on any page. Shadows resolve aliases
+and inherited page/frame modes; HTML/framework export retains CSS variable
+references. SVG is a resolved snapshot. Literal color edits detach the binding;
+token deletion preserves the current resolved color. This adds MCP authoring;
+the shadow-color variable picker in the inspector remains pending.
+
 A batch supports up to 200 operations and commits only if every operation and
 permission check succeeds. Errors leave the original document and undo history
 unchanged. If the revision changed, re-read and adapt the edit. If a request times
@@ -169,3 +298,27 @@ npm run mcp:check
 Tests use a standard MCP client over stdio and an in-memory transport, exercise
 the live bridge's origin/token/session checks, and build/export through the
 same engine. Network tests bind a temporary loopback port.
+
+## Component sets and variants
+
+Create a main with `create_component_selection` (selected layer IDs), then call
+`add_variant` with the main ID. The engine creates a component-set frame and a
+second main in one undo step. `add_variant` also accepts a set's `frame_id`.
+`combine_variants` accepts an array of at least two sibling main component IDs
+and returns the new set-frame ID. Existing artwork stays in place. Names such as
+`Tone=Neutral, State=Default` produce those property names and values. Every
+member must use the same keys; key order may differ. Duplicate combinations or
+incomplete pairs reject the whole operation. Plain names retain the legacy
+single-property inference; a shared slash prefix becomes the set name.
+
+`ComponentSet.frame_id` links metadata to its canvas container; legacy files may
+omit it. `save_component_set` edits property names and variant values atomically,
+validates unique combinations, and updates main-layer names. Preserve every
+existing property and variant when editing a set. `set_variant_property` edits a
+main's value or switches an instance while preserving compatible overrides.
+Saving a sibling set without `frame_id` creates a visible container, including
+on an inactive page. Cross-page legacy sets remain supported as metadata.
+
+The editor exposes Add variant in the component header, Combine as variants for
+multiple mains, Properties on a set, and Current variant on a main. Instances
+have custom property dropdowns, and Assets presents one card per set.
