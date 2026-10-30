@@ -14,11 +14,14 @@ export function installAgentConnection(runtimeOptions){
  const connection=createAgentConnection({runtime,identity:runtimeOptions.identity,discover,changed:state=>{
   connect.disabled=state.connected>0;disconnect.disabled=!state.enabled||(!state.automatic&&!state.connecting);disconnect.textContent='Disconnect';
   url.disabled=token.disabled=state.connecting;connect.textContent=state.automatic?'Connect automatically':'Connect';
-  status.textContent=state.connected?`Connected · ${runtime.state().name}${state.connected>1?' · '+state.connected+' agents':''}`:state.error||(!state.enabled?'Disconnected. Click Connect to resume.':state.connecting?'Reconnecting automatically…':state.automatic?'Waiting for a local MCP agent…':'Start the PixlPrfct MCP server in your agent, then enter its connection details.');
+  status.textContent=state.connected?`Connected · ${runtimeOptions.documentName?.()??runtime.state().name}${state.connected>1?' · '+state.connected+' agents':''}`:state.error||(!state.enabled?'Disconnected. Click Connect to resume.':state.connecting?'Reconnecting automatically…':state.automatic?'Waiting for a local MCP agent…':'Start the PixlPrfct MCP server in your agent, then enter its connection details.');
   if(state.connected)token.value='';
  }});
  disconnect.onclick=()=>connection.disconnect();
  connect.onclick=()=>{try{connection.connect(discover&&!token.value.trim()?undefined:{url:url.value,pairingCode:token.value.trim()});}catch(error){status.textContent=error.message;}};
+ window.addEventListener('online',()=>connection.wake());
+ window.addEventListener('focus',()=>connection.wake());
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)connection.wake();});
  window.addEventListener('pagehide',()=>connection.dispose());
  window.addEventListener('pageshow',event=>{if(event.persisted)connection.resume();});
  return ()=>win.open();

@@ -16,7 +16,7 @@ test('shadow stacks persist through history, clipboard and save; malformed effec
 });
 test('instances inherit shadows independently of opacity and reject shadow overrides; scaling changes geometry without changing paint',()=>{
  const e=new Editor(),f=e.add('frame',0,0);set(e,f,[shadow]);e.create_component(f);const i=e.create_instance(f,400,0);const before=e.snapshot();assert.throws(()=>set(e,i,[{...shadow,blur:30}]),/protected/);assert.equal(e.snapshot(),before);const main=get(e,f);e.update(JSON.stringify({...main,appearance:{...main.appearance,opacity:.6}}));assert.equal(get(e,i).appearance.opacity,.6);assert.deepEqual(get(e,i).appearance.shadows,get(e,f).appearance.shadows);
- assert.equal(get(e,i).appearance.shadows[0].blur,12);const scaled=scaleShapes([get(e,i)],{x:0,y:0},2)[0];assert.deepEqual(scaled.appearance.shadows[0],{...shadow,x:8,y:16,blur:24,spread:4});e.free();
+ assert.equal(get(e,i).appearance.shadows[0].blur,12);const scaled=scaleShapes([get(e,i)],{x:0,y:0},2)[0];assert.deepEqual(scaled.appearance.shadows[0],{...shadow,color_variable:0,x:8,y:16,blur:24,spread:4});e.free();
 });
 test('effect bounds include independent offsets and Gaussian tails, ignore hidden effects and conservatively retain eroded masks',()=>{
  const box={x:10,y:20,width:100,height:50};assert.deepEqual(shadowBounds(box,[shadow]),{x:-6,y:8,width:140,height:90});assert.deepEqual(shadowBounds(box,[{...shadow,visible:false}]),box);assert.deepEqual(shadowBounds(box,[{...shadow,opacity:0}]),box);

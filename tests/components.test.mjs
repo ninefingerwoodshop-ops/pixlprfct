@@ -52,6 +52,12 @@ test('main component children remain editable while instance children stay prote
  assert.throws(()=>edit(e,child,{fill:'#ffffff'}),/protected/);
  edit(e,f,{fill:'#abcdef'});assert.equal(get(e,i).fill,'#abcdef');e.free();
 });
+test('instances inherit no-fill settings from their main before and after creation',()=>{
+ const {e,f}=fixture();const a={opacity:1,corner_radius:0,fill_enabled:false,stroke_enabled:false,stroke_color:'#000000'};
+ edit(e,f,{appearance:a});const i=e.create_instance(f,400,20);assert.equal(get(e,i).appearance.fill_enabled,false);
+ edit(e,f,{appearance:{...get(e,f).appearance,fill_enabled:true}});assert.equal(get(e,i).appearance.fill_enabled,true);
+ edit(e,f,{appearance:{...get(e,f).appearance,fill_enabled:false}});assert.equal(get(e,i).appearance.fill_enabled,false);e.free();
+});
 
 test('canvas drag moves instance roots and protected children together, including reparenting',()=>{
  const {e,f}=fixture(),id=e.create_instance(f,400,20),child=children(e,id)[0],before=get(e,id);

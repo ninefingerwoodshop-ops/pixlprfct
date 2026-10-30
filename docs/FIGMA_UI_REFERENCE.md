@@ -121,3 +121,26 @@ creation, combining, renaming, multiple properties, instance switching, Assets
 grouping, and reload persistence. This is the core variant-authoring workflow;
 advanced Figma component features and whole-interface pixel parity are not
 claimed. The existing editor panel remains 240px wide.
+
+## Text alignment — live reference 2026-10-30
+
+Inspected the native Figma Territory Track Design System button page at 100%
+zoom, label node `10:609` within main `10:608`. Its Open Sans SemiBold 14 label
+has a 14px line-height/text box, centered at y=13 inside a 40px parent. The
+typography inspector exposes horizontal and vertical alignment independently.
+The existing PixlPrfct design uses different authored dimensions (including
+16px text in 42px buttons); those document choices were preserved.
+
+The PixlPrfct canvas painted fixed-box labels about 4px above its CSS preview:
+it used a top-origin font baseline and omitted the final line's leading from
+text measurement. It now uses full line boxes and a measured alphabetic
+baseline for Canvas/SVG, with the same vertical offset in inline editing.
+Canvas and CSS screenshots of the actual Button page at the same 90% zoom
+confirm the visible shift is gone. Reference and result captures are in
+`.local/ui-audit-2026-10-30/`. Automated checks cover line wrapping, blank lines,
+top/center/bottom offsets, Hug measurements and baseline alignment.
+
+No new inspector layouts were introduced in this patch. Text-style and shadow
+variable authoring is available through MCP; corresponding inspector pickers
+remain a separate parity gap. Headless font metrics are approximate, and this
+comparison is not a claim of exact rendering for every font/platform.

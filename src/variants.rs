@@ -165,6 +165,44 @@ fn variant_name(set: &ComponentSet, values: &[String]) -> String {
     }
 }
 
+type NamedVariants = (Vec<String>, Vec<Variant>);
+
+fn named_properties(shapes: &[Shape], names: &[String]) -> Result<Option<NamedVariants>, String> {
+    if !names.iter().any(|name| name.contains('=')) {
+        return Ok(None);
+    }
+    let mut properties = Vec::new();
+    let mut variants = Vec::new();
+    for (shape, name) in shapes.iter().zip(names) {
+        let mut pairs = std::collections::BTreeMap::new();
+        for part in name.split(',') {
+            let (property, value) = part
+                .split_once('=')
+                .ok_or("Use Property=Value names for every variant")?;
+            let (property, value) = (property.trim(), value.trim());
+            if property.is_empty()
+                || value.is_empty()
+                || pairs
+                    .insert(property.to_string(), value.to_string())
+                    .is_some()
+            {
+                return Err("Variant names need nonempty, unique Property=Value pairs".into());
+            }
+            if variants.is_empty() {
+                properties.push(property.to_string());
+            }
+        }
+        if pairs.len() != properties.len() || properties.iter().any(|p| !pairs.contains_key(p)) {
+            return Err("Use the same property names on every variant".into());
+        }
+        variants.push(Variant {
+            component_id: shape.id,
+            values: properties.iter().map(|p| pairs[p].clone()).collect(),
+        });
+    }
+    Ok(Some((properties, variants)))
+}
+
 impl Editor {
     fn variant_stage(&self) -> Editor {
         Editor {
@@ -230,8 +268,23 @@ impl Editor {
         let shared = segments
             .iter()
             .all(|p| p.len() > 1 && p[0] == segments[0][0]);
+        let parsed = named_properties(
+            &shapes,
+            &segments
+                .iter()
+                .map(|parts| {
+                    if shared {
+                        parts[1..].join(" / ")
+                    } else {
+                        parts.join(" / ")
+                    }
+                })
+                .collect::<Vec<_>>(),
+        )?;
         let name = short_name(if shared {
             segments[0][0]
+        } else if parsed.is_some() {
+            "Component set"
         } else {
             &shapes[0].name
         });
@@ -272,6 +325,7 @@ impl Editor {
                 }
             })
             .collect();
+        let (properties, variants) = parsed.unwrap_or((vec!["Property 1".into()], variants));
         let mut staged = self.variant_stage();
         let frame_id = staged.wrap_variant_set(&ids, &name)?;
         staged.save_component_set(
@@ -279,7 +333,7 @@ impl Editor {
                 id: 0,
                 frame_id,
                 name,
-                properties: vec!["Property 1".into()],
+                properties,
                 variants,
             })
             .unwrap(),
@@ -513,6 +567,35 @@ impl Editor {
         }
         // Validate before pruning so a bad request cannot silently drop members.
         validate_sets(&doc)?;
+        let mut next_id = self.next_id;
+        if set.frame_id == 0 {
+            let members: Vec<_> = set
+                .variants
+                .iter()
+                .map(|v| doc.shapes.iter().find(|s| s.id == v.component_id).unwrap())
+                .collect();
+            // Legacy cross-page definitions remain valid. Sibling definitions
+            // become visible sets, including when authored directly through MCP.
+            if members
+                .iter()
+                .all(|s| s.page_id == members[0].page_id && s.parent_id == members[0].parent_id)
+            {
+                let page = members[0].page_id;
+                let ids: Vec<_> = members.iter().map(|s| s.id).collect();
+                let mut staged = self.variant_stage();
+                staged.document = doc;
+                staged.document.active_page = page;
+                set.frame_id = staged.wrap_variant_set(&ids, &set.name)?;
+                next_id = staged.next_id;
+                doc = staged.document;
+                doc.active_page = self.document.active_page;
+                doc.component_sets
+                    .iter_mut()
+                    .find(|s| s.id == set.id)
+                    .unwrap()
+                    .frame_id = set.frame_id;
+            }
+        }
         if let Some(frame) = doc.shapes.iter_mut().find(|s| s.id == set.frame_id) {
             frame.name = set.name.clone();
         }
@@ -522,6 +605,7 @@ impl Editor {
             }
         }
         self.commit(doc)?;
+        self.next_id = self.next_id.max(next_id);
         Ok(set.id)
     }
 
@@ -540,6 +624,32 @@ impl Editor {
         property: &str,
         value: &str,
     ) -> Result<u32, String> {
+        if self
+            .document
+            .shapes
+            .iter()
+            .any(|s| s.id == id && s.component == Some(components::Component::Master))
+        {
+            let mut set = self
+                .document
+                .component_sets
+                .iter()
+                .find(|s| s.variants.iter().any(|v| v.component_id == id))
+                .cloned()
+                .ok_or("Main component does not belong to a variant set")?;
+            let index = set
+                .properties
+                .iter()
+                .position(|p| p == property)
+                .ok_or("Variant property not found")?;
+            set.variants
+                .iter_mut()
+                .find(|v| v.component_id == id)
+                .unwrap()
+                .values[index] = value.trim().into();
+            self.save_component_set(&serde_json::to_string(&set).unwrap())?;
+            return Ok(id);
+        }
         let root = self.instance_root(id)?;
         let shape = self.document.shapes.iter().find(|s| s.id == root).unwrap();
         let Some(components::Component::Instance { master, .. }) = shape.component else {

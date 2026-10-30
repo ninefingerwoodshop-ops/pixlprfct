@@ -40,3 +40,13 @@ test('automatic port selection tolerates a second agent; explicit ports still fa
  const second=await createPixlMcp({workspace,port,autoPort:true});t.after(()=>second.close());assert.notEqual(second.bridge.info().url,first.bridge.info().url);
  await assert.rejects(createPixlMcp({workspace,port}),{code:'EADDRINUSE'});
 });
+test('a live socket recovers after simulated forty-minute sleep even when desktop discovery hangs',async t=>{
+ const bridge=await createEditorBridge({port:0});t.after(()=>bridge.close());let tick,clock=0,hang=false,calls=0;
+ const values=new Map(),storage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
+ class DesktopSocket extends WebSocket{constructor(url){super(url,{origin:'pixlprfct://app'});}}
+ const connection=createAgentConnection({identity:()=> 'sleep-test',storage,preferences:storage,runtime:{state:()=>({name:'Sleep recovery'}),request:async()=>({ok:true})},discover:()=>{calls++;return hang?new Promise(()=>{}):Promise.resolve([bridge.info()]);},WebSocket:DesktopSocket,setInterval:fn=>{tick=fn;return 1;},clearInterval:()=>{},now:()=>clock});t.after(()=>connection.dispose());
+ await waitFor(()=>connection.state().connected===1);const session=bridge.list()[0].id;hang=true;clock=3000;tick();await waitFor(()=>calls===2);
+ clock+=40*60*1000;connection.wake();await waitFor(()=>connection.state().connected===0);clock+=1000;tick();await waitFor(()=>connection.state().connected===1);
+ assert.equal(bridge.list()[0].id,session);assert.deepEqual(await bridge.request(session,'read',{}),{ok:true});
+ connection.disconnect();clock+=100000;connection.wake();tick();assert.equal(connection.state().connected,0);
+});

@@ -102,7 +102,7 @@ import {renderComponentProperties as renderExposedProperties,editComponentProper
 import {canvasFill} from './gradients.js';
 import {gradientHandles,gradientHit,gradientPosition,moveGradientHandle,addGradientStopAt,drawGradientHandles} from './gradient-edit.js';
 import {renderGradientControls} from './gradient-controls.js';
-import { textBaseline, textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
+import { fontBaseline, textBaseline, textStyle, fontCss, layoutText, textSvg, textSize, resizeText } from './typography.js';
 import { bounds, marqueeSelection, layerRange, selectionRoots, selectionTarget, childSelection, parentSelection, siblingSelection, descendants, visibleInTree, lockedInTree, canvasSelection } from './selection.js';
 import {clippingFrames,paintBounds,frameAt,clipDefinitions,clipSvg,dropParent} from './scene.js';
 import {imageLayout,imageSvg,readImage} from './images.js';
@@ -110,6 +110,8 @@ import {nearestSegment,insertAnchor,deleteAnchor,convertAnchor} from './vector-e
 import {exportSize,svgDocument} from './export.js';
 import {LAYER_MIME,layerPayload,createPasteContext} from './clipboard.js';
 import {appearance,radii,roundedContains,paintAttributes,drawScene,sceneSvg,withPaintOpacity} from './appearance.js';
+import {createViewportRenderer} from './viewport-renderer.js';
+const viewportRenderer=createViewportRenderer(drawScene);
 import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons, componentLabelType } from './icons.js';
@@ -136,7 +138,7 @@ const needsControlRenderer=()=>pageShapes().some(s=>s.control||s.auto_layout?.di
 const cssActive=()=>!!layoutCssPreview||!!layerCssPreview||needsControlRenderer()||(cssCanvasEnabled??pageShapes().some(s=>effectBlur(s.appearance,'backdrop_blur')>0));
 const canvasHit=(x,y)=>cssActive()?cssCanvas.hit({x,y}):editor.hit_test(x,y);
 const measureCtx = document.createElement('canvas').getContext('2d');
-function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width); }
+function textLayout(shape) { measureCtx.font = fontCss(textStyle(shape)); return layoutText(shape, value => measureCtx.measureText(value).width, fontBaseline(textStyle(shape),measureCtx)); }
 function agentEditor(){const instance=new Editor();instance.set_text_measurer(json=>{const shape=JSON.parse(json);if(shape.control?.kind==='button'){const style=shape.typography??{font_family:'Arial',font_size:16,font_weight:400,line_height:1.2};measureCtx.font=fontCss(style);return JSON.stringify([Math.max(1,Math.ceil(measureCtx.measureText(shape.control.label).width)),Math.max(1,Math.ceil(style.font_size*style.line_height))]);}measureCtx.font=fontCss(textStyle(shape));return JSON.stringify([...textSize(shape,value=>measureCtx.measureText(value).width),textBaseline(shape,measureCtx)]);});return instance;}
 const KEY = 'pixlprfct.document.v1';
 let textEditing=null;
@@ -149,7 +151,7 @@ let editor, doc, selected = 0, tool = 'select', zoom = 1, pan = { x: 0, y: 0 }, 
 // Trackpad pinch emits small wheel deltas; amplify these while anchoring at the pointer.
 const TRACKPAD_PAN_SPEED = 1;
 let viewportDrawPending = false;
-window.addEventListener('paint-texture-ready',()=>scheduleViewportDraw());
+window.addEventListener('paint-texture-ready',()=>{viewportRenderer.invalidate();scheduleViewportDraw();});
 function scheduleViewportDraw() {
   if (viewportDrawPending) return;
   viewportDrawPending = true;
@@ -785,7 +787,7 @@ function renderPropertiesNow() {
 }
 function rasterEntry(data){
  let entry=imageCache.get(data);if(entry)return entry;const bitmap=new Image();entry={bitmap,ready:false};imageCache.set(data,entry);
- entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
+ entry.promise=new Promise(resolve=>{bitmap.onload=()=>{entry.ready=true;resolve(bitmap);viewportRenderer.invalidate();draw();};bitmap.onerror=()=>{entry.failed=true;resolve(null);toast('An embedded image could not be decoded. Replace it in the inspector.');};bitmap.src=data;});return entry;
 }
 function playPrototype(){safe(()=>{const frames=prototypeFrames(doc);if(!frames.length){toast('Add a frame to present a prototype');return;}let chosen=current();while(chosen&&chosen.kind!=='frame')chosen=doc.shapes.find(s=>s.id===chosen.parent_id);const start=frames.find(s=>s.id===chosen?.id)??frames.find(s=>s.flow_name&&s.page_id===doc.active_page)??frames.find(s=>s.flow_name)??frames.find(s=>s.page_id===doc.active_page)??frames[0];presentPrototype(doc,start.id,editor,drawShape,async shapes=>{await Promise.all(shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url).promise));});});}
 function drawShape(shape, target=ctx) {
@@ -799,7 +801,7 @@ function drawShape(shape, target=ctx) {
   if(shape.kind==='image'&&shape.image){const entry=rasterEntry(shape.image.data_url);if(entry.ready){const p=imageLayout(shape);fill(()=>ctx.drawImage(entry.bitmap,p.sx,p.sy,p.sw,p.sh,p.dx,p.dy,p.dw,p.dh));}else{ctx.fillStyle='#e5e7eb';fill(()=>ctx.fillRect(shape.x,shape.y,shape.width,shape.height));}}
   else if (shape.points?.length) { const path = new Path2D(vectorPath(shape)); if(a.fill_enabled)fill(()=>ctx.fill(path));if(a.stroke_enabled)stroke(()=>shape.closed?drawAlignedStroke(ctx,shape,{stroke:c=>c.stroke(path),fill:c=>c.fill(path)}):drawVectorStroke(ctx,shape,path)); }
   else if (shape.kind === 'text') {
-    const layout = textLayout(shape),glyphs=(c,kind)=>{if(shape.editor_meta?.text_path){c.save();c.font=fontCss(layout.style);c.textBaseline='alphabetic';c.textAlign='center';for(const glyph of pathGlyphs(shape,text=>c.measureText(text).width)){c.save();c.translate(glyph.x,glyph.y);c.rotate(glyph.angle);c[kind+'Text'](glyph.text,0,0);c.restore();}c.restore();return;}c.save();c.beginPath();c.rect(shape.x,shape.y,shape.width,shape.height);c.clip();c.font=fontCss(layout.style);c.textBaseline='top';c.textAlign=layout.style.align;for(const line of layout.lines)c[kind+'Text'](line.text,line.x,line.y);c.restore();};
+    const layout = textLayout(shape),glyphs=(c,kind)=>{if(shape.editor_meta?.text_path){c.save();c.font=fontCss(layout.style);c.textBaseline='alphabetic';c.textAlign='center';for(const glyph of pathGlyphs(shape,text=>c.measureText(text).width)){c.save();c.translate(glyph.x,glyph.y);c.rotate(glyph.angle);c[kind+'Text'](glyph.text,0,0);c.restore();}c.restore();return;}c.save();c.beginPath();c.rect(shape.x,shape.y,shape.width,shape.height);c.clip();c.font=fontCss(layout.style);c.textBaseline='alphabetic';c.textAlign=layout.style.align;for(const line of layout.lines)c[kind+'Text'](line.text,line.x,line.y+layout.baseline);c.restore();};
     if(a.fill_enabled)fill(()=>glyphs(ctx,'fill'));if(a.stroke_enabled)stroke(()=>drawAlignedStroke(ctx,shape,{stroke:c=>glyphs(c,'stroke'),fill:c=>glyphs(c,'fill')}));
   } else {
     if(a.fill_enabled)fill(()=>ctx.fill(outline));
@@ -831,14 +833,12 @@ function draw() {
   scene=motionTools?.preview(scene)??scene;
   scene=resolvePatternPaints(previewPaints(scene),(source,box)=>svgDocument(source,box,1,null,textLayout));
   renderLayerCssInspector?.responsive(scene);
-  if(cssActive()){scene=cssCanvas.render(scene,{variables:doc.variables,pageModes:activePage()?.variable_modes,textLayout},pan,zoom);cssGeometry=scene;}else{cssCanvas.hide();drawScene(scene,ctx,drawShape);scene=sceneToWorld(scene);}
+  if(cssActive()){scene=cssCanvas.render(scene,{variables:doc.variables,pageModes:activePage()?.variable_modes,textLayout},pan,zoom);cssGeometry=scene;}else{cssCanvas.hide();viewportRenderer.draw(scene,ctx,drawShape);scene=sceneToWorld(scene);}
   if(textEditing){
     const item=scene.find(s=>s.id===textEditing.id),pose=item?item._rotationHit??item:null;
     if(pose){
-      const layout=textLayout(pose),t=layout.style;measureCtx.font=fontCss(t);
-      const metrics=measureCtx.measureText('Hg'),ascent=metrics.fontBoundingBoxAscent??t.font_size*.8,descent=metrics.fontBoundingBoxDescent??t.font_size*.2;
-      const baselineOffset=textBaseline(pose,measureCtx)-((t.font_size*t.line_height-ascent-descent)/2+ascent);
-      inlineText.render(pose,{pan,zoom,layout,css:cssActive()&&!pose.rotation,baselineOffset});
+      const layout=textLayout(pose);
+      inlineText.render(pose,{pan,zoom,layout});
       for(const axis of ['width','height'])$(axis).value=Number(pose[axis].toFixed(2));
     }
   }
@@ -1176,7 +1176,7 @@ function bind() {
   commands.push(...[['front','Bring to front',']'],['back','Send to back','['],['forward','Bring forward','Ctrl/⌘ ]'],['backward','Send backward','Ctrl/⌘ [']].map(([direction,label,shortcut])=>({label,shortcut,category:'Layers',enabled:()=>selectedIds.size>0,unavailable:'Select layers',run:()=>arrangeSelection(direction)})));
   const showIconLibrary=installIconLibrary({insert:(svg,name)=>safe(()=>placeSvg(parseSvg(svg,name))),notify:toast});
   commands.push({label:'PixlPrfct Icon Library',category:'Libraries',run:showIconLibrary});
-  const showAgentConnection=installAgentConnection({editor,identity:()=>location.search,createEditor:agentEditor,guard:(before,after,history)=>libraries?.guard(before,after,history)??(projectLoading?'Wait for the project to finish loading.':null),options:()=>({textLayout}),finalize:instance=>{let next=JSON.parse(instance.snapshot());if(next.shapes.some(s=>s.component?.type!=='instance'&&!s.layout_item?.grid_container&&s.auto_layout?.direction==='grid'&&!s.auto_layout.grid?.cell_containers))instance.enable_grid_containers();next=ensureBaseTextDocument(JSON.parse(instance.snapshot()));if(next)instance.load(JSON.stringify(next));},changed:()=>{setSelection([...selectedIds].filter(id=>JSON.parse(editor.snapshot()).shapes.some(s=>s.id===id)));refresh();},busy:()=>projectLoading||!!gesture||!!textEditing||!!layoutCssPreview||!!layerCssPreview||!!gridPickerPreview,selection:()=>[...selectedIds],select:(ids,page)=>{editor.select_page(page);refresh(false);setSelection(ids);renderLayers();renderProperties();draw();}});
+  const showAgentConnection=installAgentConnection({editor,documentName:()=>doc?.name??'Untitled',identity:()=>location.search,createEditor:agentEditor,guard:(before,after,history)=>libraries?.guard(before,after,history)??(projectLoading?'Wait for the project to finish loading.':null),options:()=>({textLayout}),finalize:instance=>{let next=JSON.parse(instance.snapshot());if(next.shapes.some(s=>s.component?.type!=='instance'&&!s.layout_item?.grid_container&&s.auto_layout?.direction==='grid'&&!s.auto_layout.grid?.cell_containers))instance.enable_grid_containers();next=ensureBaseTextDocument(JSON.parse(instance.snapshot()));if(next)instance.load(JSON.stringify(next));},changed:()=>{setSelection([...selectedIds].filter(id=>JSON.parse(editor.snapshot()).shapes.some(s=>s.id===id)));refresh();},busy:()=>projectLoading||!!gesture||!!textEditing||!!layoutCssPreview||!!layerCssPreview||!!gridPickerPreview,selection:()=>[...selectedIds],select:(ids,page)=>{editor.select_page(page);refresh(false);setSelection(ids);renderLayers();renderProperties();draw();}});
   commands.push({label:'MCP connection',category:'Development',keywords:'agent AI automation bridge',run:showAgentConnection});
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
@@ -1430,7 +1430,7 @@ function bind() {
     }
     else if(current()?.points?.length) $('edit-path').click();
   };
-  document.fonts.addEventListener('loadingdone', () => safe(()=>{editor.refresh_text_layout();refresh();}));
+  document.fonts.addEventListener('loadingdone', () => safe(()=>{viewportRenderer.invalidate();editor.refresh_text_layout();refresh();}));
   $('add-page').onclick = () => safe(() => { editor.add_page(); refresh(); setTool('select'); toast('New page added — pick a tool to start designing'); });
   $('duplicate-page').onclick = () => safe(() => { editor.duplicate_page(doc.active_page); refresh(); setTool('select'); toast('Page duplicated'); });
   $('delete-page').onclick = () => safe(() => { editor.delete_page(doc.active_page); refresh(); toast('Page deleted. Use Undo to restore it.'); });
@@ -1593,40 +1593,40 @@ function bind() {
     if (gesture.type === 'pan') {
       pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; scheduleViewportDraw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
-    if(gesture.type==='text-create'){gesture.preview=drawnText(gesture.start,p,zoom);draw();return;}
+    if(gesture.type==='text-create'){gesture.preview=drawnText(gesture.start,p,zoom);scheduleViewportDraw();return;}
     if(gesture.type==='grid-area'){canvas.style.cursor=gesture.initial&&gesture.cx==null?'grabbing':canvas.style.cursor;gesture.area=gesture.initial?(gesture.cx==null?moveArea(gesture.frame,gesture.plan,gesture.initial,gesture.start,p):resizeArea(gesture.frame,gesture.plan,gesture.initial,p,gesture.cx,gesture.cy)):areaFromDrag(gesture.frame,gesture.plan,gesture.start,p,gesture.name);gesture.valid=validArea(gesture.areas,gesture.area);
       const areaKey=JSON.stringify(gesture.area);
       if(gesture.initial&&gesture.valid){if(gesture.previewKey!==areaKey){const frame={...gesture.original,auto_layout:{...gesture.original.auto_layout,grid:{...gesture.original.auto_layout.grid,areas:gesture.areas.map(a=>a.name===gesture.name?gesture.area:a)}}};try{const result=JSON.parse(editor.preview_layout_update(JSON.stringify([frame]),frame.id));gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.previewKey=areaKey;}catch{gesture.scene=null;gesture.previewKey=null;}}}
       else {gesture.scene=null;gesture.previewKey=null;}
-      draw();return;}
-    if(gesture.type==='grid-span'){gesture.preview=gridSpanResize(original,gesture.parent,gesture.plan,p,gesture.cx,gesture.cy);try{const result=JSON.parse(editor.preview_layout_update(JSON.stringify([gesture.preview]),gesture.parent.id));gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{gesture.scene=null;}draw();return;}
-    if(gesture.type==='rotate'){gesture.preview=shapeToLocal(rotateFromDrag(original,gesture.start,p,event.shiftKey),pageShapes());draw();return;}
-    if(gesture.type==='layout-spacing'){const next=changeSpacing(original,gesture.handle,p[gesture.handle.axis]-gesture.start[gesture.handle.axis],event);try{const result=next.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify([next]),next.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify([next]))),grid:null};gesture.preview=next;gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch(error){toast(String(error));}draw();return;}
-    if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes().map(transformGeometry),gesture.source.id,p);draw();return;}
-    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey,gradientField());gesture.preview=result.shape;activeGradient=result.active;draw();return;}
+      scheduleViewportDraw();return;}
+    if(gesture.type==='grid-span'){gesture.preview=gridSpanResize(original,gesture.parent,gesture.plan,p,gesture.cx,gesture.cy);try{const result=JSON.parse(editor.preview_layout_update(JSON.stringify([gesture.preview]),gesture.parent.id));gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch{gesture.scene=null;}scheduleViewportDraw();return;}
+    if(gesture.type==='rotate'){gesture.preview=shapeToLocal(rotateFromDrag(original,gesture.start,p,event.shiftKey),pageShapes());scheduleViewportDraw();return;}
+    if(gesture.type==='layout-spacing'){const next=changeSpacing(original,gesture.handle,p[gesture.handle.axis]-gesture.start[gesture.handle.axis],event);try{const result=next.auto_layout?.direction==='grid'?JSON.parse(editor.preview_layout_update(JSON.stringify([next]),next.id)):{document:JSON.parse(editor.preview_update_many(JSON.stringify([next]))),grid:null};gesture.preview=next;gesture.scene=result.document.shapes.filter(s=>s.page_id===doc.active_page);gesture.grid=result.grid;}catch(error){toast(String(error));}scheduleViewportDraw();return;}
+    if(gesture.type==='prototype-link'){gesture.end=p;gesture.target=connectionTarget(pageShapes().map(transformGeometry),gesture.source.id,p);scheduleViewportDraw();return;}
+    if(gesture.type==='gradient'){const result=moveGradientHandle(original,gesture.handle,p,event.shiftKey,gradientField());gesture.preview=result.shape;activeGradient=result.active;scheduleViewportDraw();return;}
     if(gesture.type==='scale') {
       const dx=gesture.start.x-gesture.origin.x,dy=gesture.start.y-gesture.origin.y;
       let factor=Math.max(.01,((p.x-gesture.origin.x)*dx+(p.y-gesture.origin.y)*dy)/Math.max(1,dx*dx+dy*dy));
       if(event.shiftKey) factor=Math.max(.1,Math.round(factor*10)/10);
-      gesture.previews=scaleShapes(gesture.originals,gesture.origin,factor); draw(); return;
+      gesture.previews=scaleShapes(gesture.originals,gesture.origin,factor); scheduleViewportDraw(); return;
     }
-    if(gesture.type==='pen-handle') { const a=penPoints[gesture.index]; a.out={...p}; a.in={x:2*a.x-p.x,y:2*a.y-p.y}; draw(); return; }
+    if(gesture.type==='pen-handle') { const a=penPoints[gesture.index]; a.out={...p}; a.in={x:2*a.x-p.x,y:2*a.y-p.y}; scheduleViewportDraw(); return; }
     if(gesture.type==='node') {
       const nodes=structuredClone(gesture.nodes),a=nodes[gesture.index],part=gesture.part;
       if(part==='anchor') { const dx=p.x-gesture.start.x,dy=p.y-gesture.start.y; a.x+=dx;a.y+=dy; for(const h of [a.in,a.out]) {h.x+=dx;h.y+=dy;} }
       else if(part==='smooth') {a.out={...p};a.in={x:2*a.x-p.x,y:2*a.y-p.y};}
       else a[part]={...p};
-      gesture.preview=reshape(original,nodes);draw();return;
+      gesture.preview=reshape(original,nodes);scheduleViewportDraw();return;
     }
     if (gesture.type === 'create') {
       if(gesture.kind==='pencil') { if(gesture.points.length<4096 && Math.hypot(p.x-gesture.points.at(-1).x,p.y-gesture.points.at(-1).y)>1/zoom) gesture.points.push(p); gesture.preview=fromPoints('pencil',gesture.points); }
       else gesture.preview=drawnShape(gesture.kind,gesture.start,p,event);
-      draw(); return;
+      scheduleViewportDraw(); return;
     }
     if (gesture.type === 'marquee') {
       gesture.end = p;
       setSelection([...new Set([...gesture.base,...canvasSelection(pageShapes(),marqueeSelection(pageShapes().map(s=>paintBounds(s,pageShapes())).filter(Boolean),gesture.start,p),{deep:gesture.deep})])]);
-      renderLayers(); renderProperties(); draw(); return;
+      renderLayers(); renderProperties(); scheduleViewportDraw(); return;
     }
     if (gesture.type === 'move') {
       let dx = p.x - gesture.start.x, dy = p.y - gesture.start.y;
@@ -1656,7 +1656,7 @@ function bind() {
       gesture.preview=shapeToLocal(resizeWorldBox(original,gesture.preview),pageShapes());
       gesture.preview=resizeText(gesture.preview,gesture.preview.width!==original.width,gesture.preview.height!==original.height);
     }
-    draw();
+    scheduleViewportDraw();
   };
   canvas.onpointerup = event => {
     if(gesture?.type==='text-create'){

@@ -23,6 +23,44 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
+## 0.1.1-alpha.7 performance update
+
+This local update reduces redundant color/instance resolution, MCP commits and
+connection-status serialization, retains frame-label DOM, coalesces pointer redraws,
+and caches unchanged canvas artwork within a fixed memory budget. See
+`docs/PERFORMANCE.md` for measured results and remaining large-layout costs.
+The Apple Silicon package passes deep/strict signature verification. The previous
+alpha.6 app and app profile are retained in `.local/alpha-7-update-backup/`.
+Native About confirms alpha.7, the saved project reopened, and a new real MCP
+client automatically connected and read all 727 layers / 10 pages with the
+original 87 components, 121 variables and 14 effect styles. The open browser
+editor was also reloaded. Proof: `.local/ui-audit-2026-10-30/live-mcp-alpha7-proof.json`.
+This is a local ad-hoc-signed build, not a public release.
+
+## 0.1.1-alpha.6 desktop update
+
+Adds complete line-height text alignment, paged MCP reads, page-scoped writes,
+named variant parsing and visible directly saved sibling sets, core/MCP text
+styles, and variable-bound shadow colors. Renderer background throttling is
+disabled, stalled discovery no longer blocks reconnect work, and reconnecting
+the same tab/project to a running server retains its session ID.
+
+The Apple Silicon test app is installed at the existing local path; About
+confirms alpha.6, and the Territory Track project reopens with Saved on this
+device and Rust engine connected. The alpha.5 app and profile are preserved in
+`.local/alpha-6-update-backup/`; the replacement passes deep/strict signature
+verification. This is a local ad-hoc-signed installation, not a public release.
+The full suite passes (3 Rust / 919 JavaScript). Simulated sleep and real socket
+recovery are covered; a long real OS-sleep soak is still pending. Text-style and
+shadow-variable inspector pickers remain pending.
+
+Live verification used a real stdio client: all 727 layers arrived over 15 paged
+reads, with the original 87 components, 121 variables, 14 effect styles and 10
+pages. Page navigation preserved revisions; editor reload preserved the session
+ID and invalidated old revision/cursor tokens. Claude was fully restarted and
+its old MCP processes exited. Its original conversation was restored without
+sending a prompt; acceptance from that conversation remains a separate check.
+
 ## 0.1.1-alpha.5 desktop update
 
 Adds direct Add variant and Combine as variants workflows, editable variant

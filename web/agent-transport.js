@@ -10,11 +10,12 @@ export function validateConnection({url,pairingCode}){
 export function createAgentConnection({runtime,identity=()=>'',discover,WebSocket:Socket=globalThis.WebSocket,storage=globalThis.sessionStorage,preferences=globalThis.localStorage,changed=()=>{},now=Date.now,setInterval:repeat=globalThis.setInterval,clearInterval:cancel=globalThis.clearInterval}){
  const read=(store,key)=>{try{return JSON.parse(store?.getItem(key)??'null');}catch{return null;}};
  const write=(store,key,value)=>{try{if(value===null)store?.removeItem(key);else store?.setItem(key,JSON.stringify(value));}catch{/* Storage can be unavailable in private windows. */}};
- let project=identity(),manual=read(storage,pairingKey),disposed=false,ticking=false,serial=Promise.resolve(),error='',lastDiscovery=-Infinity;
+ let project=identity(),manual=read(storage,pairingKey),disposed=false,ticking=false,discovery=null,discoveryEpoch=0,serial=Promise.resolve(),error='',lastDiscovery=-Infinity;
  const preferenceKey=()=>`pixlprfct:mcp-disabled:${project}`;
  let enabled=read(preferences,preferenceKey())!==true,discovered=[];
  if(manual?.project!==project)manual=null;
  const connections=new Map();
+ const clientId=()=>{const key=`pixlprfct:mcp-client:${project}`;let id=read(storage,key);if(typeof id!=='string'||!/^[-\w]{36}$/.test(id)){id=globalThis.crypto.randomUUID();write(storage,key,id);}return id;};
  const snapshot=()=>({enabled,automatic:!!discover,connected:[...connections.values()].filter(c=>c.session).length,connecting:connections.size>0,error});
  const notify=()=>changed(snapshot());
  const close=connection=>{const client=connection.client;connection.client=null;connection.session=null;client?.close();};
@@ -24,7 +25,7 @@ export function createAgentConnection({runtime,identity=()=>'',discover,WebSocke
   try{client=new Socket(connection.details.url);}catch{connection.next=now()+1000;return;}
   connection.client=client;connection.lastSeen=now();connection.lastPing=now();connection.openedAt=now();
   const current=()=>!disposed&&enabled&&connection.client===client&&identity()===project;
-  client.onopen=()=>{if(current())client.send(JSON.stringify({type:'hello',token:connection.details.pairingCode,name:runtime.state().name}));else close(connection);};
+  client.onopen=()=>{if(current())client.send(JSON.stringify({type:'hello',token:connection.details.pairingCode,clientId:clientId(),name:runtime.state().name}));else close(connection);};
   client.onmessage=event=>{
    if(!current()){close(connection);return;}
    let message;try{message=JSON.parse(event.data);}catch{return;}
@@ -56,9 +57,14 @@ export function createAgentConnection({runtime,identity=()=>'',discover,WebSocke
   try{
    if(identity()!==project){clear();project=identity();manual=null;write(storage,pairingKey,null);enabled=read(preferences,preferenceKey())!==true;discovered=[];lastDiscovery=-Infinity;error='';}
    if(!enabled){notify();return;}
-   if(discover&&now()-lastDiscovery>=2000){
-    lastDiscovery=now();const expectedProject=project;
-    try{const result=await discover();if(disposed||!enabled||identity()!==expectedProject)return;discovered=result;}catch{/* Retain valid connections across transient discovery failures. */}
+   if(discover&&now()-lastDiscovery>=2000&&(!discovery||now()-discovery.started>5000)){
+    lastDiscovery=now();const expectedProject=project,epoch=++discoveryEpoch;discovery={epoch,started:now()};
+    // Discovery must never hold up heartbeat/reconnect checks after sleep or a
+    // stalled desktop IPC call. Late results from superseded calls are ignored.
+    Promise.resolve().then(()=>discover()).then(result=>{
+     if(disposed||!enabled||identity()!==expectedProject||discovery?.epoch!==epoch)return;
+     discovered=result;
+    }).catch(()=>{}).finally(()=>{if(discovery?.epoch===epoch){discovery=null;void tick();}});
    }
    const desired=new Map();
    for(const details of [...discovered,...(manual?[manual]:[])]){
@@ -85,7 +91,8 @@ export function createAgentConnection({runtime,identity=()=>'',discover,WebSocke
    void tick();
   },
   disconnect(){enabled=false;manual=null;write(storage,pairingKey,null);write(preferences,preferenceKey(),true);clear();notify();},
-  dispose(){disposed=true;cancel(timer);clear();},
+  dispose(){disposed=true;discovery=null;discoveryEpoch++;cancel(timer);clear();},
+  wake(){if(disposed||!enabled)return;lastDiscovery=-Infinity;for(const connection of connections.values())connection.next=0;void tick();},
   resume(){if(!disposed)return;disposed=false;lastDiscovery=-Infinity;timer=repeat(()=>void tick(),1000);void tick();},
  };
 }

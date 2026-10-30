@@ -97,11 +97,10 @@ export function mountTextEditor(canvas,{input,finish,zoom}) {
     },
     invalid(value){field.setAttribute('aria-invalid',String(value));},
     close(){host.hidden=true;field.textContent='';composing=false;},
-    render(shape,{pan,zoom,layout,css=false,baselineOffset=0}){
+    render(shape,{pan,zoom,layout}){
       if(host.hidden)return;
       const t=textStyle(shape),step=t.font_size*t.line_height;
-      const contentHeight=css?layout.lines.length*step:layout.height;
-      const offset=Math.max(0,shape.height-contentHeight)*(t.vertical_align==='center'?.5:t.vertical_align==='bottom'?1:0)+(css?0:baselineOffset);
+      const offset=Math.max(0,shape.height-layout.height)*(t.vertical_align==='center'?.5:t.vertical_align==='bottom'?1:0);
       Object.assign(host.style,{transform:`translate(${pan.x+shape.x*zoom}px,${pan.y+shape.y*zoom}px) scale(${zoom}) rotate(${-(shape.rotation??0)}deg)`});
       // The real scene paints the glyphs, preserving gradients, strokes,
       // opacity, effects and clipping. This surface supplies caret/selection.

@@ -1,7 +1,24 @@
 # Territory Track Design System — Gaps & Limitations
 
 Running list from building the PixlPrfct design system (project: "Territory Track Design System").
-Last updated: 2026-10-29
+Last updated: 2026-10-30
+
+## Performance follow-up — 2026-10-30
+
+- User reports sluggish canvas interaction, property/page changes and AI/MCP work. Added B33 below, retaining it as partially improved until expensive layout previews are further reduced.
+- The 727-layer document exposed repeated whole-layer color serialization, redundant MCP commits, shadow repainting on every pan, repeated frame-label DOM rebuilding, and full revision serialization from the connection-status timer. These paths are optimized; pointer redraws coalesce into animation frames.
+- Measured pan redraw medians improved from **11–23 ms to 0.4–0.6 ms** on three pages; a comparable 20-update MCP batch improved from **2.80 s to 1.05 s**. Engine text update/preview improved from **54–57 ms to 34–36 ms**. The resulting saved document is byte-identical between baseline and optimized engines. See `docs/PERFORMANCE.md` for method, fidelity checks and limits.
+- Validation: **3 Rust + 924 JavaScript tests**, editor/desktop builds, catalog check, Rust formatting and zero lint errors (13 existing warnings). Local alpha.7 package passes deep/strict macOS signature verification. Native About confirms **0.1.1-alpha.7**; the saved project reopened and a fresh real MCP client read all **727 layers, 87 components, 121 variables, 14 effect styles and 10 pages** after automatic connection. The open browser editor was also reloaded with the new assets. The alpha.6 app and profile are preserved in `.local/alpha-7-update-backup/`. No public release is claimed.
+
+## Alpha review follow-up — 2026-10-30
+
+- Incoming review: approximately 87 components, 121 variables, 14 effect styles and 10 pages; 30 tool issues reported with 14 closed. The prior **24-entry repository checkpoint below is historical**, not an assertion that the incoming list had only 24 issues. New reports are retained below without dropping older unresolved items.
+- Current reconciled B checklist: **23 of 34 entries addressed; 11 open**. This expands the incoming reports with separately tracked UI and visual gaps. Checked entries include local implementation/verified existing behavior and do not mean every feature has shipped publicly; B23 remains open for real sleep acceptance.
+- The five acceptance priorities are idle recovery, paged reads, parsing named variants, text styles, and variable-bound shadow colors. Implemented in the current checkout, with core/MCP coverage; inspector pickers for text styles and shadow variables remain pending. This is not a team-readiness or full Figma-parity certification.
+- Verified: 3 Rust + 919 JavaScript tests; generated catalog (91 commands / 46 models); changed-code lint has zero errors and 13 existing app.js warnings. Real WebSocket tests cover server restart, stable-session reconnect, interrupted writes without replay, and a **simulated** 40-minute clock advance with hung discovery. A real long-duration OS sleep soak remains pending.
+- Visual evidence: live Figma button-label inspection, then native canvas/CSS comparison on a copy of the 727-layer, 10-page Territory Track document. Screenshots are in `.local/ui-audit-2026-10-30/`. Existing authored styles/variables were not migrated; TerritoryIQ and design-file tasks remain separate.
+- Local alpha.6 package builds and passes deep/strict macOS signature verification. The previous app and profile are retained in `.local/alpha-6-update-backup/`. Installation/runtime verification is recorded separately below; no public release is claimed.
+- Installed/runtime verification (2026-10-30): native About confirms **0.1.1-alpha.6** and the saved document reopened. A real stdio MCP client read all **727 layers in 15 pages**, with an **8,603-character default response**, and confirmed **87 components, 121 variables, 14 effect styles, 10 pages**. Native page navigation preserved the revision; native editor reload automatically reconnected with the same live session ID and rejected the old cursor/revision. Revision tokens now include a runtime epoch, preventing pre-reload writes being accepted after a counter reset. Proof: `.local/ui-audit-2026-10-30/live-mcp-proof.json`. Claude was fully quit/reopened; process checks confirm its old MCP processes exited and new ones use this checkout. No prompt was sent to Claude, so its original conversation's own tool call remains a user acceptance check.
 
 ---
 
@@ -113,10 +130,12 @@ Last updated: 2026-10-29
 - [x] ~~**`duplicate` offsets the copy by +24/+24.** It has to be repositioned after duplicating.~~
   - B6 — Fixed locally (2026-10-29). New `duplicate_many_offset(ids, xOffset, yOffset)` supports `0,0` and exact translations while preserving descendants and bindings. Interactive duplicate retains its +24/+24 offset. Verified undo and legacy behavior.
 - [x] **Effect styles: fixed in PixlPrfct 0.1.1-alpha.3.** 14 styles saved and linked: shadow/xs, sm, card, md, lg, xl, 2xl, modal, badge, kanban-card, focus/ring, focus/outline, control/soft, focus/outline + control/soft. Components use them (focus states, select menu, toggle thumbs, checkbox/radio).
-- [ ] **Still no text styles via MCP.** Typography is only number/string variables plus the specimen page.
+- [x] ~~**Still no text styles via MCP.** Typography is only number/string variables plus the specimen page.~~
   - B7 — Partially closed (2026-10-29). **Effect styles completed in [PR #28](https://github.com/ninefingerwoodshop-ops/pixlprfct/pull/28)** (`save_effect_style`, `apply_effect_style`, `remove_effect_style`); the implementing chat reports desktop 0.1.1-alpha.3 and MCP verified. **Text styles remain open.** The original combined report is now tracked as separate effect- and text-style entries above.
-- [ ] **`save_effect_style` with a layer_id only works when that layer is on the active page** ("Select a layer on this page"). Each page has to be selected first.
+  - Resolution (2026-10-30, local core/MCP): `save_text_style`, `apply_text_style` and `remove_text_style` share family/size/weight/line height across pages and instances, preserve local alignment/sizing, detach on font edits, and remap/protect library definitions. Atomic rollback, propagation, persistence, exports and libraries tested. A text-style inspector picker and letter spacing/case are still separate gaps.
+- [x] ~~**`save_effect_style` with a layer_id only works when that layer is on the active page** ("Select a layer on this page"). Each page has to be selected first.~~
   - B20 — Newly tracked (2026-10-29); not resolved in the reconnect fix.
+  - Resolution (2026-10-30, local): save-and-apply now looks up the layer across all pages, retaining the visible page and existing instance/library protection.
 - [x] ~~**Stroke color variable bindings export as hard-coded hex** in HTML/CSS export. Fills and text export as `var(...)`.~~
   - B8 — Fixed locally (2026-10-29). HTML/framework exports retain `var(...)` for solid strokes, stacked paints, inside/outside masks, per-side borders and native controls, preserving alpha. Regression covers HTML, React, Vue and Angular. Standalone SVG intentionally remains a resolved snapshot.
 - [x] ~~**Number variables export unitless** (`--px-space-4: 16`, not `16px`). They need `calc(var(...) * 1px)` to use in CSS.~~
@@ -128,11 +147,14 @@ Last updated: 2026-10-29
 - [x] ~~**Reference docs gaps:** the variable `Value` format and `sizing` enum values aren't documented; model lookups fail when querying more than one name at once.~~
   - B12 — Fixed locally (2026-10-29). Reference includes typed Value literals/alias format, sizing values, coordinates and alpha contracts. Model searches accept arrays, comma-separated names and whitespace-separated exact model names. Verified both the runtime reference and an actual MCP client request.
 
-- [ ] **Edits made in the editor bump the revision** (even switching pages), so MCP writes fail with "Revision conflict" until the document is re-read.
-- [ ] **`read` without `ids` returns the whole document** (over 100k characters, truncated) with no pagination. Use `ids` or `query`.
+- [x] ~~**Edits made in the editor bump the revision** (even switching pages), so MCP writes fail with "Revision conflict" until the document is re-read.~~
+  - B13 — Resolution (2026-10-30, local): page navigation is excluded from the content revision. Content edits still invalidate stale writes. Optional `page` on build/command scopes creation independently of the user's visible page; page restoration and revision/cursor behavior are tested.
+- [x] ~~**`read` without `ids` returns the whole document** (over 100k characters, truncated) with no pagination. Use `ids` or `query`.~~
+  - B14 — Resolution (2026-10-30, local): default 50, maximum 200 layers; filter/revision-bound cursors plus offset pagination, totals and `hasMore`. Full reads page shapes and explicitly mark partial documents. A 125-layer fixture verifies 50/50/25 pages without duplicates or omissions, and stale-cursor rejection. Exports remain separately tracked below.
 - [ ] **Input components use fixed widths (280px)** with no stretch/fill constraint, so instances don't resize to a container's width.
 
-- [ ] **Shadow colors can't bind to variables.** Focus rings built as spread shadows use fixed hex (white gap + navy ring), so they don't switch in Dark mode.
+- [x] ~~**Shadow colors can't bind to variables.** Focus rings built as spread shadows use fixed hex (white gap + navy ring), so they don't switch in Dark mode.~~
+  - B16 — Resolution (2026-10-30, local core/MCP): `DropShadow.color_variable` and `bind_shadow_color` resolve color aliases and page/frame modes, including reusable effect styles and instances. Bindings survive reorder/library remapping; literal edits and token deletion detach safely; CSS export retains tokens. Tests cover all these paths. Inspector variable picking is pending; existing fixed-color styles need deliberate design-file migration.
 - [ ] **Publishing the library is UI-only:** Assets → Manage libraries → This file → Publish (needs the self-hosted workspace). The MCP can create main components and sets but can't publish or confirm how Assets lists them.
 - [x] ~~**Variant masters use Figma-style names** ("Checked=Off, State=Default"). If Assets lists masters by layer name rather than by set, Checkbox and Radio variants will look identical; check the Assets panel.~~
   - B18 — Verified (2026-10-29). Assets shows one card per component set, named for the set, with a custom variant dropdown displaying property/value pairs. Verified in the live editor after creating two variants with State and Size properties; the Assets count was one component. Automated asset grouping/search regression passes.
@@ -148,7 +170,30 @@ Last updated: 2026-10-29
 
 - [ ] **The live MCP connection drops on its own** (twice in about 40 minutes on 2026-10-29, roughly 35–40 minutes after pairing). The bridge URL and pairing code stay the same (the server didn't restart), so the editor tab is what's disconnecting, possibly from idling or sleep. A batch in flight fails with "Live editor session not connected". Add auto-reconnect, or a longer-lived pairing for the same tab.
   - B23 — Newly tracked recurrence (2026-10-29). Keep open pending reproduction of the reported idle/sleep failure on the installed reconnect build. The earlier B21 implementation and validation history are preserved; this report is not closed by the variant work.
+  - Targeted fix (2026-10-30, local): hung discovery no longer blocks heartbeat/retry work; focus/visibility/online wakes recovery; desktop background throttling is disabled; authenticated reconnect preserves the tab/project session ID within a running server. Real-socket simulated sleep/reconnect and no-replay tests pass. **Retained open for a real long-idle/OS-sleep acceptance test**, rather than equating simulated elapsed time with a completed soak.
+
+- [x] ~~**`combine_variants` ignores `Property=Value` names and creates Property 1.**~~
+  - B24 — Resolution (2026-10-30, local): parses multiple comma-separated properties, preserves key order, accepts reordered keys on later members, and rejects incomplete/duplicate combinations atomically. Existing plain-name inference remains supported. Regression verifies property values, undo and persistence.
+- [x] ~~**`save_component_set` creates sets with no visible canvas container.**~~
+  - B25 — Resolution (2026-10-30, local): sibling mains get a padded set frame automatically, including inactive-page saves. Undo restores the original hierarchy. Legacy cross-page sets remain logical metadata because they cannot share one canvas container.
+- [x] ~~**`set_variant_property` only works on instances.**~~
+  - B26 — Resolution (2026-10-30, local): main components now edit their own variant values; instances still switch matching variants. Invalid names and duplicate combinations reject atomically.
+- [ ] **Typography lacks letter spacing and uppercase/text case.**
+  - B27 — Incoming review (2026-10-30). Still open; text-style support does not close these missing font attributes.
+- [ ] **Instances reportedly ignore a main component's no-fill setting.**
+  - B28 — Incoming review (2026-10-30). Current-engine regression verifies no fill both before instantiation and after toggling the main. The reported file/UI path is not yet reproduced; retain open, with no speculative engine change or closure.
+- [ ] **Full exports can exceed a million characters.**
+  - B29 — Incoming review (2026-10-30). Paged reads resolve normal inspection, but export responses still need chunking/file-oriented retrieval. Prefer page/selection exports meanwhile; this is a workaround.
+- [x] ~~**Canvas button labels sit above the CSS-rendered text position.**~~
+  - B30 — Resolution (2026-10-30, local): complete line-height boxes and measured alphabetic baselines now drive Canvas/SVG/inline editing. Fixed labels no longer shift upward; wrapped text retains the full final line and blank paragraphs. Compared the actual button page in native canvas and CSS modes after inspecting live Figma; regression covers top/center/bottom alignment, sizing and baseline metrics. This does not certify every text/font combination.
+- [ ] **Page background display and set-label placement need further visual parity work.**
+  - B31 — Observed (2026-10-30): the Page inspector displays a static F5F5F5 swatch while the workspace is dark; some authored dark headings are consequently hard to read. Set labels can overlap adjacent authored content. Keep UI theme independent from document paint; do not recolor the design file as a workaround.
+- [ ] **Text-style and shadow-variable inspector pickers are missing.**
+  - B32 — Explicit remaining UI scope (2026-10-30). New core/MCP features are functional; corresponding inspector affordances need live Figma inspection and implementation before UI parity can be claimed.
   - Upgrade diagnosis (2026-10-29): Claude’s window reload left a pre-update MCP process on port 63512 alive while PixlPrfct connected to a newer process. Claude still reported an empty session list. The previous installation check established a connection to a server, but did not verify the server used by the affected conversation. Fully quitting and reopening Claude removed the old processes; both newly launched servers were automatically discovered and each had an established desktop socket. The app showed 2 connected agents. This corrects the earlier verification claim. After the user authorized a read-only check in the original Claude conversation, Claude called its PixlPrfct tools and confirmed “It’s connected now,” one live session, and 613 layers with nothing edited. The stale-process upgrade mismatch is resolved and verified end to end; the original idle/sleep recurrence remains open.
+
+- [ ] **Editor feels clunky and slow across canvas, properties/pages and MCP edits.**
+  - B33 — Reported and partially improved (2026-10-30, local alpha.7): bounded canvas caching, stable frame-label DOM, direct color resolution, reduced instance/MCP work, coalesced drawing and cheap connection-status updates. Pan redraws and 20-edit batch timings improve substantially (see performance checkpoint). Large layout previews still take approximately 36 ms before drawing, so retain open for further incremental-layout profiling; do not equate the measured speedup with universal 60 fps.
 
 ---
 

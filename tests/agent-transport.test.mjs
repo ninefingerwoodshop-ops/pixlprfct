@@ -31,7 +31,7 @@ test('desktop discovery connects multiple agents, replaces restarted ports and c
 test('manual pairing survives a reload in the same tab and project; rejection clears stale credentials',async()=>{
  const h=harness();h.connection.connect(details);h.sockets[0].pair();h.connection.dispose();
  const restored=harness({stored:h.storage,preferences:h.prefs});assert.equal(restored.sockets.length,1);restored.sockets[0].pair();
- restored.sockets[0].close(1008);await restored.advance(10000);assert.equal(restored.sockets.length,1);assert.equal(restored.storage.size,0);assert.match(restored.connection.state().error,/rejected/);restored.connection.dispose();
+ restored.sockets[0].close(1008);await restored.advance(10000);assert.equal(restored.sockets.length,1);assert.equal(restored.storage.has('pixlprfct:mcp-pairing'),false);assert.match(restored.connection.state().error,/rejected/);restored.connection.dispose();
 });
 test('Disconnect remains effective across reloads and discovery, and Connect explicitly resumes',async()=>{
  const h=harness({discover:async()=>[details]});await flush();h.sockets[0].pair();h.connection.disconnect();await h.advance(2000);assert.equal(h.sockets.length,1);
@@ -44,7 +44,7 @@ test('project navigation invalidates the old session before a queued write can r
  h.sockets[1].pair();h.sockets[1].message({type:'request',id:'new',method:'read',args:{}});await flush();assert.equal(h.requests.length,1);h.connection.dispose();
 });
 test('manual credentials do not grant access to a different project',async()=>{
- const h=harness();h.connection.connect(details);h.sockets[0].pair();h.project('document-b');await h.advance(2000);assert.equal(h.sockets.length,1);assert.equal(h.sockets[0].readyState,3);assert.equal(h.storage.size,0);h.connection.dispose();
+ const h=harness();h.connection.connect(details);h.sockets[0].pair();h.project('document-b');await h.advance(2000);assert.equal(h.sockets.length,1);assert.equal(h.sockets[0].readyState,3);assert.equal(h.storage.has('pixlprfct:mcp-pairing'),false);h.connection.dispose();
 });
 test('handshake and heartbeat deadlines recover silently stalled connections',async()=>{
  const h=harness();h.connection.connect(details);await h.advance(6000);assert.equal(h.sockets[0].readyState,3);await h.advance(500);h.sockets[1].pair();
@@ -52,8 +52,8 @@ test('handshake and heartbeat deadlines recover silently stalled connections',as
  await h.advance(46000);assert.equal(h.sockets[1].readyState,3);await h.advance(500);assert.equal(h.sockets.length,3);h.connection.dispose();
 });
 test('Disconnect or page disposal during asynchronous discovery cannot open a connection',async()=>{
- let resolve;const h=harness({discover:()=>new Promise(r=>{resolve=r;})});h.connection.disconnect();resolve([details]);await flush();assert.equal(h.sockets.length,0);h.connection.dispose();
- let finish;const disposed=harness({discover:()=>new Promise(r=>{finish=r;})});disposed.connection.dispose();finish([details]);await flush();assert.equal(disposed.sockets.length,0);
+ let resolve;const h=harness({discover:()=>new Promise(r=>{resolve=r;})});await flush();h.connection.disconnect();resolve([details]);await flush();assert.equal(h.sockets.length,0);h.connection.dispose();
+ let finish;const disposed=harness({discover:()=>new Promise(r=>{finish=r;})});await flush();disposed.connection.dispose();finish([details]);await flush();assert.equal(disposed.sockets.length,0);
 });
 test('only strict loopback bridge endpoints and well-formed codes are accepted',()=>{
  assert.deepEqual(validateConnection(details),details);
@@ -67,4 +67,11 @@ test('older bridges without heartbeat support stay connected while idle',async()
 
 test('restoring a page from the back-forward cache restarts discovery',async()=>{
  const h=harness({discover:async()=>[details]});await flush();h.sockets[0].pair();h.connection.dispose();h.connection.resume();await flush();assert.equal(h.sockets.length,2);h.sockets[1].pair();assert.equal(h.connection.state().connected,1);h.connection.dispose();
+});
+
+test('a hung discovery call cannot block recovery after sleep, and wake respects Disconnect',async()=>{
+ let stalled=false;const h=harness({discover:()=>stalled?new Promise(()=>{}):Promise.resolve([details])});await flush();h.sockets[0].pair();
+ const id=h.sockets[0].sent[0].clientId;stalled=true;await h.advance(2000);await h.advance(40*60*1000);await h.advance(500);
+ assert.equal(h.sockets.length,2);h.sockets[1].pair();assert.equal(h.sockets[1].sent[0].clientId,id);assert.equal(h.connection.state().connected,1);
+ h.connection.disconnect();h.connection.wake();await h.advance(10000);assert.equal(h.sockets.length,2);h.connection.dispose();
 });

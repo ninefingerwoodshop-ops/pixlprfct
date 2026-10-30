@@ -39,6 +39,7 @@ const FIELDS: &[&str] = &[
     "layout_grids",
     "guide_style",
     "effect_style",
+    "text_style",
     "prototype",
     "additional_interactions",
     "layout_item",
@@ -106,6 +107,7 @@ pub(crate) fn restore_detached_button_labels(
             label.layout_grids.clear();
             label.guide_style = 0;
             label.effect_style = 0;
+            label.text_style = 0;
             label.prototype = None;
             label.additional_interactions.clear();
             label.flow_name.clear();
@@ -338,6 +340,11 @@ fn apply_overrides(
     previous: &Shape,
     overrides: &[String],
 ) -> Result<(), String> {
+    // Position is handled by sync itself. Most descendants inherit everything,
+    // so they need no JSON round trip when there are no other overrides.
+    if overrides.iter().all(|path| path == "x" || path == "y") {
+        return Ok(());
+    }
     let mut value = serde_json::to_value(&shape).unwrap();
     let defaults = effective_value(shape);
     let old = effective_value(previous);
@@ -452,6 +459,20 @@ pub fn validate_links(doc: &Document) -> Result<(), String> {
 
 pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
     variables::detach_edited(old, new);
+    if new.text_style == old.text_style
+        && (text_styles::style_values(old.typography.as_ref())
+            != text_styles::style_values(new.typography.as_ref())
+            || old
+                .variable_bindings
+                .iter()
+                .chain(new.variable_bindings.iter())
+                .any(|(path, _)| {
+                    path.starts_with("typography.")
+                        && old.variable_bindings.get(path) != new.variable_bindings.get(path)
+                }))
+    {
+        new.text_style = 0;
+    }
     if new.guide_style == old.guide_style && new.layout_grids != old.layout_grids {
         new.guide_style = 0;
     }
@@ -1105,6 +1126,7 @@ impl Editor {
                         "layout_grids",
                         "guide_style",
                         "effect_style",
+                        "text_style",
                     ]
                     .contains(&field)
                 })

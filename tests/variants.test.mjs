@@ -25,7 +25,7 @@ test('sparse variant sets choose the closest remaining properties with stable ti
 
 test('duplicate variant clones the frame tree and set membership in one undo step',()=>{
  const e=new Editor(),a=main(e,'Button');const id=save(e,{id:0,name:'Button',properties:['State'],variants:[{component_id:a.f,values:['Default']}]});const before=e.snapshot(),b=e.duplicate_variant(a.f);
- assert.equal(get(e,b).component.type,'master');assert.equal(children(e,b).length,1);assert.equal(get(e,b).x,240);assert.equal(doc(e).component_sets[0].variants.length,2);assert.deepEqual(doc(e).component_sets[0].variants[1].values,['Variant 2']);e.undo();assert.equal(e.snapshot(),before);e.redo();
+ assert.equal(get(e,b).component.type,'master');assert.equal(children(e,b).length,1);assert.equal(get(e,b).x,0);assert.equal(get(e,b).y,120);assert.equal(doc(e).component_sets[0].variants.length,2);assert.deepEqual(doc(e).component_sets[0].variants[1].values,['Variant 2']);e.undo();assert.equal(e.snapshot(),before);e.redo();
  const c=e.duplicate_variant(b);assert.deepEqual(doc(e).component_sets[0].variants[2].values,['Variant 3']);assert.equal(new Set(doc(e).shapes.map(s=>s.id)).size,doc(e).shapes.length);
  e.remove(b);assert.equal(doc(e).component_sets[0].variants.length,2);e.undo();assert.equal(doc(e).component_sets[0].variants.length,3);
  e.remove_component_set(id);assert.equal(doc(e).component_sets.length,0);assert.equal(get(e,c).component.type,'master');e.undo();assert.equal(doc(e).component_sets[0].id,id);e.free();
@@ -36,7 +36,7 @@ test('invalid sets are atomic; deletion prunes membership and legacy files defau
  const set={id:0,name:'Set',properties:['State'],variants:[{component_id:a.f,values:['Default']},{component_id:b.f,values:['Default']}]};assert.throws(()=>save(e,set),/unique combination/);assert.equal(e.snapshot(),before);
  set.variants[1].values=['Pressed'];const id=save(e,set),saved=e.snapshot();assert.throws(()=>save(e,{...set,id:0}),/exactly one set/);assert.equal(e.snapshot(),saved);
  assert.throws(()=>save(e,{...set,id,properties:['State','State']}),/properties/);assert.equal(e.snapshot(),saved);
- const invalid=doc(e);invalid.component_sets[0].variants[0].component_id=99999;assert.throws(()=>e.load(JSON.stringify(invalid)),/main component/);assert.equal(e.snapshot(),saved);
+ const invalid=doc(e);invalid.component_sets[0].variants[0].component_id=99999;assert.throws(()=>e.load(JSON.stringify(invalid)),/component set|main component/);assert.equal(e.snapshot(),saved);
  e.remove(a.f);assert.equal(doc(e).component_sets[0].variants.length,1);e.remove(b.f);assert.equal(doc(e).component_sets.length,0);e.undo();assert.equal(doc(e).component_sets[0].variants.length,1);
  const legacy=JSON.parse(saved);delete legacy.component_sets;e.load(JSON.stringify(legacy));assert.deepEqual(doc(e).component_sets,[]);e.free();
 });
@@ -77,4 +77,15 @@ test('duplicating a component set or its page preserves independent variant defi
 test('Add variant upgrades legacy sibling sets without changing their property choices',()=>{
  const e=new Editor(),a=main(e,'A'),b=main(e,'B');edit(e,b.f,{x:300});const id=save(e,{id:0,name:'Button',properties:['State'],variants:[{component_id:a.f,values:['Default']},{component_id:b.f,values:['Hover']}]});const before=e.snapshot();
  const c=e.add_variant(a.f),set=doc(e).component_sets.find(s=>s.id===id);assert(set.frame_id);assert.equal(get(e,c).parent_id,set.frame_id);assert.deepEqual(set.variants.slice(0,2).map(v=>v.values),[['Default'],['Hover']]);e.undo();assert.equal(e.snapshot(),before);e.free();
+});
+
+test('named variants parse multiple properties in any order and master edits remain atomic',()=>{
+ const e=new Editor(),a=main(e,'Badge / Tone=Neutral, State=Default'),b=main(e,'Badge / State=Hover, Tone=Success');
+ const before=e.snapshot(),frame=e.combine_variants(JSON.stringify([a.f,b.f])),set=doc(e).component_sets[0];assert.equal(set.name,'Badge');assert.equal(set.frame_id,frame);assert.deepEqual(set.properties,['Tone','State']);assert.deepEqual(set.variants.map(v=>v.values),[['Neutral','Default'],['Success','Hover']]);
+ e.set_variant_property(a.f,'Tone','Warning');assert.equal(get(e,a.f).name,'Tone=Warning, State=Default');
+ e.undo();e.undo();assert.equal(e.snapshot(),before);edit(e,b.f,{name:'Badge / Tone=Neutral, State=Default'});const duplicate=e.snapshot();assert.throws(()=>e.combine_variants(JSON.stringify([a.f,b.f])),/unique combination/);assert.equal(e.snapshot(),duplicate);e.free();
+});
+
+test('direct saved sibling sets get a visible container even from another active page',()=>{
+ const e=new Editor(),a=main(e,'A'),b=main(e,'B');e.add_page();const before=e.snapshot();save(e,{id:0,name:'Badge',properties:['Tone'],variants:[{component_id:a.f,values:['Neutral']},{component_id:b.f,values:['Success']}]});const set=doc(e).component_sets[0];assert.ok(set.frame_id);assert.equal(get(e,a.f).parent_id,set.frame_id);assert.equal(doc(e).active_page,2);e.undo();assert.equal(e.snapshot(),before);e.free();
 });

@@ -88,7 +88,8 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   const radiusVar=vars.values.find(v=>v.id===s.variable_bindings?.['appearance.corner_radii']&&v.kind==='border_radius');if(radiusVar)style['border-radius']=`var(${variableName(radiusVar)},${style['border-radius']})`;
   if(effectBlur(a,'backdrop_blur')){style['backdrop-filter']=`blur(${px(effectBlur(a,'backdrop_blur'))})`;style['-webkit-backdrop-filter']=style['backdrop-filter'];}
   if(effectBlur(a,'layer_blur'))style.filter=`blur(${px(effectBlur(a,'layer_blur')/2)})`;
-  const shadows=(a.shadows??[]).filter(v=>v.visible!==false).map(v=>`${v.kind==='inner'?'inset ':''}${px(v.x)} ${px(v.y)} ${px(v.blur)} ${px(v.spread)} ${alpha(v.color,v.opacity)}`);if(shadows.length)style['box-shadow']=shadows.join(',');
+  const shadowColor=v=>{const variable=vars.values.find(item=>item.id===v.color_variable&&item.kind==='color');return variable?`rgb(from var(${variableName(variable)},${v.color}) r g b / ${v.opacity})`:alpha(v.color,v.opacity);};
+  const shadows=(a.shadows??[]).filter(v=>v.visible!==false).map(v=>`${v.kind==='inner'?'inset ':''}${px(v.x)} ${px(v.y)} ${px(v.blur)} ${px(v.spread)} ${shadowColor(v)}`);if(shadows.length)style['box-shadow']=shadows.join(',');
   const container=['frame','group'].includes(s.kind),rotated=visualBounds(s);if(s.rotation&&!container){style.width=px(rotated.width);style.height=px(rotated.height);if(!flow){style.left=px(rotated.x-(parent?.x??0));style.top=px(rotated.y-(parent?.y??0));}}
   let content='';const vector=s.editor_meta?.text_path||a.fills||a.strokes||(!container&&s.rotation)||s.points?.length||a.gradient||a.stroke_gradient||s.kind==='image'||(a.stroke_dash?.length);
   if(vector){const paint={...s,rotation:container?0:s.rotation,parent_id:0,appearance:{...a,opacity:1,shadows:[],layer_blur:0,backdrop_blur:0,blend_mode:'pass-through'}};

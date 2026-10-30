@@ -31,15 +31,15 @@ const autoLayoutDefaults={direction:'horizontal',gap:16,padding_top:16,padding_r
 // The host owns persistence, permissions, and editor refresh. All mutations go
 // through a scratch engine and commit once only after the whole batch succeeds.
 export function createAgentRuntime({editor,createEditor,guard=()=>null,options=()=>({}),finalize=()=>{},changed=()=>{},busy=()=>false,selection=()=>[],select}){
- let last='',revision=0;
- const version=()=>{const value=editor.snapshot();if(value!==last){last=value;revision++;}return String(revision);};
+ const epoch=globalThis.crypto.randomUUID();let last='',revision=0;
+ const version=()=>{const document=snapshot(editor);delete document.active_page;const value=JSON.stringify(document);if(value!==last){last=value;revision++;}return `${epoch}:${revision}`;};
  const state=()=>({revision:version(),...summary(snapshot(editor)),selection:selection()});
  const checkRevision=value=>{if(typeof value!=='string'||value!==version())throw new Error('Revision conflict. Read the document again before editing.');if(busy())throw new Error('The editor has an active gesture or text/CSS preview. Finish it before editing through MCP.');};
- const transact=(expected,run)=>{
+ const transact=(expected,run,page)=>{
   checkRevision(expected);const before=editor.snapshot(),scratch=createEditor();
   try{
-   scratch.load(before);scratch.clear_history();scratch.set_write_guard((a,b,history)=>guard(JSON.parse(a),JSON.parse(b),history)??'');
-   const result=run(scratch);finalize(scratch);const after=scratch.snapshot();
+   scratch.load(before);if(page!==undefined)scratch.select_page(page);scratch.clear_history();scratch.set_write_guard((a,b,history)=>guard(JSON.parse(a),JSON.parse(b),history)??'');
+   const result=run(scratch);finalize(scratch);if(page!==undefined&&snapshot(scratch).pages.some(p=>p.id===snapshot(editor).active_page))scratch.select_page(snapshot(editor).active_page);const after=scratch.snapshot();
    for(const shape of JSON.parse(after).shapes){if(shape.custom_css)renderLayerStyles(shape);if(shape.layout_media?.length&&!shape.auto_layout)throw new Error('Responsive layout rules require a Flex or CSS Grid frame. Use custom CSS media queries for other layers.');}
    const error=guard(JSON.parse(before),JSON.parse(after),false);if(error)throw new Error(error);
    if(editor.snapshot()!==before)throw new Error('Document changed while editing. Read it and retry.');
@@ -57,12 +57,13 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
    properties.appearance.stroke_color=stroke.slice(0,7);
    properties.appearance.stroke_opacity??=parseInt(stroke.slice(7),16)/255;
   }
-  const before=shapeAt(engine,id);for(const name of Object.keys(properties)){if(['id','page_id','component'].includes(name))throw new Error('Use engine commands to change identity, page, or component links.');if(!new RegExp('pub '+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':').test(modelReference.Shape.declaration))throw new Error('Unknown layer property: '+name);}
+  const document=snapshot(engine),before=document.shapes.find(s=>s.id===id);if(!before)throw new Error('Layer not found: '+id);
+  for(const name of Object.keys(properties)){if(['id','page_id','component'].includes(name))throw new Error('Use engine commands to change identity, page, or component links.');if(!new RegExp('pub '+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+':').test(modelReference.Shape.declaration))throw new Error('Unknown layer property: '+name);}
   const base={...before,...(properties.appearance&&!before.appearance?{appearance:appearance(before)}:{}),...(properties.auto_layout&&!before.auto_layout?{auto_layout:autoLayoutDefaults}:{})};
   const next=reconcilePaints(mergeProperties(base,properties),before);if(next.custom_css)renderLayerStyles(next);
-  engine.update_across_pages(JSON.stringify([next]));return id;
+  if(before.page_id===document.active_page)engine.update(JSON.stringify(next));else engine.update_across_pages(JSON.stringify([next]));return id;
  };
- const build=(expected,operations)=>transact(expected,engine=>{
+ const build=(expected,operations,page)=>transact(expected,engine=>{
   if(!Array.isArray(operations)||!operations.length||operations.length>200)throw new Error('Supply 1–200 operations per batch.');
   const refs=Object.create(null),results=[];
   const resolve=value=>{if(plain(value)&&Object.keys(value).length===1&&Object.hasOwn(value,'$ref')){if(!Object.hasOwn(refs,value.$ref))throw new Error('Unknown batch reference: '+value.$ref);return refs[value.$ref];}if(Array.isArray(value))return value.map(resolve);if(plain(value))return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,resolve(v)]));return value;};
@@ -94,19 +95,29 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
    }else throw new Error('Unknown batch operation: '+op.op);
    if(original.as){if(!/^[a-z][\w-]{0,63}$/i.test(original.as)||Object.hasOwn(refs,original.as))throw new Error('Batch names must be unique identifiers.');refs[original.as]=result;}results.push(result);
   }return {results,refs};
- });
+ },page);
  return {state,async request(method,args={}){
   if(method==='read'){
    const doc=snapshot(editor);let layers=doc.shapes;
    if(args.page)layers=layers.filter(s=>s.page_id===args.page);
    if(args.ids)layers=layers.filter(s=>args.ids.includes(s.id));
    if(args.query)layers=layers.filter(s=>s.name.toLowerCase().includes(args.query.toLowerCase()));
-   return args.full?{...state(),document:doc}:{...state(),layers:args.details?layers:layers.map(({id,name,kind,parent_id,page_id,x,y,width,height,component,control,locked,hidden})=>({id,name,kind,parent_id,page_id,x,y,width,height,component,control:control?.kind,locked,hidden}))};
+   const current=state(),limit=args.limit??50,scope=JSON.stringify([args.page??null,args.ids??null,args.query??'',!!args.details,!!args.full]);
+   if(!Number.isInteger(limit)||limit<1||limit>200)throw new Error('Read limit must be between 1 and 200.');
+   let offset=args.offset??0;
+   if(args.cursor){let cursor;try{cursor=JSON.parse(decodeURIComponent(args.cursor));}catch{throw new Error('Invalid read cursor.');}
+    if(cursor.revision!==current.revision)throw new Error('Document changed during pagination. Start a new read.');
+    if(cursor.scope!==scope)throw new Error('Keep the same filters when continuing a read.');offset=cursor.offset;
+   }
+   if(!Number.isInteger(offset)||offset<0||offset>layers.length)throw new Error('Read offset is outside the result set.');
+   const total=layers.length;layers=layers.slice(offset,offset+limit);const next=offset+layers.length;
+   const pagination={total,offset,limit,hasMore:next<total,nextCursor:next<total?encodeURIComponent(JSON.stringify({revision:current.revision,scope,offset:next})):null};
+   return args.full?{...current,pagination,partial:offset>0||pagination.hasMore||!!args.page||!!args.ids||!!args.query,document:{...doc,shapes:layers}}:{...current,pagination,layers:args.details?layers:layers.map(({id,name,kind,parent_id,page_id,x,y,width,height,component,control,locked,hidden})=>({id,name,kind,parent_id,page_id,x,y,width,height,component,control:control?.kind,locked,hidden}))};
   }
-  if(method==='build')return build(args.revision,args.operations);
+  if(method==='build')return build(args.revision,args.operations,args.page);
   if(method==='command'){
    const command=commands.get(args.name);if(!command)throw new Error('Unknown engine command. Read the commands reference.');
-   return command.readOnly?{...state(),result:invoke(editor,args.name,args.args)}:transact(args.revision,scratch=>invoke(scratch,args.name,args.args));
+   return command.readOnly?{...state(),result:invoke(editor,args.name,args.args)}:transact(args.revision,scratch=>invoke(scratch,args.name,args.args),args.page);
   }
   if(method==='css'){
    const shape=shapeAt(editor,args.id),doc=snapshot(editor),generated=compileCssScene(doc.shapes.filter(s=>s.page_id===shape.page_id).map(s=>({...s,hidden:false})),{...options(),variables:doc.variables,pageModes:doc.pages.find(p=>p.id===shape.page_id)?.variable_modes}).layerCss[shape.id]??'';

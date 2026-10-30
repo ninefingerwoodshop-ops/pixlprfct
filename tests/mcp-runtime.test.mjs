@@ -74,3 +74,33 @@ test('MCP creates, applies, updates and exports reusable effect styles in atomic
  const exported=await runtime.request('export',{target:'pixl'});assert.equal(JSON.parse(exported.files[0].text).effect_styles[0].id,elevation);
  await runtime.request('command',{revision:runtime.state().revision,name:'apply_effect_style',args:[[badge],0]});assert.equal((await read()).document.shapes.find(s=>s.id===badge).appearance.shadows[0].blur,28);
 });
+
+test('reads are bounded, filterable and cursor-consistent across navigation, but not content edits',async t=>{
+ const {runtime,editor,build}=fixture(t);await build(Array.from({length:125},(_,i)=>({op:'create',properties:{name:'Layer '+i}})));
+ const first=await runtime.request('read');assert.equal(first.layers.length,50);assert.equal(first.pagination.total,125);
+ const second=await runtime.request('read',{cursor:first.pagination.nextCursor});assert.equal(second.layers.length,50);
+ const third=await runtime.request('read',{cursor:second.pagination.nextCursor});assert.equal(third.layers.length,25);assert.equal(third.pagination.nextCursor,null);
+ assert.equal(new Set([...first.layers,...second.layers,...third.layers].map(s=>s.id)).size,125);
+ const full=await runtime.request('read',{full:true,limit:10});assert.equal(full.partial,true);assert.equal(full.document.shapes.length,10);
+ await assert.rejects(runtime.request('read',{query:'Layer 1',cursor:first.pagination.nextCursor}),/same filters/);
+ await assert.rejects(runtime.request('read',{limit:0}),/limit/);
+ const other=editor.add_page(),pageRead=await runtime.request('read');editor.select_page(1);assert.equal(runtime.state().revision,pageRead.revision);
+ await runtime.request('build',{revision:pageRead.revision,page:other,operations:[{op:'create',properties:{name:'Explicit page'}}]});
+ assert.equal(JSON.parse(editor.snapshot()).shapes.at(-1).page_id,other);assert.equal(JSON.parse(editor.snapshot()).active_page,1);
+ await assert.rejects(runtime.request('read',{cursor:first.pagination.nextCursor}),/changed during pagination/);
+});
+test('a renderer reload invalidates old revisions even when the live session ID is preserved',async t=>{
+ const {editor,runtime}=fixture(t),before=runtime.state().revision;
+ const reloaded=createAgentRuntime({editor,createEditor:createHeadlessEditor,options:headlessOptions});
+ assert.notEqual(reloaded.state().revision,before);
+ await assert.rejects(reloaded.request('build',{revision:before,operations:[{op:'create'}]}),/Revision conflict/);
+ assert.equal(JSON.parse(editor.snapshot()).shapes.length,0);
+});
+
+test('mixed-page property updates remain one undo step, preserve the visible page and reject atomically',async t=>{
+ const {editor,runtime,build}=fixture(t),first=editor.add('rectangle',0,0),page=editor.add_page(),second=editor.add('rectangle',0,0);editor.select_page(1);const before=editor.snapshot();
+ await build([{op:'update',id:first,properties:{fill:'#123456'}},{op:'update',id:second,properties:{fill:'#abcdef'}}]);
+ let doc=JSON.parse(editor.snapshot());assert.equal(doc.active_page,1);assert.equal(doc.shapes.find(s=>s.id===second).page_id,page);assert.equal(doc.shapes.find(s=>s.id===first).fill,'#123456');assert.equal(doc.shapes.find(s=>s.id===second).fill,'#abcdef');
+ await runtime.request('history',{revision:runtime.state().revision,action:'undo'});assert.equal(editor.snapshot(),before);
+ await assert.rejects(build([{op:'update',id:first,properties:{fill:'#abcdef'}},{op:'update',id:second,properties:{width:-1}}]));assert.equal(editor.snapshot(),before);
+});

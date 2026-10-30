@@ -56,11 +56,13 @@ export function installFrameLabels(canvas,{select,rename,beginDrag}){
     };
    }
    const button=row.firstElementChild,type=componentLabelType(frame,sets);
-   row.dataset.componentType=type;
-   button.replaceChildren();
-   if(type){const glyph=document.createElement('span');glyph.className='frame-label-icon';glyph.setAttribute('aria-hidden','true');glyph.innerHTML=icon(type==='set'?'component':'instance');button.append(glyph);}
-   const name=document.createElement('span');name.className='frame-label-name';name.textContent=frame.name;button.append(name);
-   button.setAttribute('aria-label','Select frame '+frame.name);button.title='Double-click to rename';row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+frame.y*zoom-chromeInsets(frame.device_chrome_hidden?'none':frame.device_chrome,frame.width,frame.height,frame.device_chrome_breakpoints)[0]*zoom-25+'px';row.style.maxWidth=Math.max(80,frame.width*zoom)+'px';row.style.pointerEvents=enabled?'auto':'none';
+   if(row.dataset.componentType!==type||row.dataset.name!==frame.name){
+    row.dataset.componentType=type;row.dataset.name=frame.name;button.replaceChildren();
+    if(type){const glyph=document.createElement('span');glyph.className='frame-label-icon';glyph.setAttribute('aria-hidden','true');glyph.innerHTML=icon(type==='set'?'component':'instance');button.append(glyph);}
+    const name=document.createElement('span');name.className='frame-label-name';name.textContent=frame.name;button.append(name);
+    button.setAttribute('aria-label','Select frame '+frame.name);button.title='Double-click to rename';
+   }
+   row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+frame.y*zoom-chromeInsets(frame.device_chrome_hidden?'none':frame.device_chrome,frame.width,frame.height,frame.device_chrome_breakpoints)[0]*zoom-25+'px';row.style.maxWidth=Math.max(80,frame.width*zoom)+'px';row.style.pointerEvents=enabled?'auto':'none';
   }
  };
 }

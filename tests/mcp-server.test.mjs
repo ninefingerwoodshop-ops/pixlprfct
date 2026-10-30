@@ -59,3 +59,14 @@ test('the packaged desktop origin can pair with the default bridge policy',async
  const paired=once(socket,'message');socket.send(JSON.stringify({type:'hello',token:bridge.info().pairingCode,name:'Desktop'}));
  const [message]=await paired;assert.ok(JSON.parse(message).session);assert.equal(bridge.list().length,1);
 });
+
+test('reconnecting the same project preserves its session ID without replaying interrupted edits',async t=>{
+ const bridge=await createEditorBridge({port:0,origins:['http://127.0.0.1:4176'],timeout:500});t.after(()=>bridge.close());
+ const connect=async(clientId)=>{const socket=new WebSocket(bridge.info().url,{origin:'http://127.0.0.1:4176'});await once(socket,'open');const paired=once(socket,'message');socket.send(JSON.stringify({type:'hello',token:bridge.info().pairingCode,clientId,name:'Recovery'}));return {socket,id:JSON.parse((await paired)[0]).session};};
+ const clientId='11111111-1111-4111-8111-111111111111',first=await connect(clientId);
+ const rejected=assert.rejects(bridge.request(first.id,'build',{revision:'1'}),/disconnected/);first.socket.terminate();await rejected;
+ const next=await connect(clientId);assert.equal(next.id,first.id);let requests=0;
+ next.socket.on('message',buffer=>{const message=JSON.parse(buffer);if(message.type==='request'){requests++;next.socket.send(JSON.stringify({type:'result',id:message.id,result:{ok:true}}));}});
+ assert.deepEqual(await bridge.request(first.id,'read',{}),{ok:true});assert.equal(requests,1);
+ const other=await connect('22222222-2222-4222-8222-222222222222');assert.notEqual(other.id,next.id);next.socket.close();other.socket.close();
+});

@@ -60,7 +60,7 @@ function createWindow(base,role=isLocalURL(base)?'local':'remote',parent){
  const local=isLocalURL(base),win=new BrowserWindow({
   title:'PixlPrfct',width:role==='connection'?500:1440,height:role==='connection'?340:960,minWidth:role==='connection'?500:880,minHeight:role==='connection'?340:600,
   show:false,backgroundColor:'#1e1e1e',...(parent?{parent,modal:true,resizable:false,minimizable:false,maximizable:false}:{}),
-  webPreferences:{session:configureSession(base),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,webviewTag:false,preload:path.join(root,local?'preload.cjs':'preload-remote.cjs'),additionalArguments:[`--pixl-online-fonts=${preferences.onlineFonts}`]},
+  webPreferences:{backgroundThrottling:false,session:configureSession(base),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,webviewTag:false,preload:path.join(root,local?'preload.cjs':'preload-remote.cjs'),additionalArguments:[`--pixl-online-fonts=${preferences.onlineFonts}`]},
  });
  const contentsId=win.webContents.id;
  windows.set(contentsId,{win,base,role});

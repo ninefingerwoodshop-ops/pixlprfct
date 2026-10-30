@@ -15,6 +15,7 @@ mod path_split;
 mod stacking;
 mod stroke_alignment;
 mod stroke_tips;
+mod text_styles;
 mod variables;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -74,6 +75,8 @@ pub struct Shape {
     pub guide_style: u32,
     #[serde(default)]
     pub effect_style: u32,
+    #[serde(default)]
+    pub text_style: u32,
     #[serde(default)]
     pub prototype: Option<Prototype>,
     #[serde(default)]
@@ -526,6 +529,8 @@ pub struct DropShadow {
     #[serde(default)]
     pub spread: f64,
     pub color: String,
+    #[serde(default)]
+    pub color_variable: u32,
     pub opacity: f64,
     #[serde(default = "shadow_visible")]
     pub visible: bool,
@@ -710,6 +715,7 @@ fn path_polyline(shape: &Shape) -> Vec<[f64; 2]> {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Typography {
     #[serde(default = "default_vertical_align")]
     pub vertical_align: String,
@@ -769,6 +775,8 @@ pub struct Document {
     pub guide_styles: Vec<guide_styles::GuideStyle>,
     #[serde(default)]
     pub effect_styles: Vec<effect_styles::EffectStyle>,
+    #[serde(default)]
+    pub text_styles: Vec<text_styles::TextStyle>,
     #[serde(default)]
     pub component_properties: Vec<component_properties::ComponentProperty>,
 }
@@ -877,6 +885,7 @@ fn validate(document: &Document) -> Result<(), String> {
     variants::validate_sets(document)?;
     guide_styles::validate_styles(document)?;
     effect_styles::validate_styles(document)?;
+    text_styles::validate_styles(document)?;
     if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
         return Err("Unsupported document version or document too large".into());
     }
@@ -1212,23 +1221,7 @@ fn validate(document: &Document) -> Result<(), String> {
             }
         }
         if let Some(style) = &shape.typography {
-            if !style.font_size.is_finite()
-                || !["fixed", "width", "height"].contains(&style.sizing.as_str())
-                || !(1.0..=512.0).contains(&style.font_size)
-                || !style.line_height.is_finite()
-                || !(0.5..=4.0).contains(&style.line_height)
-                || !(100..=900).contains(&style.font_weight)
-                || style.font_family.is_empty()
-                || style.font_family.len() > 100
-                || !style
-                    .font_family
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == ' ' || c == '-')
-                || !["left", "center", "right"].contains(&style.align.as_str())
-                || !["top", "center", "bottom"].contains(&style.vertical_align.as_str())
-            {
-                return Err("Invalid typography settings".into());
-            }
+            text_styles::validate_typography(style)?;
         }
         if !pages.contains(&shape.page_id) {
             return Err("Shape belongs to a missing page".into());
@@ -1657,6 +1650,7 @@ impl Editor {
         components::sync(&mut document, &mut next)?;
         guide_styles::resolve(&mut document);
         effect_styles::resolve(&mut document);
+        text_styles::resolve(&mut document);
         variables::resolve(&mut document)?;
         sync_paint_stacks(&mut document);
         let after_sync: std::collections::HashSet<_> = document
@@ -1796,6 +1790,7 @@ impl Editor {
                 component_order: vec![],
                 guide_styles: vec![],
                 effect_styles: vec![],
+                text_styles: vec![],
                 component_properties: vec![],
             },
             undo: vec![],
@@ -1842,6 +1837,12 @@ impl Editor {
                 copy.component = None;
                 copy.guide_style = 0;
                 copy.effect_style = 0;
+                copy.text_style = 0;
+                if let Some(a) = &mut copy.appearance {
+                    for shadow in &mut a.shadows {
+                        shadow.color_variable = 0;
+                    }
+                }
                 copy.variable_bindings.clear();
                 copy.variable_modes.clear();
                 copy.retain_interactions(|p| {
@@ -1943,6 +1944,12 @@ impl Editor {
             s.component = None;
             s.guide_style = 0;
             s.effect_style = 0;
+            s.text_style = 0;
+            if let Some(a) = &mut s.appearance {
+                for shadow in &mut a.shadows {
+                    shadow.color_variable = 0;
+                }
+            }
             s.variable_bindings.clear();
             s.variable_modes.clear();
         }
@@ -1958,6 +1965,7 @@ impl Editor {
             component_order: vec![],
             guide_styles: vec![],
             effect_styles: vec![],
+            text_styles: vec![],
             component_properties: vec![],
         })?;
         let next = self
@@ -2291,6 +2299,7 @@ impl Editor {
             layout_grids: vec![],
             guide_style: 0,
             effect_style: 0,
+            text_style: 0,
             prototype: None,
             additional_interactions: vec![],
             flow_name: String::new(),

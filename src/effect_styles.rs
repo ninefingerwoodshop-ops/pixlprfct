@@ -126,6 +126,38 @@ pub fn resolve(doc: &mut Document) {
 
 #[wasm_bindgen]
 impl Editor {
+    /// Bind a shadow's color by zero-based index; variable zero detaches it.
+    pub fn bind_shadow_color(
+        &mut self,
+        id: u32,
+        index: usize,
+        variable: u32,
+    ) -> Result<(), String> {
+        let mut doc = self.document.clone();
+        if variable != 0
+            && !doc
+                .variables
+                .values
+                .iter()
+                .any(|v| v.id == variable && v.kind == "color")
+        {
+            return Err("Choose a color variable".into());
+        }
+        let shape = doc
+            .shapes
+            .iter_mut()
+            .find(|s| s.id == id)
+            .ok_or("Layer not found")?;
+        let old = shape.clone();
+        let shadow = shape
+            .appearance
+            .as_mut()
+            .and_then(|a| a.shadows.get_mut(index))
+            .ok_or("Shadow not found")?;
+        shadow.color_variable = variable;
+        components::record_overrides(&old, shape)?;
+        self.commit(doc)
+    }
     /// ID zero creates a style. layer_id zero saves without applying to a layer.
     pub fn save_effect_style(&mut self, json: &str, layer_id: u32) -> Result<u32, String> {
         if json.len() > 20_000 {
@@ -154,8 +186,8 @@ impl Editor {
             let s = doc
                 .shapes
                 .iter_mut()
-                .find(|s| s.id == layer_id && s.page_id == doc.active_page)
-                .ok_or("Select a layer on this page")?;
+                .find(|s| s.id == layer_id)
+                .ok_or("Layer not found")?;
             let old = s.clone();
             s.effect_style = style.id;
             style.effects.apply(s);

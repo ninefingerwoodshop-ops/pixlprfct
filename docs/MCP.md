@@ -88,6 +88,13 @@ and 5173. For another editor origin, pass `--origin https://your-editor.example`
 or set `PIXLPRFCT_EDITOR_ORIGIN`. Use `--port 4318` or `PIXLPRFCT_MCP_PORT` for
 an explicit bridge port, or `--port 0` for an available port.
 
+As of alpha.6, reconnecting the same tab/project to a running server preserves
+its live session ID. Server restarts still require listing sessions again.
+Discovery runs independently of heartbeat/retry checks, so a stalled discovery
+call cannot block socket recovery. Focus, online and visibility events trigger
+recovery; desktop renderer timers also continue while the window is hidden.
+Interrupted writes are never replayed. Read the revision before retrying them.
+
 The self-hosted editor's CSP permits the loopback WebSocket connection. Restart
 an already running self-host server after upgrading its CSP. Browser mixed-content
 or local-network policies may restrict an HTTPS editor's connection to loopback;
@@ -131,7 +138,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_sessions` | List paired tabs, open file sessions and workspace project files |
 | `pixlprfct_connection` | Get browser pairing details (desktop connects automatically) |
 | `pixlprfct_open_project` | Open or create a saved-project session |
-| `pixlprfct_read` | Inspect layer summaries, complete properties or the entire document |
+| `pixlprfct_read` | Inspect paged layer summaries/properties and document metadata |
 | `pixlprfct_build` | Apply an atomic batch as one undo step |
 | `pixlprfct_command` | Execute one of the catalogued engine commands |
 | `pixlprfct_css` | Read generated and custom CSS for any layer |
@@ -142,7 +149,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_close_project` | Close an in-memory file session without deleting the saved file |
 
 The server also exposes `pixlprfct://reference/<topic>` resources and a
-`build-design` prompt. Its catalog currently covers 87 engine commands and 45
+`build-design` prompt. Its catalog currently covers 91 engine commands and 46
 model definitions, generated from the compiled API and Rust types. Building the
 editor regenerates the catalog; `npm run mcp:check` checks it for drift.
 
@@ -151,7 +158,7 @@ all 26 native control kinds and their states, fill/stroke stacks and paint modes
 effects, guides, Flexbox, CSS Grid, constraints, responsive layout rules, custom
 CSS, prototypes, motion, and development behaviors. Pages, grouping, stacking,
 components, instances, variants, exposed component properties, variables and
-guide/effect styles have dedicated engine commands. No arbitrary JavaScript evaluation
+guide/effect/text styles have dedicated engine commands. No arbitrary JavaScript evaluation
 or shell execution is exposed. Development behavior code is stored/exported,
 not executed by the server.
 
@@ -163,6 +170,27 @@ custom CSS or backdrop blur; use HTML/framework exports. Prototype interactions
 are saved in `.pixl` but are not converted to JavaScript by the code exporter.
 
 ## Build operations
+
+### Paged reads and page-scoped writes
+
+`pixlprfct_read` returns 50 layers by default. Use `limit` (1–200) and the returned
+`pagination.nextCursor` for subsequent pages, retaining the same `page`, `ids`,
+`query`, `details` and `full` filters. `pagination` includes `total`, `offset`,
+`limit` and `hasMore`. An explicit zero-based `offset` is also supported. A cursor
+rejects if document content changed; restart the read instead of mixing revisions.
+
+`details:true` returns complete properties for the current layer page.
+`full:true` adds document metadata, variables, styles and sets, with the same
+paged `document.shapes`. `partial:true` means it is a subset: **do not load it as
+a replacement document**. Full `.pixl` export remains available separately and
+can be large; export results are not yet chunked.
+
+Page navigation alone no longer changes the revision. Content edits still do.
+Revisions are opaque strings, scoped to the renderer/runtime lifetime: a reload
+invalidates pre-reload writes even when the live session ID is retained.
+Supply `page` on `pixlprfct_build` or a mutating `pixlprfct_command` to target a
+specific page while preserving the user's visible page. Without it, creation
+uses the active page at execution time; explicitly scope multi-user work.
 
 Always read first and supply the returned `revision`. Use `create` for a layer,
 `update` for a deep property patch, `command` for an engine operation, `css` for
@@ -225,7 +253,35 @@ returns both the declarations and their accepted values.
 
 Long unbreakable words in a constrained text box currently break at grapheme
 boundaries. Auto-width text avoids this unless a maximum width is set. A separate
-word-breaking policy is not yet implemented. Saved text styles remain an open gap.
+word-breaking policy is not yet implemented.
+
+### Text styles and variable-bound effects
+
+`save_text_style` takes `[style, layer_id]`, with `id:0` to create and `layer_id:0`
+to save without applying. Example style:
+
+```json
+{"id":0,"name":"Body / Regular","description":"Default body copy","typography":{"font_family":"Open Sans","font_size":16,"font_weight":400,"line_height":1.5}}
+```
+
+Use `apply_text_style` with `[[textLayerIds], styleId]`; style ID zero detaches.
+`remove_text_style` detaches linked layers while retaining their resolved type.
+Changing a definition propagates across pages and instances. Font edits detach
+the link; alignment, wrapping and text-box sizing remain local. Applying a style
+replaces variable bindings on its four shared font fields. Styles persist in
+projects and remap/protect their IDs in imported libraries. This is core/MCP
+authoring; a Figma-matched text-style picker is still pending, as are letter
+spacing and text case.
+
+Shadows accept `color_variable` with a color token ID (zero means literal color).
+For an existing shadow use `bind_shadow_color` with `[layerId, shadowIndex, tokenId]`.
+The index is zero-based; the binding moves with the shadow during reordering.
+For reusable styles, include it in `effects.shadows` passed to `save_effect_style`.
+`save_effect_style` can now apply to a layer on any page. Shadows resolve aliases
+and inherited page/frame modes; HTML/framework export retains CSS variable
+references. SVG is a resolved snapshot. Literal color edits detach the binding;
+token deletion preserves the current resolved color. This adds MCP authoring;
+the shadow-color variable picker in the inspector remains pending.
 
 A batch supports up to 200 operations and commits only if every operation and
 permission check succeeds. Errors leave the original document and undo history
@@ -249,15 +305,19 @@ Create a main with `create_component_selection` (selected layer IDs), then call
 `add_variant` with the main ID. The engine creates a component-set frame and a
 second main in one undo step. `add_variant` also accepts a set's `frame_id`.
 `combine_variants` accepts an array of at least two sibling main component IDs
-and returns the new set-frame ID. Existing artwork stays in place.
+and returns the new set-frame ID. Existing artwork stays in place. Names such as
+`Tone=Neutral, State=Default` produce those property names and values. Every
+member must use the same keys; key order may differ. Duplicate combinations or
+incomplete pairs reject the whole operation. Plain names retain the legacy
+single-property inference; a shared slash prefix becomes the set name.
 
 `ComponentSet.frame_id` links metadata to its canvas container; legacy files may
 omit it. `save_component_set` edits property names and variant values atomically,
 validates unique combinations, and updates main-layer names. Preserve every
-existing property and variant when editing a set. `set_variant_property` switches
-an instance while preserving compatible overrides. Existing legacy sibling sets
-acquire a visible container when Add variant is used; cross-page legacy sets
-remain supported as metadata.
+existing property and variant when editing a set. `set_variant_property` edits a
+main's value or switches an instance while preserving compatible overrides.
+Saving a sibling set without `frame_id` creates a visible container, including
+on an inactive page. Cross-page legacy sets remain supported as metadata.
 
 The editor exposes Add variant in the component header, Combine as variants for
 multiple mains, Properties on a set, and Current variant on a main. Instances
