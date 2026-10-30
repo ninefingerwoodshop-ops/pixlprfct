@@ -3,6 +3,12 @@
 Running list from building the PixlPrfct design system (project: "Territory Track Design System").
 Last updated: 2026-10-30
 
+## Frame enclosure follow-up — 2026-10-30
+
+- [x] **Drawing or dragging an ordinary frame around existing layers adopts fully enclosed sibling trees (local implementation).** Captured groups/components keep their descendants and visible positions. Partial overlaps, hidden/locked trees, protected component destinations, sections and generated grid cells are excluded; existing grid drop placement remains unchanged. Creation/movement and adoption are one atomic undo step. Drop targeting avoids placing a large enclosing frame inside a smaller frame it surrounds.
+- Verification: 3 Rust + 934 JavaScript tests pass, including eight enclosure cases covering components, rotation, nesting, page isolation, partial overlaps, no-op moves and history. Editor build, formatting and changed-code lint pass (13 existing app.js warnings). Browser checks confirm draw, frame-label drag, hierarchy, undo/redo and reload persistence. Live Figma inspection confirms draw-to-enclose; drag-to-enclose is the user's requested extension. Evidence: `.local/frame-containment/`. Desktop installation is recorded separately after verification; no public release is claimed.
+- Installation verification (2026-10-30): both local app copies updated to **0.1.1-alpha.9** and pass strict macOS signature verification. Native About confirms alpha.9, and the saved Territory Track document reopened on Components · Button. The installed bundle includes the new canvas calls and both engine operations. Alpha.8 rollback copies are retained in `.local/frame-containment/desktop-backup/`. This is a local installation; the frame change has not been published.
+
 ## Icon coverage follow-up — 2026-10-30
 
 - [x] **Territory Track icon names represented in PixlPrfct (local implementation).** Added 133 original symbols to PixlPrfct Icons 0.9.0, bringing the catalog to 679. The editor is synced with the canonical source, fonts and searchable aliases. The source inventory maps 599 web, shared-library, avatar, dashboard/assistant and iOS references to 313 symbols, with no missing targets; five non-icon helper values are explicitly excluded. All previous names, drawings and codepoints are preserved.
@@ -200,6 +206,11 @@ Last updated: 2026-10-30
 
 - [ ] **Editor feels clunky and slow across canvas, properties/pages and MCP edits.**
   - B33 — Reported and partially improved (2026-10-30, local alpha.7): bounded canvas caching, stable frame-label DOM, direct color resolution, reduced instance/MCP work, coalesced drawing and cheap connection-status updates. Pan redraws and 20-edit batch timings improve substantially (see performance checkpoint). Large layout previews still take approximately 36 ms before drawing, so retain open for further incremental-layout profiling; do not equate the measured speedup with universal 60 fps.
+
+- [x] **Component slots: editable content inside linked instances.**
+  - B34 — Resolution (2026-10-30, local alpha.10): nested-frame conversion and selection wrapping, unbound Slot properties, default/modified content, arbitrary child layers and independent nested instances, reset/clear, preferred instances, advisory min/max limits, empty-slot targets, and counter-axis fill are implemented. Custom content survives main updates, duplication, same-file clipboard, save/reload, library use, and matching slot properties on variant swaps. Engine structure protection still applies outside slots. Live Figma reference and browser interaction evidence are in `.local/slots/`; 12 slot regressions and the complete 3 Rust + 946 JavaScript suite pass. Both local desktop bundles were updated and strict signature checks passed; this is not a published release or merged change.
+- [ ] **Remaining slot parity details.**
+  - B35 — Tracked (2026-10-30): rich-text description formatting, bulk authoring across variants, and native .fig slot metadata import remain outside the verified implementation. Existing Button/Input design-file slot work below remains open; adding editor support does not migrate those components.
 
 ---
 

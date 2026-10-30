@@ -29,7 +29,9 @@ export function selectionTarget(shapes,id,selected=[],{deep=false,drill=false}={
   // The page's outer frame is a canvas for normal clicks inside it.
   if(path.length>1&&byId.get(path[0]).kind==='frame'&&!byId.get(path[0]).component)path.shift();
   // Normal dragging treats an instance as one object, including clicks on its contents.
-  const instance=path.find(id=>byId.get(id).component?.type==='instance');
+  const slotIndex=path.findLastIndex(id=>byId.get(id).slot&&byId.get(id).component?.type==='instance');
+  if(slotIndex>=0)path.splice(0,slotIndex+(slotIndex<path.length-1?1:0));
+  const instance=path.find(id=>byId.get(id).component?.type==='instance'&&!byId.get(id).slot);
   if(instance&&!drill)return instance;
   const chosen=path.findIndex(id=>selected.includes(id));
   if(chosen>=0)return path[Math.min(chosen+(drill?1:0),path.length-1)];

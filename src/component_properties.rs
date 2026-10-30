@@ -8,6 +8,8 @@ pub struct ComponentProperty {
     pub name: String,
     pub kind: String,
     pub targets: Vec<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slot_settings: Option<slots::SlotSettings>,
 }
 pub fn field(p: &ComponentProperty) -> &str {
     if p.kind == "text" {
@@ -50,7 +52,7 @@ pub fn validate_properties(doc: &Document) -> Result<(), String> {
     let mut names = HashSet::new();
     let mut bindings = HashSet::new();
     for p in &doc.component_properties {
-        if p.targets.is_empty() {
+        if p.targets.is_empty() && p.kind != "slot" {
             return Err("Choose at least one layer for this component property".into());
         }
         if !names.insert((p.component_id, &p.name)) {
@@ -61,7 +63,7 @@ pub fn validate_properties(doc: &Document) -> Result<(), String> {
             || !ids.insert(p.id)
             || p.name.trim().is_empty()
             || p.name.len() > 128
-            || !["text", "boolean"].contains(&p.kind.as_str())
+            || !["text", "boolean", "slot"].contains(&p.kind.as_str())
             || p.targets.len() > 1000
         {
             return Err("Invalid component property ID, name, or type".into());
@@ -73,7 +75,30 @@ pub fn validate_properties(doc: &Document) -> Result<(), String> {
         {
             return Err("Property must belong to a main component".into());
         }
+        if p.kind == "slot" {
+            slots::validate_property(doc, p)?;
+        }
         for id in &p.targets {
+            let mut ancestor = doc
+                .shapes
+                .iter()
+                .find(|s| s.id == *id)
+                .map_or(0, |s| s.parent_id);
+            while ancestor != 0 && ancestor != p.component_id {
+                if doc
+                    .component_properties
+                    .iter()
+                    .any(|q| q.kind == "slot" && q.targets.contains(&ancestor))
+                {
+                    return Err("Component property bindings cannot target slot contents".into());
+                }
+                ancestor = doc
+                    .shapes
+                    .iter()
+                    .find(|s| s.id == ancestor)
+                    .map_or(0, |s| s.parent_id);
+            }
+
             let s = tree
                 .iter()
                 .find(|s| s.id == *id)
@@ -115,9 +140,16 @@ pub fn prune(doc: &mut Document) {
         .collect();
     for p in &mut doc.component_properties {
         p.targets.retain(|id| trees[&p.component_id].contains(id));
+        if let Some(settings) = &mut p.slot_settings {
+            settings.preferred_instances.retain(|id| {
+                doc.shapes
+                    .iter()
+                    .any(|s| s.id == *id && s.component == Some(components::Component::Master))
+            });
+        }
     }
     doc.component_properties.retain(|p| {
-        !p.targets.is_empty()
+        (!p.targets.is_empty() || p.kind == "slot")
             && doc.shapes.iter().any(|s| {
                 s.id == p.component_id && s.component == Some(components::Component::Master)
             })
@@ -131,7 +163,12 @@ pub fn targets(doc: &Document, root: u32, p: &ComponentProperty) -> Vec<u32> {
 }
 
 pub fn propagate_edits(old: &Document, doc: &mut Document, explicit: &[u32]) -> Result<(), String> {
-    for p in doc.component_properties.clone() {
+    for p in doc
+        .component_properties
+        .clone()
+        .into_iter()
+        .filter(|p| p.kind != "slot")
+    {
         let mut roots = vec![p.component_id];
         roots.extend(doc.shapes.iter().filter(|s|matches!(&s.component,Some(components::Component::Instance{master,source,..}) if *master==p.component_id&&master==source)).map(|s|s.id));
         for root in roots {
@@ -175,6 +212,13 @@ pub fn duplicate_definitions(
             next = next.checked_add(1).ok_or("Property ID limit reached")?;
             p.id = next;
             p.component_id = component;
+            if let Some(settings) = &mut p.slot_settings {
+                for id in &mut settings.preferred_instances {
+                    if let Some(next) = mapping.get(id) {
+                        *id = *next;
+                    }
+                }
+            }
             p.targets = p
                 .targets
                 .iter()
@@ -196,7 +240,7 @@ pub fn transfer_on_swap(
     for p in old
         .component_properties
         .iter()
-        .filter(|p| p.component_id == old_master)
+        .filter(|p| p.component_id == old_master && p.kind != "slot")
     {
         let bound = targets(old, root, p);
         let changed=old.shapes.iter().find(|s|bound.contains(&s.id)&&matches!(&s.component,Some(components::Component::Instance{overrides,..}) if overrides.iter().any(|f|f==field(p))));
@@ -248,6 +292,11 @@ impl Editor {
                 .ok_or("Component property not found")? = p.clone();
         }
         validate_properties(&doc)?;
+        if p.kind == "slot" {
+            slots::bind(&mut doc);
+            self.commit(doc)?;
+            return Ok(p.id);
+        }
         let v = value(
             doc.shapes.iter().find(|s| s.id == p.targets[0]).unwrap(),
             &p,
@@ -316,6 +365,11 @@ impl Editor {
         }
         let mut doc = self.document.clone();
         for s in doc.shapes.iter_mut().filter(|s| bound.contains(&s.id)) {
+            if p.kind == "slot" {
+                if let Some(slot) = &mut s.slot {
+                    slot.modified = false;
+                }
+            }
             if let Some(components::Component::Instance { overrides, .. }) = &mut s.component {
                 overrides.retain(|f| f != field(&p));
             }

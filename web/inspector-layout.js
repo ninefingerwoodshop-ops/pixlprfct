@@ -35,7 +35,7 @@ export function installInspectorLayout() {
  return (shape,count)=>{
   empty.hidden=!!shape;utilities.hidden=!count;sizing.hidden=shape?.kind!=='text';
   const addLayout=$('add-auto-layout');if(shape){if(addLayout.parentElement!==layout)layout.append(addLayout);}else if(addLayout.parentElement!==design)design.insertBefore(addLayout,utilities);
-  caption.textContent=count>1?`${count} layers`:shape?.component?.type==='master'?'Component':shape?.component?.type==='instance'?'Instance':shape?.editor_meta?.role?shape.editor_meta.role[0].toUpperCase()+shape.editor_meta.role.slice(1):shape?.kind?shape.kind[0].toUpperCase()+shape.kind.slice(1):'Page';
+  caption.textContent=count>1?`${count} layers`:shape?.slot?'Slot':shape?.component?.type==='master'?'Component':shape?.component?.type==='instance'?'Instance':shape?.editor_meta?.role?shape.editor_meta.role[0].toUpperCase()+shape.editor_meta.role.slice(1):shape?.kind?shape.kind[0].toUpperCase()+shape.kind.slice(1):'Page';
   // Ordinary layers expose component creation with other layer actions.
   if(shape?.component||component.dataset.componentKind==='set'||count>1){if(component.parentElement!==design)design.insertBefore(component,properties);}
   else if(component.parentElement!==utilities)utilities.append(component);

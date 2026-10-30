@@ -1,12 +1,14 @@
+import {renderSlotProperty,editSlotProperty} from './slots.js';
 import {descendants} from './selection.js';
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;};
 export function renderComponentProperties(host,doc,shape,actions){
   host.replaceChildren();const linked=shape?.component?.type==='instance',master=linked?shape.component.master:shape?.component?.type==='master'?shape.id:0;
-  const properties=(doc.component_properties??[]).filter(p=>p.component_id===master);host.hidden=!properties.length;if(!properties.length)return;
+  const properties=(doc.component_properties??[]).filter(p=>p.component_id===master);host.hidden=!properties.length&&shape?.component?.type!=='master';if(host.hidden)return;
   let root=shape;while(linked&&root.component.master!==root.component.source)root=doc.shapes.find(s=>s.id===root.parent_id);
-  const tree=descendants(doc.shapes,[root.id]);host.append(el('h3','Component properties'));
+  const tree=descendants(doc.shapes,[root.id]);if(!linked){const heading=el('div');heading.className='slot-properties-heading';heading.append(el('h3','Properties'));const add=el('button','+');add.setAttribute('aria-label','Create property');add.title='Create property';add.onclick=event=>actions.create?.(event,add);heading.append(add);host.append(heading);}
   properties.forEach(p=>{
     const targets=linked?tree.filter(s=>s.component?.master===master&&p.targets.includes(s.component.source)):doc.shapes.filter(s=>p.targets.includes(s.id));
+    if(p.kind==='slot'){renderSlotProperty(host,doc,p,targets,linked,actions);return;}
     const values=targets.map(s=>p.kind==='text'?s.text:!s.hidden),mixed=values.some(v=>v!==values[0]);
     const row=el('div');row.className='exposed-property';const label=el('label',p.name),input=el(p.kind==='text'?'textarea':'input');input.setAttribute('aria-label','Component property '+p.name);
     if(p.kind==='text'){input.rows=2;input.maxLength=10000;input.value=mixed?'':values[0]??'';if(mixed)input.placeholder='Mixed values';input.onchange=()=>actions.change(p.id,input.value);}
@@ -20,6 +22,7 @@ export function renderComponentProperties(host,doc,shape,actions){
 }
 
 export function editComponentProperty(doc,master,property,onSave){
+  if(property?.kind==='slot'){editSlotProperty(doc,master,property,onSave);return;}
   const draft=property?structuredClone(property):{id:0,component_id:master,name:'Label',kind:'text',targets:[]};
   const tree=descendants(doc.shapes,[master]);const dialog=el('dialog');dialog.id='component-property-dialog';dialog.className='variant-dialog property-dialog';dialog.setAttribute('aria-labelledby','property-dialog-title');
   const title=el('h2',property?'Edit component property':'Add component property');title.id='property-dialog-title';
