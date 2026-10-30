@@ -1,0 +1,5942 @@
+{
+  "schemaVersion": 1,
+  "description": "Semantic coverage of Territory Track named interface icons, selectable avatars, dashboard/assistant SVG registries, iOS app, widgets and shortcuts. Original PixlPrfct drawings; SF fill variants map to the same symbol in the requested PixlPrfct weight. This is not an application icon-provider migration or a claim of identical artwork.",
+  "sources": {
+    "web": "91bfd8efa95a78211173adb902d958342bbc5bef",
+    "ios": "dab66ac62cb0add61ba274c0c166b7bb2ee58379"
+  },
+  "ignoredReferences": {
+    "web:stable": "Helper result category; downstream code chooses the rendered glyph.",
+    "web:csv": "Helper result category; downstream code chooses the rendered glyph.",
+    "web:pdf": "Helper result category; downstream code chooses the rendered glyph.",
+    "web:down": "Helper result category; downstream code chooses the rendered glyph.",
+    "web:up": "Helper result category; downstream code chooses the rendered glyph."
+  },
+  "references": [
+    {
+      "group": "avatar",
+      "name": "alien",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:546"
+      ],
+      "target": "alien"
+    },
+    {
+      "group": "avatar",
+      "name": "anchor",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:680"
+      ],
+      "target": "anchor"
+    },
+    {
+      "group": "avatar",
+      "name": "bear",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:528"
+      ],
+      "target": "bear"
+    },
+    {
+      "group": "avatar",
+      "name": "bolt",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:660"
+      ],
+      "target": "lightning"
+    },
+    {
+      "group": "avatar",
+      "name": "bunny",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:517"
+      ],
+      "target": "bunny"
+    },
+    {
+      "group": "avatar",
+      "name": "butterfly",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:624"
+      ],
+      "target": "butterfly"
+    },
+    {
+      "group": "avatar",
+      "name": "cactus",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:606"
+      ],
+      "target": "cactus"
+    },
+    {
+      "group": "avatar",
+      "name": "camera",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:674"
+      ],
+      "target": "camera"
+    },
+    {
+      "group": "avatar",
+      "name": "cat",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:494"
+      ],
+      "target": "cat"
+    },
+    {
+      "group": "avatar",
+      "name": "cherry",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:620"
+      ],
+      "target": "cherry"
+    },
+    {
+      "group": "avatar",
+      "name": "coffee",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:602"
+      ],
+      "target": "coffee"
+    },
+    {
+      "group": "avatar",
+      "name": "compass",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:678"
+      ],
+      "target": "compass"
+    },
+    {
+      "group": "avatar",
+      "name": "crown",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:637"
+      ],
+      "target": "crown"
+    },
+    {
+      "group": "avatar",
+      "name": "cupcake",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:587"
+      ],
+      "target": "cupcake"
+    },
+    {
+      "group": "avatar",
+      "name": "dog",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:500"
+      ],
+      "target": "dog"
+    },
+    {
+      "group": "avatar",
+      "name": "donut",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:579"
+      ],
+      "target": "donut"
+    },
+    {
+      "group": "avatar",
+      "name": "dragon",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:569"
+      ],
+      "target": "dragon"
+    },
+    {
+      "group": "avatar",
+      "name": "flame",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:634"
+      ],
+      "target": "flame"
+    },
+    {
+      "group": "avatar",
+      "name": "fox",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:506"
+      ],
+      "target": "fox"
+    },
+    {
+      "group": "avatar",
+      "name": "frog",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:535"
+      ],
+      "target": "frog"
+    },
+    {
+      "group": "avatar",
+      "name": "gem",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:661"
+      ],
+      "target": "gem"
+    },
+    {
+      "group": "avatar",
+      "name": "ghost",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:542"
+      ],
+      "target": "ghost"
+    },
+    {
+      "group": "avatar",
+      "name": "globe",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:663"
+      ],
+      "target": "globe"
+    },
+    {
+      "group": "avatar",
+      "name": "heart",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:649"
+      ],
+      "target": "heart"
+    },
+    {
+      "group": "avatar",
+      "name": "icecream",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:591"
+      ],
+      "target": "ice-cream"
+    },
+    {
+      "group": "avatar",
+      "name": "mountain",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:684"
+      ],
+      "target": "mountain"
+    },
+    {
+      "group": "avatar",
+      "name": "mushroom",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:610"
+      ],
+      "target": "mushroom"
+    },
+    {
+      "group": "avatar",
+      "name": "music",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:650"
+      ],
+      "target": "music"
+    },
+    {
+      "group": "avatar",
+      "name": "owl",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:510"
+      ],
+      "target": "owl"
+    },
+    {
+      "group": "avatar",
+      "name": "palette",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:654"
+      ],
+      "target": "palette"
+    },
+    {
+      "group": "avatar",
+      "name": "party",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:666"
+      ],
+      "target": "party-popper"
+    },
+    {
+      "group": "avatar",
+      "name": "penguin",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:522"
+      ],
+      "target": "penguin"
+    },
+    {
+      "group": "avatar",
+      "name": "pizza",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:574"
+      ],
+      "target": "pizza"
+    },
+    {
+      "group": "avatar",
+      "name": "rainbow",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:615"
+      ],
+      "target": "rainbow"
+    },
+    {
+      "group": "avatar",
+      "name": "robot",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:551"
+      ],
+      "target": "robot"
+    },
+    {
+      "group": "avatar",
+      "name": "rocket",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:642"
+      ],
+      "target": "rocket"
+    },
+    {
+      "group": "avatar",
+      "name": "shield",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:682"
+      ],
+      "target": "shield"
+    },
+    {
+      "group": "avatar",
+      "name": "sparkle",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:641"
+      ],
+      "target": "sparkles"
+    },
+    {
+      "group": "avatar",
+      "name": "sun",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:672"
+      ],
+      "target": "sun"
+    },
+    {
+      "group": "avatar",
+      "name": "sunflower",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:631"
+      ],
+      "target": "sunflower"
+    },
+    {
+      "group": "avatar",
+      "name": "taco",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:596"
+      ],
+      "target": "taco"
+    },
+    {
+      "group": "avatar",
+      "name": "trophy",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:645"
+      ],
+      "target": "trophy"
+    },
+    {
+      "group": "avatar",
+      "name": "unicorn",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:562"
+      ],
+      "target": "unicorn"
+    },
+    {
+      "group": "avatar",
+      "name": "wizard",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:558"
+      ],
+      "target": "wizard"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.briefcase",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:70"
+      ],
+      "target": "briefcase"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.calendar",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:65"
+      ],
+      "target": "calendar"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.clock",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:68"
+      ],
+      "target": "clock"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.dollar",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:63"
+      ],
+      "target": "currency-dollar"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.edit",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:72"
+      ],
+      "target": "note-edit"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.email",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:61"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.file",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:67"
+      ],
+      "target": "file"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.globe",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:76"
+      ],
+      "target": "globe"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.grid",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:80"
+      ],
+      "target": "layout-grid"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.map",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:64"
+      ],
+      "target": "location"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.package",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:77"
+      ],
+      "target": "box"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.phone",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:62"
+      ],
+      "target": "phone"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.play",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:78"
+      ],
+      "target": "play"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.send",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:73"
+      ],
+      "target": "send"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.settings",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:82"
+      ],
+      "target": "settings"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.shield",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:74"
+      ],
+      "target": "shield"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.slash",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:81"
+      ],
+      "target": "prohibited"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.star",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:71"
+      ],
+      "target": "star"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.tag",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:66"
+      ],
+      "target": "tag"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.target",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:75"
+      ],
+      "target": "target"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.task",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:60"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.truck",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:79"
+      ],
+      "target": "truck"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.user",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:59"
+      ],
+      "target": "user"
+    },
+    {
+      "group": "custom",
+      "name": "assistant-fab.zap",
+      "uses": [
+        "client/src/app/shared/assistant-fab/action-forms.ts:69"
+      ],
+      "target": "lightning"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.alert",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:55"
+      ],
+      "target": "warning"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.area",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:63"
+      ],
+      "target": "chart-area"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.bars",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:48"
+      ],
+      "target": "chart-bar"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.barsHorizontal",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:62"
+      ],
+      "target": "chart-bar-horizontal"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.bell",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:52"
+      ],
+      "target": "bell"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.bookmark",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:58"
+      ],
+      "target": "bookmark"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.bulb",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:59"
+      ],
+      "target": "lightbulb"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.checkList",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:50"
+      ],
+      "target": "list-arrow"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.clock",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:51"
+      ],
+      "target": "clock"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.dollar",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:46"
+      ],
+      "target": "currency-dollar"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.funnel",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:49"
+      ],
+      "target": "filter"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.heart",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:54"
+      ],
+      "target": "heart"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.key",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:56"
+      ],
+      "target": "key"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.leads",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:45"
+      ],
+      "target": "users"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.map",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:66"
+      ],
+      "target": "map"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.pie",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:61"
+      ],
+      "target": "chart-pie"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.rose",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:64"
+      ],
+      "target": "chart-donut"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.sparkles",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:57"
+      ],
+      "target": "sparkles"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.stream",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:60"
+      ],
+      "target": "chart-stream"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.target",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:65"
+      ],
+      "target": "target"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.trend",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:53"
+      ],
+      "target": "trend-up"
+    },
+    {
+      "group": "custom",
+      "name": "dashboard-cards.trophy",
+      "uses": [
+        "client/src/app/dashboard-cards/dashboard-cards.catalog.ts:47"
+      ],
+      "target": "trophy"
+    },
+    {
+      "group": "ios",
+      "name": "archivebox",
+      "uses": [
+        "TerritoryTrack/Views/MessagesView.swift:96",
+        "TerritoryTrack/Views/MessagesView.swift:617"
+      ],
+      "target": "archive"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.clockwise",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:82",
+        "TerritoryTrack/Views/Components/BrandPicker.swift:112",
+        "TerritoryTrack/Views/Components/TerritoryPicker.swift:99",
+        "TerritoryTrack/Views/NearbyView.swift:209"
+      ],
+      "target": "refresh"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.clockwise.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:458",
+        "TerritoryTrack/Views/NearbyView.swift:627"
+      ],
+      "target": "refresh-circle"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.counterclockwise",
+      "uses": [
+        "TerritoryTrack/Views/DashboardLayoutEditorView.swift:31",
+        "TerritoryTrack/Views/TabBarLayoutEditorView.swift:22"
+      ],
+      "target": "rotate-left"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.down",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:179"
+      ],
+      "target": "arrow-down"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.down.right",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:753"
+      ],
+      "target": "arrow-down-right"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.right",
+      "uses": [
+        "TerritoryTrack/Views/DashboardView.swift:284",
+        "TerritoryTrack/Views/DashboardView.swift:337",
+        "TerritoryTrack/Views/DashboardView.swift:393",
+        "TerritoryTrack/Views/LoginView.swift:229",
+        "TerritoryTrack/Views/LoginView.swift:306",
+        "TerritoryTrack/Views/MapView.swift:271",
+        "TerritoryTrack/Views/NearbyView.swift:532"
+      ],
+      "target": "arrow-right"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.triangle.2.circlepath",
+      "uses": [
+        "TerritoryTrack/Views/OfflineBanner.swift:94",
+        "TerritoryTrack/Views/OfflineBanner.swift:126",
+        "TerritoryTrack/Views/OfflineBanner.swift:153",
+        "TerritoryTrack/Views/OfflineBanner.swift:64"
+      ],
+      "target": "sync"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.triangle.branch",
+      "uses": [
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:407"
+      ],
+      "target": "code-branch"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.triangle.swap",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:546"
+      ],
+      "target": "swap-ends"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.triangle.turn.up.right.diamond.fill",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:571"
+      ],
+      "target": "directions"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.up.arrow.down.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:432"
+      ],
+      "target": "sort-circle"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.up.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:601",
+        "TerritoryTrack/Views/MessagesView.swift:473"
+      ],
+      "target": "arrow-up-circle"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.up.right",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:761"
+      ],
+      "target": "arrow"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.up.right.square",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:478"
+      ],
+      "target": "external-link"
+    },
+    {
+      "group": "ios",
+      "name": "arrow.uturn.backward",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:371"
+      ],
+      "target": "undo"
+    },
+    {
+      "group": "ios",
+      "name": "banknote.fill",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:267"
+      ],
+      "target": "money-banknote"
+    },
+    {
+      "group": "ios",
+      "name": "barcode.viewfinder",
+      "uses": [
+        "TerritoryTrack/Views/OrderScanSheet.swift:60"
+      ],
+      "target": "barcode-scan"
+    },
+    {
+      "group": "ios",
+      "name": "bed.double.fill",
+      "uses": [
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:158"
+      ],
+      "target": "bed"
+    },
+    {
+      "group": "ios",
+      "name": "bell.badge.fill",
+      "uses": [
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:517"
+      ],
+      "target": "notification-dot"
+    },
+    {
+      "group": "ios",
+      "name": "bolt.badge.checkmark",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:510"
+      ],
+      "target": "lightning-check"
+    },
+    {
+      "group": "ios",
+      "name": "bolt.fill",
+      "uses": [
+        "TerritoryTrack/Views/Components/Cards.swift:205",
+        "TerritoryTrack/Views/Components/CreditsCard.swift:33"
+      ],
+      "target": "lightning"
+    },
+    {
+      "group": "ios",
+      "name": "books.vertical.fill",
+      "uses": [
+        "TerritoryTrack/Services/ProspectImagesService.swift:45"
+      ],
+      "target": "books"
+    },
+    {
+      "group": "ios",
+      "name": "brain",
+      "uses": [
+        "TerritoryTrack/Views/KatieMemoriesView.swift:51"
+      ],
+      "target": "brain"
+    },
+    {
+      "group": "ios",
+      "name": "brain.head.profile",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:499"
+      ],
+      "target": "brain-profile"
+    },
+    {
+      "group": "ios",
+      "name": "bubble.left.and.bubble.right",
+      "uses": [
+        "TerritoryTrack/Views/MessagesView.swift:439"
+      ],
+      "target": "message-thread"
+    },
+    {
+      "group": "ios",
+      "name": "bubble.left.and.bubble.right.fill",
+      "uses": [
+        "TerritoryTrack/Views/MessagesView.swift:119"
+      ],
+      "target": "message-thread"
+    },
+    {
+      "group": "ios",
+      "name": "building.2",
+      "uses": [
+        "TerritoryTrack/Views/CalendarView.swift:684",
+        "TerritoryTrack/Views/CreateTaskSheet.swift:125",
+        "TerritoryTrack/Views/CreateTaskSheet.swift:128"
+      ],
+      "target": "buildings"
+    },
+    {
+      "group": "ios",
+      "name": "building.2.fill",
+      "uses": [
+        "TerritoryTrack/Services/ProspectImagesService.swift:44",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:156",
+        "TerritoryTrack/Services/TabBarLayout.swift:65",
+        "TerritoryTrack/Views/AssistantChatView.swift:628",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:154",
+        "TerritoryTrack/Views/MapView.swift:216",
+        "TerritoryTrack/Views/MapView.swift:235",
+        "TerritoryTrack/Views/MoreView.swift:202",
+        "TerritoryTrack/Views/ProspectImagesView.swift:113",
+        "TerritoryTrack/Views/ProspectImagesView.swift:146",
+        "TerritoryTrack/Views/ProspectImagesView.swift:401"
+      ],
+      "target": "buildings"
+    },
+    {
+      "group": "ios",
+      "name": "calendar",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:167",
+        "TerritoryTrack/Services/TabBarLayout.swift:71",
+        "TerritoryTrack/Views/AssistantChatView.swift:491",
+        "TerritoryTrack/Views/CalendarView.swift:550",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:299",
+        "TerritoryTrack/Views/LeadsListView.swift:236",
+        "TerritoryTrack/Views/LeadsListView.swift:297",
+        "TerritoryTrack/Views/MoreView.swift:250",
+        "TerritoryTrack/Views/OrderDetailsCard.swift:174",
+        "TerritoryTrackWidgets/KatieBriefingWidget.swift:97"
+      ],
+      "target": "calendar"
+    },
+    {
+      "group": "ios",
+      "name": "calendar.badge.clock",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:169",
+        "TerritoryTrack/Services/TabBarLayout.swift:73",
+        "TerritoryTrack/Views/LeadDetailView.swift:547",
+        "TerritoryTrack/Views/MoreView.swift:255",
+        "TerritoryTrack/Views/MoreView.swift:588"
+      ],
+      "target": "calendar-clock"
+    },
+    {
+      "group": "ios",
+      "name": "calendar.badge.exclamationmark",
+      "uses": [
+        "TerritoryTrack/Views/DayWrapView.swift:137"
+      ],
+      "target": "calendar-warning"
+    },
+    {
+      "group": "ios",
+      "name": "calendar.badge.plus",
+      "uses": [
+        "TerritoryTrack/Views/CalendarView.swift:235",
+        "TerritoryTrack/Views/LeadDetailView.swift:352",
+        "TerritoryTrack/Views/RoutePlannerView.swift:266"
+      ],
+      "target": "calendar-add"
+    },
+    {
+      "group": "ios",
+      "name": "camera",
+      "uses": [
+        "TerritoryTrack/Views/OrderScanSheet.swift:152",
+        "TerritoryTrack/Views/TagProductSheet.swift:173"
+      ],
+      "target": "camera"
+    },
+    {
+      "group": "ios",
+      "name": "camera.fill",
+      "uses": [
+        "TerritoryTrack/Views/ProspectImagesView.swift:385",
+        "TerritoryTrack/Views/ReceiptScanView.swift:276"
+      ],
+      "target": "camera"
+    },
+    {
+      "group": "ios",
+      "name": "camera.on.rectangle.fill",
+      "uses": [
+        "TerritoryTrack/Views/ProspectImagesView.swift:240"
+      ],
+      "target": "camera-stack"
+    },
+    {
+      "group": "ios",
+      "name": "camera.viewfinder",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:239"
+      ],
+      "target": "camera-scan"
+    },
+    {
+      "group": "ios",
+      "name": "car",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:87"
+      ],
+      "target": "car"
+    },
+    {
+      "group": "ios",
+      "name": "car.badge.gearshape.fill",
+      "uses": [
+        "TerritoryTrack/Views/UnsavedTripsCard.swift:25"
+      ],
+      "target": "car-settings"
+    },
+    {
+      "group": "ios",
+      "name": "car.fill",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:285",
+        "TerritoryTrack/Services/DashboardLayout.swift:77",
+        "TerritoryTrack/Views/AssistantChatView.swift:87",
+        "TerritoryTrack/Views/DayWrapView.swift:56",
+        "TerritoryTrack/Views/MoreView.swift:263",
+        "TerritoryTrack/Views/RoutePlannerView.swift:258",
+        "TerritoryTrack/Views/TripControlTile.swift:40",
+        "TerritoryTrack/Views/TripHistoryView.swift:26",
+        "TerritoryTrack/Views/TripHistoryView.swift:153",
+        "TerritoryTrackWidgets/TripLiveActivity.swift:74",
+        "TerritoryTrackWidgets/TripLiveActivity.swift:81"
+      ],
+      "target": "car"
+    },
+    {
+      "group": "ios",
+      "name": "chart.bar.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:79"
+      ],
+      "target": "chart-bar"
+    },
+    {
+      "group": "ios",
+      "name": "checklist",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:168"
+      ],
+      "target": "list-check"
+    },
+    {
+      "group": "ios",
+      "name": "checkmark",
+      "uses": [
+        "TerritoryTrack/Views/Components/BrandPicker.swift:147",
+        "TerritoryTrack/Views/Components/TerritoryPicker.swift:131",
+        "TerritoryTrack/Views/DashboardView.swift:488",
+        "TerritoryTrack/Views/MoreView.swift:742",
+        "TerritoryTrack/Views/OrderEditorComponents.swift:200",
+        "TerritoryTrack/Views/RoutePlannerView.swift:536",
+        "TerritoryTrack/Views/SendEmailSheet.swift:49",
+        "TerritoryTrack/Views/SendEmailSheet.swift:116",
+        "TerritoryTrack/Views/SendSMSSheet.swift:36",
+        "TerritoryTrack/Views/TabBarLayoutEditorView.swift:232"
+      ],
+      "target": "check"
+    },
+    {
+      "group": "ios",
+      "name": "checkmark.circle",
+      "uses": [
+        "TerritoryTrack/Views/CalendarView.swift:238",
+        "TerritoryTrack/Views/CalendarView.swift:586",
+        "TerritoryTrack/Views/CalendarView.swift:600",
+        "TerritoryTrack/Views/LeadDetailView.swift:349",
+        "TerritoryTrack/Views/NearbyView.swift:246"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "ios",
+      "name": "checkmark.circle.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:80",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:157",
+        "TerritoryTrack/Services/TabBarLayout.swift:72",
+        "TerritoryTrack/Views/AdminUsersView.swift:289",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:492",
+        "TerritoryTrack/Views/LeadDetailComponents.swift:115",
+        "TerritoryTrack/Views/NearbyView.swift:545",
+        "TerritoryTrack/Views/NewLineSheetSheet.swift:196",
+        "TerritoryTrack/Views/ProspectImagesView.swift:525",
+        "TerritoryTrack/Views/ReceiptScanView.swift:227",
+        "TerritoryTrack/Views/SupportView.swift:150",
+        "TerritoryTrack/Views/TripBanner.swift:101",
+        "TerritoryTrack/Views/VoiceCaptureSheet.swift:186"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "ios",
+      "name": "checkmark.seal.fill",
+      "uses": [
+        "TerritoryTrack/Views/DashboardView.swift:253",
+        "TerritoryTrack/Views/DayWrapView.swift:181",
+        "TerritoryTrack/Views/HomeFocusCards.swift:25",
+        "TerritoryTrack/Views/HomeServiceCards.swift:393",
+        "TerritoryTrack/Views/OrderEditorCards.swift:26"
+      ],
+      "target": "verified"
+    },
+    {
+      "group": "ios",
+      "name": "chevron.down",
+      "uses": [
+        "TerritoryTrack/Views/Components/BrandPicker.swift:23",
+        "TerritoryTrack/Views/Components/Cards.swift:329",
+        "TerritoryTrack/Views/Components/HeroBanner.swift:53",
+        "TerritoryTrack/Views/Components/TerritoryPicker.swift:18",
+        "TerritoryTrack/Views/DashboardView.swift:201",
+        "TerritoryTrack/Views/OrderDetailsCard.swift:31",
+        "TerritoryTrack/Views/ProspectImagesView.swift:120"
+      ],
+      "target": "chevron-down"
+    },
+    {
+      "group": "ios",
+      "name": "chevron.down.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/RoutePlannerView.swift:384"
+      ],
+      "target": "chevron-down-circle"
+    },
+    {
+      "group": "ios",
+      "name": "chevron.left",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:577",
+        "TerritoryTrack/Views/Components/Cards.swift:254",
+        "TerritoryTrack/Views/LeadDetailView.swift:332",
+        "TerritoryTrack/Views/MessagesView.swift:20",
+        "TerritoryTrack/Views/MessagesView.swift:582"
+      ],
+      "target": "chevron-left"
+    },
+    {
+      "group": "ios",
+      "name": "chevron.right",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:248",
+        "TerritoryTrack/Views/AdminUsersView.swift:482",
+        "TerritoryTrack/Views/CalendarView.swift:639",
+        "TerritoryTrack/Views/Components/AssistantBubbles.swift:143",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:176",
+        "TerritoryTrack/Views/HomeServiceCards.swift:52",
+        "TerritoryTrack/Views/HomeServiceCards.swift:212",
+        "TerritoryTrack/Views/HomeServiceCards.swift:319",
+        "TerritoryTrack/Views/HomeServiceCards.swift:460",
+        "TerritoryTrack/Views/LineSheetsView.swift:78",
+        "TerritoryTrack/Views/MoreView.swift:557",
+        "TerritoryTrack/Views/NearbyView.swift:652",
+        "TerritoryTrack/Views/NewLineSheetSheet.swift:72",
+        "TerritoryTrack/Views/OfflineBanner.swift:29",
+        "TerritoryTrack/Views/OrderEditorSheet.swift:378",
+        "TerritoryTrack/Views/OrderEditorSheet.swift:410",
+        "TerritoryTrack/Views/OrderScanBatchReview.swift:51",
+        "TerritoryTrack/Views/ProspectImagesView.swift:203",
+        "TerritoryTrack/Views/RepCardView.swift:237",
+        "TerritoryTrack/Views/RepCardView.swift:297",
+        "TerritoryTrack/Views/TabBarLayoutEditorView.swift:168",
+        "TerritoryTrack/Views/TimeTrackingView.swift:313",
+        "TerritoryTrack/Views/TimeTrackingView.swift:391",
+        "TerritoryTrack/Views/TripHistoryView.swift:137",
+        "TerritoryTrack/Views/TripHistoryView.swift:210",
+        "TerritoryTrack/Views/UnsavedTripsCard.swift:38"
+      ],
+      "target": "chevron-right"
+    },
+    {
+      "group": "ios",
+      "name": "chevron.up",
+      "uses": [
+        "TerritoryTrack/Views/OrderDetailsCard.swift:31"
+      ],
+      "target": "chevron-up"
+    },
+    {
+      "group": "ios",
+      "name": "chevron.up.chevron.down",
+      "uses": [
+        "TerritoryTrack/Views/OrderDetailsCard.swift:124"
+      ],
+      "target": "chevrons-up-down"
+    },
+    {
+      "group": "ios",
+      "name": "circle.grid.2x2",
+      "uses": [
+        "TerritoryTrack/Views/Components/StatusCard.swift:16"
+      ],
+      "target": "grid-circles"
+    },
+    {
+      "group": "ios",
+      "name": "clock",
+      "uses": [
+        "TerritoryTrack/Views/TripControlTile.swift:119"
+      ],
+      "target": "clock"
+    },
+    {
+      "group": "ios",
+      "name": "clock.arrow.circlepath",
+      "uses": [
+        "TerritoryTrack/Views/OrderEditorCards.swift:108"
+      ],
+      "target": "history"
+    },
+    {
+      "group": "ios",
+      "name": "clock.badge.exclamationmark.fill",
+      "uses": [
+        "TerritoryTrack/Views/HomeFocusCards.swift:312"
+      ],
+      "target": "clock-warning"
+    },
+    {
+      "group": "ios",
+      "name": "clock.fill",
+      "uses": [
+        "TerritoryTrackWidgets/TripWidget.swift:257"
+      ],
+      "target": "clock"
+    },
+    {
+      "group": "ios",
+      "name": "doc.badge.plus",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:84",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:158"
+      ],
+      "target": "file-add"
+    },
+    {
+      "group": "ios",
+      "name": "doc.on.doc",
+      "uses": [
+        "TerritoryTrack/Views/Components/AssistantBubbles.swift:51"
+      ],
+      "target": "copy"
+    },
+    {
+      "group": "ios",
+      "name": "doc.richtext",
+      "uses": [
+        "TerritoryTrack/Views/LineSheetsView.swift:29",
+        "TerritoryTrack/Views/MoreView.swift:230"
+      ],
+      "target": "file-rich-text"
+    },
+    {
+      "group": "ios",
+      "name": "doc.text",
+      "uses": [
+        "TerritoryTrack/Views/HomeServiceCards.swift:277",
+        "TerritoryTrack/Views/OrderWriterView.swift:94"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "ios",
+      "name": "doc.text.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:85",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:166",
+        "TerritoryTrack/Services/TabBarLayout.swift:69",
+        "TerritoryTrack/Views/DayWrapView.swift:58",
+        "TerritoryTrack/Views/HomeServiceCards.swift:331",
+        "TerritoryTrack/Views/LeadDetailView.swift:544",
+        "TerritoryTrack/Views/MoreView.swift:222"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "ios",
+      "name": "doc.text.viewfinder",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:154",
+        "TerritoryTrack/Views/MoreView.swift:239",
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:74"
+      ],
+      "target": "document-scan"
+    },
+    {
+      "group": "ios",
+      "name": "dock.rectangle",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:122"
+      ],
+      "target": "layout-dock"
+    },
+    {
+      "group": "ios",
+      "name": "dollarsign.circle.fill",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:303",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:153",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:207",
+        "TerritoryTrack/Views/MapView.swift:263",
+        "TerritoryTrackWidgets/TripWidget.swift:257"
+      ],
+      "target": "currency-dollar-circle"
+    },
+    {
+      "group": "ios",
+      "name": "dollarsign.square.fill",
+      "uses": [
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:440"
+      ],
+      "target": "currency-dollar-square"
+    },
+    {
+      "group": "ios",
+      "name": "door.left.hand.closed",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:367"
+      ],
+      "target": "door-closed"
+    },
+    {
+      "group": "ios",
+      "name": "ellipsis",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:379",
+        "TerritoryTrack/Views/MessagesView.swift:624",
+        "TerritoryTrack/Views/NearbyView.swift:209",
+        "TerritoryTrack/Views/OrderEditorComponents.swift:129",
+        "TerritoryTrack/Views/OrderScanBatchReview.swift:35",
+        "TerritoryTrack/Views/OrderScanSheet.swift:76"
+      ],
+      "target": "more-horizontal"
+    },
+    {
+      "group": "ios",
+      "name": "ellipsis.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/MainTabView.swift:33",
+        "TerritoryTrack/Views/TabBarLayoutEditorView.swift:91"
+      ],
+      "target": "more-circle"
+    },
+    {
+      "group": "ios",
+      "name": "envelope.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:162",
+        "TerritoryTrack/Views/LeadDetailComponents.swift:94",
+        "TerritoryTrack/Views/LeadDetailView.swift:540",
+        "TerritoryTrack/Views/LoginView.swift:144",
+        "TerritoryTrack/Views/RepCardView.swift:207"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "ios",
+      "name": "exclamationmark.bubble.fill",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:482"
+      ],
+      "target": "message-warning"
+    },
+    {
+      "group": "ios",
+      "name": "exclamationmark.calendar",
+      "uses": [
+        "TerritoryTrack/Views/LeadsListView.swift:236",
+        "TerritoryTrack/Views/LeadsListView.swift:297"
+      ],
+      "target": "calendar-warning"
+    },
+    {
+      "group": "ios",
+      "name": "exclamationmark.shield.fill",
+      "uses": [
+        "TerritoryTrackWidgets/TripWidget.swift:91"
+      ],
+      "target": "shield-warning"
+    },
+    {
+      "group": "ios",
+      "name": "exclamationmark.triangle",
+      "uses": [
+        "TerritoryTrack/Views/CatalogPickerSheet.swift:57",
+        "TerritoryTrack/Views/KatieMemoriesView.swift:40",
+        "TerritoryTrack/Views/LeadDetailView.swift:173",
+        "TerritoryTrack/Views/LineSheetsView.swift:184",
+        "TerritoryTrack/Views/NearbyView.swift:237",
+        "TerritoryTrack/Views/OrderWriterView.swift:87",
+        "TerritoryTrack/Views/OrderWriterView.swift:103",
+        "TerritoryTrack/Views/RoutePlannerView.swift:82",
+        "TerritoryTrack/Views/TripHistoryView.swift:19"
+      ],
+      "target": "warning"
+    },
+    {
+      "group": "ios",
+      "name": "exclamationmark.triangle.fill",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:43",
+        "TerritoryTrack/Views/AdminUsersView.swift:300",
+        "TerritoryTrack/Views/AssistantChatView.swift:559",
+        "TerritoryTrack/Views/CalendarView.swift:382",
+        "TerritoryTrack/Views/CustomersListView.swift:159",
+        "TerritoryTrack/Views/DashboardView.swift:418",
+        "TerritoryTrack/Views/HomeFocusCards.swift:295",
+        "TerritoryTrack/Views/LeadsListView.swift:146",
+        "TerritoryTrack/Views/LoginView.swift:155",
+        "TerritoryTrack/Views/LoginView.swift:208",
+        "TerritoryTrack/Views/MoneyView.swift:195",
+        "TerritoryTrack/Views/OfflineBanner.swift:65",
+        "TerritoryTrack/Views/OrderDetailsCard.swift:51",
+        "TerritoryTrack/Views/OrderEditorCards.swift:136",
+        "TerritoryTrack/Views/OrderEditorComponents.swift:141"
+      ],
+      "target": "warning"
+    },
+    {
+      "group": "ios",
+      "name": "eye",
+      "uses": [
+        "TerritoryTrack/Views/DashboardLayoutEditorView.swift:159",
+        "TerritoryTrack/Views/ProspectImagesView.swift:219"
+      ],
+      "target": "eye"
+    },
+    {
+      "group": "ios",
+      "name": "eye.slash",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:512",
+        "TerritoryTrack/Views/NearbyView.swift:557",
+        "TerritoryTrack/Views/RepCardView.swift:253"
+      ],
+      "target": "eye-off"
+    },
+    {
+      "group": "ios",
+      "name": "figure.walk",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:312",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:155",
+        "TerritoryTrack/Services/TabBarLayout.swift:74",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:320",
+        "TerritoryTrack/Views/LeadDetailView.swift:504",
+        "TerritoryTrack/Views/LeadDetailView.swift:552",
+        "TerritoryTrack/Views/MoreView.swift:259",
+        "TerritoryTrack/Views/MoreView.swift:695",
+        "TerritoryTrack/Views/MoreView.swift:742"
+      ],
+      "target": "person-walking"
+    },
+    {
+      "group": "ios",
+      "name": "figure.walk.departure",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:557"
+      ],
+      "target": "person-departure"
+    },
+    {
+      "group": "ios",
+      "name": "figure.walk.motion",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:170"
+      ],
+      "target": "person-walking-motion"
+    },
+    {
+      "group": "ios",
+      "name": "flag.checkered",
+      "uses": [
+        "TerritoryTrack/Views/RoutePlannerView.swift:252"
+      ],
+      "target": "flag-checkered"
+    },
+    {
+      "group": "ios",
+      "name": "flag.fill",
+      "uses": [
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:389",
+        "TerritoryTrack/Views/VoiceDebriefSheet.swift:290"
+      ],
+      "target": "flag"
+    },
+    {
+      "group": "ios",
+      "name": "flame.fill",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:559",
+        "TerritoryTrackWidgets/TripWidget.swift:146"
+      ],
+      "target": "flame"
+    },
+    {
+      "group": "ios",
+      "name": "fork.knife",
+      "uses": [
+        "TerritoryTrack/Views/DayWrapView.swift:93",
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:155"
+      ],
+      "target": "utensils"
+    },
+    {
+      "group": "ios",
+      "name": "fuelpump.fill",
+      "uses": [
+        "TerritoryTrack/Views/DayWrapView.swift:93",
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:154"
+      ],
+      "target": "fuel-pump"
+    },
+    {
+      "group": "ios",
+      "name": "g.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/LoginView.swift:333"
+      ],
+      "target": "google-logo"
+    },
+    {
+      "group": "ios",
+      "name": "gift.fill",
+      "uses": [
+        "TerritoryTrack/Views/HomeFocusCards.swift:328"
+      ],
+      "target": "gift"
+    },
+    {
+      "group": "ios",
+      "name": "globe",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:470",
+        "TerritoryTrack/Views/RepCardView.swift:210"
+      ],
+      "target": "globe"
+    },
+    {
+      "group": "ios",
+      "name": "globe.americas.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:164",
+        "TerritoryTrack/Services/TabBarLayout.swift:70",
+        "TerritoryTrack/Views/MoreView.swift:243"
+      ],
+      "target": "globe-americas"
+    },
+    {
+      "group": "ios",
+      "name": "heart.fill",
+      "uses": [
+        "TerritoryTrack/Views/HomeFocusCards.swift:328"
+      ],
+      "target": "heart"
+    },
+    {
+      "group": "ios",
+      "name": "hourglass",
+      "uses": [
+        "TerritoryTrack/Views/MoneyView.swift:101"
+      ],
+      "target": "hourglass"
+    },
+    {
+      "group": "ios",
+      "name": "house.fill",
+      "uses": [
+        "TerritoryTrack/Views/IPadShell.swift:158",
+        "TerritoryTrack/Views/MainTabView.swift:13",
+        "TerritoryTrack/Views/RoutePlannerView.swift:214",
+        "TerritoryTrack/Views/RoutePlannerView.swift:427",
+        "TerritoryTrack/Views/TabBarLayoutEditorView.swift:85"
+      ],
+      "target": "home"
+    },
+    {
+      "group": "ios",
+      "name": "info.circle",
+      "uses": [
+        "TerritoryTrack/Views/OrderWriterView.swift:112"
+      ],
+      "target": "info"
+    },
+    {
+      "group": "ios",
+      "name": "info.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:514",
+        "TerritoryTrack/Views/RoutePlannerView.swift:284"
+      ],
+      "target": "info"
+    },
+    {
+      "group": "ios",
+      "name": "keyboard.chevron.compact.down",
+      "uses": [
+        "TerritoryTrack/Services/ShakeGesture.swift:58"
+      ],
+      "target": "keyboard-hide"
+    },
+    {
+      "group": "ios",
+      "name": "ladybug.fill",
+      "uses": [
+        "TerritoryTrack/Views/SupportView.swift:191"
+      ],
+      "target": "bug"
+    },
+    {
+      "group": "ios",
+      "name": "lightbulb.fill",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:560",
+        "TerritoryTrack/Views/SupportView.swift:191",
+        "TerritoryTrack/Views/VoiceDebriefSheet.swift:281"
+      ],
+      "target": "lightbulb"
+    },
+    {
+      "group": "ios",
+      "name": "line.3.horizontal.decrease.circle",
+      "uses": [
+        "TerritoryTrack/Views/OrderWriterView.swift:69"
+      ],
+      "target": "filter-circle"
+    },
+    {
+      "group": "ios",
+      "name": "location.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:86",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:173",
+        "TerritoryTrack/Views/TripControlTile.swift:107"
+      ],
+      "target": "navigation"
+    },
+    {
+      "group": "ios",
+      "name": "location.north.fill",
+      "uses": [
+        "TerritoryTrack/Views/AboutView.swift:50",
+        "TerritoryTrack/Views/Components/Cards.swift:150",
+        "TerritoryTrack/Views/Components/HeroBanner.swift:14",
+        "TerritoryTrack/Views/DashboardView.swift:130",
+        "TerritoryTrack/Views/IPadShell.swift:139",
+        "TerritoryTrack/Views/OrderWriterCard.swift:44",
+        "TerritoryTrack/Views/SplashView.swift:47"
+      ],
+      "target": "navigation-up"
+    },
+    {
+      "group": "ios",
+      "name": "location.north.line.fill",
+      "uses": [
+        "TerritoryTrack/Views/RoutePlannerView.swift:263",
+        "TerritoryTrack/Views/TripBanner.swift:126"
+      ],
+      "target": "navigation-up-line"
+    },
+    {
+      "group": "ios",
+      "name": "location.slash",
+      "uses": [
+        "TerritoryTrack/Views/DropBySheet.swift:22"
+      ],
+      "target": "navigation-off"
+    },
+    {
+      "group": "ios",
+      "name": "lock.fill",
+      "uses": [
+        "TerritoryTrack/Views/LoginView.swift:150",
+        "TerritoryTrack/Views/ProspectImagesView.swift:407"
+      ],
+      "target": "lock"
+    },
+    {
+      "group": "ios",
+      "name": "lock.shield.fill",
+      "uses": [
+        "TerritoryTrack/Views/LoginView.swift:198"
+      ],
+      "target": "shield-lock"
+    },
+    {
+      "group": "ios",
+      "name": "magnifyingglass",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:130",
+        "TerritoryTrack/Views/Components/ListSearchField.swift:11",
+        "TerritoryTrack/Views/CustomersListView.swift:172",
+        "TerritoryTrack/Views/LeadsListView.swift:163",
+        "TerritoryTrack/Views/MessagesView.swift:795",
+        "TerritoryTrack/Views/NearbyView.swift:296",
+        "TerritoryTrack/Views/OrderWriterView.swift:249",
+        "TerritoryTrack/Views/RoutePlannerView.swift:344",
+        "TerritoryTrack/Views/RoutePlannerView.swift:469"
+      ],
+      "target": "search"
+    },
+    {
+      "group": "ios",
+      "name": "map",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:356",
+        "TerritoryTrack/Views/RoutePlannerView.swift:338"
+      ],
+      "target": "map"
+    },
+    {
+      "group": "ios",
+      "name": "map.fill",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:276",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:165",
+        "TerritoryTrack/Services/TabBarLayout.swift:66",
+        "TerritoryTrack/Views/MoreView.swift:206",
+        "TerritoryTrack/Views/RoutePlannerView.swift:189"
+      ],
+      "target": "map"
+    },
+    {
+      "group": "ios",
+      "name": "mappin.and.ellipse",
+      "uses": [
+        "TerritoryTrack/Views/Components/TerritoryPicker.swift:13",
+        "TerritoryTrack/Views/LeadDetailView.swift:453",
+        "TerritoryTrack/Views/ProspectImagesView.swift:146",
+        "TerritoryTrack/Views/ProspectImagesView.swift:401"
+      ],
+      "target": "location-ground"
+    },
+    {
+      "group": "ios",
+      "name": "mappin.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/DayWrapView.swift:60",
+        "TerritoryTrack/Views/LoginView.swift:127",
+        "TerritoryTrack/Views/LoginView.swift:131",
+        "TerritoryTrack/Views/MapView.swift:165",
+        "TerritoryTrack/Views/MapView.swift:209",
+        "TerritoryTrack/Views/MapView.swift:213"
+      ],
+      "target": "location-circle"
+    },
+    {
+      "group": "ios",
+      "name": "mic.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/VoiceDebriefSheet.swift:222"
+      ],
+      "target": "microphone-circle"
+    },
+    {
+      "group": "ios",
+      "name": "mic.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:152",
+        "TerritoryTrack/Services/TabBarLayout.swift:78",
+        "TerritoryTrack/Views/AssistantChatView.swift:591",
+        "TerritoryTrack/Views/LeadDetailView.swift:345",
+        "TerritoryTrack/Views/MoreView.swift:271",
+        "TerritoryTrack/Views/VoiceCaptureSheet.swift:114",
+        "TerritoryTrackWidgets/KatieBriefingWidget.swift:82"
+      ],
+      "target": "microphone"
+    },
+    {
+      "group": "ios",
+      "name": "mic.slash",
+      "uses": [
+        "TerritoryTrack/Views/VoiceLogView.swift:20"
+      ],
+      "target": "microphone-off"
+    },
+    {
+      "group": "ios",
+      "name": "minus.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/OrderEditorComponents.swift:88"
+      ],
+      "target": "minus-circle"
+    },
+    {
+      "group": "ios",
+      "name": "moon.stars.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:159"
+      ],
+      "target": "moon-stars"
+    },
+    {
+      "group": "ios",
+      "name": "note.text",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:160",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:191",
+        "TerritoryTrack/Views/LeadDetailView.swift:545"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "ios",
+      "name": "p.square.fill",
+      "uses": [
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:156"
+      ],
+      "target": "parking"
+    },
+    {
+      "group": "ios",
+      "name": "paperplane.fill",
+      "uses": [
+        "TerritoryTrack/Views/SupportView.swift:129"
+      ],
+      "target": "send"
+    },
+    {
+      "group": "ios",
+      "name": "pencil",
+      "uses": [
+        "TerritoryTrack/Views/CalendarView.swift:599",
+        "TerritoryTrack/Views/QuickActionsTile.swift:168"
+      ],
+      "target": "pencil"
+    },
+    {
+      "group": "ios",
+      "name": "person.2",
+      "uses": [
+        "TerritoryTrack/Views/LeadsListView.swift:157"
+      ],
+      "target": "users"
+    },
+    {
+      "group": "ios",
+      "name": "person.2.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:163",
+        "TerritoryTrack/Services/TabBarLayout.swift:67",
+        "TerritoryTrack/Views/MoreView.swift:214"
+      ],
+      "target": "users"
+    },
+    {
+      "group": "ios",
+      "name": "person.3",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:58"
+      ],
+      "target": "users-three"
+    },
+    {
+      "group": "ios",
+      "name": "person.3.fill",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:142"
+      ],
+      "target": "users-three"
+    },
+    {
+      "group": "ios",
+      "name": "person.crop.circle",
+      "uses": [
+        "TerritoryTrack/Views/ProspectImagesView.swift:421"
+      ],
+      "target": "user-circle"
+    },
+    {
+      "group": "ios",
+      "name": "person.crop.circle.badge.checkmark",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:523"
+      ],
+      "target": "user-circle-check"
+    },
+    {
+      "group": "ios",
+      "name": "person.crop.circle.badge.plus",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailComponents.swift:115"
+      ],
+      "target": "user-circle-add"
+    },
+    {
+      "group": "ios",
+      "name": "person.crop.circle.badge.questionmark",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:322"
+      ],
+      "target": "user-circle-question"
+    },
+    {
+      "group": "ios",
+      "name": "person.crop.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/IPadShell.swift:172"
+      ],
+      "target": "user-circle"
+    },
+    {
+      "group": "ios",
+      "name": "person.crop.circle.fill.badge.plus",
+      "uses": [
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:369"
+      ],
+      "target": "user-circle-add"
+    },
+    {
+      "group": "ios",
+      "name": "person.fill",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:666",
+        "TerritoryTrack/Views/VoiceDebriefSheet.swift:284"
+      ],
+      "target": "user"
+    },
+    {
+      "group": "ios",
+      "name": "person.fill.questionmark",
+      "uses": [
+        "TerritoryTrack/Views/MessagesView.swift:795"
+      ],
+      "target": "user-question"
+    },
+    {
+      "group": "ios",
+      "name": "person.text.rectangle.fill",
+      "uses": [
+        "TerritoryTrack/Views/OrderEditorSheet.swift:363"
+      ],
+      "target": "id-card"
+    },
+    {
+      "group": "ios",
+      "name": "phone.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:161",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:339",
+        "TerritoryTrack/Views/LeadDetailComponents.swift:81",
+        "TerritoryTrack/Views/LeadDetailView.swift:463",
+        "TerritoryTrack/Views/LeadDetailView.swift:539",
+        "TerritoryTrack/Views/RepCardView.swift:204"
+      ],
+      "target": "phone"
+    },
+    {
+      "group": "ios",
+      "name": "photo",
+      "uses": [
+        "TerritoryTrack/Views/Components/CatalogProductImage.swift:50"
+      ],
+      "target": "image"
+    },
+    {
+      "group": "ios",
+      "name": "photo.badge.exclamationmark",
+      "uses": [
+        "TerritoryTrack/Views/ProspectImageViewer.swift:38",
+        "TerritoryTrack/Views/ProspectImagesView.swift:201"
+      ],
+      "target": "image-warning"
+    },
+    {
+      "group": "ios",
+      "name": "photo.fill",
+      "uses": [
+        "TerritoryTrack/Services/ProspectImagesService.swift:48",
+        "TerritoryTrack/Views/ProspectImagesView.swift:162",
+        "TerritoryTrack/Views/ProspectImagesView.swift:186"
+      ],
+      "target": "image"
+    },
+    {
+      "group": "ios",
+      "name": "photo.on.rectangle",
+      "uses": [
+        "TerritoryTrack/Views/ReceiptScanView.swift:288"
+      ],
+      "target": "images"
+    },
+    {
+      "group": "ios",
+      "name": "play.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/HomeServiceCards.swift:100",
+        "TerritoryTrack/Views/TimeTrackingView.swift:91",
+        "TerritoryTrack/Views/TripControlTile.swift:53"
+      ],
+      "target": "play-circle"
+    },
+    {
+      "group": "ios",
+      "name": "plus",
+      "uses": [
+        "TerritoryTrack/Views/CalendarView.swift:241",
+        "TerritoryTrack/Views/DashboardView.swift:165",
+        "TerritoryTrack/Views/LeadDetailView.swift:621",
+        "TerritoryTrack/Views/LeadDetailView.swift:651",
+        "TerritoryTrack/Views/LeadDetailView.swift:702",
+        "TerritoryTrack/Views/LineSheetsView.swift:16",
+        "TerritoryTrack/Views/NearbyView.swift:586",
+        "TerritoryTrack/Views/OrderMatrixSheet.swift:282",
+        "TerritoryTrack/Views/OrderWriterCard.swift:107",
+        "TerritoryTrack/Views/OrderWriterView.swift:40",
+        "TerritoryTrack/Views/ProspectImagesView.swift:25",
+        "TerritoryTrack/Views/ProspectImagesView.swift:373",
+        "TerritoryTrack/Views/TimeTrackingView.swift:17",
+        "TerritoryTrack/Views/TradeShowsView.swift:125"
+      ],
+      "target": "plus"
+    },
+    {
+      "group": "ios",
+      "name": "plus.circle",
+      "uses": [
+        "TerritoryTrack/Views/QuickActionsTile.swift:196"
+      ],
+      "target": "plus-circle"
+    },
+    {
+      "group": "ios",
+      "name": "plus.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:428",
+        "TerritoryTrack/Views/MoneyView.swift:122",
+        "TerritoryTrack/Views/OrderEditorComponents.swift:103",
+        "TerritoryTrack/Views/ProspectImagesView.swift:164",
+        "TerritoryTrack/Views/ProspectImagesView.swift:563",
+        "TerritoryTrack/Views/QuickActionsEditorView.swift:93"
+      ],
+      "target": "plus-circle"
+    },
+    {
+      "group": "ios",
+      "name": "point.topleft.down.curvedto.point.bottomright.up",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:344"
+      ],
+      "target": "route"
+    },
+    {
+      "group": "ios",
+      "name": "qrcode",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:87",
+        "TerritoryTrack/Views/MoreView.swift:179",
+        "TerritoryTrack/Views/RepCardView.swift:79",
+        "TerritoryTrack/Views/RepCardView.swift:282"
+      ],
+      "target": "qr-code"
+    },
+    {
+      "group": "ios",
+      "name": "rectangle.3.group",
+      "uses": [
+        "TerritoryTrack/Views/DashboardLayoutEditorView.swift:118"
+      ],
+      "target": "dashboard"
+    },
+    {
+      "group": "ios",
+      "name": "rectangle.3.group.fill",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:118"
+      ],
+      "target": "dashboard"
+    },
+    {
+      "group": "ios",
+      "name": "rectangle.on.rectangle.fill",
+      "uses": [
+        "TerritoryTrack/Services/ProspectImagesService.swift:46"
+      ],
+      "target": "cards"
+    },
+    {
+      "group": "ios",
+      "name": "rectangle.portrait.and.arrow.right",
+      "uses": [
+        "TerritoryTrack/Views/MoreView.swift:526"
+      ],
+      "target": "logout"
+    },
+    {
+      "group": "ios",
+      "name": "road.lanes",
+      "uses": [
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:159"
+      ],
+      "target": "road"
+    },
+    {
+      "group": "ios",
+      "name": "ruler",
+      "uses": [
+        "TerritoryTrack/Views/TripControlTile.swift:116"
+      ],
+      "target": "ruler"
+    },
+    {
+      "group": "ios",
+      "name": "scope",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:248",
+        "TerritoryTrack/Services/TabBarLayout.swift:77",
+        "TerritoryTrack/Views/DashboardView.swift:373",
+        "TerritoryTrack/Views/MoreView.swift:210",
+        "TerritoryTrack/Views/NearbyView.swift:394"
+      ],
+      "target": "target"
+    },
+    {
+      "group": "ios",
+      "name": "shippingbox",
+      "uses": [
+        "TerritoryTrack/Views/CatalogPickerSheet.swift:64",
+        "TerritoryTrack/Views/LineSheetsView.swift:170",
+        "TerritoryTrack/Views/NewLineSheetSheet.swift:174",
+        "TerritoryTrack/Views/VoiceDebriefSheet.swift:287"
+      ],
+      "target": "box"
+    },
+    {
+      "group": "ios",
+      "name": "shippingbox.fill",
+      "uses": [
+        "TerritoryTrack/Services/ProspectImagesService.swift:47",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:273",
+        "TerritoryTrack/Views/QuickExpenseSheet.swift:157"
+      ],
+      "target": "box"
+    },
+    {
+      "group": "ios",
+      "name": "slider.horizontal.3",
+      "uses": [
+        "TerritoryTrack/Views/DashboardView.swift:154",
+        "TerritoryTrack/Views/RoutePlannerView.swift:269"
+      ],
+      "target": "settings-sliders"
+    },
+    {
+      "group": "ios",
+      "name": "sparkle.magnifyingglass",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:404"
+      ],
+      "target": "search-sparkles"
+    },
+    {
+      "group": "ios",
+      "name": "sparkles",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:257",
+        "TerritoryTrack/Services/DashboardLayout.swift:81",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:174",
+        "TerritoryTrack/Services/TabBarLayout.swift:64",
+        "TerritoryTrack/Views/AssistantChatView.swift:102",
+        "TerritoryTrack/Views/AssistantChatView.swift:433",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:120",
+        "TerritoryTrack/Views/DashboardView.swift:316",
+        "TerritoryTrack/Views/HomeFocusCards.swift:169",
+        "TerritoryTrack/Views/LeadDetailView.swift:548",
+        "TerritoryTrack/Views/MoreView.swift:198",
+        "TerritoryTrack/Views/ProspectImagesView.swift:220",
+        "TerritoryTrackWidgets/KatieBriefingWidget.swift:71",
+        "TerritoryTrackWidgets/KatieBriefingWidget.swift:116"
+      ],
+      "target": "sparkles"
+    },
+    {
+      "group": "ios",
+      "name": "sparkles.rectangle.stack.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:76"
+      ],
+      "target": "cards-sparkles"
+    },
+    {
+      "group": "ios",
+      "name": "square.and.arrow.down",
+      "uses": [
+        "TerritoryTrack/Views/ProspectImagesView.swift:591",
+        "TerritoryTrack/Views/ProspectImagesView.swift:616"
+      ],
+      "target": "download"
+    },
+    {
+      "group": "ios",
+      "name": "square.and.arrow.up",
+      "uses": [
+        "TerritoryTrack/Views/LeadDetailView.swift:361",
+        "TerritoryTrack/Views/LineSheetsView.swift:88",
+        "TerritoryTrack/Views/LineSheetsView.swift:153",
+        "TerritoryTrack/Views/RepCardView.swift:232"
+      ],
+      "target": "share-up"
+    },
+    {
+      "group": "ios",
+      "name": "square.and.pencil",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:96",
+        "TerritoryTrack/Views/MessagesView.swift:26"
+      ],
+      "target": "note-edit"
+    },
+    {
+      "group": "ios",
+      "name": "square.grid.2x2.fill",
+      "uses": [
+        "TerritoryTrack/Views/Components/BrandPicker.swift:57"
+      ],
+      "target": "layout-grid"
+    },
+    {
+      "group": "ios",
+      "name": "square.grid.3x2.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:78"
+      ],
+      "target": "grid-six"
+    },
+    {
+      "group": "ios",
+      "name": "star.fill",
+      "uses": [
+        "TerritoryTrack/Views/NearbyView.swift:489",
+        "TerritoryTrackWidgets/TripWidget.swift:147"
+      ],
+      "target": "star"
+    },
+    {
+      "group": "ios",
+      "name": "stop.circle.fill",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:294",
+        "TerritoryTrack/Views/AssistantChatView.swift:591",
+        "TerritoryTrack/Views/HomeServiceCards.swift:75",
+        "TerritoryTrack/Views/TimeTrackingView.swift:72",
+        "TerritoryTrack/Views/VoiceDebriefSheet.swift:222"
+      ],
+      "target": "stop-circle"
+    },
+    {
+      "group": "ios",
+      "name": "stop.fill",
+      "uses": [
+        "TerritoryTrack/Views/VoiceCaptureSheet.swift:114"
+      ],
+      "target": "stop"
+    },
+    {
+      "group": "ios",
+      "name": "stopwatch.fill",
+      "uses": [
+        "TerritoryTrack/Services/DashboardLayout.swift:83",
+        "TerritoryTrack/Services/QuickActionsLayout.swift:172",
+        "TerritoryTrack/Services/TabBarLayout.swift:76",
+        "TerritoryTrack/Views/MoreView.swift:234"
+      ],
+      "target": "stopwatch"
+    },
+    {
+      "group": "ios",
+      "name": "storefront",
+      "uses": [
+        "TerritoryTrack/Views/CustomersListView.swift:166"
+      ],
+      "target": "storefront"
+    },
+    {
+      "group": "ios",
+      "name": "storefront.fill",
+      "uses": [
+        "TerritoryTrack/Services/TabBarLayout.swift:68",
+        "TerritoryTrack/Views/MoreView.swift:218"
+      ],
+      "target": "storefront"
+    },
+    {
+      "group": "ios",
+      "name": "tag.fill",
+      "uses": [
+        "TerritoryTrack/Services/QuickActionsLayout.swift:171",
+        "TerritoryTrack/Services/TabBarLayout.swift:75",
+        "TerritoryTrack/Views/Components/BrandPicker.swift:16",
+        "TerritoryTrack/Views/Components/BrandPicker.swift:75",
+        "TerritoryTrack/Views/Components/Cards.swift:325",
+        "TerritoryTrack/Views/Components/HeroBanner.swift:47",
+        "TerritoryTrack/Views/DashboardView.swift:197",
+        "TerritoryTrack/Views/MoneyView.swift:135",
+        "TerritoryTrack/Views/MoreView.swift:226",
+        "TerritoryTrack/Views/NearbyView.swift:419",
+        "TerritoryTrack/Views/OrderEditorSheet.swift:395",
+        "TerritoryTrack/Views/TradeShowsView.swift:20"
+      ],
+      "target": "tag"
+    },
+    {
+      "group": "ios",
+      "name": "text.viewfinder",
+      "uses": [
+        "TerritoryTrack/Views/OrderScanSheet.swift:59"
+      ],
+      "target": "text-scan"
+    },
+    {
+      "group": "ios",
+      "name": "trash",
+      "uses": [
+        "TerritoryTrack/Views/CalendarView.swift:518",
+        "TerritoryTrack/Views/CalendarView.swift:602",
+        "TerritoryTrack/Views/CreateTaskSheet.swift:135",
+        "TerritoryTrack/Views/KatieMemoriesView.swift:66",
+        "TerritoryTrack/Views/LeadDetailView.swift:375",
+        "TerritoryTrack/Views/MessagesView.swift:621",
+        "TerritoryTrack/Views/OfflineBanner.swift:135",
+        "TerritoryTrack/Views/OrderDetailsCard.swift:155",
+        "TerritoryTrack/Views/OrderDetailsCard.swift:186",
+        "TerritoryTrack/Views/OrderEditorSheet.swift:244",
+        "TerritoryTrack/Views/OrderMatrixSheet.swift:271",
+        "TerritoryTrack/Views/ProspectImagesView.swift:209",
+        "TerritoryTrack/Views/ProspectImagesView.swift:222",
+        "TerritoryTrack/Views/ProspectImagesView.swift:377",
+        "TerritoryTrack/Views/TripEditSheet.swift:83",
+        "TerritoryTrack/Views/TripHistoryView.swift:48",
+        "TerritoryTrack/Views/TripHistoryView.swift:102"
+      ],
+      "target": "trash"
+    },
+    {
+      "group": "ios",
+      "name": "trash.fill",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:436"
+      ],
+      "target": "trash"
+    },
+    {
+      "group": "ios",
+      "name": "tray.and.arrow.up",
+      "uses": [
+        "TerritoryTrack/Views/MessagesView.swift:613"
+      ],
+      "target": "inbox-upload"
+    },
+    {
+      "group": "ios",
+      "name": "tray.full",
+      "uses": [
+        "TerritoryTrack/Views/ProspectImagesView.swift:113"
+      ],
+      "target": "inbox-full"
+    },
+    {
+      "group": "ios",
+      "name": "trophy.fill",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:558"
+      ],
+      "target": "trophy"
+    },
+    {
+      "group": "ios",
+      "name": "viewfinder",
+      "uses": [
+        "TerritoryTrack/Views/OrderProductsCard.swift:37"
+      ],
+      "target": "scan"
+    },
+    {
+      "group": "ios",
+      "name": "waveform",
+      "uses": [
+        "TerritoryTrack/Views/AssistantChatView.swift:282"
+      ],
+      "target": "waveform"
+    },
+    {
+      "group": "ios",
+      "name": "waveform.badge.mic",
+      "uses": [
+        "TerritoryTrack/Services/AppIntents.swift:267"
+      ],
+      "target": "waveform-microphone"
+    },
+    {
+      "group": "ios",
+      "name": "wifi",
+      "uses": [
+        "TerritoryTrack/Views/OfflineBanner.swift:85"
+      ],
+      "target": "wifi"
+    },
+    {
+      "group": "ios",
+      "name": "wifi.slash",
+      "uses": [
+        "TerritoryTrack/Views/OfflineBanner.swift:85",
+        "TerritoryTrack/Views/OfflineBanner.swift:63",
+        "TerritoryTrack/Views/RepCardView.swift:33"
+      ],
+      "target": "wifi-off"
+    },
+    {
+      "group": "ios",
+      "name": "xmark",
+      "uses": [
+        "TerritoryTrack/Views/DayWrapView.swift:117"
+      ],
+      "target": "close"
+    },
+    {
+      "group": "ios",
+      "name": "xmark.circle.fill",
+      "uses": [
+        "TerritoryTrack/Views/AdminUsersView.swift:142",
+        "TerritoryTrack/Views/AssistantChatView.swift:639",
+        "TerritoryTrack/Views/Components/ListSearchField.swift:21",
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:576",
+        "TerritoryTrack/Views/DropBySheet.swift:44",
+        "TerritoryTrack/Views/MapView.swift:253",
+        "TerritoryTrack/Views/MessagesView.swift:724",
+        "TerritoryTrack/Views/NearbyView.swift:307",
+        "TerritoryTrack/Views/OrderWriterView.swift:259",
+        "TerritoryTrack/Views/ProspectImagesView.swift:126",
+        "TerritoryTrack/Views/ProspectImagesView.swift:414",
+        "TerritoryTrack/Views/RoutePlannerView.swift:317",
+        "TerritoryTrack/Views/RoutePlannerView.swift:440",
+        "TerritoryTrack/Views/RoutePlannerView.swift:482"
+      ],
+      "target": "error-circle"
+    },
+    {
+      "group": "ios",
+      "name": "xmark.octagon.fill",
+      "uses": [
+        "TerritoryTrack/Views/Components/VoiceCaptureReviewView.swift:475"
+      ],
+      "target": "error-octagon"
+    },
+    {
+      "group": "lucide",
+      "name": "activity",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:76"
+      ],
+      "target": "activity"
+    },
+    {
+      "group": "lucide",
+      "name": "alert-circle",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:77",
+        "client/src/app/shared/nf-compat/paywall/paywall.component.html:52"
+      ],
+      "target": "warning-circle"
+    },
+    {
+      "group": "lucide",
+      "name": "alert-triangle",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:82",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:23",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:98",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:117",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:136"
+      ],
+      "target": "warning"
+    },
+    {
+      "group": "lucide",
+      "name": "align-center",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:99"
+      ],
+      "target": "text-align-center"
+    },
+    {
+      "group": "lucide",
+      "name": "align-justify",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:87"
+      ],
+      "target": "text-align-justify"
+    },
+    {
+      "group": "lucide",
+      "name": "align-left",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:93"
+      ],
+      "target": "text-align-left"
+    },
+    {
+      "group": "lucide",
+      "name": "arrow-right",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:105"
+      ],
+      "target": "arrow-right"
+    },
+    {
+      "group": "lucide",
+      "name": "award",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:109"
+      ],
+      "target": "medal"
+    },
+    {
+      "group": "lucide",
+      "name": "bell",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:113"
+      ],
+      "target": "bell"
+    },
+    {
+      "group": "lucide",
+      "name": "bold",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:117"
+      ],
+      "target": "text-bold"
+    },
+    {
+      "group": "lucide",
+      "name": "briefcase",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:121"
+      ],
+      "target": "briefcase"
+    },
+    {
+      "group": "lucide",
+      "name": "bug",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:125"
+      ],
+      "target": "bug"
+    },
+    {
+      "group": "lucide",
+      "name": "calendar",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:138",
+        "client/src/app/shared/nf-compat/date-picker/date-picker.component.html:18"
+      ],
+      "target": "calendar"
+    },
+    {
+      "group": "lucide",
+      "name": "check",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:144",
+        "client/src/app/shared/nf-compat/paywall/paywall.component.html:31",
+        "client/src/app/shared/nf-compat/upload-toast/upload-toast.component.html:12"
+      ],
+      "target": "check"
+    },
+    {
+      "group": "lucide",
+      "name": "check-circle",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:145",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:126"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "lucide",
+      "name": "chevron-down",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:149"
+      ],
+      "target": "chevron-down"
+    },
+    {
+      "group": "lucide",
+      "name": "chevron-left",
+      "uses": [
+        "client/src/app/email/email.component.html:249",
+        "client/src/app/email/email.component.html:288",
+        "client/src/app/email/email.component.html:968",
+        "client/src/app/shared/nf-compat/core/icons.ts:150",
+        "client/src/app/shared/nf-compat/date-picker/date-picker-popover.component.html:31",
+        "client/src/app/shared/nf-compat/date-picker/date-picker-popover.component.html:124",
+        "client/src/app/trade-shows/trade-shows.component.html:83",
+        "client/src/app/trade-shows/trade-shows.component.html:210"
+      ],
+      "target": "chevron-left"
+    },
+    {
+      "group": "lucide",
+      "name": "chevron-right",
+      "uses": [
+        "client/src/app/email/email.component.html:266",
+        "client/src/app/shared/nf-compat/core/icons.ts:151",
+        "client/src/app/shared/nf-compat/date-picker/date-picker-popover.component.html:38",
+        "client/src/app/shared/nf-compat/date-picker/date-picker-popover.component.html:83",
+        "client/src/app/shared/nf-compat/date-picker/date-picker-popover.component.html:131",
+        "client/src/app/trade-shows/trade-shows.component.html:100",
+        "client/src/app/trade-shows/trade-shows.component.html:227"
+      ],
+      "target": "chevron-right"
+    },
+    {
+      "group": "lucide",
+      "name": "chevron-up",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:152"
+      ],
+      "target": "chevron-up"
+    },
+    {
+      "group": "lucide",
+      "name": "chevrons-left",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:153"
+      ],
+      "target": "chevrons-left"
+    },
+    {
+      "group": "lucide",
+      "name": "chevrons-right",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:157"
+      ],
+      "target": "chevrons-right"
+    },
+    {
+      "group": "lucide",
+      "name": "circle",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:161"
+      ],
+      "target": "ellipse"
+    },
+    {
+      "group": "lucide",
+      "name": "circle-check",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:162"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "lucide",
+      "name": "circle-user",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:166"
+      ],
+      "target": "user-circle"
+    },
+    {
+      "group": "lucide",
+      "name": "clipboard",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:171",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:107"
+      ],
+      "target": "clipboard"
+    },
+    {
+      "group": "lucide",
+      "name": "clock",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:175"
+      ],
+      "target": "clock"
+    },
+    {
+      "group": "lucide",
+      "name": "compass",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.html:484"
+      ],
+      "target": "compass"
+    },
+    {
+      "group": "lucide",
+      "name": "copy",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:179"
+      ],
+      "target": "copy"
+    },
+    {
+      "group": "lucide",
+      "name": "corner-up-left",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:183"
+      ],
+      "target": "reply"
+    },
+    {
+      "group": "lucide",
+      "name": "crown",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.html:511"
+      ],
+      "target": "crown"
+    },
+    {
+      "group": "lucide",
+      "name": "dollar-sign",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:187"
+      ],
+      "target": "currency-dollar"
+    },
+    {
+      "group": "lucide",
+      "name": "download",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:191"
+      ],
+      "target": "download"
+    },
+    {
+      "group": "lucide",
+      "name": "edit-3",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:196"
+      ],
+      "target": "pencil"
+    },
+    {
+      "group": "lucide",
+      "name": "envelope",
+      "uses": [
+        "client/src/app/email/email.component.html:1005"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "lucide",
+      "name": "external-link",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:200",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:59",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:87"
+      ],
+      "target": "external-link"
+    },
+    {
+      "group": "lucide",
+      "name": "eye",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:205"
+      ],
+      "target": "eye"
+    },
+    {
+      "group": "lucide",
+      "name": "file",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:209"
+      ],
+      "target": "file"
+    },
+    {
+      "group": "lucide",
+      "name": "file-arrow-down",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:213"
+      ],
+      "target": "file-download"
+    },
+    {
+      "group": "lucide",
+      "name": "file-circle-plus",
+      "uses": [
+        "client/src/app/email/email.component.html:107"
+      ],
+      "target": "file-add"
+    },
+    {
+      "group": "lucide",
+      "name": "file-text",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:220"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "lucide",
+      "name": "filter",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:226"
+      ],
+      "target": "filter"
+    },
+    {
+      "group": "lucide",
+      "name": "flame",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:227"
+      ],
+      "target": "flame"
+    },
+    {
+      "group": "lucide",
+      "name": "hash",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:235"
+      ],
+      "target": "hash"
+    },
+    {
+      "group": "lucide",
+      "name": "help-circle",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.html:514",
+        "client/src/app/shared/nf-compat/core/icons.ts:241"
+      ],
+      "target": "help-circle"
+    },
+    {
+      "group": "lucide",
+      "name": "image",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:246"
+      ],
+      "target": "image"
+    },
+    {
+      "group": "lucide",
+      "name": "info",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:251",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:68",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:80",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:140"
+      ],
+      "target": "info"
+    },
+    {
+      "group": "lucide",
+      "name": "italic",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:256"
+      ],
+      "target": "text-italic"
+    },
+    {
+      "group": "lucide",
+      "name": "layers",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:261"
+      ],
+      "target": "layers"
+    },
+    {
+      "group": "lucide",
+      "name": "layout-grid",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:266"
+      ],
+      "target": "layout-grid"
+    },
+    {
+      "group": "lucide",
+      "name": "lightbulb",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:272"
+      ],
+      "target": "lightbulb"
+    },
+    {
+      "group": "lucide",
+      "name": "link",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:277"
+      ],
+      "target": "link"
+    },
+    {
+      "group": "lucide",
+      "name": "list",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:281"
+      ],
+      "target": "menu"
+    },
+    {
+      "group": "lucide",
+      "name": "list-ordered",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:289"
+      ],
+      "target": "list-numbered"
+    },
+    {
+      "group": "lucide",
+      "name": "log-out",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:297",
+        "client/src/app/shared/nf-compat/paywall/paywall.component.html:58"
+      ],
+      "target": "logout"
+    },
+    {
+      "group": "lucide",
+      "name": "mail",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:302",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:31"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "lucide",
+      "name": "map",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:306"
+      ],
+      "target": "map"
+    },
+    {
+      "group": "lucide",
+      "name": "map-pin",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:311"
+      ],
+      "target": "location"
+    },
+    {
+      "group": "lucide",
+      "name": "menu",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:315"
+      ],
+      "target": "menu"
+    },
+    {
+      "group": "lucide",
+      "name": "mic",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:320"
+      ],
+      "target": "microphone"
+    },
+    {
+      "group": "lucide",
+      "name": "paperclip",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:326"
+      ],
+      "target": "attachment"
+    },
+    {
+      "group": "lucide",
+      "name": "paste",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:334"
+      ],
+      "target": "paste"
+    },
+    {
+      "group": "lucide",
+      "name": "pause",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:343"
+      ],
+      "target": "pause"
+    },
+    {
+      "group": "lucide",
+      "name": "pie-chart",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:338"
+      ],
+      "target": "chart-pie"
+    },
+    {
+      "group": "lucide",
+      "name": "play",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:342"
+      ],
+      "target": "play"
+    },
+    {
+      "group": "lucide",
+      "name": "plus",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:347"
+      ],
+      "target": "plus"
+    },
+    {
+      "group": "lucide",
+      "name": "refresh-ccw",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:351"
+      ],
+      "target": "rotate-left"
+    },
+    {
+      "group": "lucide",
+      "name": "refresh-cw",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:355"
+      ],
+      "target": "refresh"
+    },
+    {
+      "group": "lucide",
+      "name": "reply",
+      "uses": [
+        "client/src/app/email/email.component.html:983"
+      ],
+      "target": "reply"
+    },
+    {
+      "group": "lucide",
+      "name": "rotate-ccw",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:360"
+      ],
+      "target": "rotate-left"
+    },
+    {
+      "group": "lucide",
+      "name": "rotate-cw",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:364"
+      ],
+      "target": "rotate-right"
+    },
+    {
+      "group": "lucide",
+      "name": "rotate-cw-arrow",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:368"
+      ],
+      "target": "rotate-right"
+    },
+    {
+      "group": "lucide",
+      "name": "search",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:372"
+      ],
+      "target": "search"
+    },
+    {
+      "group": "lucide",
+      "name": "search-zoom-in",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:376"
+      ],
+      "target": "zoom-in"
+    },
+    {
+      "group": "lucide",
+      "name": "search-zoom-out",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:382"
+      ],
+      "target": "zoom-out"
+    },
+    {
+      "group": "lucide",
+      "name": "send",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:387"
+      ],
+      "target": "send"
+    },
+    {
+      "group": "lucide",
+      "name": "settings",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:391",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:77"
+      ],
+      "target": "settings"
+    },
+    {
+      "group": "lucide",
+      "name": "settings-2",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:400"
+      ],
+      "target": "settings-sliders"
+    },
+    {
+      "group": "lucide",
+      "name": "share",
+      "uses": [
+        "client/src/app/email/email.component.html:994"
+      ],
+      "target": "share"
+    },
+    {
+      "group": "lucide",
+      "name": "shield",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.html:513"
+      ],
+      "target": "shield"
+    },
+    {
+      "group": "lucide",
+      "name": "shield-check",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:409",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:52"
+      ],
+      "target": "shield-check"
+    },
+    {
+      "group": "lucide",
+      "name": "sparkles",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.html:512"
+      ],
+      "target": "sparkles"
+    },
+    {
+      "group": "lucide",
+      "name": "star",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:413"
+      ],
+      "target": "star"
+    },
+    {
+      "group": "lucide",
+      "name": "timeline",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:419"
+      ],
+      "target": "timeline"
+    },
+    {
+      "group": "lucide",
+      "name": "trash",
+      "uses": [
+        "client/src/app/email/email.component.html:119",
+        "client/src/app/email/email.component.html:1016",
+        "client/src/app/shared/nf-compat/core/icons.ts:427"
+      ],
+      "target": "trash"
+    },
+    {
+      "group": "lucide",
+      "name": "trophy",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:431"
+      ],
+      "target": "trophy"
+    },
+    {
+      "group": "lucide",
+      "name": "underline",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:439"
+      ],
+      "target": "text-underline"
+    },
+    {
+      "group": "lucide",
+      "name": "upload",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:443"
+      ],
+      "target": "upload"
+    },
+    {
+      "group": "lucide",
+      "name": "user",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:448",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.html:20"
+      ],
+      "target": "user"
+    },
+    {
+      "group": "lucide",
+      "name": "users",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:452"
+      ],
+      "target": "users"
+    },
+    {
+      "group": "lucide",
+      "name": "x",
+      "uses": [
+        "client/src/app/shared/nf-compat/announcement-banner/announcement-banner.component.html:12",
+        "client/src/app/shared/nf-compat/core/icons.ts:458",
+        "client/src/app/shared/nf-compat/date-picker/date-picker.component.html:28",
+        "client/src/app/shared/nf-compat/modal/modal.component.html:21",
+        "client/src/app/shared/nf-compat/upload-toast/upload-toast.component.html:16"
+      ],
+      "target": "close"
+    },
+    {
+      "group": "lucide",
+      "name": "x-circle",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:462",
+        "client/src/app/shared/nf-compat/upload-toast/upload-toast.component.html:9"
+      ],
+      "target": "error-circle"
+    },
+    {
+      "group": "lucide",
+      "name": "zap",
+      "uses": [
+        "client/src/app/shared/nf-compat/core/icons.ts:467"
+      ],
+      "target": "lightning"
+    },
+    {
+      "group": "web",
+      "name": "account",
+      "uses": [
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.ts:48"
+      ],
+      "target": "user"
+    },
+    {
+      "group": "web",
+      "name": "activity",
+      "uses": [
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:231"
+      ],
+      "target": "activity"
+    },
+    {
+      "group": "web",
+      "name": "alert-circle",
+      "uses": [
+        "client/src/app/shared/nf-compat/announcement-banner/announcement-banner.component.ts:28"
+      ],
+      "target": "warning-circle"
+    },
+    {
+      "group": "web",
+      "name": "alert-triangle",
+      "uses": [
+        "client/src/app/shared/nf-compat/announcement-banner/announcement-banner.component.ts:26"
+      ],
+      "target": "warning"
+    },
+    {
+      "group": "web",
+      "name": "align-center",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:75"
+      ],
+      "target": "text-align-center"
+    },
+    {
+      "group": "web",
+      "name": "align-left",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:71"
+      ],
+      "target": "text-align-left"
+    },
+    {
+      "group": "web",
+      "name": "align-right",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:79"
+      ],
+      "target": "text-align-right"
+    },
+    {
+      "group": "web",
+      "name": "angle-down",
+      "uses": [
+        "client/src/app/dashboard/dashboard.component.html:1041",
+        "client/src/app/dashboard/dashboard.component.html:1422",
+        "client/src/app/documents/documents-folder-tree.component.html:55",
+        "client/src/app/shared/brand-switcher/brand-switcher.component.html:4",
+        "client/src/app/shared/bulk-add-brands/bulk-add-brands.component.html:14",
+        "client/src/app/shared/date-title/date-title.component.html:7",
+        "client/src/app/shared/datetime/datetime.component.html:27",
+        "client/src/app/shared/dropdown-button/dropdown-button.component.html:21",
+        "client/src/app/shared/dropdown-button/dropdown-button.component.html:28",
+        "client/src/app/shared/select/select.component.html:40"
+      ],
+      "target": "chevron-down"
+    },
+    {
+      "group": "web",
+      "name": "angle-left",
+      "uses": [
+        "client/src/app/shared/datetime/datetime.component.html:70"
+      ],
+      "target": "chevron-left"
+    },
+    {
+      "group": "web",
+      "name": "angle-right",
+      "uses": [
+        "client/src/app/documents/documents-folder-tree.component.html:55",
+        "client/src/app/shared/bulk-add-brands/bulk-add-brands.component.html:14",
+        "client/src/app/shared/datetime/datetime.component.html:79"
+      ],
+      "target": "chevron-right"
+    },
+    {
+      "group": "web",
+      "name": "angle-up",
+      "uses": [
+        "client/src/app/dashboard/dashboard.component.html:1041",
+        "client/src/app/dashboard/dashboard.component.html:1422",
+        "client/src/app/shared/brand-switcher/brand-switcher.component.html:4"
+      ],
+      "target": "chevron-up"
+    },
+    {
+      "group": "web",
+      "name": "angles-left",
+      "uses": [
+        "client/src/app/app.component.html:174",
+        "client/src/app/shared/data-grid/data-grid.component.html:294"
+      ],
+      "target": "chevrons-left"
+    },
+    {
+      "group": "web",
+      "name": "angles-right",
+      "uses": [
+        "client/src/app/app.component.html:174",
+        "client/src/app/shared/data-grid/data-grid.component.html:335"
+      ],
+      "target": "chevrons-right"
+    },
+    {
+      "group": "web",
+      "name": "app-window",
+      "uses": [
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:140"
+      ],
+      "target": "app-window"
+    },
+    {
+      "group": "web",
+      "name": "apple-logo",
+      "uses": [
+        "client/src/app/calendar/apple-calendar-sync.component.html:33",
+        "client/src/app/calendar/calendar.component.html:9"
+      ],
+      "target": "apple-logo"
+    },
+    {
+      "group": "web",
+      "name": "arrow-left",
+      "uses": [
+        "client/src/app/blog/blog.component.html:159",
+        "client/src/app/shared/breadcrumb/breadcrumb.component.html:5"
+      ],
+      "target": "arrow-left"
+    },
+    {
+      "group": "web",
+      "name": "arrow-right",
+      "uses": [
+        "client/src/app/admin/ticket-detail.component.html:147",
+        "client/src/app/app.component.html:280",
+        "client/src/app/blog/blog.component.html:202",
+        "client/src/app/onboarding/guided-onboarding.component.html:48",
+        "client/src/app/onboarding/guided-onboarding.component.html:161",
+        "client/src/app/onboarding/guided-onboarding.component.html:207",
+        "client/src/app/onboarding/guided-onboarding.component.html:345",
+        "client/src/app/onboarding/guided-onboarding.component.html:367"
+      ],
+      "target": "arrow-right"
+    },
+    {
+      "group": "web",
+      "name": "arrow-right-long",
+      "uses": [
+        "client/src/app/app.component.html:770",
+        "client/src/app/services/nav-catalog.ts:84"
+      ],
+      "target": "arrow-right"
+    },
+    {
+      "group": "web",
+      "name": "arrow-square-out",
+      "uses": [
+        "client/src/app/forms/form-builder.component.html:165"
+      ],
+      "target": "external-link"
+    },
+    {
+      "group": "web",
+      "name": "arrow-trend-up",
+      "uses": [
+        "client/src/app/app.component.html:1126",
+        "client/src/app/insights/insights.component.ts:233",
+        "client/src/app/services/nav-catalog.ts:104"
+      ],
+      "target": "trend-up"
+    },
+    {
+      "group": "web",
+      "name": "arrow-up-right",
+      "uses": [
+        "client/src/app/shared/kpi-card/kpi-card.component.html:3"
+      ],
+      "target": "arrow"
+    },
+    {
+      "group": "web",
+      "name": "arrow-up-right-from-square",
+      "uses": [
+        "client/src/app/settings/billing-settings.component.html:490"
+      ],
+      "target": "external-link"
+    },
+    {
+      "group": "web",
+      "name": "arrows-clockwise",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:308"
+      ],
+      "target": "refresh"
+    },
+    {
+      "group": "web",
+      "name": "arrows-down-up",
+      "uses": [
+        "client/src/app/shared/form-fields/form-fields.component.html:23"
+      ],
+      "target": "sort"
+    },
+    {
+      "group": "web",
+      "name": "arrows-left-right",
+      "uses": [
+        "client/src/app/org-settings/org-commission-tab/org-commission-tab.component.ts:56",
+        "client/src/app/report-builder/report-builder.catalog.ts:381"
+      ],
+      "target": "swap-ends"
+    },
+    {
+      "group": "web",
+      "name": "arrows-rotate",
+      "uses": [
+        "client/src/app/app.component.html:1537",
+        "client/src/app/calendar/apple-calendar-sync.component.html:12",
+        "client/src/app/forms/form-templates.ts:93",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:141",
+        "client/src/app/metrics/tips-carousel/tips-carousel.component.html:65",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:244"
+      ],
+      "target": "refresh"
+    },
+    {
+      "group": "web",
+      "name": "award",
+      "uses": [
+        "client/src/app/market-intelligence/market-intelligence.component.ts:140"
+      ],
+      "target": "medal"
+    },
+    {
+      "group": "web",
+      "name": "bank",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:440"
+      ],
+      "target": "money-bank"
+    },
+    {
+      "group": "web",
+      "name": "barcode",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:59"
+      ],
+      "target": "barcode"
+    },
+    {
+      "group": "web",
+      "name": "bars",
+      "uses": [
+        "client/src/app/app.component.html:22",
+        "client/src/app/settings/settings.data.ts:26"
+      ],
+      "target": "menu"
+    },
+    {
+      "group": "web",
+      "name": "bell",
+      "uses": [
+        "client/src/app/app.component.html:50",
+        "client/src/app/messages/messages-page.component.ts:165",
+        "client/src/app/shared/app-header/app-header.component.html:23"
+      ],
+      "target": "bell"
+    },
+    {
+      "group": "web",
+      "name": "bell-ringing",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:232"
+      ],
+      "target": "bell-ringing"
+    },
+    {
+      "group": "web",
+      "name": "bold",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:5"
+      ],
+      "target": "text-bold"
+    },
+    {
+      "group": "web",
+      "name": "bolt",
+      "uses": [
+        "client/src/app/app.component.html:794",
+        "client/src/app/field-ai/win-patterns.component.ts:47",
+        "client/src/app/field-ai/win-patterns.component.ts:48",
+        "client/src/app/help/katie-capabilities.ts:33",
+        "client/src/app/insights/insights.component.ts:194",
+        "client/src/app/insights/insights.component.ts:231",
+        "client/src/app/metrics/metrics.component.html:63",
+        "client/src/app/services/nav-catalog.ts:86"
+      ],
+      "target": "lightning"
+    },
+    {
+      "group": "web",
+      "name": "book",
+      "uses": [
+        "client/src/app/app.component.html:508",
+        "client/src/app/catalog/catalog.component.ts:61",
+        "client/src/app/services/nav-bundles.ts:78",
+        "client/src/app/services/nav-catalog.ts:64"
+      ],
+      "target": "book"
+    },
+    {
+      "group": "web",
+      "name": "book-open",
+      "uses": [
+        "client/src/app/app.component.html:420",
+        "client/src/app/help/katie-capabilities.ts:26",
+        "client/src/app/insights/insights.component.ts:192",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:134",
+        "client/src/app/services/nav-catalog.ts:57"
+      ],
+      "target": "book-open"
+    },
+    {
+      "group": "web",
+      "name": "bookmark",
+      "uses": [
+        "client/src/app/app.component.html:1711",
+        "client/src/app/dashboard/dashboard.component.html:306",
+        "client/src/app/metrics/metrics.component.html:86"
+      ],
+      "target": "bookmark"
+    },
+    {
+      "group": "web",
+      "name": "box",
+      "uses": [
+        "client/src/app/catalog/catalog.component.ts:60",
+        "client/src/app/field-ai/win-patterns.component.ts:44"
+      ],
+      "target": "box"
+    },
+    {
+      "group": "web",
+      "name": "box-archive",
+      "uses": [
+        "client/src/app/admin/admin-invites.component.html:38",
+        "client/src/app/admin/admin-roadmap.component.html:64",
+        "client/src/app/admin/admin-roadmap.component.html:260",
+        "client/src/app/app.component.html:1078",
+        "client/src/app/services/nav-catalog.ts:109"
+      ],
+      "target": "archive"
+    },
+    {
+      "group": "web",
+      "name": "briefcase",
+      "uses": [
+        "client/src/app/app.component.html:556",
+        "client/src/app/app.component.html:967",
+        "client/src/app/app.component.html:1001",
+        "client/src/app/help/help-articles.ts:1388",
+        "client/src/app/help/katie-capabilities.ts:31",
+        "client/src/app/services/nav-catalog.ts:68",
+        "client/src/app/services/nav-catalog.ts:97",
+        "client/src/app/settings/settings.component.ts:126",
+        "client/src/app/social-media/social-media.component.ts:56"
+      ],
+      "target": "briefcase"
+    },
+    {
+      "group": "web",
+      "name": "bug",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.ts:576"
+      ],
+      "target": "bug"
+    },
+    {
+      "group": "web",
+      "name": "bullseye",
+      "uses": [
+        "client/src/app/app.component.html:444",
+        "client/src/app/finances/finances.component.ts:61",
+        "client/src/app/services/nav-catalog.ts:59"
+      ],
+      "target": "target"
+    },
+    {
+      "group": "web",
+      "name": "calculator",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:14",
+        "client/src/app/app.component.html:1253",
+        "client/src/app/services/nav-catalog.ts:117"
+      ],
+      "target": "calculator"
+    },
+    {
+      "group": "web",
+      "name": "calendar",
+      "uses": [
+        "client/src/app/app.component.html:757",
+        "client/src/app/dashboard-cards/brand-sales-types.ts:74",
+        "client/src/app/dashboard-cards/brand-sales-types.ts:75",
+        "client/src/app/dashboard-cards/brand-sales-types.ts:76",
+        "client/src/app/dashboard-cards/brand-sales-types.ts:77",
+        "client/src/app/help/help-calendar.ts:14",
+        "client/src/app/insights/celebrations-badge.component.ts:25",
+        "client/src/app/insights/insights.component.ts:202",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:136",
+        "client/src/app/performance/performance-range-bar.component.ts:55",
+        "client/src/app/reports/reports.component.ts:201",
+        "client/src/app/services/nav-catalog.ts:83",
+        "client/src/app/settings/settings.component.ts:154",
+        "client/src/app/shared/date-badge/date-badge.component.html:6",
+        "client/src/app/shared/datetime/datetime.component.html:17",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:232",
+        "client/src/app/site-search-quick-actions.ts:11",
+        "client/src/app/site-search-quick-actions.ts:27",
+        "client/src/app/site-search-quick-actions.ts:35",
+        "client/src/app/tasks/tasks.component.ts:58"
+      ],
+      "target": "calendar"
+    },
+    {
+      "group": "web",
+      "name": "calendar-check",
+      "uses": [
+        "client/src/app/calendar/scheduling.component.ts:38"
+      ],
+      "target": "calendar-check"
+    },
+    {
+      "group": "web",
+      "name": "calendar-days",
+      "uses": [
+        "client/src/app/settings/settings.component.html:212"
+      ],
+      "target": "calendar-dots"
+    },
+    {
+      "group": "web",
+      "name": "car",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:118"
+      ],
+      "target": "car"
+    },
+    {
+      "group": "web",
+      "name": "cards",
+      "uses": [
+        "client/src/app/automations/automations.component.ts:78",
+        "client/src/app/catalog/catalog-library.component.ts:110",
+        "client/src/app/email-templates/email-templates.component.ts:75",
+        "client/src/app/focus/focus-list.component.ts:47",
+        "client/src/app/shared/view-toggle/view-toggle.types.ts:15"
+      ],
+      "target": "cards"
+    },
+    {
+      "group": "web",
+      "name": "caret-down",
+      "uses": [
+        "client/src/app/pricing/pricing.component.html:60"
+      ],
+      "target": "chevron-down"
+    },
+    {
+      "group": "web",
+      "name": "catalog",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:19"
+      ],
+      "target": "eye"
+    },
+    {
+      "group": "web",
+      "name": "chart",
+      "uses": [
+        "client/src/app/help/help-articles.ts:1961",
+        "client/src/app/help/help-focus.ts:11",
+        "client/src/app/help/help-performance.ts:11"
+      ],
+      "target": "chart-bar"
+    },
+    {
+      "group": "web",
+      "name": "chart-bar",
+      "uses": [
+        "client/src/app/email-sequences/sequence-detail.component.ts:59",
+        "client/src/app/field-ai/win-patterns.component.ts:42",
+        "client/src/app/field-ai/win-patterns.component.ts:45",
+        "client/src/app/finances/finances.component.ts:56",
+        "client/src/app/insights/insights.component.ts:219",
+        "client/src/app/insights/insights.component.ts:226",
+        "client/src/app/manager/manager.component.ts:163",
+        "client/src/app/manager/manager.component.ts:167",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:133",
+        "client/src/app/metrics/metrics.component.ts:65",
+        "client/src/app/org-dashboard/org-dashboard.component.ts:83",
+        "client/src/app/performance/account-performance-page.component.ts:78",
+        "client/src/app/performance/performance-compare.component.ts:51",
+        "client/src/app/performance/performance-overview.component.ts:40",
+        "client/src/app/report-builder/report-results-panel/report-results-panel.component.ts:78",
+        "client/src/app/reports/reports.component.ts:193",
+        "client/src/app/reports/reports.component.ts:199",
+        "client/src/app/services/page-tabs.service.ts:62",
+        "client/src/app/tasks/tasks.component.ts:60",
+        "client/src/app/time-tracking/time-tracking.component.ts:45"
+      ],
+      "target": "chart-bar"
+    },
+    {
+      "group": "web",
+      "name": "chart-line",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:18",
+        "client/src/app/app.component.html:408",
+        "client/src/app/app.component.html:432",
+        "client/src/app/performance/account-performance-page.component.ts:77",
+        "client/src/app/performance/performance-compare.component.ts:50",
+        "client/src/app/performance/performance-overview.component.ts:39",
+        "client/src/app/performance/performance-range-bar.component.ts:63",
+        "client/src/app/report-builder/report-builder.catalog.ts:29",
+        "client/src/app/report-builder/report-commission.catalog.ts:9",
+        "client/src/app/services/nav-catalog.ts:56",
+        "client/src/app/services/nav-catalog.ts:58"
+      ],
+      "target": "chart-line"
+    },
+    {
+      "group": "web",
+      "name": "chart-line-up",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:353"
+      ],
+      "target": "trend-up"
+    },
+    {
+      "group": "web",
+      "name": "chart-pie",
+      "uses": [
+        "client/src/app/app.component.html:396",
+        "client/src/app/report-builder/report-builder.catalog.ts:279",
+        "client/src/app/report-builder/report-builder.catalog.ts:367",
+        "client/src/app/services/nav-catalog.ts:55"
+      ],
+      "target": "chart-pie"
+    },
+    {
+      "group": "web",
+      "name": "chat",
+      "uses": [
+        "client/src/app/help/help-mcp.ts:22"
+      ],
+      "target": "message"
+    },
+    {
+      "group": "web",
+      "name": "check",
+      "uses": [
+        "client/src/app/help/help.component.ts:209",
+        "client/src/app/metrics/today-panel/today-panel.component.html:58",
+        "client/src/app/metrics/today-panel/today-panel.component.html:114",
+        "client/src/app/pricing/pricing.component.html:32",
+        "client/src/app/settings/billing-settings.component.html:281",
+        "client/src/app/settings/billing-settings.component.html:284",
+        "client/src/app/settings/billing-settings.component.html:287",
+        "client/src/app/settings/billing-settings.component.html:290",
+        "client/src/app/settings/billing-settings.component.html:293",
+        "client/src/app/settings/billing-settings.component.html:296",
+        "client/src/app/shared/checkbox/checkbox.component.html:15",
+        "client/src/app/shared/dropdown-button/dropdown-button.component.html:66",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.ts:52",
+        "client/src/app/shared/plan-card/plan-card.component.html:16",
+        "client/src/app/shared/select/select.component.html:88",
+        "client/src/app/shared/select/select.component.html:166",
+        "client/src/app/shared/select/select.component.html:184",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:21",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:22",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:23",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:24",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:39",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:40",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:41",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:42"
+      ],
+      "target": "check"
+    },
+    {
+      "group": "web",
+      "name": "check-circle",
+      "uses": [
+        "client/src/app/metrics/today-panel/today-panel.component.html:48",
+        "client/src/app/shared/nf-compat/announcement-banner/announcement-banner.component.ts:30",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:225"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "web",
+      "name": "check-square",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:160"
+      ],
+      "target": "checkbox"
+    },
+    {
+      "group": "web",
+      "name": "chevron-down",
+      "uses": [
+        "client/src/app/admin/admin-newsletters.component.html:111",
+        "client/src/app/admin/admin-taxes.component.html:219",
+        "client/src/app/admin/admin-tickets.component.html:32",
+        "client/src/app/app.component.html:329",
+        "client/src/app/app.component.html:499",
+        "client/src/app/app.component.html:627",
+        "client/src/app/app.component.html:721",
+        "client/src/app/app.component.html:853",
+        "client/src/app/app.component.html:918",
+        "client/src/app/app.component.html:1035",
+        "client/src/app/app.component.html:1060",
+        "client/src/app/app.component.html:1108",
+        "client/src/app/app.component.html:1155",
+        "client/src/app/app.component.html:1213",
+        "client/src/app/app.component.html:1283",
+        "client/src/app/landing/landing.component.html:506",
+        "client/src/app/route-planner/route-planner.component.html:319",
+        "client/src/app/settings/custom-nav-menu-settings/custom-nav-menu-settings.component.html:105",
+        "client/src/app/settings/settings.component.html:542",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:178",
+        "client/src/app/shared/form-field-editor/form-field-editor.component.html:3",
+        "client/src/app/status-updates/status-updates.component.html:172"
+      ],
+      "target": "chevron-down"
+    },
+    {
+      "group": "web",
+      "name": "chevron-left",
+      "uses": [
+        "client/src/app/calendar/calendar.component.html:70",
+        "client/src/app/catalog/catalog-editor.component.html:252",
+        "client/src/app/catalog/catalog-editor.component.html:46",
+        "client/src/app/catalog/catalog-page-rail.component.ts:37",
+        "client/src/app/catalog/catalog-pdf-import.component.html:123",
+        "client/src/app/catalog/catalog-viewer.component.html:19",
+        "client/src/app/landing/landing.component.html:312",
+        "client/src/app/messages/messages-page.component.html:409",
+        "client/src/app/messages/messages-page.component.html:518",
+        "client/src/app/messages/messages-page.component.html:565",
+        "client/src/app/messages/messages-page.component.html:670",
+        "client/src/app/metrics/tips-carousel/tips-carousel.component.html:32",
+        "client/src/app/metrics/today-panel/today-panel.component.html:130",
+        "client/src/app/shared/announcement-banner/announcement-banner.component.html:35",
+        "client/src/app/shared/data-grid/data-grid.component.html:303",
+        "client/src/app/shared/hero-message-panel/hero-message-panel.component.html:52"
+      ],
+      "target": "chevron-left"
+    },
+    {
+      "group": "web",
+      "name": "chevron-right",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:219",
+        "client/src/app/admin/ticket-detail.component.html:6",
+        "client/src/app/admin/ticket-detail.component.html:8",
+        "client/src/app/calendar/calendar.component.html:92",
+        "client/src/app/catalog/catalog-editor.component.html:351",
+        "client/src/app/catalog/catalog-editor.component.html:46",
+        "client/src/app/catalog/catalog-page-rail.component.ts:37",
+        "client/src/app/catalog/catalog-viewer.component.html:23",
+        "client/src/app/landing/landing.component.html:320",
+        "client/src/app/metrics/tips-carousel/tips-carousel.component.html:54",
+        "client/src/app/metrics/today-panel/today-panel.component.html:139",
+        "client/src/app/pipeline/pipeline.component.html:104",
+        "client/src/app/shared/announcement-banner/announcement-banner.component.html:45",
+        "client/src/app/shared/data-grid/data-grid.component.html:218",
+        "client/src/app/shared/data-grid/data-grid.component.html:326",
+        "client/src/app/shared/disclosure/disclosure.component.html:10",
+        "client/src/app/shared/disclosure/disclosure.component.html:27",
+        "client/src/app/shared/form-field-editor/form-field-editor.component.html:3",
+        "client/src/app/shared/hero-message-panel/hero-message-panel.component.html:55",
+        "client/src/app/shared/hidden-nav-meter/hidden-nav-meter.component.html:26"
+      ],
+      "target": "chevron-right"
+    },
+    {
+      "group": "web",
+      "name": "chevron-up",
+      "uses": [
+        "client/src/app/admin/admin-newsletters.component.html:107",
+        "client/src/app/admin/admin-tickets.component.html:30",
+        "client/src/app/route-planner/route-planner.component.html:307",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:168"
+      ],
+      "target": "chevron-up"
+    },
+    {
+      "group": "web",
+      "name": "circle",
+      "uses": [
+        "client/src/app/help/help.component.ts:769",
+        "client/src/app/shared/charts/echarts-theme.ts:64",
+        "client/src/app/shared/charts/echarts-theme.ts:102"
+      ],
+      "target": "ellipse"
+    },
+    {
+      "group": "web",
+      "name": "circle-check",
+      "uses": [
+        "client/src/app/catalog/public-linesheet.component.ts:304",
+        "client/src/app/dashboard/dashboard.component.ts:218",
+        "client/src/app/group-email/group-email.component.ts:71",
+        "client/src/app/manager/manager.component.ts:169",
+        "client/src/app/offline/sync-issues.component.html:12",
+        "client/src/app/services/page-tabs.service.ts:50",
+        "client/src/app/settings/billing-settings.component.html:10",
+        "client/src/app/shared/app-header/app-header.component.html:88",
+        "client/src/app/shared/toast/toast.component.ts:28",
+        "client/src/app/tasks/tasks.component.ts:61",
+        "client/src/app/workload/workload.component.ts:47"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "web",
+      "name": "circle-exclamation",
+      "uses": [
+        "client/src/app/admin/admin-overview.component.html:11",
+        "client/src/app/app.component.html:254",
+        "client/src/app/app.component.html:1475",
+        "client/src/app/catalog/public-linesheet.component.ts:91",
+        "client/src/app/insights/insights.component.ts:203",
+        "client/src/app/setup-wizard/setup-wizard.component.html:145",
+        "client/src/app/shared/toast/toast.component.ts:29",
+        "client/src/app/tasks/tasks.component.ts:59"
+      ],
+      "target": "warning-circle"
+    },
+    {
+      "group": "web",
+      "name": "circle-info",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:6",
+        "client/src/app/admin/admin-taxes.component.html:39",
+        "client/src/app/admin/admin-taxes.component.html:439",
+        "client/src/app/settings/billing-settings.component.html:10",
+        "client/src/app/shared/bulk-invite/bulk-invite.component.html:67",
+        "client/src/app/shared/roster-import/roster-import.component.html:78",
+        "client/src/app/shared/toast/toast.component.ts:30"
+      ],
+      "target": "info"
+    },
+    {
+      "group": "web",
+      "name": "circle-question",
+      "uses": [
+        "client/src/app/app.component.html:1405",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:63"
+      ],
+      "target": "help-circle"
+    },
+    {
+      "group": "web",
+      "name": "circle-xmark",
+      "uses": [
+        "client/src/app/dashboard/dashboard.component.ts:219",
+        "client/src/app/messages/messages-page.component.ts:204",
+        "client/src/app/shared/bulk-invite/bulk-invite.component.html:67",
+        "client/src/app/shared/file-upload/file-upload.component.html:77",
+        "client/src/app/shared/roster-import/roster-import.component.html:78"
+      ],
+      "target": "error-circle"
+    },
+    {
+      "group": "web",
+      "name": "clipboard",
+      "uses": [
+        "client/src/app/finances/finances.component.ts:60"
+      ],
+      "target": "clipboard"
+    },
+    {
+      "group": "web",
+      "name": "clipboard-list",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:42"
+      ],
+      "target": "clipboard-text"
+    },
+    {
+      "group": "web",
+      "name": "clipboard-text",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:560"
+      ],
+      "target": "clipboard-text"
+    },
+    {
+      "group": "web",
+      "name": "clock",
+      "uses": [
+        "client/src/app/app.component.html:231",
+        "client/src/app/app.component.html:807",
+        "client/src/app/app.component.html:1502",
+        "client/src/app/email-templates/email-templates.component.ts:212",
+        "client/src/app/insights/insights.component.ts:208",
+        "client/src/app/metrics/today-panel/today-panel.component.ts:36",
+        "client/src/app/report-builder/report-builder.catalog.ts:454",
+        "client/src/app/services/nav-catalog.ts:87",
+        "client/src/app/shared/datetime/datetime.component.html:17",
+        "client/src/app/time-tracking/time-tracking.component.ts:44",
+        "client/src/app/workload/workload.component.ts:48"
+      ],
+      "target": "clock"
+    },
+    {
+      "group": "web",
+      "name": "code-commit",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:90"
+      ],
+      "target": "code-commit"
+    },
+    {
+      "group": "web",
+      "name": "code-pull-request",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:87"
+      ],
+      "target": "code-pull-request"
+    },
+    {
+      "group": "web",
+      "name": "coins",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:103",
+        "client/src/app/report-builder/report-builder.catalog.ts:426"
+      ],
+      "target": "money-coins"
+    },
+    {
+      "group": "web",
+      "name": "columns",
+      "uses": [
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:118"
+      ],
+      "target": "layout-columns"
+    },
+    {
+      "group": "web",
+      "name": "comment",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:84",
+        "client/src/app/app.component.html:660",
+        "client/src/app/app.component.html:819",
+        "client/src/app/app.component.html:1162",
+        "client/src/app/help/katie-capabilities.ts:32",
+        "client/src/app/manager/manager.component.ts:171",
+        "client/src/app/services/nav-catalog.ts:77",
+        "client/src/app/services/nav-catalog.ts:88",
+        "client/src/app/services/nav-catalog.ts:110"
+      ],
+      "target": "comment"
+    },
+    {
+      "group": "web",
+      "name": "comment-sms",
+      "uses": [
+        "client/src/app/app.component.html:982",
+        "client/src/app/customers/customer-detail.component.html:97",
+        "client/src/app/messages/messages-page.component.ts:175"
+      ],
+      "target": "message-text"
+    },
+    {
+      "group": "web",
+      "name": "contact",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:8",
+        "client/src/app/site-search-quick-actions.ts:44",
+        "client/src/app/site-search-quick-actions.ts:101"
+      ],
+      "target": "users"
+    },
+    {
+      "group": "web",
+      "name": "copy",
+      "uses": [
+        "client/src/app/forms/forms.component.html:131",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:475"
+      ],
+      "target": "copy"
+    },
+    {
+      "group": "web",
+      "name": "credit-card",
+      "uses": [
+        "client/src/app/finances/finances.component.ts:58",
+        "client/src/app/settings/settings.component.ts:185"
+      ],
+      "target": "credit-card"
+    },
+    {
+      "group": "web",
+      "name": "crown",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.ts:348",
+        "client/src/app/settings/billing-settings.component.html:270",
+        "client/src/app/settings/billing-settings.component.ts:111"
+      ],
+      "target": "crown"
+    },
+    {
+      "group": "web",
+      "name": "dashboard",
+      "uses": [
+        "client/src/app/site-search-finder.service.ts:83",
+        "client/src/app/site-search-quick-actions.ts:5",
+        "client/src/app/site-search-quick-actions.ts:37",
+        "client/src/app/site-search-quick-actions.ts:99"
+      ],
+      "target": "dashboard"
+    },
+    {
+      "group": "web",
+      "name": "desktop",
+      "uses": [
+        "client/src/app/app.component.html:782",
+        "client/src/app/services/nav-catalog.ts:85",
+        "client/src/app/settings/settings.data.ts:24"
+      ],
+      "target": "monitor"
+    },
+    {
+      "group": "web",
+      "name": "document",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:31",
+        "client/src/app/site-search-quick-actions.ts:34"
+      ],
+      "target": "file"
+    },
+    {
+      "group": "web",
+      "name": "dollar",
+      "uses": [
+        "client/src/app/help/help-commissions.ts:12"
+      ],
+      "target": "currency-dollar"
+    },
+    {
+      "group": "web",
+      "name": "dollar-sign",
+      "uses": [
+        "client/src/app/app.component.html:862",
+        "client/src/app/app.component.html:1231",
+        "client/src/app/finances/finances.component.ts:55",
+        "client/src/app/help/help-finances.ts:4",
+        "client/src/app/help/katie-capabilities.ts:30",
+        "client/src/app/insights/insights.component.ts:191",
+        "client/src/app/insights/insights.component.ts:201",
+        "client/src/app/manager/manager.component.ts:170",
+        "client/src/app/org-settings/org-settings.component.ts:80",
+        "client/src/app/performance/performance-range-bar.component.ts:64",
+        "client/src/app/reports/reports.component.ts:200",
+        "client/src/app/services/nav-bundles.ts:106",
+        "client/src/app/services/nav-catalog.ts:91",
+        "client/src/app/services/nav-catalog.ts:101",
+        "client/src/app/services/page-tabs.service.ts:35",
+        "client/src/app/vendor-statements/reconcile/agency-recon-tab.component.ts:49",
+        "client/src/app/workload/workload.component.ts:49"
+      ],
+      "target": "currency-dollar"
+    },
+    {
+      "group": "web",
+      "name": "download",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:31",
+        "client/src/app/finances/finances.component.html:19",
+        "client/src/app/finances/finances.component.html:22",
+        "client/src/app/finances/finances.component.html:25",
+        "client/src/app/finances/finances.component.html:28",
+        "client/src/app/finances/finances.component.html:36",
+        "client/src/app/finances/finances.component.html:39",
+        "client/src/app/finances/finances.component.html:42",
+        "client/src/app/finances/finances.component.html:373",
+        "client/src/app/finances/finances.component.html:447",
+        "client/src/app/insights/insights.component.html:22",
+        "client/src/app/reports/reports.component.html:22"
+      ],
+      "target": "download"
+    },
+    {
+      "group": "web",
+      "name": "email",
+      "uses": [
+        "client/src/app/help/help-articles.ts:98",
+        "client/src/app/help/help-articles.ts:1029"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "web",
+      "name": "envelope",
+      "uses": [
+        "client/src/app/app.component.html:468",
+        "client/src/app/app.component.html:636",
+        "client/src/app/app.component.html:1067",
+        "client/src/app/app.component.html:1173",
+        "client/src/app/app.component.html:1385",
+        "client/src/app/app.component.html:1666",
+        "client/src/app/calendar/public-scheduling.component.html:157",
+        "client/src/app/catalog/catalog.component.ts:63",
+        "client/src/app/customers/customer-detail.component.html:107",
+        "client/src/app/dashboard/dashboard.component.html:526",
+        "client/src/app/dashboard/dashboard.component.html:997",
+        "client/src/app/dashboard/dashboard.component.html:1378",
+        "client/src/app/email-sequences/sequence-detail.component.ts:60",
+        "client/src/app/email-templates/email-templates.component.ts:209",
+        "client/src/app/email/email.component.ts:154",
+        "client/src/app/help/katie-capabilities.ts:28",
+        "client/src/app/messages/messages-page.component.ts:149",
+        "client/src/app/messages/messages-page.component.ts:197",
+        "client/src/app/metrics/today-panel/today-panel.component.ts:38",
+        "client/src/app/org-settings/org-settings.component.ts:66",
+        "client/src/app/pipeline/pipeline.component.html:172",
+        "client/src/app/reports/reports.component.ts:197",
+        "client/src/app/services/nav-bundles.ts:92",
+        "client/src/app/services/nav-catalog.ts:61",
+        "client/src/app/services/nav-catalog.ts:75",
+        "client/src/app/services/nav-catalog.ts:108",
+        "client/src/app/services/nav-catalog.ts:111",
+        "client/src/app/territories/territories.component.html:128"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "web",
+      "name": "envelope-open",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:412"
+      ],
+      "target": "mail-open"
+    },
+    {
+      "group": "web",
+      "name": "eraser",
+      "uses": [
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:96"
+      ],
+      "target": "eraser"
+    },
+    {
+      "group": "web",
+      "name": "eye",
+      "uses": [
+        "client/src/app/app.component.html:114",
+        "client/src/app/app.component.html:134",
+        "client/src/app/catalog/catalog.component.ts:62",
+        "client/src/app/settings/settings.data.ts:25",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:238"
+      ],
+      "target": "eye"
+    },
+    {
+      "group": "web",
+      "name": "eye-slash",
+      "uses": [
+        "client/src/app/shared/hidden-nav-meter/hidden-nav-meter.component.html:17"
+      ],
+      "target": "eye-off"
+    },
+    {
+      "group": "web",
+      "name": "facebook-logo",
+      "uses": [
+        "client/src/app/dashboard/dashboard.component.html:564"
+      ],
+      "target": "facebook-logo"
+    },
+    {
+      "group": "web",
+      "name": "file",
+      "uses": [
+        "client/src/app/app.component.html:1325",
+        "client/src/app/catalog/catalog.component.ts:64",
+        "client/src/app/help/help-order-sites.ts:3",
+        "client/src/app/services/nav-catalog.ts:118",
+        "client/src/app/shared/file-upload/file-upload.component.ts:184",
+        "client/src/app/shared/file-upload/file-upload.component.ts:192",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:227"
+      ],
+      "target": "file"
+    },
+    {
+      "group": "web",
+      "name": "file-circle-plus",
+      "uses": [
+        "client/src/app/app.component.html:680",
+        "client/src/app/forms/form-templates.ts:63",
+        "client/src/app/services/nav-catalog.ts:78",
+        "client/src/app/settings/settings.component.ts:140"
+      ],
+      "target": "file-add"
+    },
+    {
+      "group": "web",
+      "name": "file-lines",
+      "uses": [
+        "client/src/app/agreements/agreements.component.html:51",
+        "client/src/app/agreements/agreements.component.html:77",
+        "client/src/app/app.component.html:456",
+        "client/src/app/app.component.html:520",
+        "client/src/app/app.component.html:874",
+        "client/src/app/app.component.html:886",
+        "client/src/app/app.component.html:954",
+        "client/src/app/app.component.html:1426",
+        "client/src/app/finances/finances.component.ts:59",
+        "client/src/app/insights/insights.component.html:25",
+        "client/src/app/insights/insights.component.ts:232",
+        "client/src/app/manager/manager.component.ts:166",
+        "client/src/app/reports/reports.component.html:25",
+        "client/src/app/services/nav-catalog.ts:60",
+        "client/src/app/services/nav-catalog.ts:65",
+        "client/src/app/services/nav-catalog.ts:92",
+        "client/src/app/services/nav-catalog.ts:96",
+        "client/src/app/settings/billing-settings.component.html:474",
+        "client/src/app/shared/file-upload/file-upload.component.ts:191",
+        "client/src/app/tasks/tasks.component.ts:57",
+        "client/src/app/vendor-statements/reconcile/agency-recon-tab.component.ts:48"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "web",
+      "name": "file-pdf",
+      "uses": [
+        "client/src/app/app.component.html:385",
+        "client/src/app/catalog/catalog-library.component.html:39",
+        "client/src/app/services/nav-catalog.ts:54"
+      ],
+      "target": "file-pdf"
+    },
+    {
+      "group": "web",
+      "name": "file-text",
+      "uses": [
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:229",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:239"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "web",
+      "name": "files",
+      "uses": [
+        "client/src/app/documents/documents-folder-tree.component.html:26"
+      ],
+      "target": "files"
+    },
+    {
+      "group": "web",
+      "name": "flow-arrow",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:530"
+      ],
+      "target": "workflow"
+    },
+    {
+      "group": "web",
+      "name": "folder",
+      "uses": [
+        "client/src/app/dashboard/dashboard.component.ts:220",
+        "client/src/app/documents/documents-folder-tree.component.html:67"
+      ],
+      "target": "folder"
+    },
+    {
+      "group": "web",
+      "name": "funnel",
+      "uses": [
+        "client/src/app/report-builder/filter-editor/filter-group-editor.component.html:48",
+        "client/src/app/report-builder/report-editor/measures-section.component.html:55",
+        "client/src/app/report-builder/report-editor/sources-section.component.html:36"
+      ],
+      "target": "filter"
+    },
+    {
+      "group": "web",
+      "name": "funnel-simple",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:75"
+      ],
+      "target": "filter"
+    },
+    {
+      "group": "web",
+      "name": "gear",
+      "uses": [
+        "client/src/app/app.component.html:1395",
+        "client/src/app/app.component.html:76",
+        "client/src/app/org-settings/org-settings.component.ts:63"
+      ],
+      "target": "settings"
+    },
+    {
+      "group": "web",
+      "name": "gift",
+      "uses": [
+        "client/src/app/settings/billing-settings.component.ts:113"
+      ],
+      "target": "gift"
+    },
+    {
+      "group": "web",
+      "name": "github",
+      "uses": [
+        "client/src/app/admin/admin-roadmap-archive.component.html:36",
+        "client/src/app/admin/admin-roadmap.component.html:9",
+        "client/src/app/admin/admin-roadmap.component.html:94",
+        "client/src/app/admin/admin-roadmap.component.html:101",
+        "client/src/app/admin/admin-roadmap.component.html:263"
+      ],
+      "target": "github-logo"
+    },
+    {
+      "group": "web",
+      "name": "globe",
+      "uses": [
+        "client/src/app/app.component.html:580",
+        "client/src/app/dashboard/dashboard.component.html:969",
+        "client/src/app/dashboard/dashboard.component.html:1350",
+        "client/src/app/reports/reports.component.ts:194",
+        "client/src/app/services/nav-catalog.ts:71"
+      ],
+      "target": "globe"
+    },
+    {
+      "group": "web",
+      "name": "google",
+      "uses": [
+        "client/src/app/vendor-statements/import-dialog/vendor-import-dialog.component.html:11"
+      ],
+      "target": "google-logo"
+    },
+    {
+      "group": "web",
+      "name": "google-logo",
+      "uses": [
+        "client/src/app/calendar/calendar.component.html:12"
+      ],
+      "target": "google-logo"
+    },
+    {
+      "group": "web",
+      "name": "grip-vertical",
+      "uses": [
+        "client/src/app/settings/custom-nav-menu-settings/custom-nav-menu-settings.component.html:65"
+      ],
+      "target": "grip-vertical"
+    },
+    {
+      "group": "web",
+      "name": "hand-pointer",
+      "uses": [
+        "client/src/app/settings/referral-email-blocks.component.ts:43"
+      ],
+      "target": "cursor-click"
+    },
+    {
+      "group": "web",
+      "name": "heading",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:65",
+        "client/src/app/shared/rte/rte.component.html:107",
+        "client/src/app/shared/rte/rte.component.html:111"
+      ],
+      "target": "text-heading"
+    },
+    {
+      "group": "web",
+      "name": "heart",
+      "uses": [
+        "client/src/app/email-templates/email-templates.component.ts:208"
+      ],
+      "target": "heart"
+    },
+    {
+      "group": "web",
+      "name": "heart-pulse",
+      "uses": [
+        "client/src/app/app.component.html:362",
+        "client/src/app/insights/insights.component.ts:195",
+        "client/src/app/insights/insights.component.ts:225",
+        "client/src/app/manager/manager.component.ts:168",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:139",
+        "client/src/app/metrics/metrics.component.ts:66",
+        "client/src/app/org-dashboard/org-dashboard.component.ts:85",
+        "client/src/app/reports/reports.component.ts:192",
+        "client/src/app/services/nav-catalog.ts:52"
+      ],
+      "target": "activity"
+    },
+    {
+      "group": "web",
+      "name": "help-circle",
+      "uses": [
+        "client/src/app/executive-summary/executive-summary.component.ts:348"
+      ],
+      "target": "help-circle"
+    },
+    {
+      "group": "web",
+      "name": "hourglass",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:574"
+      ],
+      "target": "hourglass"
+    },
+    {
+      "group": "web",
+      "name": "id-card",
+      "uses": [
+        "client/src/app/settings/referral-email-blocks.component.ts:44",
+        "client/src/app/settings/referral-email-blocks.component.ts:49"
+      ],
+      "target": "id-card"
+    },
+    {
+      "group": "web",
+      "name": "identification-card",
+      "uses": [
+        "client/src/app/app.component.html:592",
+        "client/src/app/services/nav-catalog.ts:72"
+      ],
+      "target": "id-card"
+    },
+    {
+      "group": "web",
+      "name": "image",
+      "uses": [
+        "client/src/app/admin/admin-blog-editor.component.html:27",
+        "client/src/app/admin/admin-blog-editor.component.html:37",
+        "client/src/app/admin/admin-blog-editor.component.html:39",
+        "client/src/app/finances/finances.component.html:176",
+        "client/src/app/org-settings/org-settings.component.ts:67",
+        "client/src/app/settings/referral-email-blocks.component.ts:50",
+        "client/src/app/shared/file-upload/file-upload.component.html:26",
+        "client/src/app/shared/file-upload/file-upload.component.ts:175",
+        "client/src/app/shared/file-upload/file-upload.component.ts:190",
+        "client/src/app/shared/image-preview/image-preview.component.html:5",
+        "client/src/app/shared/rte/rte.component.html:87",
+        "client/src/app/shared/rte/rte.component.html:116"
+      ],
+      "target": "image"
+    },
+    {
+      "group": "web",
+      "name": "info",
+      "uses": [
+        "client/src/app/order-writer/order-form.component.html:156",
+        "client/src/app/shared/nf-compat/announcement-banner/announcement-banner.component.ts:32"
+      ],
+      "target": "info"
+    },
+    {
+      "group": "web",
+      "name": "instagram-logo",
+      "uses": [
+        "client/src/app/dashboard/dashboard.component.html:576"
+      ],
+      "target": "instagram-logo"
+    },
+    {
+      "group": "web",
+      "name": "italic",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:9"
+      ],
+      "target": "text-italic"
+    },
+    {
+      "group": "web",
+      "name": "key",
+      "uses": [
+        "client/src/app/settings/settings.component.ts:107",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.ts:50"
+      ],
+      "target": "key"
+    },
+    {
+      "group": "web",
+      "name": "layer-group",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:72",
+        "client/src/app/admin/admin-roadmap.component.ts:577",
+        "client/src/app/app.component.html:568",
+        "client/src/app/app.component.html:1220",
+        "client/src/app/services/nav-bundles.ts:113",
+        "client/src/app/services/nav-catalog.ts:69",
+        "client/src/app/services/nav-catalog.ts:105"
+      ],
+      "target": "layers"
+    },
+    {
+      "group": "web",
+      "name": "layout-grid",
+      "uses": [
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:230"
+      ],
+      "target": "layout-grid"
+    },
+    {
+      "group": "web",
+      "name": "lead",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:6",
+        "client/src/app/site-search-quick-actions.ts:42",
+        "client/src/app/site-search-quick-actions.ts:43",
+        "client/src/app/site-search-quick-actions.ts:45",
+        "client/src/app/site-search-quick-actions.ts:46",
+        "client/src/app/site-search-quick-actions.ts:90",
+        "client/src/app/site-search-quick-actions.ts:93"
+      ],
+      "target": "user"
+    },
+    {
+      "group": "web",
+      "name": "lightbulb",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.ts:579",
+        "client/src/app/services/page-tabs.service.ts:79"
+      ],
+      "target": "lightbulb"
+    },
+    {
+      "group": "web",
+      "name": "lightning",
+      "uses": [
+        "client/src/app/settings/billing-settings.component.ts:110",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:73"
+      ],
+      "target": "lightning"
+    },
+    {
+      "group": "web",
+      "name": "link",
+      "uses": [
+        "client/src/app/calendar/scheduling.component.ts:37",
+        "client/src/app/shared/rte/rte.component.html:29"
+      ],
+      "target": "link"
+    },
+    {
+      "group": "web",
+      "name": "link-slash",
+      "uses": [
+        "client/src/app/calendar/apple-calendar-sync.component.html:22"
+      ],
+      "target": "unlink"
+    },
+    {
+      "group": "web",
+      "name": "list",
+      "uses": [
+        "client/src/app/app.component.html:648",
+        "client/src/app/automations/automations.component.ts:79",
+        "client/src/app/catalog/catalog-library.component.ts:111",
+        "client/src/app/email-templates/email-templates.component.ts:76",
+        "client/src/app/services/nav-catalog.ts:76",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:237",
+        "client/src/app/shared/view-toggle/view-toggle.types.ts:16"
+      ],
+      "target": "menu"
+    },
+    {
+      "group": "web",
+      "name": "list-check",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:78",
+        "client/src/app/app.component.html:1290",
+        "client/src/app/services/nav-catalog.ts:107",
+        "client/src/app/settings/referral-email-blocks.component.ts:51"
+      ],
+      "target": "list-check"
+    },
+    {
+      "group": "web",
+      "name": "list-ol",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:23"
+      ],
+      "target": "list-numbered"
+    },
+    {
+      "group": "web",
+      "name": "list-ul",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:19"
+      ],
+      "target": "list-bulleted"
+    },
+    {
+      "group": "web",
+      "name": "location-arrow",
+      "uses": [
+        "client/src/app/shared/announcement-banner/announcement-banner.component.html:8",
+        "client/src/app/shared/brand-hero/brand-hero.component.html:2"
+      ],
+      "target": "navigation"
+    },
+    {
+      "group": "web",
+      "name": "location-dot",
+      "uses": [
+        "client/src/app/app.component.html:745",
+        "client/src/app/dashboard/dashboard.component.html:498",
+        "client/src/app/field-ai/win-patterns.component.ts:43",
+        "client/src/app/insights/insights.component.ts:209",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:138",
+        "client/src/app/services/nav-catalog.ts:82",
+        "client/src/app/setup-wizard/setup-wizard.component.html:207",
+        "client/src/app/territories/territories.component.html:114"
+      ],
+      "target": "location"
+    },
+    {
+      "group": "web",
+      "name": "lock",
+      "uses": [
+        "client/src/app/app.component.html:1455",
+        "client/src/app/org-settings/org-settings.component.ts:65",
+        "client/src/app/settings/settings.component.ts:178"
+      ],
+      "target": "lock"
+    },
+    {
+      "group": "web",
+      "name": "magnifying-glass",
+      "uses": [
+        "client/src/app/app.component.html:42",
+        "client/src/app/app.component.html:200",
+        "client/src/app/dashboard/dashboard.component.html:544",
+        "client/src/app/dashboard/dashboard.component.ts:216",
+        "client/src/app/executive-summary/executive-summary.component.ts:175",
+        "client/src/app/onboarding/guided-onboarding.component.html:148",
+        "client/src/app/reports/reports.component.ts:195",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:86",
+        "client/src/app/shared/search-input/search-input.component.html:2",
+        "client/src/app/shared/select/select.component.html:59"
+      ],
+      "target": "search"
+    },
+    {
+      "group": "web",
+      "name": "magnifying-glass-minus",
+      "uses": [
+        "client/src/app/shared/org-tree/org-tree.component.html:144"
+      ],
+      "target": "zoom-out"
+    },
+    {
+      "group": "web",
+      "name": "magnifying-glass-plus",
+      "uses": [
+        "client/src/app/shared/org-tree/org-tree.component.html:150"
+      ],
+      "target": "zoom-in"
+    },
+    {
+      "group": "web",
+      "name": "mail",
+      "uses": [
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:228"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "web",
+      "name": "map",
+      "uses": [
+        "client/src/app/admin/admin-tools-tab.component.html:361",
+        "client/src/app/app.component.html:532",
+        "client/src/app/app.component.html:544",
+        "client/src/app/app.component.html:1372",
+        "client/src/app/finances/finances.component.ts:57",
+        "client/src/app/map/map.component.html:152",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:135",
+        "client/src/app/report-builder/report-builder.catalog.ts:293",
+        "client/src/app/report-builder/report-builder.catalog.ts:338",
+        "client/src/app/services/nav-bundles.ts:85",
+        "client/src/app/services/nav-catalog.ts:66",
+        "client/src/app/services/nav-catalog.ts:67",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:233",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:236",
+        "client/src/app/site-search-quick-actions.ts:13",
+        "client/src/app/site-search-quick-actions.ts:88",
+        "client/src/app/territories/territories.component.html:119"
+      ],
+      "target": "map"
+    },
+    {
+      "group": "web",
+      "name": "map-location-dot",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:10",
+        "client/src/app/dashboard/dashboard.component.html:1008",
+        "client/src/app/dashboard/dashboard.component.html:1389"
+      ],
+      "target": "map-location"
+    },
+    {
+      "group": "web",
+      "name": "map-pin",
+      "uses": [
+        "client/src/app/metrics/today-panel/today-panel.component.ts:39",
+        "client/src/app/report-builder/report-builder.catalog.ts:132",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:226"
+      ],
+      "target": "location"
+    },
+    {
+      "group": "web",
+      "name": "map-trifold",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:323"
+      ],
+      "target": "map"
+    },
+    {
+      "group": "web",
+      "name": "megaphone",
+      "uses": [
+        "client/src/app/metrics/team-panel/team-panel.component.html:31",
+        "client/src/app/shared/announcement-banner/announcement-banner.component.html:9"
+      ],
+      "target": "megaphone"
+    },
+    {
+      "group": "web",
+      "name": "metrics",
+      "uses": [
+        "client/src/app/help/help-articles.ts:101"
+      ],
+      "target": "chart-bar"
+    },
+    {
+      "group": "web",
+      "name": "microphone",
+      "uses": [
+        "client/src/app/services/nav-catalog.ts:70",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:1696"
+      ],
+      "target": "microphone"
+    },
+    {
+      "group": "web",
+      "name": "minus",
+      "uses": [
+        "client/src/app/catalog/catalog-editor.component.html:357",
+        "client/src/app/catalog/catalog-viewer.component.html:29",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:54"
+      ],
+      "target": "minus"
+    },
+    {
+      "group": "web",
+      "name": "moon",
+      "uses": [
+        "client/src/app/app.component.html:101",
+        "client/src/app/app.component.html:1438"
+      ],
+      "target": "moon"
+    },
+    {
+      "group": "web",
+      "name": "newspaper",
+      "uses": [
+        "client/src/app/app.component.html:1184",
+        "client/src/app/services/nav-catalog.ts:112",
+        "client/src/app/settings/settings.component.html:272"
+      ],
+      "target": "newspaper"
+    },
+    {
+      "group": "web",
+      "name": "note",
+      "uses": [
+        "client/src/app/metrics/today-panel/today-panel.component.ts:41",
+        "client/src/app/site-search-finder.service.ts:78"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "web",
+      "name": "note-pencil",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:397"
+      ],
+      "target": "note-edit"
+    },
+    {
+      "group": "web",
+      "name": "order",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:20"
+      ],
+      "target": "file-text"
+    },
+    {
+      "group": "web",
+      "name": "package",
+      "uses": [
+        "client/src/app/metrics/today-panel/today-panel.component.ts:40"
+      ],
+      "target": "box"
+    },
+    {
+      "group": "web",
+      "name": "paper-plane",
+      "uses": [
+        "client/src/app/admin/admin-tickets.component.html:108",
+        "client/src/app/admin/ticket-detail.component.html:46",
+        "client/src/app/insights/insights.component.ts:224",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:1710",
+        "client/src/app/shared/chat-composer/chat-composer.component.html:24"
+      ],
+      "target": "send"
+    },
+    {
+      "group": "web",
+      "name": "paper-plane-tilt",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:516"
+      ],
+      "target": "send"
+    },
+    {
+      "group": "web",
+      "name": "paperclip",
+      "uses": [
+        "client/src/app/admin/admin-rep-outreach-send.component.html:106",
+        "client/src/app/email-templates/email-templates.component.html:117"
+      ],
+      "target": "attachment"
+    },
+    {
+      "group": "web",
+      "name": "paste",
+      "uses": [
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.ts:51"
+      ],
+      "target": "paste"
+    },
+    {
+      "group": "web",
+      "name": "path",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:618"
+      ],
+      "target": "route"
+    },
+    {
+      "group": "web",
+      "name": "pause",
+      "uses": [
+        "client/src/app/landing/landing.component.html:342",
+        "client/src/app/shared/hero-message-panel/hero-message-panel.component.html:36"
+      ],
+      "target": "pause"
+    },
+    {
+      "group": "web",
+      "name": "pen",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:552",
+        "client/src/app/calendar/calendar.component.html:459"
+      ],
+      "target": "pen"
+    },
+    {
+      "group": "web",
+      "name": "pencil",
+      "uses": [
+        "client/src/app/email-templates/email-templates.component.ts:213",
+        "client/src/app/social-media/social-media.component.ts:55"
+      ],
+      "target": "pencil"
+    },
+    {
+      "group": "web",
+      "name": "pencil-simple",
+      "uses": [
+        "client/src/app/metrics/team-panel/team-panel.component.html:53"
+      ],
+      "target": "pencil"
+    },
+    {
+      "group": "web",
+      "name": "percent",
+      "uses": [
+        "client/src/app/org-settings/org-commission-tab/org-commission-tab.component.ts:54"
+      ],
+      "target": "percentage"
+    },
+    {
+      "group": "web",
+      "name": "phone",
+      "uses": [
+        "client/src/app/calendar/public-scheduling.component.html:160",
+        "client/src/app/customers/customer-detail.component.html:88",
+        "client/src/app/metrics/today-panel/today-panel.component.ts:37",
+        "client/src/app/report-builder/report-builder.catalog.ts:264",
+        "client/src/app/reports/reports.component.ts:198",
+        "client/src/app/shared/phone-link/phone-link.component.html:6"
+      ],
+      "target": "phone"
+    },
+    {
+      "group": "web",
+      "name": "phone-slash",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:248"
+      ],
+      "target": "phone-off"
+    },
+    {
+      "group": "web",
+      "name": "pie-chart",
+      "uses": [
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:234"
+      ],
+      "target": "chart-pie"
+    },
+    {
+      "group": "web",
+      "name": "pipeline",
+      "uses": [
+        "client/src/app/help/help-articles.ts:97",
+        "client/src/app/help/help-articles.ts:901",
+        "client/src/app/site-search-quick-actions.ts:7"
+      ],
+      "target": "activity"
+    },
+    {
+      "group": "web",
+      "name": "planning",
+      "uses": [
+        "client/src/app/help/help-articles.ts:1235"
+      ],
+      "target": "calendar"
+    },
+    {
+      "group": "web",
+      "name": "play",
+      "uses": [
+        "client/src/app/landing/landing.component.html:342",
+        "client/src/app/shared/hero-message-panel/hero-message-panel.component.html:36"
+      ],
+      "target": "play"
+    },
+    {
+      "group": "web",
+      "name": "plug",
+      "uses": [
+        "client/src/app/settings/settings.component.ts:171"
+      ],
+      "target": "plug"
+    },
+    {
+      "group": "web",
+      "name": "plug-circle-xmark",
+      "uses": [
+        "client/src/app/app.component.html:1522"
+      ],
+      "target": "plug-off"
+    },
+    {
+      "group": "web",
+      "name": "plus",
+      "uses": [
+        "client/src/app/admin/admin-blog.component.html:17",
+        "client/src/app/admin/admin-invites.component.html:41",
+        "client/src/app/admin/admin-roadmap.component.html:34",
+        "client/src/app/admin/admin-taxes.component.html:467",
+        "client/src/app/admin/admin.component.html:21",
+        "client/src/app/agreements/agreements.component.html:10",
+        "client/src/app/calendar/calendar.component.html:270",
+        "client/src/app/catalog/catalog-editor.component.html:360",
+        "client/src/app/catalog/catalog-viewer.component.html:32",
+        "client/src/app/dashboard/dashboard.component.html:1030",
+        "client/src/app/dashboard/dashboard.component.html:1411",
+        "client/src/app/documents/documents-folder-tree.component.html:13",
+        "client/src/app/forms/form-builder.component.html:47",
+        "client/src/app/shared/brand-switcher/brand-switcher.component.html:27",
+        "client/src/app/shared/bulk-add-brands/bulk-add-brands.component.html:76",
+        "client/src/app/shared/select/select.component.html:132",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:58",
+        "client/src/app/timeline/timeline.component.html:67"
+      ],
+      "target": "plus"
+    },
+    {
+      "group": "web",
+      "name": "pulse",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:146"
+      ],
+      "target": "activity"
+    },
+    {
+      "group": "web",
+      "name": "receipt",
+      "uses": [
+        "client/src/app/manager/manager.component.ts:172",
+        "client/src/app/report-builder/report-builder.catalog.ts:89",
+        "client/src/app/report-builder/report-builder.catalog.ts:470",
+        "client/src/app/settings/billing-settings.component.ts:112"
+      ],
+      "target": "receipt"
+    },
+    {
+      "group": "web",
+      "name": "rectangle-list",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.ts:580"
+      ],
+      "target": "id-card"
+    },
+    {
+      "group": "web",
+      "name": "repeat",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:501"
+      ],
+      "target": "repeat"
+    },
+    {
+      "group": "web",
+      "name": "report",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:14",
+        "client/src/app/site-search-quick-actions.ts:21",
+        "client/src/app/site-search-quick-actions.ts:22",
+        "client/src/app/site-search-quick-actions.ts:23",
+        "client/src/app/site-search-quick-actions.ts:24",
+        "client/src/app/site-search-quick-actions.ts:30",
+        "client/src/app/site-search-quick-actions.ts:58",
+        "client/src/app/site-search-quick-actions.ts:59",
+        "client/src/app/site-search-quick-actions.ts:60",
+        "client/src/app/site-search-quick-actions.ts:61",
+        "client/src/app/site-search-quick-actions.ts:62",
+        "client/src/app/site-search-quick-actions.ts:63",
+        "client/src/app/site-search-quick-actions.ts:64",
+        "client/src/app/site-search-quick-actions.ts:65",
+        "client/src/app/site-search-quick-actions.ts:66",
+        "client/src/app/site-search-quick-actions.ts:67",
+        "client/src/app/site-search-quick-actions.ts:70",
+        "client/src/app/site-search-quick-actions.ts:71",
+        "client/src/app/site-search-quick-actions.ts:72",
+        "client/src/app/site-search-quick-actions.ts:73",
+        "client/src/app/site-search-quick-actions.ts:74",
+        "client/src/app/site-search-quick-actions.ts:75",
+        "client/src/app/site-search-quick-actions.ts:78",
+        "client/src/app/site-search-quick-actions.ts:79",
+        "client/src/app/site-search-quick-actions.ts:80",
+        "client/src/app/site-search-quick-actions.ts:81",
+        "client/src/app/site-search-quick-actions.ts:82",
+        "client/src/app/site-search-quick-actions.ts:83",
+        "client/src/app/site-search-quick-actions.ts:86",
+        "client/src/app/site-search-quick-actions.ts:87",
+        "client/src/app/site-search-quick-actions.ts:89",
+        "client/src/app/site-search-quick-actions.ts:94",
+        "client/src/app/site-search-quick-actions.ts:95",
+        "client/src/app/site-search-quick-actions.ts:96"
+      ],
+      "target": "chart-pie"
+    },
+    {
+      "group": "web",
+      "name": "robot",
+      "uses": [
+        "client/src/app/app.component.html:1242",
+        "client/src/app/services/nav-catalog.ts:102"
+      ],
+      "target": "robot"
+    },
+    {
+      "group": "web",
+      "name": "rocket",
+      "uses": [
+        "client/src/app/help/help-articles.ts:167"
+      ],
+      "target": "rocket"
+    },
+    {
+      "group": "web",
+      "name": "rotate",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:8"
+      ],
+      "target": "refresh"
+    },
+    {
+      "group": "web",
+      "name": "rotate-left",
+      "uses": [
+        "client/src/app/admin/admin-roadmap-archive.component.html:52",
+        "client/src/app/admin/admin-taxes.component.html:146"
+      ],
+      "target": "rotate-left"
+    },
+    {
+      "group": "web",
+      "name": "route",
+      "uses": [
+        "client/src/app/help/help-articles.ts:100",
+        "client/src/app/site-search-quick-actions.ts:18"
+      ],
+      "target": "route"
+    },
+    {
+      "group": "web",
+      "name": "rows",
+      "uses": [
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:129"
+      ],
+      "target": "layout-rows"
+    },
+    {
+      "group": "web",
+      "name": "scales",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:485"
+      ],
+      "target": "scales"
+    },
+    {
+      "group": "web",
+      "name": "screwdriver-wrench",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.ts:578"
+      ],
+      "target": "tools-repair"
+    },
+    {
+      "group": "web",
+      "name": "search",
+      "uses": [
+        "client/src/app/help/help-articles.ts:96",
+        "client/src/app/help/help-articles.ts:684",
+        "client/src/app/shared/nf-compat/search-trigger/search-trigger.component.ts:32",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:241"
+      ],
+      "target": "search"
+    },
+    {
+      "group": "web",
+      "name": "sequence",
+      "uses": [
+        "client/src/app/site-search-finder.service.ts:87",
+        "client/src/app/site-search-quick-actions.ts:16",
+        "client/src/app/site-search-quick-actions.ts:26"
+      ],
+      "target": "menu"
+    },
+    {
+      "group": "web",
+      "name": "settings",
+      "uses": [
+        "client/src/app/help/help-articles.ts:433",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:235",
+        "client/src/app/site-search-quick-actions.ts:17",
+        "client/src/app/site-search-quick-actions.ts:25",
+        "client/src/app/site-search-quick-actions.ts:38",
+        "client/src/app/site-search-quick-actions.ts:49",
+        "client/src/app/site-search-quick-actions.ts:50",
+        "client/src/app/site-search-quick-actions.ts:51",
+        "client/src/app/site-search-quick-actions.ts:53",
+        "client/src/app/site-search-quick-actions.ts:54",
+        "client/src/app/site-search-quick-actions.ts:55",
+        "client/src/app/site-search-quick-actions.ts:100",
+        "client/src/app/site-search-quick-actions.ts:105"
+      ],
+      "target": "settings"
+    },
+    {
+      "group": "web",
+      "name": "share-nodes",
+      "uses": [
+        "client/src/app/field-ai/win-patterns.component.ts:46",
+        "client/src/app/insights/insights.component.ts:211"
+      ],
+      "target": "share"
+    },
+    {
+      "group": "web",
+      "name": "shield",
+      "uses": [
+        "client/src/app/app.component.html:1416",
+        "client/src/app/executive-summary/executive-summary.component.ts:348",
+        "client/src/app/shared/nf-compat/email-fix-guide/email-fix-guide.component.ts:49"
+      ],
+      "target": "shield"
+    },
+    {
+      "group": "web",
+      "name": "shield-check",
+      "uses": [
+        "client/src/app/app.component.html:1090",
+        "client/src/app/services/nav-catalog.ts:114"
+      ],
+      "target": "shield-check"
+    },
+    {
+      "group": "web",
+      "name": "signature",
+      "uses": [
+        "client/src/app/settings/referral-email-blocks.component.ts:45"
+      ],
+      "target": "signature"
+    },
+    {
+      "group": "web",
+      "name": "sitemap",
+      "uses": [
+        "client/src/app/admin/admin-roadmap.component.html:81",
+        "client/src/app/app.component.html:929",
+        "client/src/app/org-settings/org-settings.component.ts:86"
+      ],
+      "target": "sitemap"
+    },
+    {
+      "group": "web",
+      "name": "sliders",
+      "uses": [
+        "client/src/app/route-planner/route-planner.component.html:86",
+        "client/src/app/shared/data-grid/data-grid.component.html:21"
+      ],
+      "target": "settings-sliders"
+    },
+    {
+      "group": "web",
+      "name": "sort",
+      "uses": [
+        "client/src/app/shared/data-grid/data-grid.component.html:176"
+      ],
+      "target": "sort"
+    },
+    {
+      "group": "web",
+      "name": "sort-down",
+      "uses": [
+        "client/src/app/shared/data-grid/data-grid.component.html:176"
+      ],
+      "target": "sort-descending"
+    },
+    {
+      "group": "web",
+      "name": "sort-up",
+      "uses": [
+        "client/src/app/shared/data-grid/data-grid.component.html:176"
+      ],
+      "target": "sort-ascending"
+    },
+    {
+      "group": "web",
+      "name": "sparkles",
+      "uses": [
+        "client/src/app/admin/admin-blog-editor.component.html:70",
+        "client/src/app/executive-summary/executive-summary.component.ts:348",
+        "client/src/app/shared/ai-prompt-bar/ai-prompt-bar.component.html:2"
+      ],
+      "target": "sparkles"
+    },
+    {
+      "group": "web",
+      "name": "square-check",
+      "uses": [
+        "client/src/app/app.component.html:730",
+        "client/src/app/email-templates/email-templates.component.ts:210",
+        "client/src/app/help/katie-capabilities.ts:29",
+        "client/src/app/services/nav-bundles.ts:99",
+        "client/src/app/services/nav-catalog.ts:81"
+      ],
+      "target": "checkbox"
+    },
+    {
+      "group": "web",
+      "name": "star",
+      "uses": [
+        "client/src/app/admin/admin-newsletters.component.html:77",
+        "client/src/app/app.component.html:1361",
+        "client/src/app/dashboard/dashboard.component.html:367",
+        "client/src/app/email-templates/email-templates.component.ts:211",
+        "client/src/app/market-intelligence/market-intelligence.component.ts:137"
+      ],
+      "target": "star"
+    },
+    {
+      "group": "web",
+      "name": "store",
+      "uses": [
+        "client/src/app/calendar/calendar.component.html:416",
+        "client/src/app/forms/form-templates.ts:106"
+      ],
+      "target": "storefront"
+    },
+    {
+      "group": "web",
+      "name": "storefront",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:43",
+        "client/src/app/report-builder/report-builder.catalog.ts:588"
+      ],
+      "target": "storefront"
+    },
+    {
+      "group": "web",
+      "name": "sun",
+      "uses": [
+        "client/src/app/app.component.html:101",
+        "client/src/app/app.component.html:1438"
+      ],
+      "target": "sun"
+    },
+    {
+      "group": "web",
+      "name": "table",
+      "uses": [
+        "client/src/app/focus/focus-list.component.ts:48",
+        "client/src/app/report-builder/report-results-panel/report-results-panel.component.ts:77"
+      ],
+      "target": "table"
+    },
+    {
+      "group": "web",
+      "name": "table-cells",
+      "uses": [
+        "client/src/app/app.component.html:338",
+        "client/src/app/app.component.html:1044",
+        "client/src/app/app.component.html:1301",
+        "client/src/app/email-templates/email-templates.component.ts:207",
+        "client/src/app/executive-summary/executive-summary.component.ts:174",
+        "client/src/app/field-ai/win-patterns.component.ts:41",
+        "client/src/app/finances/finances.component.ts:62",
+        "client/src/app/metrics/metrics.component.ts:63",
+        "client/src/app/pipeline/pipeline.component.ts:90",
+        "client/src/app/services/nav-catalog.ts:50",
+        "client/src/app/services/nav-catalog.ts:100",
+        "client/src/app/services/page-tabs.service.ts:23",
+        "client/src/app/settings/settings.component.html:313",
+        "client/src/app/settings/settings.component.ts:133",
+        "client/src/app/settings/settings.component.ts:161",
+        "client/src/app/settings/settings.data.ts:19"
+      ],
+      "target": "table"
+    },
+    {
+      "group": "web",
+      "name": "tag",
+      "uses": [
+        "client/src/app/app.component.html:1265",
+        "client/src/app/insights/insights.component.ts:212",
+        "client/src/app/reports/reports.component.ts:196",
+        "client/src/app/services/nav-catalog.ts:115"
+      ],
+      "target": "tag"
+    },
+    {
+      "group": "web",
+      "name": "target",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:175"
+      ],
+      "target": "target"
+    },
+    {
+      "group": "web",
+      "name": "task",
+      "uses": [
+        "client/src/app/help/help-articles.ts:99",
+        "client/src/app/site-search-quick-actions.ts:9",
+        "client/src/app/site-search-quick-actions.ts:28",
+        "client/src/app/site-search-quick-actions.ts:102"
+      ],
+      "target": "check-circle"
+    },
+    {
+      "group": "web",
+      "name": "template",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:10",
+        "client/src/app/site-search-quick-actions.ts:15",
+        "client/src/app/site-search-quick-actions.ts:29",
+        "client/src/app/site-search-quick-actions.ts:32",
+        "client/src/app/site-search-quick-actions.ts:33",
+        "client/src/app/site-search-quick-actions.ts:39",
+        "client/src/app/site-search-quick-actions.ts:52",
+        "client/src/app/site-search-quick-actions.ts:103",
+        "client/src/app/site-search-quick-actions.ts:104"
+      ],
+      "target": "mail"
+    },
+    {
+      "group": "web",
+      "name": "tent",
+      "uses": [
+        "client/src/app/report-builder/report-builder.catalog.ts:545"
+      ],
+      "target": "tent"
+    },
+    {
+      "group": "web",
+      "name": "territory",
+      "uses": [
+        "client/src/app/site-search-quick-actions.ts:12",
+        "client/src/app/site-search-quick-actions.ts:36"
+      ],
+      "target": "location"
+    },
+    {
+      "group": "web",
+      "name": "thumbtack",
+      "uses": [
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:485"
+      ],
+      "target": "pin"
+    },
+    {
+      "group": "web",
+      "name": "ticket",
+      "uses": [
+        "client/src/app/app.component.html:1137",
+        "client/src/app/forms/form-templates.ts:79",
+        "client/src/app/services/nav-catalog.ts:106"
+      ],
+      "target": "ticket"
+    },
+    {
+      "group": "web",
+      "name": "trash",
+      "uses": [
+        "client/src/app/admin/admin-blog-editor.component.html:28",
+        "client/src/app/admin/admin-blog-image-picker.component.html:48",
+        "client/src/app/admin/admin-newsletters.component.html:115",
+        "client/src/app/admin/admin-rep-outreach-send.component.html:85",
+        "client/src/app/admin/admin-rep-outreach-send.component.html:98",
+        "client/src/app/admin/admin-roadmap.component.html:243",
+        "client/src/app/admin/admin-roadmap.component.html:258",
+        "client/src/app/admin/admin-taxes.component.html:556",
+        "client/src/app/calendar/calendar.component.html:469",
+        "client/src/app/catalog/catalog-form.component.html:89",
+        "client/src/app/catalog/linesheet-page-editor.component.html:98",
+        "client/src/app/customers/customer-intel-tab.component.html:168",
+        "client/src/app/dashboard/dashboard.component.html:1075",
+        "client/src/app/dashboard/dashboard.component.html:1456",
+        "client/src/app/finances/finances.component.html:138",
+        "client/src/app/finances/finances.component.html:177",
+        "client/src/app/finances/finances.component.html:231",
+        "client/src/app/finances/finances.component.html:306",
+        "client/src/app/manager/quotas-tab/quotas-tab.component.html:57",
+        "client/src/app/metrics/today-panel/today-panel.component.html:67",
+        "client/src/app/order-writer/order-form.component.html:141",
+        "client/src/app/rep-profile/rep-profile.component.html:60",
+        "client/src/app/rep-profile/rep-profile.component.html:85",
+        "client/src/app/rep-profile/rep-profile.component.html:111",
+        "client/src/app/shared/commission-settings/commission-settings.component.html:47",
+        "client/src/app/shared/form-field-editor/form-field-editor.component.html:9",
+        "client/src/app/shared/share-modal/share-modal.component.html:117",
+        "client/src/app/status-updates/status-updates.component.html:166",
+        "client/src/app/time-tracking/time-tracking.component.html:152"
+      ],
+      "target": "trash"
+    },
+    {
+      "group": "web",
+      "name": "tray",
+      "uses": [
+        "client/src/app/documents/documents-folder-tree.component.html:39"
+      ],
+      "target": "tray"
+    },
+    {
+      "group": "web",
+      "name": "triangle-exclamation",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:24",
+        "client/src/app/admin/admin-taxes.component.html:31",
+        "client/src/app/admin/admin-tickets.component.html:28",
+        "client/src/app/app.component.html:1561",
+        "client/src/app/app.component.html:1631",
+        "client/src/app/insights/insights.component.ts:210",
+        "client/src/app/metrics/team-panel/team-panel.component.html:15",
+        "client/src/app/metrics/today-panel/today-panel.component.html:25",
+        "client/src/app/metrics/today-panel/today-panel.component.html:36",
+        "client/src/app/metrics/today-panel/today-panel.component.html:78",
+        "client/src/app/shared/announcement-banner/announcement-banner.component.html:9",
+        "client/src/app/shared/bulk-invite/bulk-invite.component.html:31",
+        "client/src/app/shared/confirm-destructive/confirm-destructive.component.html:9",
+        "client/src/app/shared/roster-import/roster-import.component.html:34"
+      ],
+      "target": "warning"
+    },
+    {
+      "group": "web",
+      "name": "underline",
+      "uses": [
+        "client/src/app/shared/rte/rte.component.html:13"
+      ],
+      "target": "text-underline"
+    },
+    {
+      "group": "web",
+      "name": "up-right-from-square",
+      "uses": [
+        "client/src/app/admin/admin-tickets.component.html:120",
+        "client/src/app/admin/admin.component.html:256"
+      ],
+      "target": "external-link"
+    },
+    {
+      "group": "web",
+      "name": "upload",
+      "uses": [
+        "client/src/app/admin/admin-blog-image-picker.component.html:11",
+        "client/src/app/admin/admin-roadmap.component.html:32",
+        "client/src/app/documents/documents-list.component.html:54",
+        "client/src/app/onboarding/guided-onboarding.component.html:169",
+        "client/src/app/shared/file-upload/file-upload.component.html:26"
+      ],
+      "target": "upload"
+    },
+    {
+      "group": "web",
+      "name": "upload-simple",
+      "uses": [
+        "client/src/app/admin/admin.component.html:18"
+      ],
+      "target": "upload"
+    },
+    {
+      "group": "web",
+      "name": "user",
+      "uses": [
+        "client/src/app/app.component.html:350",
+        "client/src/app/calendar/public-scheduling.component.html:153",
+        "client/src/app/insights/insights.component.ts:217",
+        "client/src/app/manager/manager.component.ts:165",
+        "client/src/app/pricing/pricing.component.ts:38",
+        "client/src/app/services/nav-bundles.ts:71",
+        "client/src/app/services/nav-catalog.ts:51",
+        "client/src/app/settings/settings.component.ts:147",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:223",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:16"
+      ],
+      "target": "user"
+    },
+    {
+      "group": "web",
+      "name": "user-crown",
+      "uses": [
+        "client/src/app/group-email/group-email.component.ts:70",
+        "client/src/app/workload/workload.component.ts:46"
+      ],
+      "target": "crown"
+    },
+    {
+      "group": "web",
+      "name": "user-gear",
+      "uses": [
+        "client/src/app/pipeline/pipeline.component.html:175"
+      ],
+      "target": "user-settings"
+    },
+    {
+      "group": "web",
+      "name": "user-group",
+      "uses": [
+        "client/src/app/territories/territories.component.html:75",
+        "client/src/app/vendor-statements/reconcile/agency-recon-tab.component.ts:47"
+      ],
+      "target": "users-three"
+    },
+    {
+      "group": "web",
+      "name": "user-minus",
+      "uses": [
+        "client/src/app/org-settings/org-settings.component.html:238"
+      ],
+      "target": "user-remove"
+    },
+    {
+      "group": "web",
+      "name": "users",
+      "uses": [
+        "client/src/app/admin/admin-overview.component.html:72",
+        "client/src/app/app.component.html:374",
+        "client/src/app/app.component.html:942",
+        "client/src/app/app.component.html:1115",
+        "client/src/app/app.component.html:1195",
+        "client/src/app/dashboard/dashboard.component.ts:217",
+        "client/src/app/email-sequences/sequence-detail.component.ts:61",
+        "client/src/app/email/email.component.ts:155",
+        "client/src/app/field-ai/win-patterns.component.ts:40",
+        "client/src/app/help/help-articles.ts:1863",
+        "client/src/app/help/katie-capabilities.ts:27",
+        "client/src/app/insights/insights.component.ts:193",
+        "client/src/app/insights/insights.component.ts:218",
+        "client/src/app/manager/manager.component.ts:164",
+        "client/src/app/messages/messages-page.component.ts:157",
+        "client/src/app/messages/messages-page.component.ts:189",
+        "client/src/app/metrics/metrics.component.ts:67",
+        "client/src/app/metrics/team-panel/team-panel.component.html:21",
+        "client/src/app/org-dashboard/org-dashboard.component.ts:84",
+        "client/src/app/org-settings/org-commission-tab/org-commission-tab.component.ts:55",
+        "client/src/app/org-settings/org-settings.component.ts:64",
+        "client/src/app/pricing/pricing.component.html:25",
+        "client/src/app/pricing/pricing.component.ts:54",
+        "client/src/app/services/nav-bundles.ts:60",
+        "client/src/app/services/nav-catalog.ts:53",
+        "client/src/app/services/nav-catalog.ts:95",
+        "client/src/app/services/nav-catalog.ts:103",
+        "client/src/app/services/nav-catalog.ts:113",
+        "client/src/app/services/page-tabs.service.ts:92",
+        "client/src/app/shared/nf-compat/site-search/site-search.component.ts:224",
+        "client/src/app/social-media/social-media.component.ts:54",
+        "client/src/app/subscribe-gate/subscribe-gate.component.html:34"
+      ],
+      "target": "users"
+    },
+    {
+      "group": "web",
+      "name": "wand-magic-sparkles",
+      "uses": [
+        "client/src/app/admin/admin-taxes.component.html:142"
+      ],
+      "target": "magic-wand"
+    },
+    {
+      "group": "web",
+      "name": "warning-circle",
+      "uses": [
+        "client/src/app/order-writer/order-context.component.html:115",
+        "client/src/app/order-writer/order-form.component.html:71",
+        "client/src/app/order-writer/order-form.component.html:296",
+        "client/src/app/report-builder/report-builder.catalog.ts:603",
+        "client/src/app/shared/import-vendor-sheet/import-vendor-sheet.component.html:104",
+        "client/src/app/shared/import-vendor-sheet/import-vendor-sheet.component.html:193",
+        "client/src/app/shared/import-vendor-sheet/import-vendor-sheet.component.html:221"
+      ],
+      "target": "warning-circle"
+    },
+    {
+      "group": "web",
+      "name": "wrench",
+      "uses": [
+        "client/src/app/app.component.html:1314",
+        "client/src/app/help/katie-capabilities/katie-capabilities.component.ts:131",
+        "client/src/app/services/nav-catalog.ts:116"
+      ],
+      "target": "wrench"
+    },
+    {
+      "group": "web",
+      "name": "x",
+      "uses": [
+        "client/src/app/map/map.component.html:194",
+        "client/src/app/report-builder/filter-editor/filter-group-editor.component.html:10",
+        "client/src/app/report-builder/filter-editor/filter-group-editor.component.html:18",
+        "client/src/app/report-builder/filter-editor/filter-group-editor.component.html:32",
+        "client/src/app/report-builder/filter-editor/filter-group-editor.component.html:51",
+        "client/src/app/report-builder/report-editor/grouping-section.component.html:39",
+        "client/src/app/report-builder/report-editor/measures-section.component.html:15",
+        "client/src/app/report-builder/report-editor/measures-section.component.html:82",
+        "client/src/app/report-builder/report-editor/sources-section.component.html:16",
+        "client/src/app/shared/tabs/tabs.component.html:51"
+      ],
+      "target": "close"
+    },
+    {
+      "group": "web",
+      "name": "xmark",
+      "uses": [
+        "client/src/app/admin/admin-blog-editor.component.html:5",
+        "client/src/app/admin/admin-roadmap.component.html:224",
+        "client/src/app/admin/admin-tools-tab.component.html:345",
+        "client/src/app/agreements/agreements.component.html:116",
+        "client/src/app/agreements/agreements.component.html:118",
+        "client/src/app/app.component.html:22",
+        "client/src/app/calendar/scheduling-form-editor.component.html:21",
+        "client/src/app/customers/customer-email-modal.component.html:85",
+        "client/src/app/dashboard/dashboard.component.html:1856",
+        "client/src/app/metrics/metrics.component.html:108",
+        "client/src/app/metrics/metrics.component.html:286",
+        "client/src/app/onboarding/guided-onboarding.component.html:24",
+        "client/src/app/route-planner/route-planner.component.html:330",
+        "client/src/app/settings/custom-nav-menu-settings/custom-nav-menu-settings.component.html:72",
+        "client/src/app/setup-wizard/setup-wizard.component.html:37",
+        "client/src/app/shared/announcement-banner/announcement-banner.component.html:19",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:18",
+        "client/src/app/shared/assistant-fab/assistant-fab.component.html:191",
+        "client/src/app/shared/brand-filter-pill/brand-filter-pill.component.html:4",
+        "client/src/app/shared/bulk-add-brands/bulk-add-brands.component.html:19",
+        "client/src/app/shared/datetime/datetime.component.html:33",
+        "client/src/app/shared/file-upload/file-upload.component.html:54",
+        "client/src/app/shared/form-field-editor/form-field-editor.component.html:23",
+        "client/src/app/shared/modal/modal.component.html:20",
+        "client/src/app/shared/search-input/search-input.component.html:23",
+        "client/src/app/shared/time-choice/time-choice.component.html:5",
+        "client/src/app/shared/toast/toast.component.html:22"
+      ],
+      "target": "close"
+    }
+  ]
+}

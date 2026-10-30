@@ -1,6 +1,6 @@
 {
   "name": "pixlprfct",
-  "version": "0.1.1-alpha.7",
+  "version": "0.1.1-alpha.8",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

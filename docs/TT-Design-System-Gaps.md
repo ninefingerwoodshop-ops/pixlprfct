@@ -3,6 +3,12 @@
 Running list from building the PixlPrfct design system (project: "Territory Track Design System").
 Last updated: 2026-10-30
 
+## Icon coverage follow-up — 2026-10-30
+
+- [x] **Territory Track icon names represented in PixlPrfct (local implementation).** Added 133 original symbols to PixlPrfct Icons 0.9.0, bringing the catalog to 679. The editor is synced with the canonical source, fonts and searchable aliases. The source inventory maps 599 web, shared-library, avatar, dashboard/assistant and iOS references to 313 symbols, with no missing targets; five non-icon helper values are explicitly excluded. All previous names, drawings and codepoints are preserved.
+- Verification: 3 Rust + 926 JavaScript tests pass; all six fonts, three weights, SVG exports, new-path bounds and reproducible rebuilds pass. All additions were inspected at 16/24 px and as SVGs. See `docs/TERRITORY_ICON_COVERAGE.md` for scope and the live source check. SF fill states map to the same symbol in the chosen PixlPrfct weight; application provider migration and exact third-party artwork matching are separate. No public release is claimed.
+- Installation verification (2026-10-30): both local desktop copies updated to **0.1.1-alpha.8**, with alpha.7 rollback copies retained. Strict macOS signature verification passes. The saved document reopened; the running icon library shows **679 icons**, and `brain.head.profile` finds and renders the new `brain-profile` symbol. Proof: `.local/icon-coverage/desktop-icon-catalog.png` and `.local/icon-coverage/desktop-icon-coverage.png`. This is a local installation, not a published release.
+
 ## Performance follow-up — 2026-10-30
 
 - User reports sluggish canvas interaction, property/page changes and AI/MCP work. Added B33 below, retaining it as partially improved until expensive layout previews are further reduced.

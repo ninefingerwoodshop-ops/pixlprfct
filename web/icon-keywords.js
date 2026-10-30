@@ -17,29 +17,117 @@ export const iconKeywords = {
     "editor",
     "tables"
   ],
+  "arrow": [
+    "territory-track",
+    "arrow.up.right",
+    "arrow-up-right",
+    "ios",
+    "web"
+  ],
   "aspect-lock": [
     "rte",
     "rich-text",
     "editor",
     "images"
   ],
+  "close": [
+    "territory-track",
+    "xmark",
+    "x",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "ellipse": [
+    "territory-track",
+    "circle",
+    "lucide",
+    "web"
+  ],
   "eye": [
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "eye",
+    "catalog",
+    "ios",
+    "lucide",
+    "web"
   ],
   "eye-off": [
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "eye.slash",
+    "eye-slash",
+    "ios",
+    "web"
+  ],
+  "file": [
+    "territory-track",
+    "assistant-fab.file",
+    "assistant-fab-file",
+    "file",
+    "document",
+    "custom",
+    "lucide",
+    "web"
   ],
   "image": [
     "rte",
     "rich-text",
     "editor",
-    "images"
+    "images",
+    "territory-track",
+    "photo",
+    "photo.fill",
+    "photo-fill",
+    "image",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "layout-grid": [
+    "territory-track",
+    "assistant-fab.grid",
+    "assistant-fab-grid",
+    "square.grid.2x2.fill",
+    "square-grid-2x2-fill",
+    "layout-grid",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "minus": [
+    "territory-track",
+    "minus",
+    "web"
+  ],
+  "pen": [
+    "territory-track",
+    "pen",
+    "web"
+  ],
+  "pencil": [
+    "territory-track",
+    "pencil",
+    "edit-3",
+    "pencil-simple",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "plus": [
+    "territory-track",
+    "plus",
+    "ios",
+    "lucide",
+    "web"
   ],
   "redo": [
     "rte",
@@ -51,7 +139,34 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "magnifyingglass",
+    "search",
+    "magnifying-glass",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "star": [
+    "territory-track",
+    "assistant-fab.star",
+    "assistant-fab-star",
+    "star.fill",
+    "star-fill",
+    "star",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "swap-ends": [
+    "territory-track",
+    "arrow.triangle.swap",
+    "arrow-triangle-swap",
+    "arrows-left-right",
+    "ios",
+    "web"
   ],
   "text": [
     "rte",
@@ -63,31 +178,50 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "arrow.uturn.backward",
+    "arrow-uturn-backward",
+    "ios"
   ],
   "unlink": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "link-slash",
+    "web"
   ],
   "text-bold": [
     "rte",
     "rich-text",
     "editor",
-    "typography"
+    "typography",
+    "territory-track",
+    "bold",
+    "lucide",
+    "web"
   ],
   "text-italic": [
     "rte",
     "rich-text",
     "editor",
-    "typography"
+    "typography",
+    "territory-track",
+    "italic",
+    "lucide",
+    "web"
   ],
   "text-underline": [
     "rte",
     "rich-text",
     "editor",
-    "typography"
+    "typography",
+    "territory-track",
+    "underline",
+    "lucide",
+    "web"
   ],
   "text-strikethrough": [
     "rte",
@@ -99,31 +233,48 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "align-left",
+    "lucide",
+    "web"
   ],
   "text-align-center": [
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "align-center",
+    "lucide",
+    "web"
   ],
   "text-align-right": [
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "align-right",
+    "web"
   ],
   "text-align-justify": [
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "align-justify",
+    "lucide"
   ],
   "text-heading": [
     "rte",
     "rich-text",
     "editor",
-    "typography"
+    "typography",
+    "territory-track",
+    "heading",
+    "web"
   ],
   "text-paragraph": [
     "rte",
@@ -201,31 +352,51 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "list-ul",
+    "web"
   ],
   "list-numbered": [
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "list-ordered",
+    "list-ol",
+    "lucide",
+    "web"
   ],
   "list-check": [
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "checklist",
+    "list-check",
+    "ios",
+    "web"
   ],
   "link": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "link",
+    "lucide",
+    "web"
   ],
   "anchor": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "anchor",
+    "avatar"
   ],
   "horizontal-rule": [
     "rte",
@@ -261,7 +432,11 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "tables"
+    "tables",
+    "territory-track",
+    "table",
+    "table-cells",
+    "web"
   ],
   "table-row-add": [
     "rte",
@@ -297,7 +472,11 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "clipboard",
+    "lucide",
+    "web"
   ],
   "cut": [
     "rte",
@@ -309,7 +488,11 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "paste",
+    "lucide",
+    "web"
   ],
   "save": [
     "rte",
@@ -323,23 +506,400 @@ export const iconKeywords = {
     "editor",
     "review"
   ],
+  "file-text": [
+    "territory-track",
+    "doc.text",
+    "doc-text",
+    "doc.text.fill",
+    "doc-text-fill",
+    "note.text",
+    "note-text",
+    "file-text",
+    "file-lines",
+    "note",
+    "order",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "file-add": [
+    "territory-track",
+    "doc.badge.plus",
+    "doc-badge-plus",
+    "file-circle-plus",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "folder": [
+    "territory-track",
+    "folder",
+    "web"
+  ],
+  "archive": [
+    "territory-track",
+    "archivebox",
+    "box-archive",
+    "ios",
+    "web"
+  ],
+  "trash": [
+    "territory-track",
+    "trash",
+    "trash.fill",
+    "trash-fill",
+    "ios",
+    "lucide",
+    "web"
+  ],
   "download": [
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "square.and.arrow.down",
+    "square-and-arrow-down",
+    "download",
+    "ios",
+    "lucide",
+    "web"
   ],
   "upload": [
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "upload",
+    "upload-simple",
+    "lucide",
+    "web"
+  ],
+  "home": [
+    "territory-track",
+    "house.fill",
+    "house-fill",
+    "ios"
+  ],
+  "menu": [
+    "territory-track",
+    "list",
+    "menu",
+    "bars",
+    "sequence",
+    "lucide",
+    "web"
+  ],
+  "more-horizontal": [
+    "territory-track",
+    "ellipsis",
+    "ios"
+  ],
+  "external-link": [
+    "territory-track",
+    "arrow.up.right.square",
+    "arrow-up-right-square",
+    "external-link",
+    "arrow-square-out",
+    "arrow-up-right-from-square",
+    "up-right-from-square",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "arrow-left": [
+    "territory-track",
+    "arrow-left",
+    "web"
+  ],
+  "arrow-right": [
+    "territory-track",
+    "arrow.right",
+    "arrow-right",
+    "arrow-right-long",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "arrow-down": [
+    "territory-track",
+    "arrow.down",
+    "arrow-down",
+    "ios"
+  ],
+  "chevrons-left": [
+    "territory-track",
+    "chevrons-left",
+    "angles-left",
+    "lucide",
+    "web"
+  ],
+  "chevrons-right": [
+    "territory-track",
+    "chevrons-right",
+    "angles-right",
+    "lucide",
+    "web"
+  ],
+  "refresh": [
+    "territory-track",
+    "arrow.clockwise",
+    "arrow-clockwise",
+    "refresh-cw",
+    "arrows-clockwise",
+    "arrows-rotate",
+    "rotate",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "sync": [
+    "territory-track",
+    "arrow.triangle.2.circlepath",
+    "arrow-triangle-2-circlepath",
+    "ios"
+  ],
+  "filter": [
+    "territory-track",
+    "dashboard-cards.funnel",
+    "dashboard-cards-funnel",
+    "filter",
+    "funnel",
+    "funnel-simple",
+    "custom",
+    "lucide",
+    "web"
+  ],
+  "sort-ascending": [
+    "territory-track",
+    "sort-up",
+    "web"
+  ],
+  "sort-descending": [
+    "territory-track",
+    "sort-down",
+    "web"
+  ],
+  "check-circle": [
+    "territory-track",
+    "assistant-fab.task",
+    "assistant-fab-task",
+    "checkmark.circle",
+    "checkmark-circle",
+    "checkmark.circle.fill",
+    "checkmark-circle-fill",
+    "check-circle",
+    "circle-check",
+    "task",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "warning": [
+    "territory-track",
+    "dashboard-cards.alert",
+    "dashboard-cards-alert",
+    "exclamationmark.triangle",
+    "exclamationmark-triangle",
+    "exclamationmark.triangle.fill",
+    "exclamationmark-triangle-fill",
+    "alert-triangle",
+    "triangle-exclamation",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "info": [
+    "territory-track",
+    "info.circle",
+    "info-circle",
+    "info.circle.fill",
+    "info-circle-fill",
+    "info",
+    "circle-info",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "help-circle": [
+    "territory-track",
+    "help-circle",
+    "circle-question",
+    "lucide",
+    "web"
+  ],
+  "error-circle": [
+    "territory-track",
+    "xmark.circle.fill",
+    "xmark-circle-fill",
+    "x-circle",
+    "circle-xmark",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "bell": [
+    "territory-track",
+    "dashboard-cards.bell",
+    "dashboard-cards-bell",
+    "bell",
+    "custom",
+    "lucide",
+    "web"
+  ],
+  "user": [
+    "territory-track",
+    "assistant-fab.user",
+    "assistant-fab-user",
+    "person.fill",
+    "person-fill",
+    "user",
+    "account",
+    "lead",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "users": [
+    "territory-track",
+    "dashboard-cards.leads",
+    "dashboard-cards-leads",
+    "person.2",
+    "person-2",
+    "person.2.fill",
+    "person-2-fill",
+    "users",
+    "contact",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "logout": [
+    "territory-track",
+    "rectangle.portrait.and.arrow.right",
+    "rectangle-portrait-and-arrow-right",
+    "log-out",
+    "ios",
+    "lucide"
+  ],
+  "shield": [
+    "territory-track",
+    "shield",
+    "assistant-fab.shield",
+    "assistant-fab-shield",
+    "avatar",
+    "custom",
+    "lucide",
+    "web"
+  ],
+  "shield-check": [
+    "territory-track",
+    "shield-check",
+    "lucide",
+    "web"
+  ],
+  "key": [
+    "territory-track",
+    "dashboard-cards.key",
+    "dashboard-cards-key",
+    "key",
+    "custom",
+    "web"
+  ],
+  "mail": [
+    "territory-track",
+    "assistant-fab.email",
+    "assistant-fab-email",
+    "envelope.fill",
+    "envelope-fill",
+    "envelope",
+    "mail",
+    "email",
+    "template",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "send": [
+    "territory-track",
+    "assistant-fab.send",
+    "assistant-fab-send",
+    "paperplane.fill",
+    "paperplane-fill",
+    "send",
+    "paper-plane",
+    "paper-plane-tilt",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "message": [
+    "territory-track",
+    "chat",
+    "web"
+  ],
+  "phone": [
+    "territory-track",
+    "assistant-fab.phone",
+    "assistant-fab-phone",
+    "phone.fill",
+    "phone-fill",
+    "phone",
+    "custom",
+    "ios",
+    "web"
   ],
   "video": [
     "rte",
     "rich-text",
     "editor",
     "inserts"
+  ],
+  "microphone": [
+    "territory-track",
+    "mic.fill",
+    "mic-fill",
+    "mic",
+    "microphone",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "play": [
+    "territory-track",
+    "assistant-fab.play",
+    "assistant-fab-play",
+    "play",
+    "custom",
+    "lucide",
+    "web"
+  ],
+  "pause": [
+    "territory-track",
+    "pause",
+    "lucide",
+    "web"
+  ],
+  "stop": [
+    "territory-track",
+    "stop.fill",
+    "stop-fill",
+    "ios"
+  ],
+  "camera": [
+    "territory-track",
+    "camera",
+    "camera.fill",
+    "camera-fill",
+    "avatar",
+    "ios"
   ],
   "image-add": [
     "rte",
@@ -351,19 +911,207 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "assistant-fab.calendar",
+    "assistant-fab-calendar",
+    "calendar",
+    "planning",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "clock": [
+    "territory-track",
+    "assistant-fab.clock",
+    "assistant-fab-clock",
+    "dashboard-cards.clock",
+    "dashboard-cards-clock",
+    "clock",
+    "custom",
+    "ios",
+    "lucide",
+    "web",
+    "clock.fill",
+    "clock-fill"
   ],
   "history": [
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "clock.arrow.circlepath",
+    "clock-arrow-circlepath",
+    "ios"
+  ],
+  "location": [
+    "territory-track",
+    "assistant-fab.map",
+    "assistant-fab-map",
+    "map-pin",
+    "location-dot",
+    "territory",
+    "custom",
+    "lucide",
+    "web"
+  ],
+  "map": [
+    "territory-track",
+    "dashboard-cards.map",
+    "dashboard-cards-map",
+    "map",
+    "map.fill",
+    "map-fill",
+    "map-trifold",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "globe": [
+    "territory-track",
+    "globe",
+    "assistant-fab.globe",
+    "assistant-fab-globe",
+    "avatar",
+    "custom",
+    "ios",
+    "web"
+  ],
+  "heart": [
+    "territory-track",
+    "heart",
+    "dashboard-cards.heart",
+    "dashboard-cards-heart",
+    "heart.fill",
+    "heart-fill",
+    "avatar",
+    "custom",
+    "ios",
+    "web"
   ],
   "bookmark": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "dashboard-cards.bookmark",
+    "dashboard-cards-bookmark",
+    "bookmark",
+    "custom",
+    "web"
+  ],
+  "flag": [
+    "territory-track",
+    "flag.fill",
+    "flag-fill",
+    "ios"
+  ],
+  "share": [
+    "territory-track",
+    "share",
+    "share-nodes",
+    "lucide",
+    "web"
+  ],
+  "tag": [
+    "territory-track",
+    "assistant-fab.tag",
+    "assistant-fab-tag",
+    "tag.fill",
+    "tag-fill",
+    "tag",
+    "custom",
+    "ios",
+    "web"
+  ],
+  "credit-card": [
+    "territory-track",
+    "credit-card",
+    "web"
+  ],
+  "receipt": [
+    "territory-track",
+    "receipt",
+    "web"
+  ],
+  "chart-bar": [
+    "territory-track",
+    "dashboard-cards.bars",
+    "dashboard-cards-bars",
+    "chart.bar.fill",
+    "chart-bar-fill",
+    "chart",
+    "chart-bar",
+    "metrics",
+    "custom",
+    "ios",
+    "web"
+  ],
+  "chart-line": [
+    "territory-track",
+    "chart-line",
+    "web"
+  ],
+  "chart-pie": [
+    "territory-track",
+    "dashboard-cards.pie",
+    "dashboard-cards-pie",
+    "pie-chart",
+    "chart-pie",
+    "report",
+    "custom",
+    "lucide",
+    "web"
+  ],
+  "dashboard": [
+    "territory-track",
+    "rectangle.3.group",
+    "rectangle-3-group",
+    "rectangle.3.group.fill",
+    "rectangle-3-group-fill",
+    "dashboard",
+    "ios",
+    "web"
+  ],
+  "code-branch": [
+    "territory-track",
+    "arrow.triangle.branch",
+    "arrow-triangle-branch",
+    "ios"
+  ],
+  "bug": [
+    "territory-track",
+    "ladybug.fill",
+    "ladybug-fill",
+    "bug",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "monitor": [
+    "territory-track",
+    "desktop",
+    "web"
+  ],
+  "wifi": [
+    "territory-track",
+    "wifi",
+    "ios"
+  ],
+  "sun": [
+    "territory-track",
+    "sun",
+    "avatar",
+    "web"
+  ],
+  "moon": [
+    "territory-track",
+    "moon",
+    "web"
   ],
   "language": [
     "rte",
@@ -376,6 +1124,12 @@ export const iconKeywords = {
     "rich-text",
     "editor",
     "review"
+  ],
+  "checkbox": [
+    "territory-track",
+    "check-square",
+    "square-check",
+    "web"
   ],
   "resize": [
     "rte",
@@ -395,11 +1149,29 @@ export const iconKeywords = {
     "editor",
     "images"
   ],
+  "palette": [
+    "territory-track",
+    "palette",
+    "avatar"
+  ],
+  "ruler": [
+    "territory-track",
+    "ruler",
+    "ios"
+  ],
   "layout-columns": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "columns",
+    "web"
+  ],
+  "layout-rows": [
+    "territory-track",
+    "rows",
+    "web"
   ],
   "layout-header": [
     "rte",
@@ -413,17 +1185,187 @@ export const iconKeywords = {
     "editor",
     "inserts"
   ],
+  "workflow": [
+    "territory-track",
+    "flow-arrow",
+    "web"
+  ],
+  "pin": [
+    "territory-track",
+    "thumbtack",
+    "web"
+  ],
   "attachment": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "paperclip",
+    "lucide",
+    "web"
+  ],
+  "lightning": [
+    "territory-track",
+    "bolt",
+    "assistant-fab.zap",
+    "assistant-fab-zap",
+    "bolt.fill",
+    "bolt-fill",
+    "zap",
+    "lightning",
+    "avatar",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "sparkles": [
+    "territory-track",
+    "sparkle",
+    "dashboard-cards.sparkles",
+    "dashboard-cards-sparkles",
+    "sparkles",
+    "avatar",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "book": [
+    "territory-track",
+    "book",
+    "web"
+  ],
+  "box": [
+    "territory-track",
+    "assistant-fab.package",
+    "assistant-fab-package",
+    "shippingbox",
+    "shippingbox.fill",
+    "shippingbox-fill",
+    "box",
+    "package",
+    "custom",
+    "ios",
+    "web"
+  ],
+  "truck": [
+    "territory-track",
+    "assistant-fab.truck",
+    "assistant-fab-truck",
+    "custom"
+  ],
+  "qr-code": [
+    "territory-track",
+    "qrcode",
+    "ios"
+  ],
+  "barcode": [
+    "territory-track",
+    "barcode",
+    "web"
+  ],
+  "check": [
+    "territory-track",
+    "checkmark",
+    "check",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "chevron-left": [
+    "territory-track",
+    "chevron.left",
+    "chevron-left",
+    "angle-left",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "chevron-right": [
+    "territory-track",
+    "chevron.right",
+    "chevron-right",
+    "angle-right",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "chevron-up": [
+    "territory-track",
+    "chevron.up",
+    "chevron-up",
+    "angle-up",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "chevron-down": [
+    "territory-track",
+    "chevron.down",
+    "chevron-down",
+    "angle-down",
+    "caret-down",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "arrow-down-right": [
+    "territory-track",
+    "arrow.down.right",
+    "arrow-down-right",
+    "ios"
+  ],
+  "grip-vertical": [
+    "territory-track",
+    "grip-vertical",
+    "web"
+  ],
+  "lock": [
+    "territory-track",
+    "lock.fill",
+    "lock-fill",
+    "lock",
+    "ios",
+    "web"
   ],
   "copy": [
     "rte",
     "rich-text",
     "editor",
-    "editing-and-paragraphs"
+    "editing-and-paragraphs",
+    "territory-track",
+    "doc.on.doc",
+    "doc-on-doc",
+    "copy",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "settings-sliders": [
+    "territory-track",
+    "slider.horizontal.3",
+    "slider-horizontal-3",
+    "settings-2",
+    "sliders",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "zoom-in": [
+    "territory-track",
+    "search-zoom-in",
+    "magnifying-glass-plus",
+    "lucide",
+    "web"
+  ],
+  "zoom-out": [
+    "territory-track",
+    "search-zoom-out",
+    "magnifying-glass-minus",
+    "lucide",
+    "web"
   ],
   "heading-1": [
     "rte",
@@ -489,7 +1431,15 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "signature",
+    "web"
+  ],
+  "cursor-click": [
+    "territory-track",
+    "hand-pointer",
+    "web"
   ],
   "link-add": [
     "rte",
@@ -502,6 +1452,11 @@ export const iconKeywords = {
     "rich-text",
     "editor",
     "inserts"
+  ],
+  "user-remove": [
+    "territory-track",
+    "user-minus",
+    "web"
   ],
   "message-add": [
     "rte",
@@ -519,13 +1474,138 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "bubble.left.and.bubble.right",
+    "bubble-left-and-bubble-right",
+    "bubble.left.and.bubble.right.fill",
+    "bubble-left-and-bubble-right-fill",
+    "ios"
+  ],
+  "mail-open": [
+    "territory-track",
+    "envelope-open",
+    "web"
+  ],
+  "notification-dot": [
+    "territory-track",
+    "bell.badge.fill",
+    "bell-badge-fill",
+    "ios"
+  ],
+  "calendar-check": [
+    "territory-track",
+    "calendar-check",
+    "web"
+  ],
+  "calendar-add": [
+    "territory-track",
+    "calendar.badge.plus",
+    "calendar-badge-plus",
+    "ios"
+  ],
+  "stopwatch": [
+    "territory-track",
+    "stopwatch.fill",
+    "stopwatch-fill",
+    "ios"
+  ],
+  "code-commit": [
+    "territory-track",
+    "code-commit",
+    "web"
+  ],
+  "code-pull-request": [
+    "territory-track",
+    "code-pull-request",
+    "web"
+  ],
+  "wifi-off": [
+    "territory-track",
+    "wifi.slash",
+    "wifi-slash",
+    "ios"
+  ],
+  "activity": [
+    "territory-track",
+    "activity",
+    "heart-pulse",
+    "pipeline",
+    "pulse",
+    "lucide",
+    "web"
+  ],
+  "chart-area": [
+    "territory-track",
+    "dashboard-cards.area",
+    "dashboard-cards-area",
+    "custom"
+  ],
+  "chart-donut": [
+    "territory-track",
+    "dashboard-cards.rose",
+    "dashboard-cards-rose",
+    "custom"
+  ],
+  "percentage": [
+    "territory-track",
+    "percent",
+    "web"
+  ],
+  "calculator": [
+    "territory-track",
+    "calculator",
+    "web"
+  ],
+  "gift": [
+    "territory-track",
+    "gift.fill",
+    "gift-fill",
+    "gift",
+    "ios",
+    "web"
+  ],
+  "sitemap": [
+    "territory-track",
+    "sitemap",
+    "web"
+  ],
+  "compass": [
+    "territory-track",
+    "compass",
+    "avatar",
+    "lucide"
+  ],
+  "rocket": [
+    "territory-track",
+    "rocket",
+    "avatar",
+    "web"
   ],
   "music": [
     "rte",
     "rich-text",
     "editor",
-    "inserts"
+    "inserts",
+    "territory-track",
+    "music",
+    "avatar"
+  ],
+  "microphone-off": [
+    "territory-track",
+    "mic.slash",
+    "mic-slash",
+    "ios"
+  ],
+  "repeat": [
+    "territory-track",
+    "repeat",
+    "web"
+  ],
+  "scan": [
+    "territory-track",
+    "viewfinder",
+    "ios"
   ],
   "focus": [
     "rte",
@@ -538,7 +1618,16 @@ export const iconKeywords = {
     "currency",
     "finance",
     "payment",
-    "dollar"
+    "dollar",
+    "territory-track",
+    "assistant-fab.dollar",
+    "assistant-fab-dollar",
+    "dashboard-cards.dollar",
+    "dashboard-cards-dollar",
+    "dollar-sign",
+    "custom",
+    "lucide",
+    "web"
   ],
   "currency-euro": [
     "money",
@@ -594,14 +1683,20 @@ export const iconKeywords = {
     "currency",
     "finance",
     "payment",
-    "banknote"
+    "banknote",
+    "territory-track",
+    "banknote.fill",
+    "banknote-fill",
+    "ios"
   ],
   "money-coins": [
     "money",
     "currency",
     "finance",
     "payment",
-    "coins"
+    "coins",
+    "territory-track",
+    "web"
   ],
   "money-transfer": [
     "money",
@@ -615,7 +1710,9 @@ export const iconKeywords = {
     "currency",
     "finance",
     "payment",
-    "bank"
+    "bank",
+    "territory-track",
+    "web"
   ],
   "money-safe": [
     "money",
@@ -639,7 +1736,11 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "images"
+    "images",
+    "territory-track",
+    "rotate-cw",
+    "rotate-cw-arrow",
+    "lucide"
   ],
   "flip-horizontal": [
     "flip",
@@ -679,7 +1780,12 @@ export const iconKeywords = {
     "stack",
     "layer panel",
     "levels",
-    "arrange"
+    "arrange",
+    "territory-track",
+    "layers",
+    "layer-group",
+    "lucide",
+    "web"
   ],
   "swatches": [
     "styles",
@@ -760,7 +1866,9 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "web"
   ],
   "annotation": [
     "annotation",
@@ -796,47 +1904,90 @@ export const iconKeywords = {
     "work",
     "job",
     "portfolio",
-    "organization"
+    "organization",
+    "territory-track",
+    "assistant-fab.briefcase",
+    "assistant-fab-briefcase",
+    "briefcase",
+    "custom",
+    "lucide",
+    "web"
   ],
   "storefront": [
     "store",
     "shop",
     "retail",
     "business",
-    "merchant"
+    "merchant",
+    "territory-track",
+    "storefront",
+    "storefront.fill",
+    "storefront-fill",
+    "ios",
+    "web"
   ],
   "route": [
     "path",
     "journey",
     "trip",
     "directions",
-    "visits"
+    "visits",
+    "territory-track",
+    "point.topleft.down.curvedto.point.bottomright.up",
+    "point-topleft-down-curvedto-point-bottomright-up",
+    "route",
+    "ios",
+    "web"
   ],
   "navigation": [
     "navigation-arrow",
     "direction",
     "gps",
-    "location-arrow"
+    "location-arrow",
+    "territory-track",
+    "location.fill",
+    "location-fill",
+    "ios",
+    "web"
   ],
   "target": [
     "bullseye",
     "goal",
     "focus",
     "objective",
-    "sales"
+    "sales",
+    "territory-track",
+    "assistant-fab.target",
+    "assistant-fab-target",
+    "dashboard-cards.target",
+    "dashboard-cards-target",
+    "scope",
+    "target",
+    "custom",
+    "ios",
+    "web"
   ],
   "trend-up": [
     "growth",
     "arrow-trend-up",
     "trending-up",
     "increase",
-    "performance"
+    "performance",
+    "territory-track",
+    "dashboard-cards.trend",
+    "dashboard-cards-trend",
+    "chart-line-up",
+    "custom",
+    "web"
   ],
   "megaphone": [
     "announcement",
     "campaign",
     "marketing",
-    "broadcast"
+    "broadcast",
+    "territory-track",
+    "megaphone",
+    "web"
   ],
   "id-card": [
     "identification-card",
@@ -844,28 +1995,45 @@ export const iconKeywords = {
     "contact",
     "badge",
     "business-card",
-    "profile"
+    "profile",
+    "territory-track",
+    "person.text.rectangle.fill",
+    "person-text-rectangle-fill",
+    "id-card",
+    "rectangle-list",
+    "ios",
+    "web"
   ],
   "robot": [
     "bot",
     "assistant",
     "ai",
     "automation",
-    "artificial-intelligence"
+    "artificial-intelligence",
+    "territory-track",
+    "robot",
+    "avatar",
+    "web"
   ],
   "newspaper": [
     "news",
     "article",
     "blog",
     "press",
-    "publication"
+    "publication",
+    "territory-track",
+    "newspaper",
+    "web"
   ],
   "file-pdf": [
     "pdf",
     "document",
     "portable-document",
     "export",
-    "acrobat"
+    "acrobat",
+    "territory-track",
+    "file-pdf",
+    "web"
   ],
   "reply": [
     "respond",
@@ -875,7 +2043,11 @@ export const iconKeywords = {
     "rte",
     "rich-text",
     "editor",
-    "review"
+    "review",
+    "territory-track",
+    "corner-up-left",
+    "reply",
+    "lucide"
   ],
   "reply-all": [
     "respond-all",
@@ -887,75 +2059,133 @@ export const iconKeywords = {
     "gear",
     "cog",
     "preferences",
-    "configuration"
+    "configuration",
+    "territory-track",
+    "assistant-fab.settings",
+    "assistant-fab-settings",
+    "settings",
+    "custom",
+    "lucide",
+    "web"
   ],
   "plug": [
     "connection",
     "integration",
     "power",
     "socket",
-    "connect"
+    "connect",
+    "territory-track",
+    "plug",
+    "web"
   ],
   "wrench": [
     "tool",
     "repair",
     "maintenance",
-    "spanner"
+    "spanner",
+    "territory-track",
+    "wrench",
+    "web"
   ],
   "eraser": [
     "erase",
     "clear",
     "remove",
-    "rubber"
+    "rubber",
+    "territory-track",
+    "eraser",
+    "web"
   ],
   "lightbulb": [
     "idea",
     "insight",
     "tip",
     "suggestion",
-    "inspiration"
+    "inspiration",
+    "territory-track",
+    "dashboard-cards.bulb",
+    "dashboard-cards-bulb",
+    "lightbulb.fill",
+    "lightbulb-fill",
+    "lightbulb",
+    "custom",
+    "ios",
+    "lucide",
+    "web"
   ],
   "trophy": [
     "award",
     "winner",
     "achievement",
     "cup",
-    "prize"
+    "prize",
+    "territory-track",
+    "trophy",
+    "dashboard-cards.trophy",
+    "dashboard-cards-trophy",
+    "avatar",
+    "custom",
+    "lucide",
+    "trophy.fill",
+    "trophy-fill",
+    "ios"
   ],
   "medal": [
     "award",
     "badge",
     "achievement",
     "first",
-    "reward"
+    "reward",
+    "territory-track",
+    "lucide",
+    "web"
   ],
   "crown": [
     "premium",
     "owner",
     "admin",
     "vip",
-    "royal"
+    "royal",
+    "territory-track",
+    "crown",
+    "user-crown",
+    "avatar",
+    "lucide",
+    "web"
   ],
   "car": [
     "vehicle",
     "driving",
     "mileage",
     "travel",
-    "transport"
+    "transport",
+    "territory-track",
+    "car",
+    "car.fill",
+    "car-fill",
+    "ios",
+    "web"
   ],
   "hourglass": [
     "wait",
     "pending",
     "duration",
     "timer",
-    "time"
+    "time",
+    "territory-track",
+    "hourglass",
+    "ios",
+    "web"
   ],
   "scales": [
     "balance",
     "fairness",
     "legal",
     "agreement",
-    "weigh"
+    "weigh",
+    "territory-track",
+    "scales",
+    "web"
   ],
   "territory-track": [
     "territorytrack",
@@ -2185,5 +3415,787 @@ export const iconKeywords = {
     "grammar",
     "proofread",
     "proofreading"
+  ],
+  "alien": [
+    "territory-track",
+    "alien",
+    "avatar"
+  ],
+  "app-window": [
+    "territory-track",
+    "app-window",
+    "web"
+  ],
+  "apple-logo": [
+    "territory-track",
+    "apple-logo",
+    "web"
+  ],
+  "arrow-up-circle": [
+    "territory-track",
+    "arrow.up.circle.fill",
+    "arrow-up-circle-fill",
+    "ios"
+  ],
+  "barcode-scan": [
+    "territory-track",
+    "barcode.viewfinder",
+    "barcode-viewfinder",
+    "ios"
+  ],
+  "bear": [
+    "territory-track",
+    "bear",
+    "avatar"
+  ],
+  "bed": [
+    "territory-track",
+    "bed.double.fill",
+    "bed-double-fill",
+    "ios"
+  ],
+  "bell-ringing": [
+    "territory-track",
+    "bell-ringing",
+    "web"
+  ],
+  "book-open": [
+    "territory-track",
+    "book-open",
+    "web"
+  ],
+  "books": [
+    "territory-track",
+    "books.vertical.fill",
+    "books-vertical-fill",
+    "ios"
+  ],
+  "brain": [
+    "territory-track",
+    "brain",
+    "ios"
+  ],
+  "brain-profile": [
+    "territory-track",
+    "brain.head.profile",
+    "brain-head-profile",
+    "ios"
+  ],
+  "buildings": [
+    "territory-track",
+    "building.2",
+    "building-2",
+    "building.2.fill",
+    "building-2-fill",
+    "ios"
+  ],
+  "bunny": [
+    "territory-track",
+    "bunny",
+    "avatar"
+  ],
+  "butterfly": [
+    "territory-track",
+    "butterfly",
+    "avatar"
+  ],
+  "cactus": [
+    "territory-track",
+    "cactus",
+    "avatar"
+  ],
+  "calendar-clock": [
+    "territory-track",
+    "calendar.badge.clock",
+    "calendar-badge-clock",
+    "ios"
+  ],
+  "calendar-dots": [
+    "territory-track",
+    "calendar-days",
+    "web"
+  ],
+  "calendar-warning": [
+    "territory-track",
+    "calendar.badge.exclamationmark",
+    "calendar-badge-exclamationmark",
+    "exclamationmark.calendar",
+    "exclamationmark-calendar",
+    "ios"
+  ],
+  "camera-scan": [
+    "territory-track",
+    "camera.viewfinder",
+    "camera-viewfinder",
+    "ios"
+  ],
+  "camera-stack": [
+    "territory-track",
+    "camera.on.rectangle.fill",
+    "camera-on-rectangle-fill",
+    "ios"
+  ],
+  "car-settings": [
+    "territory-track",
+    "car.badge.gearshape.fill",
+    "car-badge-gearshape-fill",
+    "ios"
+  ],
+  "cards": [
+    "territory-track",
+    "rectangle.on.rectangle.fill",
+    "rectangle-on-rectangle-fill",
+    "cards",
+    "ios",
+    "web"
+  ],
+  "cards-sparkles": [
+    "territory-track",
+    "sparkles.rectangle.stack.fill",
+    "sparkles-rectangle-stack-fill",
+    "ios"
+  ],
+  "cat": [
+    "territory-track",
+    "cat",
+    "avatar"
+  ],
+  "chart-bar-horizontal": [
+    "territory-track",
+    "dashboard-cards.barsHorizontal",
+    "dashboard-cards-barsHorizontal",
+    "custom"
+  ],
+  "chart-stream": [
+    "territory-track",
+    "dashboard-cards.stream",
+    "dashboard-cards-stream",
+    "custom"
+  ],
+  "cherry": [
+    "territory-track",
+    "cherry",
+    "avatar"
+  ],
+  "chevron-down-circle": [
+    "territory-track",
+    "chevron.down.circle.fill",
+    "chevron-down-circle-fill",
+    "ios"
+  ],
+  "chevrons-up-down": [
+    "territory-track",
+    "chevron.up.chevron.down",
+    "chevron-up-chevron-down",
+    "ios"
+  ],
+  "clipboard-text": [
+    "territory-track",
+    "clipboard-list",
+    "clipboard-text",
+    "web"
+  ],
+  "clock-warning": [
+    "territory-track",
+    "clock.badge.exclamationmark.fill",
+    "clock-badge-exclamationmark-fill",
+    "ios"
+  ],
+  "coffee": [
+    "territory-track",
+    "coffee",
+    "avatar"
+  ],
+  "cupcake": [
+    "territory-track",
+    "cupcake",
+    "avatar"
+  ],
+  "currency-dollar-circle": [
+    "territory-track",
+    "dollarsign.circle.fill",
+    "dollarsign-circle-fill",
+    "ios"
+  ],
+  "currency-dollar-square": [
+    "territory-track",
+    "dollarsign.square.fill",
+    "dollarsign-square-fill",
+    "ios"
+  ],
+  "directions": [
+    "territory-track",
+    "arrow.triangle.turn.up.right.diamond.fill",
+    "arrow-triangle-turn-up-right-diamond-fill",
+    "ios"
+  ],
+  "document-scan": [
+    "territory-track",
+    "doc.text.viewfinder",
+    "doc-text-viewfinder",
+    "ios"
+  ],
+  "dog": [
+    "territory-track",
+    "dog",
+    "avatar"
+  ],
+  "donut": [
+    "territory-track",
+    "donut",
+    "avatar"
+  ],
+  "door-closed": [
+    "territory-track",
+    "door.left.hand.closed",
+    "door-left-hand-closed",
+    "ios"
+  ],
+  "dragon": [
+    "territory-track",
+    "dragon",
+    "avatar"
+  ],
+  "error-octagon": [
+    "territory-track",
+    "xmark.octagon.fill",
+    "xmark-octagon-fill",
+    "ios"
+  ],
+  "facebook-logo": [
+    "territory-track",
+    "facebook-logo",
+    "web"
+  ],
+  "file-download": [
+    "territory-track",
+    "file-arrow-down",
+    "lucide"
+  ],
+  "file-rich-text": [
+    "territory-track",
+    "doc.richtext",
+    "doc-richtext",
+    "ios"
+  ],
+  "files": [
+    "territory-track",
+    "files",
+    "web"
+  ],
+  "filter-circle": [
+    "territory-track",
+    "line.3.horizontal.decrease.circle",
+    "line-3-horizontal-decrease-circle",
+    "ios"
+  ],
+  "flag-checkered": [
+    "territory-track",
+    "flag.checkered",
+    "flag-checkered",
+    "ios"
+  ],
+  "flame": [
+    "territory-track",
+    "flame",
+    "flame.fill",
+    "flame-fill",
+    "avatar",
+    "ios",
+    "lucide"
+  ],
+  "fox": [
+    "territory-track",
+    "fox",
+    "avatar"
+  ],
+  "frog": [
+    "territory-track",
+    "frog",
+    "avatar"
+  ],
+  "fuel-pump": [
+    "territory-track",
+    "fuelpump.fill",
+    "fuelpump-fill",
+    "ios"
+  ],
+  "gem": [
+    "territory-track",
+    "gem",
+    "avatar"
+  ],
+  "ghost": [
+    "territory-track",
+    "ghost",
+    "avatar"
+  ],
+  "github-logo": [
+    "territory-track",
+    "github",
+    "web"
+  ],
+  "globe-americas": [
+    "territory-track",
+    "globe.americas.fill",
+    "globe-americas-fill",
+    "ios"
+  ],
+  "google-logo": [
+    "territory-track",
+    "g.circle.fill",
+    "g-circle-fill",
+    "google",
+    "google-logo",
+    "ios",
+    "web"
+  ],
+  "grid-circles": [
+    "territory-track",
+    "circle.grid.2x2",
+    "circle-grid-2x2",
+    "ios"
+  ],
+  "grid-six": [
+    "territory-track",
+    "square.grid.3x2.fill",
+    "square-grid-3x2-fill",
+    "ios"
+  ],
+  "hash": [
+    "territory-track",
+    "hash",
+    "lucide"
+  ],
+  "ice-cream": [
+    "territory-track",
+    "icecream",
+    "avatar"
+  ],
+  "image-warning": [
+    "territory-track",
+    "photo.badge.exclamationmark",
+    "photo-badge-exclamationmark",
+    "ios"
+  ],
+  "images": [
+    "territory-track",
+    "photo.on.rectangle",
+    "photo-on-rectangle",
+    "ios"
+  ],
+  "inbox-full": [
+    "territory-track",
+    "tray.full",
+    "tray-full",
+    "ios"
+  ],
+  "inbox-upload": [
+    "territory-track",
+    "tray.and.arrow.up",
+    "tray-and-arrow-up",
+    "ios"
+  ],
+  "instagram-logo": [
+    "territory-track",
+    "instagram-logo",
+    "web"
+  ],
+  "keyboard-hide": [
+    "territory-track",
+    "keyboard.chevron.compact.down",
+    "keyboard-chevron-compact-down",
+    "ios"
+  ],
+  "layout-dock": [
+    "territory-track",
+    "dock.rectangle",
+    "dock-rectangle",
+    "ios"
+  ],
+  "lightning-check": [
+    "territory-track",
+    "bolt.badge.checkmark",
+    "bolt-badge-checkmark",
+    "ios"
+  ],
+  "list-arrow": [
+    "territory-track",
+    "dashboard-cards.checkList",
+    "dashboard-cards-checkList",
+    "custom"
+  ],
+  "location-circle": [
+    "territory-track",
+    "mappin.circle.fill",
+    "mappin-circle-fill",
+    "ios"
+  ],
+  "location-ground": [
+    "territory-track",
+    "mappin.and.ellipse",
+    "mappin-and-ellipse",
+    "ios"
+  ],
+  "magic-wand": [
+    "territory-track",
+    "wand-magic-sparkles",
+    "web"
+  ],
+  "map-location": [
+    "territory-track",
+    "map-location-dot",
+    "web"
+  ],
+  "message-text": [
+    "territory-track",
+    "comment-sms",
+    "web"
+  ],
+  "message-warning": [
+    "territory-track",
+    "exclamationmark.bubble.fill",
+    "exclamationmark-bubble-fill",
+    "ios"
+  ],
+  "microphone-circle": [
+    "territory-track",
+    "mic.circle.fill",
+    "mic-circle-fill",
+    "ios"
+  ],
+  "minus-circle": [
+    "territory-track",
+    "minus.circle.fill",
+    "minus-circle-fill",
+    "ios"
+  ],
+  "moon-stars": [
+    "territory-track",
+    "moon.stars.fill",
+    "moon-stars-fill",
+    "ios"
+  ],
+  "more-circle": [
+    "territory-track",
+    "ellipsis.circle.fill",
+    "ellipsis-circle-fill",
+    "ios"
+  ],
+  "mountain": [
+    "territory-track",
+    "mountain",
+    "avatar"
+  ],
+  "mushroom": [
+    "territory-track",
+    "mushroom",
+    "avatar"
+  ],
+  "navigation-off": [
+    "territory-track",
+    "location.slash",
+    "location-slash",
+    "ios"
+  ],
+  "navigation-up": [
+    "territory-track",
+    "location.north.fill",
+    "location-north-fill",
+    "ios"
+  ],
+  "navigation-up-line": [
+    "territory-track",
+    "location.north.line.fill",
+    "location-north-line-fill",
+    "ios"
+  ],
+  "note-edit": [
+    "territory-track",
+    "assistant-fab.edit",
+    "assistant-fab-edit",
+    "square.and.pencil",
+    "square-and-pencil",
+    "note-pencil",
+    "custom",
+    "ios",
+    "web"
+  ],
+  "owl": [
+    "territory-track",
+    "owl",
+    "avatar"
+  ],
+  "parking": [
+    "territory-track",
+    "p.square.fill",
+    "p-square-fill",
+    "ios"
+  ],
+  "party-popper": [
+    "territory-track",
+    "party",
+    "avatar"
+  ],
+  "penguin": [
+    "territory-track",
+    "penguin",
+    "avatar"
+  ],
+  "person-departure": [
+    "territory-track",
+    "figure.walk.departure",
+    "figure-walk-departure",
+    "ios"
+  ],
+  "person-walking": [
+    "territory-track",
+    "figure.walk",
+    "figure-walk",
+    "ios"
+  ],
+  "person-walking-motion": [
+    "territory-track",
+    "figure.walk.motion",
+    "figure-walk-motion",
+    "ios"
+  ],
+  "phone-off": [
+    "territory-track",
+    "phone-slash",
+    "web"
+  ],
+  "pizza": [
+    "territory-track",
+    "pizza",
+    "avatar"
+  ],
+  "play-circle": [
+    "territory-track",
+    "play.circle.fill",
+    "play-circle-fill",
+    "ios"
+  ],
+  "plug-off": [
+    "territory-track",
+    "plug-circle-xmark",
+    "web"
+  ],
+  "plus-circle": [
+    "territory-track",
+    "plus.circle",
+    "plus-circle",
+    "plus.circle.fill",
+    "plus-circle-fill",
+    "ios"
+  ],
+  "prohibited": [
+    "territory-track",
+    "assistant-fab.slash",
+    "assistant-fab-slash",
+    "custom"
+  ],
+  "rainbow": [
+    "territory-track",
+    "rainbow",
+    "avatar"
+  ],
+  "refresh-circle": [
+    "territory-track",
+    "arrow.clockwise.circle.fill",
+    "arrow-clockwise-circle-fill",
+    "ios"
+  ],
+  "road": [
+    "territory-track",
+    "road.lanes",
+    "road-lanes",
+    "ios"
+  ],
+  "rotate-left": [
+    "territory-track",
+    "arrow.counterclockwise",
+    "arrow-counterclockwise",
+    "refresh-ccw",
+    "rotate-ccw",
+    "rotate-left",
+    "ios",
+    "lucide",
+    "web"
+  ],
+  "search-sparkles": [
+    "territory-track",
+    "sparkle.magnifyingglass",
+    "sparkle-magnifyingglass",
+    "ios"
+  ],
+  "share-up": [
+    "territory-track",
+    "square.and.arrow.up",
+    "square-and-arrow-up",
+    "ios"
+  ],
+  "shield-lock": [
+    "territory-track",
+    "lock.shield.fill",
+    "lock-shield-fill",
+    "ios"
+  ],
+  "shield-warning": [
+    "territory-track",
+    "exclamationmark.shield.fill",
+    "exclamationmark-shield-fill",
+    "ios"
+  ],
+  "sort": [
+    "territory-track",
+    "arrows-down-up",
+    "sort",
+    "web"
+  ],
+  "sort-circle": [
+    "territory-track",
+    "arrow.up.arrow.down.circle.fill",
+    "arrow-up-arrow-down-circle-fill",
+    "ios"
+  ],
+  "stop-circle": [
+    "territory-track",
+    "stop.circle.fill",
+    "stop-circle-fill",
+    "ios"
+  ],
+  "sunflower": [
+    "territory-track",
+    "sunflower",
+    "avatar"
+  ],
+  "taco": [
+    "territory-track",
+    "taco",
+    "avatar"
+  ],
+  "tent": [
+    "territory-track",
+    "tent",
+    "web"
+  ],
+  "text-scan": [
+    "territory-track",
+    "text.viewfinder",
+    "text-viewfinder",
+    "ios"
+  ],
+  "ticket": [
+    "territory-track",
+    "ticket",
+    "web"
+  ],
+  "timeline": [
+    "territory-track",
+    "timeline",
+    "lucide"
+  ],
+  "tools-repair": [
+    "territory-track",
+    "screwdriver-wrench",
+    "web"
+  ],
+  "tray": [
+    "territory-track",
+    "tray",
+    "web"
+  ],
+  "unicorn": [
+    "territory-track",
+    "unicorn",
+    "avatar"
+  ],
+  "user-circle": [
+    "territory-track",
+    "person.crop.circle",
+    "person-crop-circle",
+    "person.crop.circle.fill",
+    "person-crop-circle-fill",
+    "circle-user",
+    "ios",
+    "lucide"
+  ],
+  "user-circle-add": [
+    "territory-track",
+    "person.crop.circle.badge.plus",
+    "person-crop-circle-badge-plus",
+    "person.crop.circle.fill.badge.plus",
+    "person-crop-circle-fill-badge-plus",
+    "ios"
+  ],
+  "user-circle-check": [
+    "territory-track",
+    "person.crop.circle.badge.checkmark",
+    "person-crop-circle-badge-checkmark",
+    "ios"
+  ],
+  "user-circle-question": [
+    "territory-track",
+    "person.crop.circle.badge.questionmark",
+    "person-crop-circle-badge-questionmark",
+    "ios"
+  ],
+  "user-question": [
+    "territory-track",
+    "person.fill.questionmark",
+    "person-fill-questionmark",
+    "ios"
+  ],
+  "user-settings": [
+    "territory-track",
+    "user-gear",
+    "web"
+  ],
+  "users-three": [
+    "territory-track",
+    "person.3",
+    "person-3",
+    "person.3.fill",
+    "person-3-fill",
+    "user-group",
+    "ios",
+    "web"
+  ],
+  "utensils": [
+    "territory-track",
+    "fork.knife",
+    "fork-knife",
+    "ios"
+  ],
+  "verified": [
+    "territory-track",
+    "checkmark.seal.fill",
+    "checkmark-seal-fill",
+    "ios"
+  ],
+  "warning-circle": [
+    "territory-track",
+    "alert-circle",
+    "circle-exclamation",
+    "warning-circle",
+    "lucide",
+    "web"
+  ],
+  "waveform": [
+    "territory-track",
+    "waveform",
+    "ios"
+  ],
+  "waveform-microphone": [
+    "territory-track",
+    "waveform.badge.mic",
+    "waveform-badge-mic",
+    "ios"
+  ],
+  "wizard": [
+    "territory-track",
+    "wizard",
+    "avatar"
   ]
 };
