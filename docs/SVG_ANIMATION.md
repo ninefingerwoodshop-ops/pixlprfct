@@ -1,10 +1,11 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source. It does not replace Design or its existing
-Motion mode. The public Windows alpha download predates this workspace. The
-grouped timeline editing described below is verified locally on 2026-10-31 and
-pending merge; it has not been packaged in a desktop release.
+Animation** in the repository source and the [Windows v0.1.1-alpha.15
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.15).
+It does not replace Design or its existing Motion mode. Grouped timeline editing
+was merged in PR #37 and is included in that preview. The older Windows
+v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
 

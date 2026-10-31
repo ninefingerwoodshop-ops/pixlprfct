@@ -4,6 +4,30 @@ The Electron app packages the existing editor and Rust/WASM engine for macOS and
 
 After a team server loads successfully, Desktop remembers its validated address and opens that workspace on the next launch. **File → All local projects** continues to open your offline projects. If you run the server on this Mac, keep its background service running; the desktop connection address is the local PixlPrfct server address, not the database provider's API URL.
 
+## Windows SVG animator preview — v0.1.1-alpha.15
+
+The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.15)
+packages the separate SVG Animation workspace and grouped timeline editing from
+PR #37. Create an SVG Animation design from Projects, import artwork, animate
+properties, motion paths or shape nodes, and export an on-load, hover or click
+animation. Multi-select keys across tracks to move, copy/paste and delete them
+with undo/redo. Editable animation projects use `.pixl` files.
+
+Both the x64 installer and ZIP are unsigned early-testing packages. The release
+page includes checksums, the exact source commit and the Windows build record.
+This version uses the Pixel Perfect Community License; earlier v0.1.0-alpha.1
+downloads keep their original MIT / Apache 2.0 terms. The packaged license and
+legacy notices explain the distinction. Public Mac installers still await
+notarization; local Mac test bundles are not part of this Windows release.
+
+Install the new preview to update; Windows automatic updates are not provided.
+Existing local projects use the same application profile. Export `.pixl` backups
+before updating. The ZIP must be extracted in full before opening `PixlPrfct.exe`.
+Native Windows install/startup/uninstall validation is recorded by the manually
+dispatched packaging workflow. This does not claim interactive Windows coverage
+of every editor feature. SVG workflow checks run in Chromium; cloud tests use a
+mocked API rather than a deployed multi-user server.
+
 ## Run and build
 
 Use Node.js 24+, Rust and the `wasm32-unknown-unknown` target. Run `npm ci`; if your npm installation blocks lifecycle scripts, run `node node_modules/electron/install.js` to download the official Electron runtime.
