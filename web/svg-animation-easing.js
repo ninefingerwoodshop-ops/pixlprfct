@@ -2,10 +2,11 @@ import {numberField,choose} from './inspector-settings.js';
 import {easings,easingPoints} from './svg-animation-model.js';
 
 const NS='http://www.w3.org/2000/svg',labels={linear:'Linear',ease:'Ease','ease-in':'Ease in','ease-out':'Ease out','ease-in-out':'Ease in and out'};
-export function easingEditor({value='linear',disabled=false,change}){
+export function easingEditor({value='linear',mixed=false,disabled=false,change}){
  const host=document.createElement('div');host.className='svg-easing-editor';
  let points=[...easingPoints(value)];
- const picker=choose('Keyframe easing',[...Object.keys(easings).map(k=>[k,labels[k]]),['custom','Custom']],Array.isArray(value)?'custom':value,v=>change(v==='custom'?[...points]:v));picker.disabled=disabled;host.append(picker);
+ const picker=choose('Keyframe easing',[...(mixed?[['mixed','Mixed',true]]:[]),...Object.keys(easings).map(k=>[k,labels[k]]),['custom','Custom']],mixed?'mixed':Array.isArray(value)?'custom':value,v=>change(v==='custom'?[...points]:v));picker.disabled=disabled;host.append(picker);
+ if(mixed)return host;
  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','0 0 200 176');svg.setAttribute('class','svg-easing-curve');svg.setAttribute('role','group');svg.setAttribute('aria-label','Easing curve editor');
  const make=(tag,attributes)=>{const node=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attributes))node.setAttribute(k,v);svg.append(node);return node;};
  make('path',{d:'M20 16V156H180M20 86H180M100 16V156',class:'svg-curve-grid'});

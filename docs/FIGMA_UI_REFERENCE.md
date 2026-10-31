@@ -446,3 +446,30 @@ check moved two tracks together and pasted at 500/2000 ms with their 1500 ms
 offset intact. Proofs: `.local/svg-animation/timeline-multiselect.png` and
 `timeline-multiselect-menu.png`. This pass is local pending merge and has not
 been packaged in a desktop release. No TT design-system gap is closed by it.
+
+Release update, 2026-10-31: grouped timeline editing was merged in PR #37 and
+packaged in Windows v0.1.1-alpha.15 through PR #38. The earlier paragraph records
+its pre-merge checkpoint.
+
+### SVG group easing — 2026-10-31
+
+Rechecked the live native Figma Motion dock and right inspector before this pass.
+At the captured 1800 × 1003 logical window size, the dock remains 200 px high
+and the right inspector 241 px wide. The file has no animation tracks and reports
+a connection problem, so selected-key easing states were not available for a
+live comparison. Capture: `.local/svg-animation/figma-group-easing-reference.png`.
+
+The SVG workspace extends its existing right-hand easing editor to the selected
+keys. It retains shared dark dropdowns, number fields, the Bézier editor and the
+full-width dock. Mixed curves show a disabled Mixed option until the user chooses
+a curve; the inspector states the selection count. This is a functional SVG
+extension, not a claim of verified pixel parity for Figma's selected-key UI.
+The per-segment semantics follow SVGator's official
+[easing guide](https://www.svgator.com/help/animation-and-interactivity/how-to-add-ease-effects).
+
+Verification: 29 browser cases and 19 SVG model/controller cases pass, with zero
+changed-code lint errors and the existing navigation warning. Manual inspection
+confirmed Mixed → Ease out across Rotation and Scale X, with both keys still
+selected. Proofs: `.local/svg-animation/group-easing-mixed.png` and
+`group-easing-workspace.png`. This source update is not in Windows alpha.15.
+No TT design-system gap is closed by this pass.

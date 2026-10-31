@@ -1,4 +1,4 @@
-import {newSvgAnimation,validateAnimation} from './svg-animation-model.js';
+import {newSvgAnimation,validateAnimation,validEasing,easingPoints} from './svg-animation-model.js';
 
 export const keyframeId=key=>JSON.stringify([key.element,key.property,key.time]);
 const trackId=track=>JSON.stringify([track.element,track.property]);
@@ -12,6 +12,21 @@ function selectedKeys(animation,selection){
  }
  if(found.length!==ids.size)throw new Error('The selected keyframes changed. Select them again.');
  return found;
+}
+
+export function keyframeEasing(animation,selection){
+ const keys=selectedKeys(animation,selection);if(!keys.length)throw new Error('Select keyframes to edit their easing.');
+ const value=keys[0].key.easing,curve=JSON.stringify(easingPoints(value));
+ return {value:structuredClone(value),mixed:keys.some(({key})=>JSON.stringify(easingPoints(key.easing))!==curve),count:keys.length};
+}
+
+export function setKeyframeEasing(animation,selection,value){
+ const keys=selectedKeys(animation,selection);if(!keys.length)throw new Error('Select keyframes to edit their easing.');
+ if(!validEasing(value))throw new Error('Enter a valid easing curve.');
+ if(keys.every(({key})=>JSON.stringify(key.easing)===JSON.stringify(value)))return animation;
+ const ids=new Set(selection.map(keyframeId)),next=structuredClone(animation);
+ for(const track of next.tracks)for(const key of track.keys)if(ids.has(keyframeId({...track,time:key.time})))key.easing=structuredClone(value);
+ return checked(next);
 }
 
 export function keyframeMoveDelta(animation,selection,delta){
