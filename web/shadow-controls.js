@@ -17,7 +17,7 @@ function create(host){
   popup.update(entry.type+':'+!!c.glass,(head,body)=>{
    const glyph=element('span','setting-title-icon');glyph.innerHTML=settingIcon(shadow?entry.type:'blur');head.append(glyph,choose('Effect type',types(),entry.type,type=>{const next=convertEffect(style(),popup.key,type);popup.retarget(next.key);c.pending=next.key;save(next.style);}));
    if(shadow){for(const [key,label,prefix] of [['x','Position','X'],['y','','Y'],['blur','Blur',settingIcon('blur')],['spread','Spread',settingIcon('spread')]]){const field=numberField('Shadow '+(entry.index+1)+' '+({x:'X',y:'Y',blur:'Blur',spread:'Spread'}[key]),entry.value[key],value=>patch({[key]:value}),{min:key==='blur'?0:-100000,prefix});field.querySelector('input').dataset.setting=key;body.append(settingRow(label,field));}
-    body.append(settingRow('Color',colorField(body,'Shadow '+(entry.index+1),()=>current()?.value??entry.value,patch)));
+    body.append(settingRow('Color',colorField(body,'Shadow '+(entry.index+1),()=>current()?.value??entry.value,patch,c.api?.document?{document:()=>c.api.document(),shape:()=>c.shape}:undefined)));
    }else{const field=numberField(effectNames[entry.type],entry.value.blur,blur=>patch({blur}),{min:0,max:entry.type==='backdrop_blur'?200:100000,prefix:settingIcon('blur')});field.querySelector('input').dataset.setting='blur';body.append(settingRow('Blur',field));
     if(entry.type==='backdrop_blur'&&!c.glass&&['frame','rectangle','ellipse','polygon','star'].includes(c.shape.kind)){const glass=element('button','setting-text-button','Glassmorphism settings');glass.onclick=()=>{c.glass=true;renderPopup();};body.append(glass);}
     if(c.glass&&entry.type==='backdrop_blur'){
@@ -30,8 +30,8 @@ function create(host){
    }
   },(_,body)=>{for(const input of body.querySelectorAll('[data-setting]'))syncInput(input,entry.value[input.dataset.setting]);for(const input of body.querySelectorAll('[data-glass]'))syncInput(input,input.dataset.glass==='stroke_width'?c.shape.stroke_width:style()[input.dataset.glass]);for(const color of body.querySelectorAll('.setting-color-field'))color.sync();});
  }
- c.update=(shape,change,api)=>{if(c.shape?.id!==shape?.id){popup.close();menu.close();c.pending=null;list.replaceChildren();c.rows.clear();}c.shape=shape;c.change=change;host.hidden=!shape;if(!shape){c.styles?.update(null,api);return;}
-  if(api&&!c.styles)c.styles=createEffectStyleControls(host,heading,renderShadowControls);const linked=c.styles?.update(shape,api);list.hidden=!!linked;add.hidden=!!linked;
+ c.update=(shape,change,api)=>{if(c.shape?.id!==shape?.id){popup.close();menu.close();c.pending=null;list.replaceChildren();c.rows.clear();}c.shape=shape;c.change=change;c.api=api;host.hidden=!shape;if(!shape){c.styles?.update(null,api);return;}
+  if(api?.styles&&!c.styles)c.styles=createEffectStyleControls(host,heading,renderShadowControls);const linked=c.styles?.update(shape,api);list.hidden=!!linked;add.hidden=!!linked;
   const all=entries();for(const [key,row] of c.rows)if(!all.some(e=>e.key===key)){row.remove();c.rows.delete(key);if(popup.key===key)popup.close();}
   all.forEach((entry,index)=>{let row=c.rows.get(entry.key);if(!row){row=element('div','setting-item effect-item');row.dataset.effect=entry.key;row.setAttribute('role','group');const edit=element('button','effect-edit');edit.type='button';edit.setAttribute('aria-haspopup','dialog');edit.setAttribute('aria-expanded','false');edit.onclick=()=>popup.key===entry.key&&popup.open?popup.close(true):open(entry.key);const eye=action('','eye',()=>{const now=entries().find(e=>e.key===entry.key);save(editEffect(style(),entry.key,{visible:!now.value.visible}));});const remove=action('','minus',()=>{popup.close();save(removeEffect(style(),entry.key));});row.append(edit,eye,remove);c.rows.set(entry.key,row);
     if(entry.key.startsWith('shadow-')){

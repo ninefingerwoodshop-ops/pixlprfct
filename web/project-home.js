@@ -1,9 +1,11 @@
+import {teamOnboarding} from './team-onboarding.js';
+import {installActivityInbox} from './team-activity.js';
 import {installDesktop} from './desktop-integration.js';
 import {staticHost} from './static-host.js';
 import {readDesignFile} from './design-import.js';
 import {icon} from './icons.js';
 import {showContextMenu} from './context-menu.js';
-import {LocalDrafts,DRAFTS_KEY} from './local-drafts.js';
+import {LocalDrafts,DRAFTS_KEY,withDraftLock} from './local-drafts.js';
 import {installDesignCreator} from './design-browser.js';
 import {projectUrl,visibleProjects} from './project-navigation.js';
 import {installInspectorDropdowns} from './inspector-dropdown.js';
@@ -13,9 +15,11 @@ import {cloudRequest} from './cloud-session.js';
 import init,{Editor} from './pkg/pixlprfct_core.js';
 import {migrateChromeDocument} from './frame-tools.js';
 import {ensureBaseTextDocument} from './base-text.js';
+import {isSvgAnimation} from './svg-animation-model.js';
+import {normalizeSvgAnimation} from './svg-animation-svg.js';
 
 export function mountProjectHome(root,{onReady=()=>{},onError=()=>{}}={}){
-let disposed=false,closeDesktop=()=>{};
+let disposed=false,closeDesktop=()=>{},activity=null;
 root.innerHTML=`<aside class="home-sidebar" aria-label="Workspace navigation">
  <a class="home-brand" href="/"><img class="home-mark" src="/editor/favicon.svg?v=mono" width="34" height="34" alt=""><span>PixlPrfct<small>Design workspace</small></span></a>
  <label class="home-workspace" id="home-workspace-label" hidden>Workspace<select id="home-workspace" aria-label="Workspace"></select></label><span class="home-nav-label">Projects</span>
@@ -40,18 +44,19 @@ let workspace=new URLSearchParams(location.search).get('workspace')??'personal',
 let scope='all',view='grid',cloud=[],cloudError=null,cloudLoading=false,next=null,engineReady,cloudRequestId=0,closeProjectMenu=()=>{},changingProject=false;
 const report=error=>{if(disposed)return;$('home-error').textContent=error.message??String(error);$('home-error').hidden=false;};
 async function normalize(body){
+ const document=JSON.parse(body);if(isSvgAnimation(document))return JSON.stringify(normalizeSvgAnimation(document).document);
  await (engineReady??=init({module_or_path:'/editor/pkg/pixlprfct_core_bg.wasm'}).catch(error=>{engineReady=null;throw error;}));const editor=new Editor();
  try{editor.load(JSON.stringify(migrateChromeDocument(JSON.parse(body))));const base=ensureBaseTextDocument(JSON.parse(editor.snapshot()));if(base)editor.load(JSON.stringify(base));return editor.snapshot();}finally{editor.free();}
 }
 const syncDropdowns=installInspectorDropdowns(root);
-const creator=installDesignCreator({saveLocation:()=>selfHosted&&workspace!=='personal'?'Saved to this shared workspace':'Saved in your projects on this device',create:async body=>{const normalized=await normalize(body);const file=selfHosted&&workspace!=='personal'?await cloudRequest('',{method:'POST',body:normalized}):drafts.create(normalized);location.assign(projectUrl({kind:selfHosted&&workspace!=='personal'?'cloud':'local',id:file.id,workspace}));}});
+const creator=installDesignCreator({saveLocation:()=>selfHosted&&workspace!=='personal'?'Saved to this shared workspace':'Saved in your projects on this device',create:async body=>{const normalized=await normalize(body);const file=selfHosted&&workspace!=='personal'?await cloudRequest('',{method:'POST',body:normalized}):await withDraftLock(()=>drafts.create(normalized));location.assign(projectUrl({kind:selfHosted&&workspace!=='personal'?'cloud':'local',id:file.id,workspace,body:normalized}));}});
 root.ondragover=event=>{if(event.dataTransfer.types.includes('Files'))event.preventDefault();};
 root.ondrop=event=>{event.preventDefault();const file=event.dataTransfer.files[0];if(file)importDesign(file).catch(error=>{if(error.name!=='AbortError')report(error);});};
 $('home-new').onclick=()=>creator.showNew();$('home-import').onclick=()=>$('project-import-file').click();
 async function importDesign(file){
  const {body}=await readDesignFile(file),normalized=await normalize(body),shared=selfHosted&&workspace!=='personal';
- const saved=shared?await cloudRequest('',{method:'POST',body:normalized}):drafts.create(normalized);
- location.assign(projectUrl({kind:shared?'cloud':'local',id:saved.id,workspace}));
+ const saved=shared?await cloudRequest('',{method:'POST',body:normalized}):await withDraftLock(()=>drafts.create(normalized));
+ location.assign(projectUrl({kind:shared?'cloud':'local',id:saved.id,workspace,body:normalized}));
 }
 $('project-import-file').onchange=async()=>{
  const file=$('project-import-file').files[0];if(!file)return;$('home-import').disabled=true;
@@ -75,6 +80,7 @@ function render(){
   if(file.body){try{let cached=previews.get(file.id);if(cached?.body!==file.body){cached={body:file.body,source:projectPreview(file.body,measure)};previews.set(file.id,cached);}if(cached.source){const image=el('img');image.src=cached.source;image.alt='';image.loading='lazy';preview.append(image);}}catch{/* An unreadable thumbnail does not prevent opening its project. */}}
   if(!preview.childElementCount){const blank=el('span','project-placeholder');blank.innerHTML=icon('file');preview.append(blank);}
   const meta=el('div','project-meta'),title=el('strong',null,file.name),details=el('span','project-details'),place=el('span',null,file.kind==='cloud'?'Cloud':'On this device'),date=el('time');date.dateTime=new Date(file.updatedAt).toISOString();date.textContent='Edited '+new Date(file.updatedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  try{if(file.body&&isSvgAnimation(JSON.parse(file.body)))details.append(el('span',null,'SVG Animation'));}catch{/* A damaged file can still be listed and recovered. */}
   details.append(place,date);meta.append(title,details);link.append(preview,meta);card.append(link);
   const actions=[...(!trash?[{label:'Open',run:()=>location.assign(projectUrl({...file,workspace}))}]:[]),...(file.can_delete===true?[...(!trash?[{separator:true}]:[]),{label:trash?'Restore':'Move to trash',enabled:!changingProject,run:()=>changeProjectTrash(file,!trash)}]:[])];
   if(actions.length){const menu=el('button','project-menu-button');menu.type='button';menu.innerHTML=icon('more-horizontal');menu.setAttribute('aria-label','Actions for '+file.name);menu.setAttribute('aria-haspopup','menu');menu.setAttribute('aria-expanded','false');
@@ -92,7 +98,7 @@ function render(){
 async function changeProjectTrash(file,trash){
  if(changingProject||disposed)return;changingProject=true;const startedScope=scope;$('home-error').hidden=true;$('home-status').hidden=true;
  try{
-  if(file.kind==='local')drafts.setTrashed(file.id,trash,file.body);
+  if(file.kind==='local')await withDraftLock(()=>drafts.setTrashed(file.id,trash,file.body));
   else{await cloudRequest('/'+encodeURIComponent(file.id),{method:trash?'DELETE':'PATCH',headers:{'if-match':String(file.revision)}});if(scope!==startedScope)await fetchCloud();else cloud=cloud.filter(item=>item.id!==file.id);}
   if(disposed)return;previews.delete(file.id);$('home-status').textContent=trash?`“${file.name}” moved to Trash.`:`“${file.name}” restored.`;$('home-status').hidden=false;
  }catch(error){report(error);if(file.kind==='cloud')await fetchCloud();}
@@ -121,7 +127,7 @@ async function loadWorkspace(){
  try{
   const installation=await api('/api/installation');if(installation.mode!=='self-hosted')return;selfHosted=true;
   $('cloud-signin').href='/editor/account.html';$('cloud-signin').textContent='Sign in or create account';
-  const account=await api('/api/workspaces');if(disposed)return;
+  const account=await api('/api/workspaces');if(disposed)return;activity??=installActivityInbox(root.querySelector('.home-brand').parentElement,{report:message=>report(new Error(message))});
   const managed=account.organizations.filter(org=>org.role?.split(',').some(role=>['owner','admin'].includes(role)));const selected=managed.find(org=>workspace==='org:'+org.id||account.teams.some(team=>workspace==='team:'+team.id&&team.organizationId===org.id))??managed[0];
   $('home-admin').hidden=!selected&&!account.administrator;$('home-admin').href='/editor/admin.html'+(selected?'?organization='+encodeURIComponent(selected.id):'');
   $('home-account').textContent=account.user.name+' · Account & teams';
@@ -129,6 +135,7 @@ async function loadWorkspace(){
   const select=$('home-workspace');select.replaceChildren();for(const item of choices){const option=el('option',null,item.label);option.value=item.value;select.append(option);}
   if(!choices.some(item=>item.value===workspace))throw new Error('You no longer have access to the selected workspace.');
   select.value=workspace;$('home-workspace-label').hidden=false;
+  await teamOnboarding(root,workspace,{create:()=>creator.showNew(),report:message=>report(new Error(message))});
   select.onchange=()=>{const query=new URLSearchParams();if(select.value!=='personal')query.set('workspace',select.value);location.assign('/'+(query.size?'?'+query:''));};
   if(workspace!=='personal'){$('home-description').textContent='Shared designs for this workspace.';root.querySelector('[data-scope="local"]').hidden=true;$('home-new').innerHTML=icon('plus')+'New shared design';root.querySelector('.home-storage-note').textContent='Workspace members can edit these designs. Changes save to your server, with version history and conflict protection.';}
   syncDropdowns();
@@ -137,7 +144,7 @@ async function loadWorkspace(){
 
 async function start(){
 try{
- if(!drafts.read().files.length){const legacy=storage?.getItem('pixlprfct.document.v1');if(legacy){const normalized=await normalize(legacy);if(!drafts.read().files.length)drafts.create(normalized);}}
+ if(!drafts.read().files.length){const legacy=storage?.getItem('pixlprfct.document.v1');if(legacy){const normalized=await normalize(legacy);await withDraftLock(()=>{if(!drafts.read().files.length)drafts.create(normalized);});}}
 }catch(error){report(error);}
 if(disposed)return;await loadWorkspace();if(disposed)return;render();await fetchCloud();if(disposed)return;
 if(window.pixlDesktop?.local){
@@ -158,5 +165,5 @@ if(params.get('new')==='1'){const query=new URLSearchParams(location.search);que
 
 }
 start().then(()=>{if(!disposed)onReady();}).catch(error=>{if(!disposed){report(error);onError(error);}});
-return ()=>{disposed=true;closeProjectMenu();closeDesktop();window.removeEventListener('storage',onStorage);window.removeEventListener('pageshow',onPageShow);creator.destroy();syncDropdowns.destroy();root.replaceChildren();};
+return ()=>{disposed=true;activity?.destroy();closeProjectMenu();closeDesktop();window.removeEventListener('storage',onStorage);window.removeEventListener('pageshow',onPageShow);creator.destroy();syncDropdowns.destroy();root.replaceChildren();};
 }

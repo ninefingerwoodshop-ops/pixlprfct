@@ -1,6 +1,7 @@
 import {chromeInsets,orientedFrameSize} from './device-chrome.js';
 import {visibleInTree,lockedInTree} from './selection.js';
 import {icon,componentLabelType} from './icons.js';
+import {visualBounds} from './rotation.js';
 export const FRAME_PRESETS=[
  // Matched against Figma's live Frame menu on 2026-10-26 (viewport pixels).
  ['Phone',[
@@ -31,10 +32,10 @@ export function installFramePresets(panel,create){
  panel.prepend(section);return active=>{if(section.parentElement!==panel)panel.prepend(section);section.hidden=!active;panel.classList.toggle('choosing-frame',active);};
 }
 export function installFrameLabels(canvas,{select,rename,beginDrag}){
- const overlay=document.createElement('div');overlay.className='frame-labels';canvas.after(overlay);const entries=new Map();
+ const overlay=document.createElement('div');overlay.className='frame-labels';overlay.style.inset='0';canvas.after(overlay);const entries=new Map(),metrics=document.createElement('canvas').getContext('2d');metrics.font='12px Inter,Arial,sans-serif';
  return (scene,pan,zoom,selected,enabled,sets=[])=>{
-  const box=canvas.getBoundingClientRect(),parent=canvas.parentElement.getBoundingClientRect();overlay.style.left=box.left-parent.left+'px';overlay.style.top=box.top-parent.top+'px';overlay.style.width=box.width+'px';overlay.style.height=box.height+'px';
   const byId=new Map(scene.map(s=>[s.id,s]));
+  const obstacles=scene.filter(s=>!s.parent_id&&!s.hidden).map(s=>({id:s.id,...visualBounds(s)}));
   const frames=scene.filter(s=>{
    if(s.kind!=='frame'||!visibleInTree(s,scene))return false;
    let ancestor=byId.get(s.parent_id);
@@ -57,12 +58,18 @@ export function installFrameLabels(canvas,{select,rename,beginDrag}){
    }
    const button=row.firstElementChild,type=componentLabelType(frame,sets);
    if(row.dataset.componentType!==type||row.dataset.name!==frame.name){
-    row.dataset.componentType=type;row.dataset.name=frame.name;button.replaceChildren();
+    row.dataset.componentType=type;row.dataset.name=frame.name;row.dataset.textWidth=String(metrics.measureText(frame.name).width+(type?16:0));button.replaceChildren();
     if(type){const glyph=document.createElement('span');glyph.className='frame-label-icon';glyph.setAttribute('aria-hidden','true');glyph.innerHTML=icon(type==='set'?'component':'instance');button.append(glyph);}
     const name=document.createElement('span');name.className='frame-label-name';name.textContent=frame.name;button.append(name);
     button.setAttribute('aria-label','Select frame '+frame.name);button.title='Double-click to rename';
    }
-   row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+frame.y*zoom-chromeInsets(frame.device_chrome_hidden?'none':frame.device_chrome,frame.width,frame.height,frame.device_chrome_breakpoints)[0]*zoom-25+'px';row.style.maxWidth=Math.max(80,frame.width*zoom)+'px';row.style.pointerEvents=enabled?'auto':'none';
+   const top=frame.y-chromeInsets(frame.device_chrome_hidden?'none':frame.device_chrome,frame.width,frame.height,frame.device_chrome_breakpoints)[0];
+   const width=Math.max(0,frame.width*zoom),label={x:frame.x,y:top-22/zoom,width:Math.min(width,Number(row.dataset.textWidth))/zoom,height:16/zoom};
+   // Keep the reference's top-left anchor. Suppress an automatic set label when
+   // its text would cover another root's artwork; Layers remains available.
+   const occluded=type==='set'&&!row.querySelector('input')&&obstacles.some(s=>s.id!==frame.id&&label.x<s.x+s.width&&label.x+label.width>s.x&&label.y<s.y+s.height&&label.y+label.height>s.y);
+   row.dataset.occluded=String(occluded);row.style.visibility=occluded?'hidden':'';
+   row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+top*zoom-26+'px';row.style.maxWidth=width+'px';row.style.pointerEvents=enabled&&!occluded?'auto':'none';
   }
  };
 }

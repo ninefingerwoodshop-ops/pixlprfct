@@ -90,3 +90,11 @@ public/editor/
 # Bundled local Figma import worker
 /web/vendor/figma-import-worker.js
 /web/vendor/figma-import-LICENSES.txt
+
+/test-results/
+/playwright-report/
+
+# Generated MCP installation configuration and local operation lock
+.env.selfhost*
+compose.mcp.yaml
+.pixl-setup.lock

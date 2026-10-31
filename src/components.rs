@@ -40,6 +40,8 @@ const FIELDS: &[&str] = &[
     "guide_style",
     "effect_style",
     "text_style",
+    "fill_style",
+    "stroke_style",
     "prototype",
     "additional_interactions",
     "layout_item",
@@ -108,6 +110,8 @@ pub(crate) fn restore_detached_button_labels(
             label.guide_style = 0;
             label.effect_style = 0;
             label.text_style = 0;
+            label.fill_style = 0;
+            label.stroke_style = 0;
             label.prototype = None;
             label.additional_interactions.clear();
             label.flow_name.clear();
@@ -248,6 +252,9 @@ fn subfields(field: &str) -> &'static [&'static str] {
             "align",
             "vertical_align",
             "line_height",
+            "letter_spacing",
+            "letter_spacing_unit",
+            "text_case",
             "wrap",
         ],
         "appearance" => &[
@@ -478,6 +485,36 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
     {
         new.text_style = 0;
     }
+    for stroke in [false, true] {
+        let prefix = format!("appearance.{}.", if stroke { "strokes" } else { "fills" });
+        let same = if stroke {
+            new.stroke_style == old.stroke_style
+        } else {
+            new.fill_style == old.fill_style
+        };
+        let changed = color_styles::values(old, stroke) != color_styles::values(new, stroke)
+            || old
+                .variable_bindings
+                .iter()
+                .chain(new.variable_bindings.iter())
+                .any(|(path, _)| {
+                    (path.starts_with(&prefix)
+                        || path
+                            == if stroke {
+                                "appearance.stroke_color"
+                            } else {
+                                "fill"
+                            })
+                        && old.variable_bindings.get(path) != new.variable_bindings.get(path)
+                });
+        if same && changed {
+            if stroke {
+                new.stroke_style = 0;
+            } else {
+                new.fill_style = 0;
+            }
+        }
+    }
     if new.guide_style == old.guide_style && new.layout_grids != old.layout_grids {
         new.guide_style = 0;
     }
@@ -572,6 +609,8 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
                                 | "appearance"
                                 | "stroke_width"
                                 | "effect_style"
+                                | "fill_style"
+                                | "stroke_style"
                                 | "variable_bindings"
                         )
                 }
@@ -628,6 +667,12 @@ pub fn record_overrides(old: &Shape, new: &mut Shape) -> Result<(), String> {
 // Structural edits to instance descendants must be explicit detaches. Whole
 // instances may still be moved, duplicated, removed and reordered normally.
 pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
+    // Many instance descendants share one main component and one parent. Check
+    // each structure once per transaction, without weakening detach protection.
+    let mut changed_masters = std::collections::HashMap::new();
+    let mut changed_orders = std::collections::HashMap::new();
+    let old_by_id: std::collections::HashMap<_, _> = old.shapes.iter().map(|s| (s.id, s)).collect();
+    let new_by_id: std::collections::HashMap<_, _> = new.shapes.iter().map(|s| (s.id, s)).collect();
     for s in &old.shapes {
         if let Some(Component::Instance { master, source, .. }) = &s.component {
             if master == source {
@@ -641,7 +686,10 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
             };
             // Staged operations may already have synchronized a main-component
             // structural edit before the outer transaction is committed.
-            if structure(old) != structure(new) {
+            if *changed_masters
+                .entry(*master)
+                .or_insert_with(|| structure(old) != structure(new))
+            {
                 continue;
             }
             let mut root = s;
@@ -649,15 +697,15 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
                 if master == source {
                     break;
                 }
-                root = old.shapes.iter().find(|p| p.id == root.parent_id).unwrap();
+                root = old_by_id[&root.parent_id];
             }
-            let Some(new_root) = new.shapes.iter().find(|n| n.id == root.id) else {
+            let Some(new_root) = new_by_id.get(&root.id) else {
                 continue;
             };
             if new_root.component.is_none() {
                 continue;
             }
-            let Some(n) = new.shapes.iter().find(|n| n.id == s.id) else {
+            let Some(n) = new_by_id.get(&s.id) else {
                 return Err("Detach the instance before removing its layers".into());
             };
             if n.parent_id != s.parent_id || n.component.as_ref().is_none() {
@@ -670,7 +718,10 @@ pub fn protect_structure(old: &Document, new: &Document) -> Result<(), String> {
                     .map(|n| n.id)
                     .collect::<Vec<_>>()
             };
-            if order(old) != order(new) {
+            if *changed_orders
+                .entry(s.parent_id)
+                .or_insert_with(|| order(old) != order(new))
+            {
                 return Err("Detach the instance before reordering its layers".into());
             }
         }
@@ -1211,6 +1262,8 @@ impl Editor {
                         "guide_style",
                         "effect_style",
                         "text_style",
+                        "fill_style",
+                        "stroke_style",
                     ]
                     .contains(&field)
                 })

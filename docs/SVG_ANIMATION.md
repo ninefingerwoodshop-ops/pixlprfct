@@ -1,0 +1,180 @@
+# SVG Animation
+
+Implemented locally on 2026-10-31. This is a separate design type, available from
+**Projects → New design → SVG Animation**. It does not replace Design or its
+existing Motion mode. These changes have not been released.
+
+## Core workflow
+
+1. Import a static `.svg` file (or drop it on the canvas). **Try an example**
+   provides an orbit animation; the toolbar also adds rectangles and ellipses.
+2. Select an SVG element in the canvas or Elements list. Use **Add animator** in
+   the right inspector to create a property track.
+3. Set the current time and change the property value. The diamond adds or removes
+   a keyframe at that time. Position X/Y, rotation, scale X/Y, opacity, fill color,
+   stroke color, stroke width, and stroke dash offset are supported.
+4. Select a keyframe to choose Linear, Ease, Ease in, Ease out, or Ease in and out.
+   For a custom Bézier curve, drag either handle in the right inspector or enter
+   X1/Y1/X2/Y2 values. Focused handles accept arrow keys (Shift: larger steps).
+   Escape cancels a drag; undo restores the previous curve. Easing belongs to the
+   segment from that keyframe toward the next keyframe.
+5. Scrub the time ruler, drag diamonds, or use playback. Space toggles playback;
+   arrow keys move a selected keyframe by 10 ms (Shift: 100 ms), and Delete removes
+   it. Undo/redo applies to document edits. Duration changes cannot discard keys.
+6. **Export** previews the actual generated SVG. Choose animated or static output,
+   playback trigger, and repeat behavior, then download the file. **Static SVG**
+   exports the first frame. **Save settings** stores export behavior without downloading.
+
+Transform origins can be entered or centered on the source element. Position is
+an offset from imported geometry; scales multiply the imported geometry. The
+original transforms and hierarchy remain inside animation wrappers. Canvas fit,
+zoom, timeline zoom, timeline resize/collapse, and loop/once playback work.
+
+## Motion paths
+
+Select the element to animate, then choose an existing shape in the inspector's
+**Motion path** dropdown. Paths, lines, polylines, polygons, rectangles, circles,
+and ellipses can provide the route. A route must be continuous and have a nonzero
+length; it cannot be the target or a descendant of the target.
+
+Assignment creates a **Path progress (%)** track from 0% to 100% over the current
+duration. Add or edit progress keys to change timing, hold position, or travel
+backward. Choose **Keep orientation**, **Auto rotate**, or **Auto rotate · reverse**.
+The element's transform origin follows the route; regular transform and appearance
+tracks can animate alongside it. A dashed guide shows the selected element's route.
+
+The route is a snapshot of the unanimated source geometry and transforms when assigned.
+Deleting or changing the source afterward does not change the animation. Select
+the source again in the dropdown to recapture it. Replacing a route retains its
+progress keys, easing, orientation, and existing origin. **No motion path** removes
+only the progress track. Native `.pixl` files retain the route and custom curves;
+animated SVG export uses `animateMotion`, `keyPoints`, and `keySplines` without
+including the editor guide.
+
+## Path morphing
+
+Select a path or geometric shape and choose **Add animator → Morph** or
+**Morph → Edit nodes**. Move the playhead, then drag an anchor or Bézier handle
+on the canvas. Each completed edit creates or updates the shape keyframe at that
+time. The initial track holds the original shape at the start and end of the
+animation. Edit the end key too if the shape should stay changed.
+
+The right inspector provides X/Y fields for the selected anchor and its incoming
+and outgoing handles. Moving an anchor carries both handles with it. Handles
+move independently. Arrow keys move a focused node or handle by one local SVG
+unit, or ten with Shift. Escape cancels a drag without adding history; undo/redo
+records each completed drag as one edit. **Done editing nodes** hides the overlay.
+Scrubbing, easing, retiming, deleting keys, native files, and export work with
+morph tracks as they do with other properties.
+
+Rectangles, rounded rectangles, circles, ellipses, lines, polylines, and polygons
+are rendered as cubic paths when morphing. Their paint, IDs, and transforms are
+retained, and removing the morph track restores the source geometry. Compound
+paths are supported. Every key must retain the same node count, subpath order,
+and open/closed state. This pass does not add/remove nodes, match unrelated
+shapes automatically, select multiple nodes, or convert text and groups to paths.
+Each morph supports up to 512 nodes across 64 subpaths. Native SVG export uses
+`animate` on `d` with consistent cubic commands; the editor overlay is excluded.
+
+## Interactive export
+
+The export dialog previews the same SVG that will be downloaded. Choose **On load**,
+**On hover**, or **On click**. Hover can pause, reset, reverse, or continue when the
+pointer leaves. A second click can pause/resume, restart, reverse, or continue.
+Repeat can be once or loop; reverse playback stops at the first frame. Keyboard
+focus supports hover playback, and Enter/Space activate click animations.
+
+On-load exports use script-free native SVG animation. Interactive exports include
+a small self-contained player with no network dependencies. Embed interactive SVG
+inline or with an `<object>`; browsers disable its scripts in `<img>` elements and
+CSS backgrounds. Static exports contain neither animation nor scripts.
+
+Changes in this dialog are temporary until **Save settings** or **Download SVG**.
+Cancel discards them. Settings are saved in `.pixl` files and support undo/redo.
+Read-only shared documents can preview and download temporary export settings
+without changing the saved project. Preview runs in a sandboxed frame.
+
+## Persistence and boundaries
+
+The native `.pixl` payload uses `design_type: "svg-animation"` and a versioned
+`svg_animation` member. Each element/property has its own ordered keyframe track.
+It stays out of the Rust shape serializer, which does not understand this data.
+Project cards, imports, and old generic editor URLs route it to its own workspace.
+Download a `.pixl` copy to preserve editable tracks; importing an exported SVG
+loads its static artwork, not the original editable timeline.
+
+The workspace uses shared local persistence and recovery, plus revision-checked
+cloud saving. Shared files use the existing **Start editing / Finish editing**
+lease and server permission checks; another teammate's active lease blocks edits.
+Conflicts preserve pending edits and offer a device copy or download. Files
+configured for simultaneous editing can be previewed and copied to the device;
+that merge protocol is not supported for SVG timelines. This design type does not
+offer live collaboration, comments, library workflows, or engine/MCP editing.
+
+SVG import supports common geometry, nested groups, gradients, local references,
+clipping, masks, text, embedded PNG/JPEG/WebP images, and a subset of filters.
+Scripts, existing animation, foreign objects, and external resources are removed.
+Static stylesheet rules are flattened; complex CSS cascade and selectors may
+need conversion to presentation attributes before import. Import reports removed
+unsupported content. Color tracks animate solid six-digit hex colors; adding
+one to a gradient or `none` paint replaces that paint with a solid color.
+
+Current limits are 2 MB SVG source, 5,000 SVG elements, 1,000 tracks, 200 keys per
+track, and 60 seconds per animation. Native downloads retain the shared 5 MB file
+limit. Text uses available fonts; font files are not embedded. Custom easing
+control coordinates are limited to 0–1; overshoot, bounce, and spring curves are
+not included. Imported arcs are converted to cubic curves for motion routes.
+Node insertion/deletion, a route drawing tool, scroll/programmatic triggers, SVGator project import, and
+video/Lottie export remain unsupported.
+
+## Reference and verification
+
+Live SVGator **Basic Animations** was inspected after sign-in: element hierarchy,
+Animate controls, right inspector, independent tracks, keyframe selection, easing,
+and playback. Its [official workflow overview](https://www.svgator.com/svg-animation-tool)
+provides additional reference. PixlPrfct uses its own branding and shared Figma
+dark controls; see [the live Figma observations](FIGMA_UI_REFERENCE.md).
+
+For motion paths and custom easing, the signed-in SVGator easing popover was
+inspected again, alongside its official
+[motion path tutorial](https://www.svgator.com/tutorials/create-a-motion-path-animation)
+and [easing guide](https://www.svgator.com/help/animation-and-interactivity/how-to-add-ease-effects).
+Morphing follows the node-at-playhead workflow in SVGator's
+[morph guide](https://www.svgator.com/help/animation-and-interactivity/how-to-create-a-morph-animation),
+whose node and Bézier-handle screenshots were inspected. The Figma Motion dock
+was rechecked live before adding the morph controls to the right inspector.
+
+Node tests cover the document model, independent interpolation, easing, retiming,
+collision rejection, duration protection, export endpoints, native files, routes,
+and acceptance by the cloud document reader. Browser tests cover creation,
+sanitized import, property editing, native SVG playback after export, reopening,
+keyboard and pointer timeline interactions, local conflict recovery, `.pixl`
+reimport, mocked cloud revision conflicts, and shared editing lease headers and
+read-only gates. The export test compares actual
+browser SVG animation values with editor preview values. Additional checks cover
+curve input, keyboard handles, drag/cancel/undo, nested transformed motion paths,
+closed routes, deleted source geometry, disconnected-path rejection, reverse
+progress, and reversed orientation. Curved-path export positions agree with the
+preview within 0.25 SVG units in the sampled poses; native SVG and preview path
+sampling use slightly different curve-flattening tolerances.
+
+Morph tests additionally cover shape conversion, anchor/handle input, keyboard
+focus, pointer edits, drag cancellation, undo/redo, reopening, topology rejection,
+and compound-path serialization. Exported morph geometry matches the preview
+within 0.03 SVG units at sampled positions and times under nested transforms.
+
+The signed-in SVGator export dialog and its animation-start menu were also
+inspected alongside its [interactive animation guide](https://www.svgator.com/help/animation-and-interactivity/how-to-create-an-interactive-svg-animation).
+Interaction checks cover click, keyboard, hover reversal, pause/resume, saved
+settings, cancellation, standalone SVG playback, a script-disabled motion-path
+fallback, and read-only export without cloud writes.
+
+Local verification on 2026-10-31: 19 SVG browser cases and 12 SVG model/controller cases pass.
+Demo proofs: `.local/svg-animation/motion-path-workspace.png` and
+`.local/svg-animation/morph-workspace.png`. The editable morph example is
+`.local/svg-animation/morph-study.pixl`.
+
+Cloud browser tests use a mocked API; they do not certify a deployed server or
+multi-user environment. Visual inspection verifies the dock and inspector layout,
+not exhaustive pixel parity or SVGator feature parity. Local screenshots are in
+`.local/svg-animation/`.

@@ -11,23 +11,26 @@
 .left-panel .layer-tree-actions button{flex:1 1 0;white-space:nowrap}
 .left-panel #search-panel{padding:var(--ui-space-2) var(--ui-space-4)}
 
-/* The two-line page picker keeps its label and value, with the same borderless
-   surface and state colors as other drawer fields. */
-.left-panel #layers-page-control{margin:var(--ui-space-2) var(--ui-space-4) var(--ui-space-1)}
-.left-panel #layers-page-control #layers-page{gap:var(--ui-space-1);padding:var(--ui-space-2) 32px var(--ui-space-2) var(--ui-space-2);border:0;border-radius:var(--ui-radius-control);background:var(--ui-field)}
-.left-panel #layers-page-control #layers-page:hover{background:var(--ui-hover)!important}
-.left-panel #layers-page-control[open] #layers-page{background:var(--ui-selected)!important}
-.left-panel #layers-page-name{font-size:var(--ui-text);line-height:16px}
-.left-panel #layers-page-control .page-switch-chevron{right:var(--ui-space-2);bottom:var(--ui-space-2)}
-.left-panel #page-switch-menu{top:calc(100% + var(--ui-space-1));padding:var(--ui-space-1)}
-.left-panel #page-search-header{top:calc(-1 * var(--ui-space-1));padding:0 0 var(--ui-space-1)}
-.left-panel #page-search-input{padding-left:32px!important;padding-right:32px!important}
-.left-panel .page-search-field:has(#clear-page-search:not([hidden])) #page-search-input{padding-right:28px!important}
+/* Live Figma reference: 40px Pages header, 32px rows, 8px row insets. */
+.left-panel #layers-page-control{margin:0;flex:none;border-bottom:1px solid var(--ui-border)}
+.left-panel #layers-page-control #layers-page{height:40px;min-height:40px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;padding:8px 16px;border:0;border-radius:0;background:transparent!important}
+.left-panel #layers-page-name{font-size:11px;line-height:16px;font-weight:600}
+.left-panel #layers-page :is(#add-page,#find-page){width:24px;height:24px!important;min-height:24px!important;padding:4px!important;display:flex;align-items:center;justify-content:center}
+.left-panel #page-switch-menu{position:relative;top:auto;left:auto;right:auto;z-index:auto;border:0;border-radius:0;box-shadow:none;padding:0 8px 4px;max-height:45vh;height:var(--pages-height,160px);min-height:64px;overflow:auto}
+#file-panel #page-switch-options button{height:32px!important;min-height:32px!important;padding:4px 8px;font-size:11px;font-weight:400}
+#file-panel #page-switch-menu #page-switch-options button[aria-checked=true]{background:#383838!important;color:#fff!important;font-weight:500}
+#file-panel #page-switch-menu #page-switch-options button[aria-checked=true]:hover{background:#444!important}
+.left-panel .page-option-check{display:none}
+.left-panel #page-search-header{position:sticky;top:0;padding:0 0 4px;z-index:1}
+.left-panel #page-search-input{padding-left:28px!important;padding-right:28px!important}
 .left-panel #page-switch-menu .page-search-field #clear-page-search{right:2px}
-.left-panel #page-switch-options .page-inline-rename{min-height:36px;padding:var(--ui-space-1) var(--ui-space-2)}
-.left-panel #page-switch-menu button[aria-checked=true]{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)!important}
-.left-panel #page-switch-menu button[aria-checked=true]:hover{background-color:var(--ui-selected-hover)!important}
-.left-panel #page-switch-menu button[aria-checked=true]:active{background-color:var(--ui-selected-pressed)!important}
+.left-panel #page-switch-options .page-inline-rename{height:32px;min-height:32px;padding:4px 8px}
+#pages-resize{height:4px;margin-top:-4px;position:relative;z-index:2;cursor:row-resize;touch-action:none}
+#pages-resize:hover,#pages-resize:focus-visible{background:var(--ui-accent);outline:none}
+.local-recovery-trigger{color:var(--ui-accent-text);text-align:left;font-size:11px}
+.left-footer:has(.local-recovery-trigger:not([hidden])){flex-wrap:wrap}
+.local-recovery-dialog{width:min(440px,90vw)}
+.local-recovery-dialog h2{font-size:16px}
 .left-panel .file-chevron[aria-expanded=true]{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)}
 
 /* Layer rows keep their indentation and sticky hover actions. Each action is
@@ -36,3 +39,5 @@
 .left-panel #layers :is(.group-row,.layer-entry){padding-right:var(--ui-space-4)}
 .left-panel #layers .group-row>.layer-entry{padding-right:0}
 .left-panel #layers .layer-actions{right:var(--ui-space-4);width:calc(2 * var(--ui-icon-button) + var(--ui-space-1));height:36px;gap:var(--ui-space-1)}
+
+.pages-header-actions{display:flex;gap:4px}

@@ -22,6 +22,13 @@ test('edits, zoom, viewport resize, overscan exhaustion and fractional pans repa
 test('loaded fonts, images and textures can invalidate unchanged scene data',()=>{
  const f=fixture();f.renderer.draw([],f.target);f.renderer.invalidate();f.renderer.draw([],f.target);assert.equal(f.renders.length,2);
 });
+test('changed artwork paints directly before caching stable artwork for pan reuse',()=>{
+ const f=fixture({deferEdits:true}),scene=[{id:1,text:'Label'}];f.renderer.draw(scene,f.target);
+ assert.equal(f.renders[0][1],f.target);assert.equal(f.surfaces.length,0);
+ f.transform.e+=1;f.renderer.draw(scene,f.target);assert.equal(f.surfaces.length,1);
+ f.transform.e+=1;f.renderer.draw(scene,f.target);assert.equal(f.renders.length,2);
+ scene[0].text='Changed';f.renderer.draw(scene,f.target);assert.equal(f.renders.at(-1)[1],f.target);assert.equal(f.surfaces[0].width,1);
+});
 test('oversized or rotated targets use direct painting without a lossy or unbounded buffer',()=>{
  const f=fixture({maxPixels:900000});f.renderer.draw([],f.target);assert.equal(f.surfaces.length,1);
  f.target.canvas.width=8192;f.renderer.draw([],f.target);assert.equal(f.renders.at(-1)[1],f.target);assert.equal(f.surfaces[0].width,1);

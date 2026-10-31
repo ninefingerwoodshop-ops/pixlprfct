@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -66,7 +67,13 @@ async function fixture(){
  for(const sql of ['CREATE TABLE member (id TEXT,organizationId TEXT,userId TEXT,role TEXT)','CREATE TABLE team (id TEXT,organizationId TEXT)','CREATE TABLE teamMember (id TEXT,teamId TEXT,userId TEXT)','CREATE TABLE "user" (id TEXT,name TEXT,email TEXT)'])await db.query(sql,[],'run');
  for(const [id,role] of [['owner','owner'],['editor','member'],['consumer','member']]){await db.query('INSERT INTO member VALUES(?,?,?,?)',[id,'organization',id,role],'run');await db.query('INSERT INTO "user" VALUES(?,?,?)',[id,id,id+'@example.test'],'run');}
  const handle=createApplication({config:{engine:'sqlite',baseURL:'http://localhost',adminEmail:'owner@example.test'},db,auth:{api:{getSession:async({headers})=>headers.get('x-test-user')?{user:{id:headers.get('x-test-user'),email:'member@example.test',emailVerified:true}}:null}}});
- async function call(user,path,body,method=body===undefined?'GET':'POST',revision){const response=await handle(new Request('http://localhost'+path+(path.includes('?')?'&':'?')+'workspace=org:organization',{method,headers:{origin:'http://localhost','content-type':'application/json',...(user?{'x-test-user':user}:{}),...(revision?{'if-match':String(revision)}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})}));return {status:response.status,data:await response.json()};}
+ async function call(user,path,body,method=body===undefined?'GET':'POST',revision){
+  const client=randomUUID(),id=path.match(/^\/api\/(?:documents|libraries)\/([0-9a-f-]{36})/i)?.[1];
+  const request=async(p,b,m,token)=>{const response=await handle(new Request('http://localhost'+p+(p.includes('?')?'&':'?')+'workspace=org:organization',{method:m,headers:{origin:'http://localhost','content-type':'application/json','x-pixl-client':client,...(token?{'x-pixl-edit-token':token}:{}),...(user?{'x-test-user':user}:{}),...(revision?{'if-match':String(revision)}:{})},...(b===undefined?{}:{body:JSON.stringify(b)})}));return {status:response.status,data:await response.json()};};
+  const lease=id&&(method==='PUT'||path.endsWith('/restore'))?await request('/api/documents/'+id+'/editing',{action:'acquire'},'POST'):null,token=lease?.data?.lease?.token;
+  try{return await request(path,body,method,token);}finally{if(token)await request('/api/documents/'+id+'/editing',{action:'release'},'POST',token);}
+ }
+
  return {db,call};
 }
 test('server enforces source grants, locked instances, tenant access, releases, and restore permissions',async()=>{

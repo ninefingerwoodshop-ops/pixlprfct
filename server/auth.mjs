@@ -8,7 +8,7 @@ export function smtpOptions(config){
   const url=new URL(config.smtpUrl);
   return {host:url.hostname,port:Number(url.port||(url.protocol==='smtps:'?465:587)),secure:url.protocol==='smtps:',requireTLS:!(config.local&&['localhost','127.0.0.1','[::1]'].includes(url.hostname)),tls:{rejectUnauthorized:true},...(url.username?{auth:{user:decodeURIComponent(url.username),pass:decodeURIComponent(url.password)}}:{})};
 }
-export function createAuth(config, db, deliver, {migrating=false}={}) {
+export function createDelivery(config,deliver) {
   const transport=config.smtpUrl?nodemailer.createTransport(smtpOptions(config),{from:config.smtpFrom}):null;
   const send=deliver??(async({to,subject,text})=>{
     if(transport){await transport.sendMail({from:config.smtpFrom,to,subject,text,requireTLS:!config.local});return;}
@@ -17,6 +17,10 @@ export function createAuth(config, db, deliver, {migrating=false}={}) {
     await mkdir('./data/outbox',{recursive:true,mode:0o700});
     await writeFile('./data/outbox/'+randomUUID()+'.json',JSON.stringify({to,subject,text},null,2),{mode:0o600});
   });
+  return send;
+}
+export function createAuth(config, db, deliver, {migrating=false}={}) {
+  const send=createDelivery(config,deliver);
   return betterAuth({
     appName:'PixlPrfct',baseURL:config.baseURL,secret:config.secret,database:db.connection,
     trustedOrigins:[config.baseURL],

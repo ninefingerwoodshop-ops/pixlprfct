@@ -3,6 +3,54 @@
 Running list from building the PixlPrfct design system (project: "Territory Track Design System").
 Last updated: 2026-10-30
 
+## Library import and responsiveness follow-up — 2026-10-30
+
+- Existing local projects can add device-published PixlPrfct libraries and portable
+  releases, or import Figma `.fig` snapshots through Manage libraries. Shared
+  projects use libraries published in their own workspace. See `LIBRARIES.md`.
+- B17 and B19 are resolved locally. New B39 below tracks both import sources and
+  their precise boundaries. Figma live account/URL synchronization is not present.
+- 3 Rust + 978 JavaScript tests, 20 functional browser scenarios, ten reviewed
+  baselines, production build, TypeScript, formatting/Clippy and catalog checks
+  pass. Lint has 0 errors / 56 warnings. The unchanged 100ms browser gate now
+  passes at 58.4ms p95 / 54.2ms median in isolated headless Chromium. B33 retains
+  the broader frame-time objective; historical failures below remain evidence.
+- Full-stack paint previews replace Page Styles' basic solid approximations.
+  B38 retains folder/group commands, other style categories and exhaustive parity.
+- Alpha.12 is installed in both existing bundle paths; native About, strict
+  signatures, automatic MCP discovery and current offline-project preservation
+  pass. App/profile backups and proof are retained. Actual OS sleep/wake and the
+  participant pilot remain unverified; no public release or remote CI claimed.
+
+## Historical daily-work workflow follow-up — 2026-10-30 (local source/build)
+
+- Page Styles now browses and manages Text, Color and Effect styles without a selection. Named color styles support fill/stroke application, variables, components, libraries, detach/delete and history. B38 remains open for complete visual/workflow parity; no exact whole-interface match is claimed.
+- B29 is resolved locally with revision- and scope-pinned export chunks, Unicode-safe boundaries, bounded manifests and reconstruction tests. This protocol change requires consumers of large exports to follow the returned cursors.
+- A public five-page, 727-layer fixture passes import, shared-style/component edits, save/reopen, export and reimport with exact document equality. It found and fixed default slot children losing their own CSS class during font refresh.
+- Functional regression and visual evidence are recorded in `RELEASE_ACCEPTANCE.md` and `CAPABILITY_MATRIX.md`. The 100ms browser latency gate still fails: the final visible Chromium comparison measured 199.2ms p95 (141.1ms median). B33 stays open. A complete `test:browser` run is therefore not green.
+- The pilot protocol and outcome calculator are ready in `PILOT_PLAN.md`; no people have participated, no invitations were sent, and there is no retention result. B23 still needs an actual 40-minute desktop sleep/wake run. Existing installed alpha.11 and public-release evidence below remain historical and separate.
+
+## Alpha.11 installation and follow-up — 2026-10-30
+
+- Alpha.11 is installed in both existing local desktop bundle paths. Native About and deep/strict signature checks pass. Backups of the app bundles, profile and open design are in `.local/evaluation-fixes/`. No public release or merge is claimed.
+- Full production build, 3 Rust + 958 JavaScript tests, 12 Chromium regressions with six reviewed baselines, TypeScript, formatting/Clippy, and the 97-command/49-model catalog pass. Lint: 0 errors / 56 existing warnings.
+- The reopened user design retains 724 layers, 10 pages, 87 components, 121 variables and 14 effect styles. A real MCP client reconnects automatically. The only raw-document differences are existing load-time device-frame defaults on seven frames; the explicitly migrated comparison matches completely.
+- The reported set-label collision is suppressed without editing artwork; B31 retains broader placement-parity verification. Property pruning is now indexed; complex name edits fall from 30.5 to 15.3ms and previews from 33.1 to 17.9ms. B33 stays open for end-to-end latency.
+- The installed-app real OS sleep probe reaches ready state. It requires manual sleep/wake because scheduling an automatic wake needs administrator authentication. B23 remains open until actual sleep evidence passes.
+
+## Evaluation implementation follow-up — 2026-10-30 (historical source/build checkpoint)
+
+- Local fixes close B27, B32, B36 and B37 with the evidence appended to each entry. B31 is partially addressed; set-label placement remains open. B33 is measured and improved but remains above the complex-document frame budget. B23 retains a separate OS-sleep acceptance requirement.
+- Full build, 3 Rust + 957 JavaScript tests, 11 isolated Chromium scenarios, reviewed screenshot baselines, TypeScript, formatting/Clippy and the 97-command/49-model catalog pass. Lint has zero errors after excluding generated copies; pre-existing warnings remain. CI now includes lint, typecheck, catalog and functional/visual browser jobs, but no remote CI run is claimed.
+- Persistence/recovery, Page paint, typography/style controls and color-variable picking are extracted into focused modules. [CAPABILITY_MATRIX.md](CAPABILITY_MATRIX.md), `roadmap.json` and `inspector-parity.json` separate implementation, UI, visual, installed and release status.
+- These changes are **local source/build only**. The previously installed alpha.10 bundles and public release state were not changed. TerritoryIQ/design-file work remains separate.
+
+## Project evaluation checkpoint — 2026-10-30 (historical baseline)
+
+- Read-only source evaluation plus isolated local-browser checks recorded in [PROJECT_EVALUATION_2026-10-30.md](PROJECT_EVALUATION_2026-10-30.md). No application fixes or releases are claimed.
+- Added B36 for a browser-reproduced same-file local-tab overwrite and B37 for the code-inspected missing unload protection after local save failure. Existing completed entries and open issues are preserved.
+- Current checks: full build, 3 Rust + 946 JavaScript tests, TypeScript, Rust formatting/Clippy, and generated API catalog pass. Initial repository lint has zero errors and 228 warnings, mostly generated copies. Motion dock geometry and custom controls were checked locally; no whole-interface pixel-parity certification. B23, B27, B31, B32, B33 and B35 remain open.
+
 ## Frame enclosure follow-up — 2026-10-30
 
 - [x] **Drawing or dragging an ordinary frame around existing layers adopts fully enclosed sibling trees (local implementation).** Captured groups/components keep their descendants and visible positions. Partial overlaps, hidden/locked trees, protected component destinations, sections and generated grid cells are excluded; existing grid drop placement remains unchanged. Creation/movement and adoption are one atomic undo step. Drop targeting avoids placing a large enclosing frame inside a smaller frame it surrounds.
@@ -167,11 +215,13 @@ Last updated: 2026-10-30
 
 - [x] ~~**Shadow colors can't bind to variables.** Focus rings built as spread shadows use fixed hex (white gap + navy ring), so they don't switch in Dark mode.~~
   - B16 — Resolution (2026-10-30, local core/MCP): `DropShadow.color_variable` and `bind_shadow_color` resolve color aliases and page/frame modes, including reusable effect styles and instances. Bindings survive reorder/library remapping; literal edits and token deletion detach safely; CSS export retains tokens. Tests cover all these paths. Inspector variable picking is pending; existing fixed-color styles need deliberate design-file migration.
-- [ ] **Publishing the library is UI-only:** Assets → Manage libraries → This file → Publish (needs the self-hosted workspace). The MCP can create main components and sets but can't publish or confirm how Assets lists them.
+- [x] ~~**Publishing the library is UI-only:** Assets → Manage libraries → This file → Publish (needs the self-hosted workspace). The MCP can create main components and sets but can't publish or confirm how Assets lists them.~~
+  - B17 — Resolution (2026-10-30, local): `pixlprfct_libraries` lists bounded releases, links and grouped Assets entries, and supports publish/add/update/remove with revision, project identity and existing source permissions. Local device publication no longer requires self hosting. Real WebSocket browser regression verifies publish/discover/add/place/remove and protected edits; headless catalogs are explicitly unsupported.
 - [x] ~~**Variant masters use Figma-style names** ("Checked=Off, State=Default"). If Assets lists masters by layer name rather than by set, Checkbox and Radio variants will look identical; check the Assets panel.~~
   - B18 — Verified (2026-10-29). Assets shows one card per component set, named for the set, with a custom variant dropdown displaying property/value pairs. Verified in the live editor after creating two variants with State and Size properties; the Assets count was one component. Automated asset grouping/search regression passes.
 
-- [ ] **Pen/vector stroke color is set through `fill`**, not a stroke property. It's unintuitive, but it binds to variables fine.
+- [x] ~~**Pen/vector stroke color is set through `fill`**, not a stroke property. It's unintuitive, but it binds to variables fine.~~
+  - B19 — Resolution (2026-10-30, local): newly drawn vectors and MCP vector creation initialize explicit fill/stroke appearance. `appearance.stroke_color` controls the stroke independently of fill; legacy fallback remains compatible. Regression verifies open-pen stroke enablement/color, no fill, SVG output and saved-file round trip. All vector tests pass.
 
 - [x] ~~**MCP keeps dropping its connection and requires manual reconnection.** It should connect to PixlPrfct automatically.~~
   - B21 — Fixed locally (2026-10-29). Desktop local and allowed team-server workspaces discover running MCP servers automatically, including changed ports/codes after restarts. Connections recover after interruptions, reloads, back-navigation and silent stalls. Multiple agents can connect without default-port collisions. Explicit Disconnect remains paused until Connect; old sessions cannot edit a different project, and interrupted edits are never replayed. Normal browser editors remember pairing for the current tab/project but still need a fresh code after a server restart. Real WebSocket restart recovery and lifecycle regression tests pass; final validation: 3 Rust + 898 JavaScript tests, editor/desktop bundle build, MCP catalog check, and changed-code lint with zero errors or warnings. Requires an updated desktop/editor and MCP server; the installed build is not yet updated.
@@ -182,6 +232,8 @@ Last updated: 2026-10-30
 
 - [ ] **The live MCP connection drops on its own** (twice in about 40 minutes on 2026-10-29, roughly 35–40 minutes after pairing). The bridge URL and pairing code stay the same (the server didn't restart), so the editor tab is what's disconnecting, possibly from idling or sleep. A batch in flight fails with "Live editor session not connected". Add auto-reconnect, or a longer-lived pairing for the same tab.
   - B23 — Newly tracked recurrence (2026-10-29). Keep open pending reproduction of the reported idle/sleep failure on the installed reconnect build. The earlier B21 implementation and validation history are preserved; this report is not closed by the variant work.
+  - Acceptance evidence (2026-10-30, local): the real socket transport remained connected for 40 wall-clock minutes (2,400,113ms), answered a read, then reconnected and answered another read after a bridge restart. Script: `npm run test:idle`; log: `.local/evaluation-fixes/mcp-idle.jsonl`. This uses a headless editor and does not put the OS to sleep; keep open for installed-app OS sleep/wake verification.
+  - Installed follow-up (2026-10-30, alpha.11): automatic reconnection and full paged read pass after app replacement; the saved design is preserved. `npm run test:sleep` reached ready state, then was stopped without a qualifying sleep/wake result. No user action is pending; B23 remains open for OS-sleep verification. A ready probe is not a passing sleep result.
   - Targeted fix (2026-10-30, local): hung discovery no longer blocks heartbeat/retry work; focus/visibility/online wakes recovery; desktop background throttling is disabled; authenticated reconnect preserves the tab/project session ID within a running server. Real-socket simulated sleep/reconnect and no-replay tests pass. **Retained open for a real long-idle/OS-sleep acceptance test**, rather than equating simulated elapsed time with a completed soak.
 
 - [x] ~~**`combine_variants` ignores `Property=Value` names and creates Property 1.**~~
@@ -190,27 +242,63 @@ Last updated: 2026-10-30
   - B25 — Resolution (2026-10-30, local): sibling mains get a padded set frame automatically, including inactive-page saves. Undo restores the original hierarchy. Legacy cross-page sets remain logical metadata because they cannot share one canvas container.
 - [x] ~~**`set_variant_property` only works on instances.**~~
   - B26 — Resolution (2026-10-30, local): main components now edit their own variant values; instances still switch matching variants. Invalid names and duplicate combinations reject atomically.
-- [ ] **Typography lacks letter spacing and uppercase/text case.**
+- [x] ~~**Typography lacks letter spacing and uppercase/text case.**~~
   - B27 — Incoming review (2026-10-30). Still open; text-style support does not close these missing font attributes.
+  - Resolution (2026-10-30, local): letter spacing in px/% and text case now persist in Rust, propagate through styles/components, drive sizing and Canvas/SVG/CSS, and expose working inspector controls. New model tests and the browser style/create/edit/reload test pass; live Figma reference and Type settings baseline reviewed. Advanced typography remains separate.
 - [ ] **Instances reportedly ignore a main component's no-fill setting.**
   - B28 — Incoming review (2026-10-30). Current-engine regression verifies no fill both before instantiation and after toggling the main. The reported file/UI path is not yet reproduced; retain open, with no speculative engine change or closure.
-- [ ] **Full exports can exceed a million characters.**
+- [x] ~~**Full exports can exceed a million characters.**~~
   - B29 — Incoming review (2026-10-30). Paged reads resolve normal inspection, but export responses still need chunking/file-oriented retrieval. Prefer page/selection exports meanwhile; this is a workaround.
+  - Resolution (2026-10-30, local): large exports return a bounded file manifest and 256–64,000-character chunks. Cursors pin revision and scope and never split surrogate pairs; changed documents/options reject. `tests/export-chunks.test.mjs`, reconstructed MCP/runtime exports and design-system export tests pass. Small exports retain `files[].text`. This is a source/build fix, not an installed or public release.
 - [x] ~~**Canvas button labels sit above the CSS-rendered text position.**~~
   - B30 — Resolution (2026-10-30, local): complete line-height boxes and measured alphabetic baselines now drive Canvas/SVG/inline editing. Fixed labels no longer shift upward; wrapped text retains the full final line and blank paragraphs. Compared the actual button page in native canvas and CSS modes after inspecting live Figma; regression covers top/center/bottom alignment, sizing and baseline metrics. This does not certify every text/font combination.
 - [ ] **Page background display and set-label placement need further visual parity work.**
   - B31 — Observed (2026-10-30): the Page inspector displays a static F5F5F5 swatch while the workspace is dark; some authored dark headings are consequently hard to read. Set labels can overlap adjacent authored content. Keep UI theme independent from document paint; do not recolor the design file as a workaround.
-- [ ] **Text-style and shadow-variable inspector pickers are missing.**
+  - Partial resolution (2026-10-30, local): replaced the static swatch with per-page background color, opacity and visibility. Duplicate/undo/validation/serialization and browser page-switch/reload checks pass. Document paint remains independent from the dark UI theme. Set-label overlap remains open.
+  - Follow-up (2026-10-30, installed alpha.11): live Figma measured at 53%, 28% and 3%; label font/line height, icon size/gap and projected-width clipping updated. The reported Table Row collision is suppressed when its automatic label overlaps other root artwork; Layers remains available. Browser collision/select/rename/zoom/reload checks and a reviewed baseline pass. This suppression is a PixlPrfct safeguard, not verified Figma collision-algorithm parity, so retain the broader placement item open.
+- [x] ~~**Text-style and shadow-variable inspector pickers are missing.**~~
   - B32 — Explicit remaining UI scope (2026-10-30). New core/MCP features are functional; corresponding inspector affordances need live Figma inspection and implementation before UI parity can be claimed.
+  - Resolution (2026-10-30, local): live Figma inspected; text style create/apply/edit/detach/delete and shadow-variable collection/search/list/grid selection/detach added. Engine/style propagation and actual browser selection/reload pass; reviewed picker baselines verify the implemented surfaces. No whole-interface parity or installation claim.
   - Upgrade diagnosis (2026-10-29): Claude’s window reload left a pre-update MCP process on port 63512 alive while PixlPrfct connected to a newer process. Claude still reported an empty session list. The previous installation check established a connection to a server, but did not verify the server used by the affected conversation. Fully quitting and reopening Claude removed the old processes; both newly launched servers were automatically discovered and each had an established desktop socket. The app showed 2 connected agents. This corrects the earlier verification claim. After the user authorized a read-only check in the original Claude conversation, Claude called its PixlPrfct tools and confirmed “It’s connected now,” one live session, and 613 layers with nothing edited. The stale-process upgrade mismatch is resolved and verified end to end; the original idle/sleep recurrence remains open.
 
 - [ ] **Editor feels clunky and slow across canvas, properties/pages and MCP edits.**
   - B33 — Reported and partially improved (2026-10-30, local alpha.7): bounded canvas caching, stable frame-label DOM, direct color resolution, reduced instance/MCP work, coalesced drawing and cheap connection-status updates. Pan redraws and 20-edit batch timings improve substantially (see performance checkpoint). Large layout previews still take approximately 36 ms before drawing, so retain open for further incremental-layout profiling; do not equate the measured speedup with universal 60 fps.
+  - Follow-up (2026-10-30, local): transaction-local structure/order caches, linear parent ordering and move-based history preserve the exact private benchmark document hash. Name edit 32.4→30.5ms, position preview 35.3→33.1ms, 20-edit batch 1059.5→967.7ms. Public content-edit/width-preview benchmark added; see PERFORMANCE.md. Remains open for complex-document latency.
+  - Follow-up (2026-10-30, installed alpha.11): phase profiling found ~16.7ms in whole-document property pruning. Parent-indexed target checks, shared serialization for write guards and elimination of an immediate duplicate validation reduce name edits to 15.3ms, previews to 17.9ms and a 20-edit batch to 647.3ms. Benchmark snapshot hash is unchanged. Actual content edits measure 14.27ms median and width previews 17.30ms. B33 remains open because preview time still exceeds the frame budget before drawing.
 
 - [x] **Component slots: editable content inside linked instances.**
   - B34 — Resolution (2026-10-30, local alpha.10): nested-frame conversion and selection wrapping, unbound Slot properties, default/modified content, arbitrary child layers and independent nested instances, reset/clear, preferred instances, advisory min/max limits, empty-slot targets, and counter-axis fill are implemented. Custom content survives main updates, duplication, same-file clipboard, save/reload, library use, and matching slot properties on variant swaps. Engine structure protection still applies outside slots. Live Figma reference and browser interaction evidence are in `.local/slots/`; 12 slot regressions and the complete 3 Rust + 946 JavaScript suite pass. Both local desktop bundles were updated and strict signature checks passed; this is not a published release or merged change.
 - [ ] **Remaining slot parity details.**
   - B35 — Tracked (2026-10-30): rich-text description formatting, bulk authoring across variants, and native .fig slot metadata import remain outside the verified implementation. Existing Button/Input design-file slot work below remains open; adding editor support does not migrate those components.
+
+- [x] ~~**A stale local-project tab silently overwrites newer saved edits.**~~
+  - B36 — Confirmed (2026-10-30, local current build): opened the same fresh starter draft in two browser tabs, renamed it in A and observed “Saved on this device,” then clicked All projects in unchanged B. Projects showed the old name again. `LocalDrafts.put` replaces the stored body without checking the version originally opened by the caller; an independent storage reproduction confirms the overwrite. This affects entire document bodies. Add local conflict detection and recovery, including navigation/lifecycle saves. Evaluation evidence: `docs/PROJECT_EVALUATION_2026-10-30.md`. No fix or release claimed.
+  - Resolution (2026-10-30, local): compare against the body opened by this tab, serialize writes with Web Locks, skip unchanged stale snapshots, and retain conflicting edits until copied/exported. Browser tests verify untouched-tab navigation preserves newer work and conflicting edits can become a separate project; local persistence regressions pass.
+
+- [x] ~~**Local save failure lacks unsaved-work protection on close/reload.**~~
+  - B37 — Code-inspected (2026-10-30): failed local persistence changes status text, while the unload warning applies only to cloud sessions. Local edits after the last successful save can be lost if storage writes fail and the tab closes/reloads. Existing storage tests verify preservation of the older saved copy, not recovery of newer unsaved edits. Browser quota exhaustion was not induced during evaluation. Track the successful local-save acknowledgment, expose recovery/export, and verify the failure-and-close flow. No fix or release claimed.
+  - Resolution (2026-10-30, local): successful-save acknowledgment, dirty unload protection, per-tab recovery snapshots and visible retry/copy/download/latest actions added. Chromium injects QuotaExceededError on durable writes, verifies the unload guard and recovery record, reloads, and verifies successful retry. If both browser stores fail, export/keeping the tab open remains necessary; no storage-capacity migration claimed.
+
+- [ ] **Unselected/page inspector lacks Figma's document Styles surface.**
+  - B38 — Observed (2026-10-30, current alpha.11 workspace): live Figma exposes Styles with Text, Color and Effect sections when nothing is selected. PixlPrfct exposes page variable modes and onboarding/selection tips instead (`web/index.html:114`). Existing layer text/effect pickers work; this entry concerns the page-level style browsing/management workflow and its visual parity. Native Figma and local browser screenshots are recorded in the current reassessment in `docs/PROJECT_EVALUATION_2026-10-30.md`. No implementation, matched-viewport pixel certification or release claimed.
+  - Partial resolution (2026-10-30, local): added page-level Text/Color/Effect categories, slash groups, create/edit/rename/duplicate/delete, keyboard actions and linked color styles. Inspected live Figma's 241px inspector, 32px rows, inline text metrics, Create style menu and 304px creation forms. Three new browser baselines plus create/apply/edit/reload and nested gradient-picker checks cover these states. Page variable modes remain a separate existing section; Animation/Layout guide creation is not included in this new menu, nested folder/group commands and advanced paint thumbnails remain parity work. Keep open for these differences and exhaustive matched-state pixel verification.
+
+
+- [x] ~~**Add another published library to the project already being edited, from PixlPrfct or Figma.**~~
+  - B39 — Resolution (2026-10-30, local): device/workspace discovery, portable `.pixllib` releases, Add to file, protected linked assets, updates and import into existing local projects implemented. Figma `.fig` imports retain supported components/variant sets/variables/styles as snapshots. Real Capwah import: 46 masters, 11 sets, 15 variables and 12 styles; manual add/placement plus four browser library scenarios pass. Existing document/page/artwork and saves survive import and updates.
+  - Boundaries: no live Figma catalog/URL sync; raw Figma/Pixl reimports create separate snapshots. Native Figma nested instances detach and exposed properties/slots/mixed text have disclosed limitations. Shared projects require an external file to be imported/published as a source in that workspace before consumption. These are explicit workflow limits, not cross-workspace permission bypasses.
+
+### Current remaining verification notes
+
+- Integration verification (2026-10-31, local source): the 727-layer browser gate
+  measured 78.9 ms median / 83.6 ms p95 in a serial run (100 ms limit). Browser
+  workers are serial so concurrent scenarios do not distort this latency gate.
+  Fixed first-edit Undo in a live session by updating controls after personal
+  history is recorded; the two-user edit/undo/conflict scenario passes. These
+  checks do not close the remaining B33 frame-time or B38 visual-parity gaps.
+
+- B33: the 100ms browser release gate is now passing; universal 16.7ms frame time remains unproven.
+- B38: advanced paint thumbnails now use the actual stacked-paint renderer, including variable/opacity/gradient/pattern resolution. Folder/group operations, other style categories and exhaustive pixel parity remain open.
 
 ---
 
@@ -233,3 +321,78 @@ Last updated: 2026-10-30
 - [x] Toggle component set (Off/On × Default/Focus/Disabled)
 - [ ] **J:** publish the library from Assets → Manage libraries so other projects can use these components
 - [ ] Cards, nav, alerts/banners, table rows, modal
+
+## Team workflow follow-up — 2026-10-30
+
+- [x] **Safe shared editing with explicit ownership and handoff.** Local alpha.13 implementation adds server-enforced 90-second leases, renewal, request/release/handoff, revision and membership fencing. UI and MCP share the edit gate. Slow uploads after handoff/revocation are rejected. Simulated authenticated API and browser checks pass; simultaneous co-editing remains a separate open feature.
+- [x] **File viewer/commenter/editor roles and attributed review.** Share manages existing workspace members; copying a link grants no anonymous access. Review threads support replies, resolve/reopen and page/layer navigation without changing artwork revisions. Synthetic accounts only; no real-user messages sent.
+- [x] **Useful protected library instances.** Authors opt into exposed text/visibility, size/layout and same-set variants. Source definitions, styling, hierarchy and detaching remain protected. Engine/UI/MCP/server share the guard; accepted overrides survive reload and a published update. Defaults remain protected.
+- [x] **Simulated team recovery acceptance.** Four isolated browser contexts plus an unauthorized API account exercise roles, handoff, offline recovery, persistent server restart and restored SQLite backup. The existing configured PostgreSQL schema was separately backed up and additively migrated with unchanged design content/revision. See `docs/TEAM_SIMULATION_2026-10-30.md`.
+- [ ] **Remaining team workflow scope:** simultaneous multiplayer editing, canvas comment pins, mentions/notifications/activity inbox, cross-workspace/public sharing, real SMTP and managed-provider restore drill, and independent human usability/adoption evidence. Human participant count is zero.
+
+- Installation checkpoint (2026-10-30, alpha.13): both existing local desktop bundle paths updated; native About and strict signatures verified. The reopened one-frame Territory Track document exactly matches its fresh pre-update normalized digest via MCP. The local team server was restarted after a private PostgreSQL backup/additive migration; existing design content/revision unchanged. 3 Rust + 985 JS tests and 23 browser scenarios pass across the full and targeted runs; catalog 100 commands / 51 models / 14 tools. No public release, real participants, simultaneous co-editing or managed-provider restore certification claimed.
+
+### Team follow-up resolution — 2026-10-30, alpha.14 local
+
+Preserves the alpha.13 checkpoint above; these are additional local resolutions,
+not a public-release claim or TerritoryIQ code/design-file changes.
+
+- [x] **Mentions, activity inbox and reviews:** durable unread state, recipient
+  filtering, notification preferences and revision-bound request/approve/change
+  decisions. Authenticated API and separate-browser simulations pass.
+- [x] **First team workflow:** invitation recipient validation and joining,
+  shared-project guidance, location clarity and first-library links. Browser test
+  verifies the intended workspace and wrong-recipient recovery.
+- [x] **Library lifecycle:** release notes and immutable history, change previews,
+  consumer pins, retirement, permission-filtered project usage and rollback as a
+  new release. API and browser lifecycle checks pass.
+- [x] **Simultaneous editing:** field-level merges, explicit collision choices,
+  session-specific undo, presence/cursors, retained local recovery and membership
+  fencing. Two authenticated browsers verify independent edits, undo and
+  disconnect collisions. One-second polling; character-level CRDT parity is not
+  claimed.
+- [x] **Managed PostgreSQL restore drill:** consistent backup restored into an
+  isolated temporary PostgreSQL 17 cluster. Before migration all 19 tables match;
+  the first scheduled backup after migration matches all 26 tables. Existing
+  design content/revision digest is unchanged after repeating the migration.
+- [x] **Operational readiness in the local installation:** private daily backups
+  enabled, readiness endpoint, administrator status, SMTP transport check and
+  persistent notification retry queue. Real email delivery still needs SMTP.
+- [ ] **Public release gates:** Developer ID certificate/private key and
+  notarization credentials on this Mac, HTTPS feed/artifact hosting, real SMTP
+  delivery, and a signed update/rollback drill. Paid Apple membership is confirmed;
+  `security find-identity` still reports zero usable signing identities.
+- [ ] **Remaining distinct scope:** canvas comment pins, cross-workspace/public
+  sharing, exhaustive Figma parity, universal 60 fps, long production soak and
+  independent human usability evidence. Human participant count remains zero.
+
+Evidence and precise local/shipped status: `docs/TEAM_RELEASE_WORK.md` and
+`.local/team-next/`. This closes the implemented portions of the mixed
+“Remaining team workflow scope” entry above; the open subitems are retained here.
+
+- Installation evidence (2026-10-30, alpha.14): both existing desktop paths
+  updated with the local arm64 build; native About, strict ad-hoc signatures and
+  update-configuration message verified. All four local projects remain; Territory
+  Track matches its fresh pre-update normalized digest after automatic MCP
+  reconnect. The local team server is healthy with private daily backups enabled.
+  Public signing/notarization and real email/update delivery remain open above.
+
+## Scope correction and MCP setup — 2026-10-30 (local)
+
+The user clarified that each team sets up its own infrastructure. This supersedes
+the earlier publisher SMTP / mandatory HTTPS update-host gate above. A public
+Mac installer still needs Developer ID signing and notarization. Automatic
+updates are optional; a team’s production SMTP and DNS/TLS are that installation’s
+acceptance requirements. Local trials need neither SMTP nor an update service.
+
+- [x] AI-assisted installation tools: opt-in directory access, redacted setup
+  plans, stable-secret configuration updates, revision checks, migrations,
+  native trial lifecycle, Docker orchestration, health/mail checks, backup and
+  isolated verification. Real stdio MCP acceptance uses synthetic accounts and
+  confirms persistence across restart. Evidence: `.local/team-next/mcp-setup-tests.log`.
+- [ ] Real Docker daemon deployment and team-provider delivery/TLS verification.
+  Docker is unavailable on this Mac; command contracts do not establish a real
+  deployment. Human participants remain zero. See MCP_SETUP.md.
+
+These are local source changes; the installed alpha.14 app and existing team
+database were not replaced or reconfigured by this follow-up.

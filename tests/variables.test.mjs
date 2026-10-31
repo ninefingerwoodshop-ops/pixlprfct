@@ -108,3 +108,7 @@ test('page modes inherit through layers, preserve overrides, persist and export'
  const stable=e.snapshot();assert.throws(()=>e.set_page_variable_mode(page,1,999));assert.equal(e.snapshot(),stable);
  e.set_page_variable_mode(page,1,2);const vars=fixture();vars.collections[0].modes.pop();for(const v of vars.values)delete v.values[2];save(e,vars);assert.deepEqual(doc(e).pages.find(p=>p.id===page).variable_modes??{},{});assert.equal(shape(e,r).fill,'#ff0000');e.free();
 });
+
+test('min/max sizing variables drive layout constraints and CSS export',async()=>{
+ const {compileCssScene}=await import('../web/css-renderer.js');const e=new Editor();try{save(e,fixture());const r=e.add('rectangle',0,0);e.bind_variable(r,'layout_item.max_width',2);assert.equal(shape(e,r).layout_item.max_width,16);e.set_variable_mode(r,1,2);assert.equal(shape(e,r).layout_item.max_width,32);const doc=JSON.parse(e.snapshot());assert.match(compileCssScene(doc.shapes,{variables:doc.variables}).css,/max-width:calc\(var\(/);const copy=new Editor();try{copy.load(e.snapshot());assert.equal(shape(copy,r).variable_bindings['layout_item.max_width'],2);}finally{copy.free();}}finally{e.free();}
+});

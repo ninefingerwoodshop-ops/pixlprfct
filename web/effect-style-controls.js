@@ -11,7 +11,7 @@ export function createEffectStyleControls(host,heading,renderEffects) {
  library.panel.classList.add('effect-style-picker');editor.panel.classList.add('effect-style-editor');
  const properties=element('div','effect-style-properties');
  const menu=settingsMenu(library.panel,'Effect style actions');
- let shape=null,api=null,draft=null,query='';
+ let shape=null,api=null,draft=null,query='',pageEditor=false;
  const linked=()=>api?.styles.find(s=>s.id===shape?.effect_style);
  const chip=element('div','setting-item effect-style-chip'),pick=element('button','effect-edit');pick.type='button';pick.setAttribute('aria-haspopup','dialog');
  const edit=action('Edit effect style','edit',()=>openEditor(linked())),detach=action('Detach effect style','detach',()=>api.apply(0));
@@ -20,10 +20,11 @@ export function createEffectStyleControls(host,heading,renderEffects) {
  pick.onclick=()=>openLibrary();
  const save=value=>{if(!draft.id){draft=value;renderEditor();}else api.save(value,0);};
  function openLibrary(){library.show('styles',heading);renderLibrary();library.body.querySelector('input')?.focus();}
- function openEditor(style){
-  if(!style){const effects=effectStyleValues(appearance(shape));if(!effectEntries(effects).length)effects.shadows=[defaultShadow()];draft={id:0,name:'',description:'',effects};}
+ function openEditor(style,anchor=heading,fromPage=false){
+  pageEditor=fromPage;
+  if(!style){const effects=effectStyleValues(appearance(shape??{}));if(!effectEntries(effects).length)effects.shadows=[defaultShadow()];draft={id:0,name:'',description:'',effects};}
   else draft=structuredClone(style);
-  library.close();editor.panel.setAttribute('aria-label',draft.id?'Edit effect style':'Create new effect style');editor.show(draft.id,heading);renderEditor();editor.body.querySelector('input')?.focus();
+  library.close();editor.panel.setAttribute('aria-label',draft.id?'Edit effect style':'Create new effect style');editor.show(draft.id,anchor);renderEditor();editor.body.querySelector('input')?.focus();
  }
  function renderLibrary(){
   if(!library.open)return;
@@ -53,20 +54,20 @@ export function createEffectStyleControls(host,heading,renderEffects) {
    name.onchange=()=>{if(name.value.trim())save({...draft,name:name.value.trim()});else if(draft.id){name.setCustomValidity('Enter a style name');name.reportValidity();}};
    description.onchange=()=>save({...draft,description:description.value});
    body.append(settingRow('Name',name),settingRow('Description',description),properties);
-   if(!draft.id){const create=element('button','setting-text-button effect-style-create','Create style');create.onclick=()=>{if(!name.value.trim()){name.setCustomValidity('Enter a style name');name.reportValidity();return;}const id=api.save({...draft,name:name.value.trim(),description:description.value},shape.id);if(id)editor.close();};body.append(create);}
+   if(!draft.id){const create=element('button','setting-text-button effect-style-create','Create style');create.onclick=()=>{if(!name.value.trim()){name.setCustomValidity('Enter a style name');name.reportValidity();return;}const id=api.save({...draft,name:name.value.trim(),description:description.value},pageEditor?0:shape?.id??0);if(id)editor.close();};body.append(create);}
    else {const remove=element('button','setting-text-button effect-style-delete','Delete style');remove.onclick=()=>{api.remove(draft.id);if(!api.styles.some(s=>s.id===draft.id))editor.close();};body.append(remove);}
   },(_,body)=>{
    syncInput(body.querySelector('input'),draft.name);syncInput(body.querySelector('textarea'),draft.description??'');
    const surface=body.querySelector('.effect-style-preview-disc'),e=draft.effects;
    surface.style.boxShadow=e.shadows.filter(s=>s.visible!==false).map(s=>`${s.kind==='inner'?'inset ':''}${s.x}px ${s.y}px ${s.blur}px ${s.spread??0}px ${s.color}${Math.round(s.opacity*255).toString(16).padStart(2,'0')}`).join(',')||'none';
    surface.style.filter=e.layer_blur_enabled!==false&&e.layer_blur?`blur(${e.layer_blur/2}px)`:'none';surface.style.backdropFilter=e.backdrop_blur_enabled!==false&&e.backdrop_blur?`blur(${e.backdrop_blur/2}px)`:'none';
-   renderEffects(properties,{id:1,kind:'effect-style',appearance:{...appearance({}),...e}},next=>save({...draft,effects:effectStyleValues(next.appearance)}));properties.querySelector('h3').textContent='Properties';
+   renderEffects(properties,{id:1,kind:'effect-style',appearance:{...appearance({}),...e}},next=>save({...draft,effects:effectStyleValues(next.appearance)}),api?.document?{document:api.document}:undefined);properties.querySelector('h3').textContent='Properties';
   });
  }
- return {update(next,nextApi){
+ return {openPage:(style,anchor)=>openEditor(style,anchor,true),update(next,nextApi){
   if(shape?.id!==next?.id){library.close();editor.close();}
   shape=next;api=nextApi;styles.hidden=!shape||!api;chip.hidden=!linked();
-  if(!shape||!api){library.close();editor.close();return false;}
+  if(!api||(!shape&&!pageEditor)){library.close();editor.close();return false;}
   const style=linked();if(style){pick.innerHTML=settingIcon('drop');pick.append(element('span','',style.name));pick.setAttribute('aria-label','Effect style '+style.name);pick.title=style.name;}
   if(editor.open&&draft?.id){const current=api.styles.find(s=>s.id===draft.id);if(current)draft=structuredClone(current);else editor.close();}
   renderLibrary();renderEditor();return !!style;

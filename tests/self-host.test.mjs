@@ -28,8 +28,10 @@ test('verified accounts, tenant isolation, memberships, revocation, and forged i
  r=await a.call('/api/auth/organization/add-team-member',{teamId:team.id,userId:other.id});assert.equal(r.status,200,JSON.stringify(r.data));
  assert.equal((await b.call('/api/documents/'+shared.id+target)).status,200);
  assert.equal((await b.call('/api/auth/organization/create-team',{name:'Unauthorized',organizationId:org.id})).status,403);
- r=await b.call('/api/documents/'+shared.id+target,{...document,name:'Edited by team member'},{method:'PUT',headers:{'if-match':'1'}});assert.equal(r.status,200,JSON.stringify(r.data));
- assert.equal((await a.call('/api/documents/'+shared.id+target,document,{method:'PUT',headers:{'if-match':'1'}})).status,409);
+ const editorClient=randomUUID();const lease=(await b.call('/api/documents/'+shared.id+'/editing'+target,{action:'acquire'},{headers:{'x-pixl-client':editorClient}})).data.lease;
+ r=await b.call('/api/documents/'+shared.id+target,{...document,name:'Edited by team member'},{method:'PUT',headers:{'if-match':'1','x-pixl-client':editorClient,'x-pixl-edit-token':lease.token}});assert.equal(r.status,200,JSON.stringify(r.data));
+ await b.call('/api/documents/'+shared.id+'/editing'+target,{action:'release'},{headers:{'x-pixl-client':editorClient,'x-pixl-edit-token':lease.token}});const ownerLease=(await a.call('/api/documents/'+shared.id+'/editing'+target,{action:'acquire'},{headers:{'x-pixl-client':editorClient}})).data.lease;
+ assert.equal((await a.call('/api/documents/'+shared.id+target,document,{method:'PUT',headers:{'if-match':'1','x-pixl-client':editorClient,'x-pixl-edit-token':ownerLease.token}})).status,409);
  assert.equal((await b.call('/api/documents/'+shared.id+'/versions'+target)).status,200);
  assert.equal((await b.call('/api/documents/'+shared.id+target)).data.can_delete,false);
  assert.equal((await b.call('/api/documents/'+shared.id+target,undefined,{method:'DELETE',headers:{'if-match':'2','oai-authenticated-user-id':'user:'+owner.id,'x-admin':'true'}})).status,403);

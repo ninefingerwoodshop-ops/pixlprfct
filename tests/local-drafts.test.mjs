@@ -74,3 +74,9 @@ test('all starters load into the editor, persist edits, and reopen as editable d
   }
  }finally{editor.free();}
 });
+test('same-file stale tabs preserve the newer body and reject conflicting edits',()=>{
+ const storage=memory(),a=library(storage),first=a.create(newDesign('Original')),b=library(storage);b.activate(first.id);
+ a.save(newDesign('Newer'));b.save(first.body);assert.equal(a.get(first.id).name,'Newer');
+ assert.throws(()=>b.save(newDesign('Conflict')),/another tab/);assert.equal(a.get(first.id).name,'Newer');
+ b.activate(first.id);b.save(newDesign('Resolved'));assert.equal(a.get(first.id).name,'Resolved');
+});

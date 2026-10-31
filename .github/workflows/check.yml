@@ -16,4 +16,45 @@ jobs:
       - run: cargo fmt --check
       - run: npm run build
       - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: node scripts/generate-editor-api.mjs --check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: browser-failures-linux
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
       - run: node --check web/app.js
+
+  visual:
+    name: Browser visual regression (macOS 15)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: npm ci
+      - run: npm run build:editor
+      - run: npx playwright install chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: browser-visual-failures-macos
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

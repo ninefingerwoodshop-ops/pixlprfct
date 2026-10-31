@@ -15,8 +15,13 @@ export function inspectorRenderer(render,root,selectionKey){
    // not pull focus back to the Add button after that new popup has opened.
    if(document.activeElement!==active&&document.activeElement?.closest('.inspector-settings-popover:popover-open'))return;
    if(!state||key!==selectionKey())return;
-   const candidates=[...panel.querySelectorAll(state.tag.toLowerCase())].filter(el=>state.id?el.id===state.id:state.label?el.getAttribute('aria-label')===state.label:state.text?el.textContent===state.text:false);
-   if(candidates.length!==1)return;const next=candidates[0];if(next.disabled||!next.getClientRects().length||next.closest('[hidden]'))return;
+   // A retained, still-focused field needs no DOM search or layout measurement.
+   // Replaced fields still need the visibility check before restoring focus.
+   let next=active;
+   if(!active.isConnected||document.activeElement!==active){
+    const candidates=[...panel.querySelectorAll(state.tag.toLowerCase())].filter(el=>state.id?el.id===state.id:state.label?el.getAttribute('aria-label')===state.label:state.text?el.textContent===state.text:false);
+    if(candidates.length!==1)return;next=candidates[0];if(next.disabled||!next.getClientRects().length||next.closest('[hidden]'))return;
+   }
    // Preserve any uncommitted typing in a newly focused text/number field.
    if(state.dirty&&['INPUT','TEXTAREA'].includes(state.tag)&&!['checkbox','radio','color','file','button','submit'].includes(state.type)){if(next.value!==state.value)next.value=state.value;dirty.add(next);}
    if(document.activeElement!==next)next.focus({preventScroll:true});

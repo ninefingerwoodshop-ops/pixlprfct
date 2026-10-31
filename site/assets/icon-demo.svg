@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-layer-name="svg" height="240" id="pxv1" viewBox="0 0 320 240" width="320" tabindex="0" role="button" aria-label="Interactive icon study animation" style="cursor: pointer; pointer-events: all;"><circle cx="160" cy="120" fill="#242424" id="pxv2" r="94" stroke="#444444"/><path d="M110 90C110 90 210 90 210 90M110 120C110 120 210 120 210 120M110 150C110 150 210 150 210 150" fill="none" id="pxv5" stroke="#a78bfa" stroke-linecap="round" stroke-width="8"><animate attributeName="d" values="M110 90C110 90 210 90 210 90M110 120C110 120 210 120 210 120M110 150C110 150 210 150 210 150;M120 80C120 80 200 160 200 160M160 120C160 120 160 120 160 120M120 160C120 160 200 80 200 80" dur="600ms" begin="indefinite" repeatCount="1" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.42 0 0.58 1"/></path><script>(function mountSvgInteraction(root,options,createClock){
+ root.pauseAnimations();root.setCurrentTime(0);
+ root.querySelectorAll('[data-pixl-motion]').forEach(node=&gt;{node.removeAttribute('transform');node.removeAttribute('data-pixl-motion');});
+ root.querySelectorAll('animate,animateTransform,animateMotion').forEach(node=&gt;node.beginElement());
+ const player=createClock(options,time=&gt;root.setCurrentTime(time/1000),{now:()=&gt;performance.now(),request:fn=&gt;requestAnimationFrame(fn),cancel:id=&gt;cancelAnimationFrame(id)});
+ let pointer=false,focus=false,active=false;
+ const hover=()=&gt;{const next=pointer||focus;if(next===active)return;active=next;if(active)player.enter();else player.leave();};
+ if(options.trigger==='hover'){
+  root.addEventListener('pointerenter',()=&gt;{pointer=true;hover();});root.addEventListener('pointerleave',()=&gt;{pointer=false;hover();});
+  root.addEventListener('focusin',()=&gt;{focus=root.matches(':focus-visible');hover();});root.addEventListener('focusout',event=&gt;{if(!root.contains(event.relatedTarget)){focus=false;hover();}});
+ }else root.addEventListener('click',()=&gt;player.activate());
+ root.addEventListener('keydown',event=&gt;{if(event.repeat||!['Enter',' '].includes(event.key))return;event.preventDefault();if(options.trigger==='click')player.activate();else player.enter();});
+ window.addEventListener('pagehide',()=&gt;player.destroy(),{once:true});
+})(document.currentScript.ownerSVGElement,{"trigger":"click","onLeave":"reverse","onClick":"reverse","duration":600,"loop":false},function interactionClock(options,render,clock){
+ let time=0,direction=1,playing=false,started=false,last=0,frame=null;
+ const emit=()=&gt;render(time,playing,direction);
+ function advance(now){if(!playing)return;time+=Math.max(0,now-last)*direction;last=Math.max(last,now);if(time&gt;=options.duration){if(options.loop&amp;&amp;direction&gt;0)time%=options.duration;else{time=options.duration;if(direction&gt;0)playing=false;}}if(time&lt;=0){time=0;if(direction&lt;0)playing=false;}emit();}
+ function cancel(){if(frame!==null)clock.cancel(frame);frame=null;}
+ function tick(now){frame=null;advance(now);if(playing)frame=clock.request(tick);}
+ function pause(){advance(clock.now());playing=false;cancel();emit();}
+ function play(nextDirection=1,restart=false){advance(clock.now());cancel();direction=nextDirection;if(restart||direction&gt;0&amp;&amp;time&gt;=options.duration)time=0;playing=!(direction&lt;0&amp;&amp;time===0);last=clock.now();emit();if(playing)frame=clock.request(tick);}
+ function reset(){cancel();time=0;direction=1;playing=false;started=false;emit();}
+ function activate(){
+  if(!started){started=true;play();return;}
+  if(options.onClick==='pause'){if(playing)pause();else play(direction);}
+  else if(options.onClick==='reverse')play(-direction);
+  else if(options.onClick==='restart')play(1,true);
+  else if(!playing)play(1);
+ }
+ function enter(){started=true;play(1);}
+ function leave(){if(options.onLeave==='pause')pause();else if(options.onLeave==='reset')reset();else if(options.onLeave==='reverse')play(-1);}
+ emit();return {activate,enter,leave,reset,pause,play,destroy:cancel,state:()=&gt;({time,direction,playing})};
+});</script></svg>

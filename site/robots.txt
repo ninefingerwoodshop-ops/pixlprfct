@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /pixlprfct/
+Sitemap: https://ninefingerwoodshop-ops.github.io/pixlprfct/sitemap.xml

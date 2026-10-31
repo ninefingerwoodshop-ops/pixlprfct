@@ -1,10 +1,13 @@
-const {app,BrowserWindow,Menu,dialog,ipcMain,protocol,session,shell,nativeTheme}=require('electron');
+const {app,autoUpdater,BrowserWindow,Menu,dialog,ipcMain,protocol,session,shell,nativeTheme}=require('electron');
 const {readFile,realpath}=require('node:fs/promises');
 const path=require('node:path');
 const {APP_URL,CSP,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor}=require('./policy.cjs');
 const {readDesign,designExtensions,designFilters}=require('./design-files.cjs');
 const {discoverBridges}=require('./mcp-discovery.cjs');
 const {readPreferences,writePreferences,isOnlineFontURL}=require('./preferences.cjs');
+const {installUpdates}=require('./updates.cjs');
+const updateConfig=require('./update-config.json');
+let updates;
 let preferences={onlineFonts:false};
 const root=__dirname,windows=new Map(),pending=new Map(),configured=new Set();
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.wasm':'application/wasm','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf','.mp4':'video/mp4','.webm':'video/webm'};
@@ -21,7 +24,7 @@ if(!single){app.quit();}else{
  app.on('second-instance',(_event,args)=>{const file=args.find(value=>designExtensions.includes(path.extname(value).toLowerCase()));if(file)openNativeFile(file);else localWindow().focus();});
  app.whenReady().then(async()=>{
   preferences=readPreferences(app.getPath('userData'));
-  installIPC();installMenu();
+  updates=installUpdates({app,autoUpdater,dialog,config:updateConfig});installIPC();installMenu();
   if(initialFiles.length)for(const file of initialFiles)await openNativeFile(file);else createWindow(preferences.workspaceServer||APP_URL);
   app.on('activate',()=>{if(!windows.size)createWindow(preferences.workspaceServer||APP_URL);});
  }).catch(error=>{dialog.showErrorBox('PixlPrfct could not start',error.message);app.quit();});
@@ -138,7 +141,7 @@ function installMenu(){
    await dialog.showMessageBox({type:'info',message:item.checked?'Online fonts enabled':'Online fonts disabled',detail:'Reopen local designs to apply the change. When enabled, Google receives font requests and normal connection information, including your IP address. Team servers use their own settings.',buttons:['OK']});
   }catch(error){item.checked=preferences.onlineFonts;dialog.showErrorBox('Could not save preference',error.message);}
  }},...(!app.isPackaged?[{role:'toggleDevTools'}]:[])]},{role:'windowMenu'},
- {label:'Help',submenu:[{label:'Privacy policy',click:()=>shell.openExternal('https://github.com/ninefingerwoodshop-ops/pixlprfct/blob/main/PRIVACY.md')},{label:'Code signing policy',click:()=>shell.openExternal('https://github.com/ninefingerwoodshop-ops/pixlprfct/blob/main/CODE_SIGNING.md')},{type:'separator'},{label:'About PixlPrfct',click:()=>app.showAboutPanel()}]}];
+ {label:'Help',submenu:[{label:'Check for updates…',click:()=>updates.check()},{type:'separator'},{label:'Privacy policy',click:()=>shell.openExternal('https://github.com/ninefingerwoodshop-ops/pixlprfct/blob/main/PRIVACY.md')},{label:'Code signing policy',click:()=>shell.openExternal('https://github.com/ninefingerwoodshop-ops/pixlprfct/blob/main/CODE_SIGNING.md')},{type:'separator'},{label:'About PixlPrfct',click:()=>app.showAboutPanel()}]}];
  app.setAboutPanelOptions({applicationName:'PixlPrfct',applicationVersion:app.getVersion(),copyright:'Free design software. Yours to host.'});
  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }

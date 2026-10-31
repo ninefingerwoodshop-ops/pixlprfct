@@ -13,6 +13,7 @@ First call pixlprfct_reference for the overview and relevant model/command defin
 Use a live session for the user's open project, or open/create a saved .pixl project within the configured workspace.
 Read before editing. Every mutation requires the current revision. Build batches are atomic and one undo step.
 Use build/create and build/update for partial properties; arrays replace, objects deep merge, null clears.
+Named color/paint styles are supported: save_color_style creates or updates ColorStyle {id,name,description?,paints,color_variables?}; layer_id 0 saves without applying, and stroke selects the stroke channel. apply_color_style binds a selection (0 detaches); remove_color_style preserves resolved paints. Text styles use save_text_style/apply_text_style/remove_text_style. Read document.color_styles and document.text_styles with full=true.
 Named shadow/blur styles are supported: save_effect_style creates or updates an EffectStyle, apply_effect_style binds layers (0 detaches), and remove_effect_style deletes the definition while preserving effects. Read document.effect_styles with full=true. Update the main component to style its protected instances. Direct local effect edits detach the style; edits to other appearance properties keep it linked.
 Use engine commands for pages, hierarchy, components, variants, variables, guide styles, reusable effect styles and Grid operations.
 All serialized layer properties are editable: paint stacks, effects, guides, controls, text, vectors, images, layout,
@@ -24,8 +25,8 @@ Do not run behavior code while designing. Export does not execute it.
 Re-read after a timeout; an edit may already have completed. Never blindly replay a create request.
 Saved-file edits stay in memory until save. Live edits use the editor's normal autosave.
 Verify with read and CSS/code/SVG export. Headless text metrics are approximate; inspect typography in the live editor.
-This MCP does not manage accounts, credentials, database setup, team membership, library publishing, or deployment.
-Those stay in the app. It edits design documents and can use already linked library components under the same guards.`;
+For installation setup, read reference topic installation and call installation_status. Installation tools are separate from editor permissions and require --installation configured by the local operator. Never put credentials in tool arguments; use private environment references. Do not bypass account verification or send emails without explicit user instructions.
+The libraries tool lists Assets, publishes releases and adds/updates/removes libraries through a connected live editor, with existing workspace permissions. It edits design documents and can use already linked library components under the same guards.`;
 
 const examples={
  frameAndControl:{operations:[{op:'create',kind:'frame',as:'card',properties:{name:'Account card',width:420,height:240,fill:'#ffffff'}},{op:'command',name:'auto_layout_selection',args:[[{ $ref:'card'}]]},{op:'update',id:{$ref:'card'},properties:{auto_layout:{direction:'vertical',gap:16,padding_left:24,padding_right:24,padding_top:24,padding_bottom:24}}},{op:'create',kind:'text',parent:{$ref:'card'},properties:{name:'Title',text:'Create your account',typography:{font_family:'Arial',font_size:24,font_weight:600}}},{op:'create',kind:'rectangle',control:'button',parent:{$ref:'card'},properties:{name:'Continue',width:180,height:40,control:{label:'Continue'},fill:'#0d99ff'}}]},
@@ -39,7 +40,7 @@ const examples={
  duplicate:{operation:{op:'command',name:'duplicate_many_offset',args:[[123],0,0],as:'copies'},note:'Replace 123 with a real ID. Returns all copied IDs in document order, including descendants. Offsets are translations; 0,0 duplicates in place. Auto-layout parents still position flow children.'},
  components:{note:'create_component(frameID) makes a main component. create_instance(masterID,x,y) places it. Use save_component_property/save_component_set for exposed properties and variants. Imported library sources and protected instances cannot be changed.'}
 };
-const guides={css:'CSS_EDITING.md',libraries:'TEAM_LIBRARIES.md',grid:'GRID_WORKFLOW_REVIEW.md',text:'TEXT_EDITING.md',behaviors:'development-behaviors.md',controls:'starter-controls.md',effects:'EFFECTS_GUIDES_AUDIT.md'};
+const guides={installation:'MCP_SETUP.md',css:'CSS_EDITING.md',libraries:'TEAM_LIBRARIES.md',grid:'GRID_WORKFLOW_REVIEW.md',text:'TEXT_EDITING.md',behaviors:'development-behaviors.md',controls:'starter-controls.md',effects:'EFFECTS_GUIDES_AUDIT.md'};
 const modelConstraints={
  Typography:{sizing:{fixed:'Keep width and height; wrap controls line breaking.',width:'Auto width, measured from text; respects max_width. MCP also accepts auto_width.',height:'Keep width and grow height to fit wrapped text. MCP also accepts auto_height.'},note:'Fill width in an auto-layout parent changes auto-width text to auto-height. Use fill_width:false for a label that should grow.'},
  Value:{note:'Variable.values maps mode IDs to typed literals or {alias: VARIABLE_ID}. Aliases must reference a variable of the same kind; cycles are rejected.',examples:{color:'#102a47',number:16,string:'Open Sans',boolean:true,padding:'8 16',margin:'0 8',border_radius:'4 8',border_width:'1 2',alias:{alias:1}}},

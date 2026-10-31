@@ -51,3 +51,8 @@
 .frame-label[data-component-type="instance"]>button{color:var(--ui-instance)}
 .frame-label>button{touch-action:none;user-select:none;cursor:move}
 .frame-label[data-locked="true"]>button{cursor:default}
+/* Canvas labels measured in the live Figma reference; their size stays fixed on zoom. */
+.frame-label{height:24px}
+.frame-label>button{font-size:12px;line-height:16px;padding:0;gap:4px}
+.frame-label-icon{flex-basis:12px}
+.frame-label-icon svg{width:12px;height:12px}

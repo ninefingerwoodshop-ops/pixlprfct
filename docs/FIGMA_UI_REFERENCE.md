@@ -207,3 +207,217 @@ reopened at its original draft URL. Final checks: 3 Rust + 946 JavaScript tests
 pass; API catalog and Rust formatting are current; changed-code lint has zero
 errors (13 existing app.js warnings). Changes remain local on
 `codex/frame-containment`, alongside the frame-enclosure work.
+
+## Evaluation follow-up — 2026-10-30
+
+Inspected the live native Figma UI before implementing Pages, typography/style
+controls, Page paint and shadow-variable selection. Captures are retained locally
+in `.local/evaluation-fixes/figma-pages-text.png`, `figma-text-styles.png`,
+`figma-create-text-style.png`, `figma-type-settings.png`, `figma-page.png`, and
+`figma-shadow-variables.png`. The reference was read only; artwork was not changed.
+The native capture is 3600×2006 physical pixels at 2× scale.
+
+Measured structure: Pages has a 40px header with 24px Find/Add actions, 32px rows,
+8px row insets, neutral #383838 selected background, and a resize boundary above
+Layers. Its height and drawer width are user adjustable. Text styles use a 216px
+picker with a 40px header, searchable grouped names and per-style edit controls;
+the style form and Type settings are 304px. Letter spacing sits beside line height.
+Page paint uses a 24px field and eye action. Shadow color Libraries uses a 240px
+surface, 40px header and search row, library selector, and 32px swatch rows.
+
+The implementation follows those measured surfaces and uses shared custom inputs
+and dropdowns. Spacing accepts px/%; case preserves authored text; styles support
+create/apply/edit/detach/delete; Page paint supports color/opacity/visibility and
+persists per page. Shadow variables support collection/search/list/grid selection
+and detachment. Unsupported advanced typography controls were not added as dummies.
+
+Five reviewed Chromium baselines are committed under
+`tests/browser/editor.spec.mjs-snapshots/`: Pages, Text styles, Type settings,
+Shadow variables, and Motion. Geometry assertions check Pages dimensions/selection
+color, swatch visibility and full-width Motion. Functional tests additionally
+cover persistence, quota recovery, in-place slot text, variants, and Motion editing.
+The screenshot review found and corrected a 28px shared-button override, invisible
+shadow swatches, white picker rows and centered style labels.
+
+This verifies the listed controls and regression states, not exhaustive pixel
+parity across fonts, resolutions, all menus or the whole Figma interface. Existing
+set-label placement and advanced typography/slot gaps remain tracked separately.
+
+## Set labels — 2026-10-30 follow-up
+
+Re-inspected the live Button component set at 53%, 28% and 3% zoom. Its name stays
+at a fixed screen font size, aligned to the set's left edge above its boundary;
+the four-diamond glyph precedes it. At 3% the name clips to the projected set
+width rather than reserving a minimum 80px label. Captures are retained locally
+as `figma-set-label-selected.png`, `figma-set-label-overview.png` and
+`figma-set-label-3-percent.png` in `.local/evaluation-fixes/`.
+
+Labels now use 12px type / 16px line height, a 12px glyph with 4px gap, a 24px row
+26px above the boundary, and the projected frame width. The reported Table Row
+label covered the preceding table header. PixlPrfct suppresses an automatic set
+label if its text box intersects other root artwork, retaining selection through
+Layers and the set outline; no authored geometry or paint is changed. This
+collision safeguard is a PixlPrfct extension, not a claim that Figma uses the same
+collision algorithm. Browser checks cover collision visibility, selection,
+renaming, narrow-zoom clipping and reload. `set-labels-darwin.png` is the sixth
+reviewed baseline. Whole-product visual parity remains unverified.
+
+
+## Page Styles and text inspector — 2026-10-30 follow-up
+
+Inspected the live Figma desktop Territory Track Design System, without editing
+its artwork. The right inspector reports 241px. Styles has Text/Color/Effect
+categories, 32px rows, 16px samples, slash folders, hover actions and inline text
+metrics (`name · size/line-height`). Its Create style menu contains Text, Color,
+Effect, Animation and Layout guide. Text/color creation forms are 304px wide:
+40px header, 16px content inset, text preview 120px high and color preview 104px.
+The text form has Name/Description, Properties, full-width family and paired
+weight/size and line-height/letter-spacing controls.
+
+Implemented and manually inspected the Text/Color/Effect paths using shared
+controls. The top-level creation menu currently exposes these three implemented
+paths. Figma's Animation/Layout guide entries, nested folder/group operations,
+advanced paint thumbnails, and exhaustive matched-state pixel comparison remain
+separate parity work. The existing Page variable-mode section remains visible.
+The review corrected centered style labels, metadata placement, duplicate form
+heading text and the paint row escaping its shared inspector styling.
+
+The live text Layout inspector contains two Resizing captions; the earlier
+suggestion that this duplication itself was a mismatch is withdrawn. Semibold
+now fits the 88px weight field without shrinking the label font.
+
+Evidence: local visualization files `figma-page-inspector-reference.png`,
+`figma-create-color-style-reference.png`, `figma-text-inspector-reference.png`,
+`pixl-page-styles-implemented.png`, `pixl-text-style-form.png`,
+`pixl-color-style-form.png` and `pixl-text-inspector-legibility.png`. The three
+new regression images live under `tests/browser/styles.spec.mjs-snapshots/`.
+
+## Manage libraries — 2026-10-30 follow-up
+
+Inspected live Figma desktop Manage libraries, the published Capwah Components
+library detail, and its source file. The modal measures 760×640px: 40px header,
+200px navigation, 16px content inset, 64px detail header and 24px controls.
+Component tiles are 64px squares; shared styles use compact icon/swatch rows.
+PixlPrfct keeps its own branding and adds device/import/export controls within
+that structure. The live Added state and native Save local copy workflow were
+also inspected. This is targeted matching, not whole-library/Figma parity.
+
+The exported private `.fig` passes worker import and engine normalization with
+46 component masters, 11 variant sets, 15 variables and 12 shared styles. It was
+added to an existing disposable project; Assets showed the grouped components
+and an inserted linked Button. The import report disclosed detached instances,
+unsupported exposed-property/slot metadata and mixed-text limitations.
+
+Reference/proof images: `figma-add-library-reference.png` and
+`pixl-figma-library-added.png` under this task's local visualization directory.
+The reviewed `library-add-to-existing-project-darwin.png` baseline covers the
+760×640 modal with a real component thumbnail. Paint preview helpers now render
+full paint stacks (including gradients/patterns), variables and opacity in Page
+Styles, color-style forms and library details. Nested folder/group operations,
+Animation/Layout guide creation and exhaustive matched-state pixel checks remain.
+
+## Team workflow reference — 2026-10-30
+
+Inspected live native Figma Share and Comments in Capwah Components before
+implementation. Share: 480 CSS px dialog, 40 px header, 16 px content inset,
+member/access rows with custom dropdowns, footer actions, Share beside Present.
+Comments: right inspector (241 px in this window), 40 px heading, 24 px search,
+16 px content inset, dark surface. References: `figma-share-reference.png` and
+`figma-comments-reference.png` in this task’s visualization folder. No Figma
+sharing settings or comments were changed. PixlPrfct uses its branding and shared
+controls; editing lease/handoff and per-component override permissions are
+PixlPrfct extensions. Page/layer comment links are implemented; canvas pins and
+Figma-equivalent notification/settings workflows remain open. Geometry checks
+and browser screenshots cover the new sharing surface, without claiming global
+pixel parity.
+
+## Review, release and presence references — 2026-10-30
+
+Inspected live Figma before these alpha.14 changes. Screenshots retained in
+`.local/team-next/figma-{inbox,comment-settings,invite,publish,multiplayer}.png`.
+Inbox: approximately 384×340 CSS px, 48 px header, All/Unread tabs and settings.
+Comment notification choices: Everything, Just mentions and replies, Nothing,
+Mark all as read. Invite and nested Publish dialogs: 480 px width, 40 px header,
+16 px inset; Publish has a description and grouped changes with footer actions.
+Multiplayer: 24 px avatar in the right header and an approximately 224 px dark
+popover, 16 px inset. No messages, invites or library releases were sent in Figma.
+
+PixlPrfct follows these dimensions, its shared custom inputs/dropdowns and dark
+palette. Release/pin/retirement/rollback and revision-bound reviews are working
+PixlPrfct extensions. Presence uses 24 px initial avatars and named canvas cursors.
+The final browser check measures avatar width, radius and background. Existing
+visual regression cases pass. This verifies the inspected states, not global
+pixel parity, multi-person Figma cursor behavior, spotlight or voice.
+
+## Separate SVG Animation workspace — 2026-10-31
+
+Inspected live native Figma Motion in Capwah Components before implementation,
+including the Move tool's Motion entry, dock, controls, ruler, tracks, and right
+inspector. At 1800×965 CSS px of editor content, the reference dock is approximately
+200 px high with a 48 px controls/ruler row, a 296 px left track column, and a
+241 px right inspector. Retained reference: `.local/svg-animation/figma-motion.png`.
+
+The separate SVG Animation design type reuses the existing Motion dock styles,
+icons, dark palette, custom dropdowns, and numeric input component. The dock
+spans the entire window, defaults to 200 px, and collapses to 48 px. Properties
+and easing stay in the right inspector. SVG element hierarchy and animator
+behavior were also inspected in the signed-in SVGator Basic Animations demo;
+these are functional extensions within the PixlPrfct interface.
+
+Local proof: `.local/svg-animation/workspace.png`. Browser checks verify a
+full-width dock at 1440 px, collapse and resize dimensions, working timeline
+controls, and no visible native selects. This verifies the inspected layout and
+core workflow; exhaustive matched-state pixel comparison is still outstanding.
+No existing TT design-system gap is marked resolved by this separate feature.
+
+### Motion paths and custom easing — 2026-10-31
+
+Rechecked live Figma Motion and the signed-in SVGator Basic Animations easing
+popover before extending the separate workspace. SVGator's popover has an
+approximately 166 px square curve graph within a 344×284 px panel, with a preset
+list alongside it. Retained reference:
+`.local/svg-animation/svgator-easing-reference.png`.
+
+The PixlPrfct extension keeps the full-width Motion dock and uses the right
+inspector for curve controls and path assignment. The 200×176 px graph, two
+keyboard-accessible drag handles, four shared numeric inputs, and shared custom
+dropdowns fit its existing 240 px inspector. This adapts the SVGator workflow to
+the established Figma-style inspector; it is not a claim of matching SVGator's
+popover layout. Local proof at the normal 1160×924 browser viewport:
+`.local/svg-animation/motion-path-workspace.png`.
+
+Thirteen SVG browser cases verify the working core, editable curves, route
+assignment, persistence, and native SVG export. Closed routes, nested transforms,
+reverse travel, and reversed orientation have coverage. Exported route positions
+match sampled editor previews within 0.25 SVG units. Exact global visual parity
+and the remaining SVGator features remain unverified or unimplemented.
+
+### Path morphing — 2026-10-31
+
+Rechecked the live Figma Motion dock in Capwah Components. It retains its 200 px
+height, full-width tracks/ruler and 241 px minimum right inspector. The SVGator
+morph guide's rendered node-editing screenshots show anchors, connected Bézier
+handles, and edits made after moving the playhead. The separate SVG workspace
+extends this workflow with 6 px anchors/handles and larger invisible pointer
+targets. Node coordinates use the shared numeric field with X/Y prefixes at
+24 px height in the existing right inspector. No additional panel replaces the
+Motion dock. This does not verify exact parity with Figma's vector editor.
+
+Local proof: `.local/svg-animation/morph-workspace.png`. Browser checks cover
+node and handle editing, cancel/undo, fixed-topology interpolation, ordinary
+shape conversion and exported SVG geometry. Fifteen SVG browser cases pass;
+triggers, node insertion/deletion and automatic matching of unrelated shapes
+remain outside the implemented scope.
+
+
+### SVG interactive export — 2026-10-31
+
+Inspected the signed-in SVGator SVG(web) export dialog and animation-start menu.
+The separate animator now offers an 800 px export dialog with a 320 px preview
+and 240 px options column. The preview runs the actual exported SVG in a sandbox.
+The existing dock and right inspector remain in place; choices use shared custom
+dropdowns and the existing dark dialog palette. On-load, hover, click, repeat,
+and response controls work. This extends the prior morph pass; scroll and
+programmatic triggers remain unsupported. Nineteen SVG browser cases pass,
+including keyboard playback, motion-path fallback, and read-only export.
+Local proof: `site/assets/animation-export.png` (sample artwork, no reference UI).

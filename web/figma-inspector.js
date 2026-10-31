@@ -82,6 +82,7 @@ export function installFigmaInspector({current,change}){
  for(const node of [text.querySelector('.wrap-label'),text.querySelector('label[for=text]'),$('text'),$('fit-text'),text.querySelector('.type-help')])textMore.append(node);
  extensions.append(textMore);text.querySelector('.text-align-tools').before(make('div','inspector-field-caption text-alignment-caption','Alignment'));
  return shape=>{
+  header.hidden=!shape;
   const frameShape=shape?.kind==='frame',enabled=frameShape&&!!shape.auto_layout;
   textSizingCaption.hidden=textMore.hidden=shape?.kind!=='text';
   dimensions.querySelector('h3').textContent='Layout';

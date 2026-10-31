@@ -111,3 +111,57 @@ References: [Better Auth database setup](https://better-auth.com/docs/concepts/d
 The account suite exercises verified registration, tenant isolation, invitations, team access and revocation, forged identity rejection, CSRF rejection, optimistic conflicts, password-reset session revocation, two-factor enrollment and backup-code reuse, persistent login rate limits, and large-design version restoration. SQLite was tested end to end in the browser. Supabase's session pooler was tested with verified TLS, a provider CA file, private-schema initialization, concurrent connections selecting that schema, and account registration/email verification. Other PostgreSQL providers, MySQL connections, real SMTP delivery, and the Docker image still need deployment-specific integration testing.
 
 The dedicated production manifest in `server/package.json` is used by the Docker build so editor development tools are not included in the self-hosted runtime. Its dependency audit reported no known advisories on 2026-10-28. The broader repository audit still reports five moderate findings in existing Next/build-tool dependencies (baseline-browser-mapping and esbuild/Drizzle tooling); no high or critical findings. Do not expose a development server publicly. An audit result is not a substitute for an independent security review.
+
+## Shared editing update — alpha.13
+
+Run `npm run selfhost:migrate` and restart the server before updating team clients.
+Shared-file writes now require an active editing lease; older clients retain their
+local work but cannot save until upgraded. Viewer/commenter/editor file roles,
+attributed comments and editing handoff are described in [TEAM_WORKFLOWS.md](TEAM_WORKFLOWS.md).
+The migration adds tables and indexes. The local configured PostgreSQL schema was
+backed up and migrated without changing its existing design content or revision.
+SQLite restart/backup restoration was exercised with disposable verified accounts;
+this does not substitute for the managed provider’s restore drill.
+
+### Backups and operations (2026-10-30)
+
+Enable daily consistent snapshots with `PIXL_BACKUPS=true` and choose a private
+`PIXL_BACKUP_DIRECTORY` (default `data/backups`). PostgreSQL requires `pg_dump`
+matching or newer than the server; set `PIXL_POSTGRES_BIN` to its binary directory.
+Snapshots contain account data and the authentication secret, and are created
+with directory mode 0700 and file mode 0600. Copy them to a separately protected
+backup destination; automatic remote replication and retention deletion are not
+configured by this local setting. Review storage usage and retain verified copies.
+
+```sh
+node --env-file=.env.selfhost scripts/self-host/backup.mjs create /private/backup/new-folder
+node scripts/self-host/backup.mjs verify /private/backup/new-folder
+```
+
+PostgreSQL verification restores into a temporary, socket-only cluster and
+compares every table's row count and canonical data hash against the same exported
+snapshot used by `pg_dump`. It never restores over the source installation.
+SQLite verification checks the snapshot integrity. MySQL uses provider snapshots;
+this command does not claim MySQL restore support.
+
+`GET /api/health` reports database readiness. Installation administrators can
+inspect backup/mail/error status under Database → Operations. Errors are bounded
+and omit database credentials. SMTP verification checks connection/authentication;
+it does not send a message or prove inbox delivery. Opt-in notification mail uses
+a persistent outbox, access rechecks and five retries with backoff. Delivery is at
+least once; a crash after SMTP acceptance may produce a duplicate.
+
+Before upgrade: create and verify a backup, retain the previous app/server bundle,
+then run the additive migration and restart. If rollback is needed, stop the new
+server and run the retained version against the additive schema. A destructive
+schema rollback requires a separately planned restore and must not discard work
+created since the backup.
+
+## AI-assisted installation
+
+The local MCP now supports a reviewed configuration plan, private credential
+references, migrations, service startup, health/mail checks, and backup recovery
+verification. See [MCP setup](MCP_SETUP.md) for the launch option and workflow.
+Each team supplies its own infrastructure. No publisher SMTP or mandatory
+update feed is required to distribute PixlPrfct. Local trials work without SMTP;
+public account workflows still require the installation’s email service.

@@ -1,0 +1,49 @@
+import {writeFile,readFile} from 'node:fs/promises';
+import {test,expect,fixture,seed,saved,key,snapshot} from './fixtures.mjs';
+import {libraryPackage} from '../../web/local-libraries.js';
+import {librarySnapshot} from '../../web/library-model.js';
+
+async function manager(page){await page.locator('#nav-assets').click();await page.locator('#manage-libraries').click();return page.getByRole('dialog',{name:'Manage libraries',exact:true});}
+test('publish locally, add to an existing project, place an instance, update and reopen',async({page},info)=>{
+ const source=fixture({components:true});await seed(page,source);let dialog=await manager(page);
+ await dialog.getByRole('button',{name:'Publish…',exact:true}).click();await page.getByRole('dialog',{name:'Publish library',exact:true}).getByRole('button',{name:'Publish',exact:true}).click();await expect(dialog.getByText('Published · Release 1',{exact:true})).toBeVisible();
+ const download=page.waitForEvent('download');await dialog.getByRole('button',{name:'More actions for Browser acceptance',exact:true}).click();await page.getByRole('menuitem',{name:'Export library…',exact:true}).click();const pack=info.outputPath('source.pixllib');await (await download).saveAs(pack);expect(JSON.parse(await readFile(pack,'utf8')).release.revision).toBe(1);
+ await dialog.getByRole('button',{name:'Close libraries'}).click();
+ const target=fixture();const expected=JSON.parse(target.body);expected.name='Destination project';
+ await page.evaluate(({key,body})=>{const store=JSON.parse(localStorage.getItem(key));store.files.push({id:'destination',name:'Destination project',body,updatedAt:Date.now()});localStorage.setItem(key,JSON.stringify(store));},{key,body:JSON.stringify(expected)});
+ await page.goto('/editor/index.html?draft=destination');await expect(page.locator('[data-loading-screen]')).toBeHidden();
+ await page.locator('#nav-assets').click();await page.getByRole('button',{name:'Add more libraries',exact:true}).click();dialog=page.getByRole('dialog',{name:'Manage libraries',exact:true});
+ await dialog.getByRole('button',{name:'View library',exact:true}).click();await expect(dialog.getByRole('button',{name:'Add Browser acceptance to file',exact:true})).toBeVisible();await snapshot(page,'library-add-to-existing-project.png',dialog);
+ await dialog.getByRole('button',{name:'Add Browser acceptance to file',exact:true}).click();await expect(dialog.getByRole('button',{name:'Added Browser acceptance',exact:true})).toBeDisabled();
+ const destination=()=>page.evaluate(key=>JSON.parse(JSON.parse(localStorage.getItem(key)).files.find(f=>f.id==='destination').body),key);
+ await expect.poll(async()=>(await destination()).libraries.length).toBe(1);let added=await destination();expect(added.name).toBe(expected.name);expect(added.active_page).toBe(expected.active_page);for(const shape of expected.shapes)expect(added.shapes.find(s=>s.id===shape.id)).toEqual(shape);
+ await dialog.getByRole('button',{name:'Close libraries'}).click();await page.getByRole('button',{name:'Insert instance of Card',exact:true}).click();await expect.poll(async()=>(await destination()).shapes.filter(s=>s.component?.type==='instance').length).toBeGreaterThan(0);
+ const link=added.libraries[0],master=link.maps.shapes[source.master];const released=JSON.parse(await readFile(pack,'utf8')).release;released.revision=2;released.body.shapes.find(s=>s.id===source.master).name='Updated card';const updated=info.outputPath('updated.pixllib');await writeFile(updated,libraryPackage(released));
+ dialog=await manager(page);await dialog.locator('#library-import-file').setInputFiles(updated);await expect(dialog.getByText('Release 2',{exact:true})).toBeVisible();await dialog.getByRole('button',{name:'Back',exact:true}).click();await dialog.getByRole('button',{name:'Updates',exact:true}).click();await dialog.getByRole('button',{name:'Update',exact:true}).click();await page.getByRole('dialog',{name:'Review changes',exact:true}).getByRole('button',{name:'Apply release 2',exact:true}).click();await expect.poll(async()=>(await destination()).libraries[0].revision).toBe(2);expect((await destination()).libraries[0].maps.shapes[source.master]).toBe(master);
+ await dialog.getByRole('button',{name:'Close libraries'}).click();await page.reload();await expect(page.locator('[data-loading-screen]')).toBeHidden();expect((await destination()).libraries[0].revision).toBe(2);
+});
+
+test('import a library file into an existing project and reject corrupt releases without replacing it',async({page},info)=>{
+ const source=fixture({components:true}),release={id:'portable-test',workspace:'local',name:'Portable library',revision:1,body:librarySnapshot(JSON.parse(source.body))};
+ await seed(page);const before=await saved(page),path=info.outputPath('portable.pixllib');await writeFile(path,libraryPackage(release));const dialog=await manager(page);await dialog.locator('#library-import-file').setInputFiles(path);await dialog.getByRole('button',{name:'Add Portable library to file',exact:true}).click();await expect.poll(async()=>((await saved(page)).libraries??[]).length).toBe(1);
+ const added=await saved(page);expect(added.name).toBe(before.name);expect(added.active_page).toBe(before.active_page);for(const shape of before.shapes)expect(added.shapes.find(s=>s.id===shape.id)).toEqual(shape);
+ await expect(dialog.getByRole('button',{name:'Import library…',exact:true})).toBeEnabled();const corrupt=info.outputPath('invalid.pixllib');await writeFile(corrupt,libraryPackage({...release,revision:2,body:{...release.body,shapes:[{id:1,kind:'not-a-layer'}]}}));await dialog.locator('#library-import-file').setInputFiles(corrupt);await expect(dialog.locator('.library-status')).not.toBeEmpty();expect(await saved(page)).toEqual(added);
+});
+
+test('native Figma library import adds reusable components to the current project',async({page},info)=>{
+ const {figmaLibraryFixture}=await import('../helpers/figma-library.mjs');await seed(page);const before=await saved(page),file=info.outputPath('Figma library.fig');await writeFile(file,figmaLibraryFixture());const dialog=await manager(page);await dialog.locator('#library-import-file').setInputFiles(file);
+ const review=page.getByRole('dialog',{name:'Figma import summary',exact:true});await expect(review).toContainText('Your open project stays in place');await review.getByRole('button',{name:'Import library',exact:true}).click();await dialog.getByRole('button',{name:'Add Figma library to file',exact:true}).click();await expect.poll(async()=>((await saved(page)).libraries??[]).length).toBe(1);const added=await saved(page);expect(added.name).toBe(before.name);for(const shape of before.shapes)expect(added.shapes.find(s=>s.id===shape.id)).toEqual(shape);
+ await dialog.getByRole('button',{name:'Close libraries'}).click();await page.getByRole('button',{name:'Insert instance of Figma button',exact:true}).click();await expect.poll(async()=>(await saved(page)).shapes.some(s=>s.component?.type==='instance')).toBe(true);
+});
+
+test('live MCP publishes, discovers, adds and removes libraries with revision and instance protection',async({page})=>{
+ const {createEditorBridge}=await import('../../mcp/bridge.mjs'),bridge=await createEditorBridge({port:0,origins:['http://127.0.0.1:4198']});
+ const connect=async()=>{await page.getByRole('button',{name:'Tools and actions',exact:true}).click();await page.getByRole('searchbox',{name:'Search tools and actions',exact:true}).fill('MCP connection');await page.getByRole('button',{name:'MCP connection Development',exact:true}).click();const panel=page.getByRole('dialog',{name:'MCP connection',exact:true});await panel.getByLabel('Bridge URL',{exact:true}).fill(bridge.info().url);await panel.getByLabel('Pairing code',{exact:true}).fill(bridge.info().pairingCode);await panel.getByRole('button',{name:'Connect',exact:true}).click();await expect(panel.getByRole('status')).toContainText('Connected');await panel.getByRole('button',{name:'Close mcp connection',exact:true}).click();return bridge.list()[0].id;};
+ try{
+  await seed(page,fixture({components:true}));let id=await connect(),state=await bridge.request(id,'read',{}),published=await bridge.request(id,'libraries',{action:'publish',revision:state.revision}),release=published.available.find(l=>l.isSource);expect(release.revision).toBe(1);
+  const destination=fixture();await page.evaluate(({key,body})=>{const data=JSON.parse(localStorage.getItem(key));data.files.push({id:'mcp-destination',name:'MCP destination',body,updatedAt:Date.now()});localStorage.setItem(key,JSON.stringify(data));},{key,body:destination.body});await page.goto('/editor/index.html?draft=mcp-destination');await expect(page.locator('[data-loading-screen]')).toBeHidden();id=await connect();state=await bridge.request(id,'read',{});
+  await expect(bridge.request(id,'libraries',{action:'add',id:release.id,workspace:release.workspace,revision:'stale'})).rejects.toThrow('Revision conflict');const added=await bridge.request(id,'libraries',{action:'add',id:release.id,workspace:release.workspace,revision:state.revision});expect(added.linked).toHaveLength(1);const master=added.assets.find(a=>a.name==='Card').variants[0].id;
+  const placed=await bridge.request(id,'command',{name:'create_instance',args:[master,600,400],revision:added.revision});await expect(bridge.request(id,'build',{revision:placed.revision,operations:[{op:'update',id:master,properties:{name:'Tamper'}}]})).rejects.toThrow(/library|protected/i);
+  const removed=await bridge.request(id,'libraries',{action:'remove',id:release.id,workspace:release.workspace,revision:placed.revision});expect(removed.linked[0].enabled).toBe(false);expect(removed.assets).toHaveLength(0);const read=await bridge.request(id,'read',{ids:[placed.result],details:true});expect(read.layers[0].component.master).toBe(master);
+ }finally{await bridge.close();}
+});

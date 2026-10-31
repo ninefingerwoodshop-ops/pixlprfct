@@ -1,3 +1,4 @@
+import {displayedText,letterSpacing,textStyle} from './typography.js';
 // Editor-only regions and review marks are persisted with their layer, never
 // baked into exported artwork. Sections keep their children on export.
 export const editorRole=s=>s?.editor_meta?.role||'';
@@ -11,6 +12,7 @@ export function editorShape(role,start,end){
  return {id:0,kind:role==='section'?'frame':'rectangle',name:role[0].toUpperCase()+role.slice(1),x,y,width:role==='comment'?28:width,height:role==='comment'?28:height,fill:'#d9d9d9',text:'',hidden:false,clip_content:false,appearance:{opacity:1,corner_radius:0,fill_enabled:false,stroke_enabled:false,stroke_color:'#000000'},editor_meta:{role,body:'',resolved:false,replies:[]}};
 }
 export function drawEditorMarks(ctx,shapes,zoom){
+ if(!shapes.some(s=>editorRole(s)&&!s.hidden))return;
  ctx.save();ctx.lineWidth=1/zoom;ctx.font=`${11/zoom}px Inter, sans-serif`;ctx.textBaseline='top';
  for(const s of shapes){const role=editorRole(s);if(!role||s.hidden)continue;ctx.save();ctx.strokeStyle=role==='section'?'#8d8d8d':role==='comment'?'#0d99ff':'#9562e9';ctx.fillStyle=ctx.strokeStyle;
   if(role==='comment'){ctx.globalAlpha=s.editor_meta.resolved?.45:1;ctx.beginPath();ctx.arc(s.x+12/zoom,s.y+12/zoom,12/zoom,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(s.editor_meta.resolved?'✓':'…',s.x+12/zoom,s.y+5/zoom);}
@@ -30,6 +32,6 @@ export function textOnPath(source){
 }
 export function pathGlyphs(shape,measure){
  const path=shape.editor_meta?.text_path;if(!path)return [];let points=path.points.map(([x,y])=>[shape.x+x*shape.width,shape.y+y*shape.height]);if(path.reverse)points=points.reverse();const segments=[],total=points.slice(1).reduce((n,p,i)=>{const a=points[i],length=Math.hypot(p[0]-a[0],p[1]-a[1]);segments.push({a,b:p,length,start:n});return n+length;},0);let cursor=total*path.offset;
- const chars=[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(shape.text.replace(/\n/g,' '))].map(s=>s.segment),widths=chars.map(measure),align=shape.typography?.align;if(align==='center')cursor+=(total-cursor-widths.reduce((a,b)=>a+b,0))/2;if(align==='right')cursor=total-widths.reduce((a,b)=>a+b,0);
+ const chars=[...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(displayedText(shape.text,textStyle(shape)).replace(/\n/g,' '))].map(s=>s.segment),widths=chars.map(text=>Math.max(0,measure(text)+letterSpacing(textStyle(shape)))),align=shape.typography?.align;if(align==='center')cursor+=(total-cursor-widths.reduce((a,b)=>a+b,0))/2;if(align==='right')cursor=total-widths.reduce((a,b)=>a+b,0);
  return chars.flatMap((text,i)=>{const width=widths[i],at=cursor+width/2;cursor+=width;const segment=segments.find(s=>s.length>0&&at>=s.start&&at<=s.start+s.length);if(!segment)return [];const t=(at-segment.start)/segment.length;return [{text,x:segment.a[0]+(segment.b[0]-segment.a[0])*t,y:segment.a[1]+(segment.b[1]-segment.a[1])*t,angle:Math.atan2(segment.b[1]-segment.a[1],segment.b[0]-segment.a[0])}];});
 }

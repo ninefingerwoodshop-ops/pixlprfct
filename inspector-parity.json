@@ -1,7 +1,7 @@
 {
   "reference": "https://www.figma.com/design/kstJSCOZwlGQ6FeIzttwD6/Figma-basics",
   "method": "Read-only selection and menu inspection in the signed-in Figma browser session. No reference artwork changed.",
-  "status": "Incomplete; observed controls are tracked separately from implemented actions.",
+  "status": "Partial; local implemented controls and reviewed regression baselines do not certify exhaustive pixel parity.",
   "observedSelections": {
     "rectangle": {
       "layer": "this is it",
@@ -99,33 +99,38 @@
     "contextual vector-edit and image-replacement shortcuts"
   ],
   "remainingObservedGaps": [
-    "arbitrary-angle rotation and transforms on other layer types",
-    "masks",
-    "Boolean operations and flatten",
-    "plus darker blending",
-    "multiple fill/stroke stacks",
-    "per-side strokes",
-    "corner smoothing",
-    "letter spacing and advanced typography",
-    "text links",
-    "frame presets and resize to fit",
-    "ready-for-dev state",
-    "selection colors",
-    "full variable/style pickers",
-    "exact popover behavior and layout parity"
+    "masks and Boolean/flatten workflows require separate acceptance",
+    "plus darker blending and advanced corner smoothing",
+    "advanced typography and text links",
+    "ready-for-dev workflow acceptance",
+    "complete selection-color and variable/style picker parity",
+    "exhaustive nested/rotated set-label placement (reported root collision suppressed in alpha.11)",
+    "exact behavior and pixel parity across every nested menu and state",
+    "Page Styles Animation/Layout guide entries, nested folder/group commands, exhaustive matched-state pixel verification"
   ],
   "stillToInspect": [
-    "main component and component set",
-    "ellipse/polygon/star specialized controls",
-    "multi-selection and mixed values",
-    "vector edit mode",
-    "full prototype panel",
-    "all nested paint/effect/type menus"
+    "all specialized and mixed-selection states",
+    "full prototype workflows",
+    "complete nested paint/effect/type menus and advanced typography",
+    "installed OS-sleep/reconnect behavior"
   ],
   "addedRectanglePass": [
     "Rectangle 90-degree rotation and horizontal/vertical reflection with corner and gradient remapping",
     "Edit object converts rounded rectangles to editable closed Bezier paths",
     "Aspect lock beside dimensions; blend control in Appearance heading",
     "Fill/stroke color popovers with hue/saturation/brightness, hex, opacity, page colors, gradients and local variable binding"
-  ]
+  ],
+  "statusDate": "2026-10-30",
+  "statusSource": "docs/CAPABILITY_MATRIX.md",
+  "addedEvaluationPass": [
+    "Inline resizable Pages with Find/Add and 32px neutral selected rows",
+    "Letter spacing, Type settings case controls, text style create/apply/edit/detach/delete",
+    "Per-page editable background paint",
+    "Shadow color variable library picker and detach",
+    "Browser and screenshot regression gates",
+    "Page Styles Text/Color/Effect categories, slash groups, inline type metrics and 304px creation forms; common management workflows tested",
+    "Manage libraries live Figma 760x640 reference, device discovery, file import, Add to file, real component thumbnails and Added state",
+    "Full stacked-paint style previews including gradients, variables, patterns and opacity"
+  ],
+  "supersededGapNotes": "Rotation, multiple paints, per-edge stroke models, frame tools, reusable styles and component sets are implemented; see capability matrix for verification scope instead of treating them as wholly absent."
 }

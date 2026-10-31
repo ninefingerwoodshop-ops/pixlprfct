@@ -199,6 +199,13 @@ pub fn build_content(
         .map(|mut s| {
             s.slot_origin = s.id;
             s.id = map[&s.id];
+            // A default slot child still owns its CSS identity. Font reflow can
+            // synchronize defaults without running commit's class assignment.
+            if let Some(previous) = old_children.iter().find(|old| old.id == s.id) {
+                s.layout_class = previous.layout_class.clone();
+                s.layout_class_generated = previous.layout_class_generated;
+                s.breakpoint_original = previous.breakpoint_original.clone();
+            }
             s.parent_id = map[&s.parent_id];
             s.page_id = slot.page_id;
             s.x += slot.x - src.x;

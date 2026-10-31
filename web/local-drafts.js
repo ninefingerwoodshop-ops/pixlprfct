@@ -1,10 +1,21 @@
+import {newSvgAnimation} from './svg-animation-model.js';
 export const DRAFTS_KEY='pixlprfct.drafts.v1';
 const ACTIVE_KEY='pixlprfct.drafts.active';
+
+export class DraftConflict extends Error {
+ constructor(){super('This project changed in another tab. Open the latest version or save your edits as a separate project.');this.name='DraftConflict';}
+}
+
+// Web Locks serialize the read/check/write transaction across editor windows.
+// The body precondition below also protects callers without the browser API.
+export function withDraftLock(action,locks=globalThis.navigator?.locks){
+ return locks?locks.request(DRAFTS_KEY,action):Promise.resolve().then(action);
+}
 
 // One atomic write keeps the file bodies and the last-opened file in sync.
 export class LocalDrafts {
  constructor(storage,tabStorage,{id=()=>crypto.randomUUID(),now=()=>Date.now()}={}){
-  Object.assign(this,{storage,tabStorage,id,now});this.activeId=null;
+  Object.assign(this,{storage,tabStorage,id,now});this.activeId=null;this.base=null;
  }
  read(){
   if(!this.storage)throw new Error('Browser storage is unavailable. Download a local copy before switching designs.');
@@ -17,7 +28,7 @@ export class LocalDrafts {
  restore(){
   const data=this.read();let id;try{id=this.tabStorage?.getItem(ACTIVE_KEY);}catch{}
   const files=data.files.filter(f=>!f.deletedAt),file=files.find(f=>f.id===(id||data.activeId))??files.find(f=>f.id===data.activeId)??files[0];
-  this.activeId=file?.id??null;return file?.body??null;
+  this.activeId=file?.id??null;this.base=file?.body??null;return file?.body??null;
  }
  list({trash=false}={}){return this.read().files.filter(f=>!!f.deletedAt===trash).sort((a,b)=>b.updatedAt-a.updatedAt);}
  get(id){const file=this.read().files.find(f=>f.id===id);if(!file)throw new Error('This draft is no longer available.');if(file.deletedAt)throw new Error('This project is in Trash. Restore it from Projects before opening it.');return file;}
@@ -29,13 +40,17 @@ export class LocalDrafts {
  create(body){return this.put(body,null);}
  put(body,id){
   const data=this.read(),document=JSON.parse(body),existing=data.files.find(f=>f.id===id);
+  if(id&&!existing)throw new Error('This project is no longer available. Save your edits as a separate project.');
   if(existing?.deletedAt)throw new Error('This project was moved to Trash. Restore it from Projects before saving changes.');
-  if(existing?.body===body)return existing;
+  if(existing?.body===body){this.base=body;return existing;}
+  // An untouched old tab must never write its snapshot back on pagehide.
+  if(existing&&body===this.base)return existing;
+  if(existing&&existing.body!==this.base)throw new DraftConflict();
   const file={id:existing?.id??this.id(),name:document.name?.trim()||'Untitled design',body,updatedAt:this.now()};
   data.files=existing?data.files.map(f=>f.id===id?file:f):[...data.files,file];data.activeId=file.id;
-  this.write(data,file.id);return file;
+  this.write(data,file.id);this.base=body;return file;
  }
- activate(id){const data=this.read(),file=this.get(id);data.activeId=id;this.write(data,id);return file.body;}
+ activate(id){const data=this.read(),file=this.get(id);data.activeId=id;this.write(data,id);this.base=file.body;return file.body;}
  setTrashed(id,trash,expectedBody){
   const data=this.read(),file=data.files.find(f=>f.id===id);if(!file)throw new Error('This draft is no longer available.');
   if(expectedBody!==undefined&&file.body!==expectedBody)throw new Error('This project changed in another tab. Refresh the project list and try again.');
@@ -46,7 +61,7 @@ export class LocalDrafts {
   // autosaves rather than silently resurrecting itself as a different project.
   this.write(data,this.activeId);return next;
  }
- detach(){this.activeId=null;}
+ detach(){this.activeId=null;this.base=null;}
 }
 
 export const designStarters=[
@@ -54,7 +69,9 @@ export const designStarters=[
  {id:'desktop',name:'Desktop',description:'1440 × 900',width:1440,height:900},
  {id:'mobile',name:'Mobile',description:'390 × 844',width:390,height:844},
 ];
-export function newDesign(name,starter='blank'){
+export function newDesign(name,starter='blank',type='design'){
+ if(type==='svg-animation')return JSON.stringify(newSvgAnimation(name));
+ if(type!=='design')throw new Error('Choose a design type.');
  const preset=designStarters.find(p=>p.id===starter);if(!preset)throw new Error('Choose a starting point.');
  return JSON.stringify({version:1,name:name.trim().slice(0,256)||'Untitled design',shapes:preset.width?[{id:1,kind:'frame',name:preset.name,x:0,y:0,width:preset.width,height:preset.height,fill:'#ffffff',text:'',hidden:false,clip_content:true}]:[]});
 }

@@ -1,4 +1,4 @@
-import {fontCss, textStyle} from './typography.js';
+import {fontCss, textStyle, letterSpacing, textTransform} from './typography.js';
 
 // Keep layout previews out of document history. A completed editing session is
 // one document undo step; native text undo remains available while typing.
@@ -104,7 +104,7 @@ export function mountTextEditor(canvas,{input,finish,zoom}) {
       Object.assign(host.style,{transform:`translate(${pan.x+shape.x*zoom}px,${pan.y+shape.y*zoom}px) scale(${zoom}) rotate(${-(shape.rotation??0)}deg)`});
       // The real scene paints the glyphs, preserving gradients, strokes,
       // opacity, effects and clipping. This surface supplies caret/selection.
-      Object.assign(field.style,{font:fontCss(t),lineHeight:String(t.line_height),textAlign:t.align,
+      Object.assign(field.style,{font:fontCss(t),letterSpacing:letterSpacing(t)+'px',textTransform:textTransform(t),lineHeight:String(t.line_height),textAlign:t.align,
         width:`${Math.max(1,shape.width)}px`,minHeight:`${Math.max(step,shape.height-offset)}px`,marginTop:`${offset}px`,
         whiteSpace:t.wrap?'pre-wrap':'pre',overflowWrap:t.wrap?'anywhere':'normal'});
     },

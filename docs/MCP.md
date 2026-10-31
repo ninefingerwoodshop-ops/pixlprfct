@@ -2,6 +2,8 @@
 
 PixlPrfct's MCP server lets an agent build and edit designs in an open editor tab
 or in saved `.pixl` projects. Both use the same Rust/WASM engine as the editor.
+It also provides opt-in installation tools for AI-assisted team server setup;
+see [Set up a team server with an AI assistant](MCP_SETUP.md).
 
 ## Install and connect an agent
 
@@ -134,11 +136,14 @@ in a live editor, where the actual canvas font measurements are used.
 
 | Tool | Purpose |
 | --- | --- |
+| `pixlprfct_installation_status/plan/apply` | Inspect, preview, and configure an authorized team installation |
+| `pixlprfct_installation_run/job/backups` | Run and verify setup, services, and backup operations |
 | `pixlprfct_reference` | Search capabilities, commands, models, defaults, icons, frame presets and guides |
 | `pixlprfct_sessions` | List paired tabs, open file sessions and workspace project files |
 | `pixlprfct_connection` | Get browser pairing details (desktop connects automatically) |
 | `pixlprfct_open_project` | Open or create a saved-project session |
 | `pixlprfct_read` | Inspect paged layer summaries/properties and document metadata |
+| `pixlprfct_libraries` | List, publish, add, update and remove libraries in a live project |
 | `pixlprfct_build` | Apply an atomic batch as one undo step |
 | `pixlprfct_command` | Execute one of the catalogued engine commands |
 | `pixlprfct_css` | Read generated and custom CSS for any layer |
@@ -149,7 +154,7 @@ in a live editor, where the actual canvas font measurements are used.
 | `pixlprfct_close_project` | Close an in-memory file session without deleting the saved file |
 
 The server also exposes `pixlprfct://reference/<topic>` resources and a
-`build-design` prompt. Its catalog currently covers 91 engine commands and 46
+`build-design` and `setup-team` prompts. Its catalog currently covers 100 engine commands and 50
 model definitions, generated from the compiled API and Rust types. Building the
 editor regenerates the catalog; `npm run mcp:check` checks it for drift.
 
@@ -162,8 +167,10 @@ guide/effect/text styles have dedicated engine commands. No arbitrary JavaScript
 or shell execution is exposed. Development behavior code is stored/exported,
 not executed by the server.
 
-Accounts, passwords, database setup, team membership, library publication and
-permissions, deployment, and project deletion remain app workflows. Already
+Accounts, passwords, team membership, library permissions, and project deletion
+remain authenticated app workflows. The opt-in installation tools configure the
+team server, initialize its database, check services, and manage local trials or
+Docker deployment. They do not bypass account verification or permissions. Already
 linked library assets are usable under the same protection rules. This MCP
 does not claim features the editor itself does not implement. SVG cannot capture
 custom CSS or backdrop blur; use HTML/framework exports. Prototype interactions
@@ -183,7 +190,9 @@ rejects if document content changed; restart the read instead of mixing revision
 `full:true` adds document metadata, variables, styles and sets, with the same
 paged `document.shapes`. `partial:true` means it is a subset: **do not load it as
 a replacement document**. Full `.pixl` export remains available separately and
-can be large; export results are not yet chunked.
+can be large. Large exports return a manifest and revision/scope-pinned cursors;
+request each file chunk and concatenate until `pagination.nextCursor` is null.
+Chunks default to 64,000 UTF-16 code units and never split a surrogate pair.
 
 Page navigation alone no longer changes the revision. Content edits still do.
 Revisions are opaque strings, scoped to the renderer/runtime lifetime: a reload
@@ -269,9 +278,8 @@ Use `apply_text_style` with `[[textLayerIds], styleId]`; style ID zero detaches.
 Changing a definition propagates across pages and instances. Font edits detach
 the link; alignment, wrapping and text-box sizing remain local. Applying a style
 replaces variable bindings on its four shared font fields. Styles persist in
-projects and remap/protect their IDs in imported libraries. This is core/MCP
-authoring; a Figma-matched text-style picker is still pending, as are letter
-spacing and text case.
+projects and remap/protect their IDs in imported libraries. The inspector supports create/apply/edit/detach/delete, letter spacing in px/%
+and text case; unselected Page Styles also browses and manages these definitions.
 
 Shadows accept `color_variable` with a color token ID (zero means literal color).
 For an existing shadow use `bind_shadow_color` with `[layerId, shadowIndex, tokenId]`.
@@ -280,8 +288,8 @@ For reusable styles, include it in `effects.shadows` passed to `save_effect_styl
 `save_effect_style` can now apply to a layer on any page. Shadows resolve aliases
 and inherited page/frame modes; HTML/framework export retains CSS variable
 references. SVG is a resolved snapshot. Literal color edits detach the binding;
-token deletion preserves the current resolved color. This adds MCP authoring;
-the shadow-color variable picker in the inspector remains pending.
+token deletion preserves the current resolved color. The inspector also provides Custom/Libraries color picking, search, collection
+filters and detach, including reusable effect styles.
 
 A batch supports up to 200 operations and commits only if every operation and
 permission check succeeds. Errors leave the original document and undo history
@@ -322,3 +330,32 @@ on an inactive page. Cross-page legacy sets remain supported as metadata.
 The editor exposes Add variant in the component header, Combine as variants for
 multiple mains, Properties on a set, and Current variant on a main. Instances
 have custom property dropdowns, and Assets presents one card per set.
+
+## Published libraries
+
+`pixlprfct_libraries` requires a live `session`. `action:"list"` returns available
+releases, linked libraries and grouped Assets entries. Pass `query`, zero-based
+`offset` and `limit` (default 50, maximum 200); continue using the returned
+pagination. Each asset includes at most ten variant summaries, `variantCount`
+and `partial` so large sets never silently imply completeness.
+
+For `publish`, `add`, `update` or `remove`, supply the current `revision` from
+`pixlprfct_read`. Add/update/remove also require the exact `id` and `workspace`
+from discovery. Revisions and project identity are rechecked after asynchronous
+work. Publish saves the current source first. Local files publish to the device
+catalog; shared files use existing workspace permissions. Add/update preserve
+existing artwork and remap library IDs. Remove disables Assets discovery while
+retaining placed instances and protected source definitions. Headless sessions
+do not claim access to a browser's device catalog or workspace credentials.
+
+For file-based PixlPrfct and Figma imports, see [LIBRARIES.md](LIBRARIES.md).
+
+## Shared files and editing ownership
+
+In a self-hosted shared file, use **Start editing** or request a handoff in the
+paired editor before MCP artwork mutations. The live bridge uses the same file
+role and lease gate as human edits. Read operations remain available to authorized
+viewers. A revoked/expired lease prevents saving; unsaved work remains recoverable.
+Library instance changes are limited to the author’s published exposed-property,
+size/layout and variant permissions. The catalog now contains 100 commands, 51
+models and 14 MCP tools. See [TEAM_WORKFLOWS.md](TEAM_WORKFLOWS.md).

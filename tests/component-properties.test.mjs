@@ -34,3 +34,14 @@ test('invalid bindings, values and conflicting bound-layer edits leave the docum
  const invalid=doc(e);invalid.component_properties[0].targets=[outside];assert.throws(()=>e.load(JSON.stringify(invalid)),/inside/);assert.equal(e.snapshot(),before);
  e.remove_component_property(p);edit(e,a,{text:'Independent'});assert.equal(get(e,b).text,'Hello');e.free();
 });
+
+test('property bindings prune reparented descendants while preserving unrelated mains and undo',()=>{
+ const e=new Editor(),one=main(e,'One'),two=main(e,'Two'),nested=e.add('frame',0,0);
+ e.reparent_many(JSON.stringify([nested]),one.f);e.reparent_many(JSON.stringify([one.a]),nested);
+ const p=bind(e,one.f,'Label','text',[one.a,one.b]),q=bind(e,two.f,'Label','text',[two.a]);
+ const before=e.snapshot();e.reparent_many(JSON.stringify([nested]),two.f);
+ assert.deepEqual(doc(e).component_properties.find(v=>v.id===p).targets,[one.b]);
+ assert.deepEqual(doc(e).component_properties.find(v=>v.id===q).targets,[two.a]);
+ e.undo();assert.equal(e.snapshot(),before);e.redo();e.remove(one.b);
+ assert.ok(!doc(e).component_properties.some(v=>v.id===p));assert.ok(doc(e).component_properties.some(v=>v.id===q));e.free();
+});

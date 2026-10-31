@@ -48,7 +48,7 @@
 .right-panel .variable-input-host>textarea{padding-right:28px!important}
 .right-panel .dimension-field>input{padding-right:0!important}
 .right-panel #layout-gap{padding-left:30px!important}
-.right-panel .paint-alpha.variable-input-host>input{padding-right:34px!important}
+:is(.right-panel,.color-style-properties) .paint-alpha.variable-input-host>input{padding-right:34px!important}
 .right-panel .input-variable-trigger{bottom:calc((var(--ui-control-height) - 22px)/2)}
 .right-panel .size-limit-field:focus-within,
 .right-panel .layout-padding-pair label:focus-within{background-color:var(--ui-selected)}
@@ -87,19 +87,19 @@
 .right-panel .variable-inspector>.inspector-select-trigger~.inspector-select-trigger{margin-top:var(--ui-space-2)}
 
 /* Paint controls keep readable values as the drawer narrows. */
-.right-panel .compact-paint-row{display:grid;grid-template-columns:minmax(0,1fr) 24px 24px;gap:var(--ui-space-1)}
-.right-panel .paint-value-fields{display:flex;min-width:0;height:var(--ui-control-height);background:var(--ui-field);border-radius:var(--ui-radius-control);overflow:hidden}
-.right-panel .paint-color-field{display:flex;align-items:center;gap:var(--ui-space-1);min-width:0;height:var(--ui-control-height);padding:0 var(--ui-space-1);border-radius:var(--ui-radius-control);background:var(--ui-field)}
-.right-panel .paint-value-fields>.paint-color-field{flex:1;border-radius:0}
-.right-panel .paint-color-field:hover{background:var(--ui-hover)}
-.right-panel .paint-color-field:focus-within{background:var(--ui-selected)}
-.right-panel .paint-color-field :is(.paint-swatch,.paint-picker-trigger){width:20px;height:20px}
-.right-panel .paint-color-field .paint-hex{--inspector-field-background:transparent!important;flex:1;width:0;min-width:0!important;padding-inline:0!important}
-.right-panel .compact-paint-row .inspector-icon{width:24px}
+:is(.right-panel,.color-style-properties) .compact-paint-row{display:grid;grid-template-columns:minmax(0,1fr) 24px 24px;gap:var(--ui-space-1)}
+:is(.right-panel,.color-style-properties) .paint-value-fields{display:flex;min-width:0;height:var(--ui-control-height);background:var(--ui-field);border-radius:var(--ui-radius-control);overflow:hidden}
+:is(.right-panel,.color-style-properties) .paint-color-field{display:flex;align-items:center;gap:var(--ui-space-1);min-width:0;height:var(--ui-control-height);padding:0 var(--ui-space-1);border-radius:var(--ui-radius-control);background:var(--ui-field)}
+:is(.right-panel,.color-style-properties) .paint-value-fields>.paint-color-field{flex:1;border-radius:0}
+:is(.right-panel,.color-style-properties) .paint-color-field:hover{background:var(--ui-hover)}
+:is(.right-panel,.color-style-properties) .paint-color-field:focus-within{background:var(--ui-selected)}
+:is(.right-panel,.color-style-properties) .paint-color-field :is(.paint-swatch,.paint-picker-trigger){width:20px;height:20px}
+:is(.right-panel,.color-style-properties) .paint-color-field .paint-hex{--inspector-field-background:transparent!important;flex:1;width:0;min-width:0!important;padding-inline:0!important}
+:is(.right-panel,.color-style-properties) .compact-paint-row .inspector-icon{width:24px}
 @container inspector (max-width:220px){
- .right-panel .compact-paint-row{grid-template-columns:minmax(0,1fr) 24px 24px}
- .right-panel .paint-value-fields{grid-column:1 / -1}
- .right-panel .paint-visibility{grid-column:2}
+ :is(.right-panel,.color-style-properties) .compact-paint-row{grid-template-columns:minmax(0,1fr) 24px 24px}
+ :is(.right-panel,.color-style-properties) .paint-value-fields{grid-column:1 / -1}
+ :is(.right-panel,.color-style-properties) .paint-visibility{grid-column:2}
 }
 @container inspector (max-width:220px){
  .right-panel .size-limit-fields{grid-template-columns:minmax(0,1fr)}
@@ -109,24 +109,24 @@
 }
 
 /* Paint stacks share the same rows; the reorder grip sits in the section gutter. */
-.right-panel .paint-stack{display:grid;gap:4px}
-.right-panel .compact-paint-row{position:relative}
-.right-panel .paint-grip{position:absolute;left:-15px;top:2px;width:14px!important;cursor:grab;opacity:0}
-.right-panel .compact-paint-row:is(:hover,:focus-within) .paint-grip{opacity:1}
-.right-panel .paint-grip:active{cursor:grabbing}
-.right-panel .paint-grip svg{width:12px}
-.right-panel .paint-drop{box-shadow:0 -2px var(--ui-accent,#0d99ff)}
-.right-panel .paint-dragging{opacity:.4}
-.right-panel .paint-stack .paint-alpha{position:relative;display:block;flex:0 0 48px;width:48px;border-left:1px solid var(--ui-surface);margin:0}
-.right-panel .paint-stack .paint-alpha>input{width:100%!important;height:var(--ui-control-height);margin:0;padding:0 14px 0 6px!important;border-radius:0!important;background:transparent!important}
-.right-panel .paint-stack .paint-alpha>span{position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:11px;color:var(--ui-text-muted)}
-.right-panel .paint-stack .compact-paint-row>.paint-value-fields{grid-column:1}
-@container inspector (max-width:220px){.right-panel .paint-stack .compact-paint-row>.paint-value-fields{grid-column:1 / -1}}
-.right-panel .paint-stack .paint-alpha[hidden],.right-panel .paint-stack .paint-variable-name[hidden],.right-panel .paint-stack .paint-variable-detach[hidden]{display:none!important}
-.right-panel .paint-stack .paint-variable-name{display:block;flex:1;min-width:0;width:0;padding:0!important;background:transparent!important;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:inherit}
-.right-panel .paint-stack .paint-variable-detach{flex:0 0 24px;width:24px;height:28px;align-self:center;background:transparent}
-.right-panel .paint-bound .paint-color-field{border-radius:var(--ui-radius-control)}
-.right-panel .paint-stack .paint-grip{min-width:14px!important;width:14px!important}
+:is(.right-panel,.color-style-properties) .paint-stack{display:grid;gap:4px}
+:is(.right-panel,.color-style-properties) .compact-paint-row{position:relative}
+:is(.right-panel,.color-style-properties) .paint-grip{position:absolute;left:-15px;top:2px;width:14px!important;cursor:grab;opacity:0}
+:is(.right-panel,.color-style-properties) .compact-paint-row:is(:hover,:focus-within) .paint-grip{opacity:1}
+:is(.right-panel,.color-style-properties) .paint-grip:active{cursor:grabbing}
+:is(.right-panel,.color-style-properties) .paint-grip svg{width:12px}
+:is(.right-panel,.color-style-properties) .paint-drop{box-shadow:0 -2px var(--ui-accent,#0d99ff)}
+:is(.right-panel,.color-style-properties) .paint-dragging{opacity:.4}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-alpha{position:relative;display:block;flex:0 0 48px;width:48px;border-left:1px solid var(--ui-surface);margin:0}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-alpha>input{width:100%!important;height:var(--ui-control-height);margin:0;padding:0 14px 0 6px!important;border-radius:0!important;background:transparent!important}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-alpha>span{position:absolute;right:6px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:11px;color:var(--ui-text-muted)}
+:is(.right-panel,.color-style-properties) .paint-stack .compact-paint-row>.paint-value-fields{grid-column:1}
+@container inspector (max-width:220px){:is(.right-panel,.color-style-properties) .paint-stack .compact-paint-row>.paint-value-fields{grid-column:1 / -1}}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-alpha[hidden],:is(.right-panel,.color-style-properties) .paint-stack .paint-variable-name[hidden],:is(.right-panel,.color-style-properties) .paint-stack .paint-variable-detach[hidden]{display:none!important}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-variable-name{display:block;flex:1;min-width:0;width:0;padding:0!important;background:transparent!important;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:inherit}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-variable-detach{flex:0 0 24px;width:24px;height:28px;align-self:center;background:transparent}
+:is(.right-panel,.color-style-properties) .paint-bound .paint-color-field{border-radius:var(--ui-radius-control)}
+:is(.right-panel,.color-style-properties) .paint-stack .paint-grip{min-width:14px!important;width:14px!important}
 .paint-bound-variable{display:flex;align-items:center;gap:8px;margin:0 16px 8px;padding:4px 6px 4px 8px;border-radius:var(--ui-radius-control);background:var(--ui-field);font-size:var(--ui-text)}
 .paint-bound-variable>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .paint-bound-variable>.inspector-icon{flex:0 0 24px}

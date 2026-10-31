@@ -6,16 +6,17 @@ export function selectedPaint(shape,channel){if(!shape)return null;const stack=p
 export function editingPaint(shape,channel){return shape?paintEdit(shape,channel,selectedPaint(shape,channel)?.id):shape;}
 const el=(tag,cls)=>{const n=document.createElement(tag);n.className=cls;return n;};
 const button=(label,glyph,click)=>{const b=el('button','inspector-icon');b.type='button';b.title=label;b.setAttribute('aria-label',label);b.innerHTML=icon(glyph);b.onclick=click;return b;};
-export function installPaintStacks(current,change,{document:read,bind}){
+export function installPaintStacks(current,change,{document:read,bind,hosts=null,idPrefix=''}){
  const sync=[],$=id=>document.getElementById(id);
- for(const channel of ['fill','stroke']){
-  const fill=channel==='fill',title=fill?'Fill':'Stroke',host=fill?$('paint-label').closest('section'):$('stroke-section'),heading=host.querySelector('h3'),header=el('div','paint-section-heading'),list=el('div','paint-stack');host.classList.add('paint-section');list.setAttribute('aria-label',title+' paints');
+ for(const channel of hosts?Object.keys(hosts):['fill','stroke']){
+  const fill=channel==='fill',title=fill?'Fill':'Stroke',host=hosts?.[channel]??(fill?$('paint-label').closest('section'):$('stroke-section')),heading=host.querySelector('h3'),header=el('div','paint-section-heading'),list=el('div','paint-stack');host.classList.add('paint-section');list.setAttribute('aria-label',title+' paints');
   const add=button('Add '+channel,'plus',()=>{const s=addPaint(current(),channel);selectPaint(s,channel,paints(s,channel)[0].id);change(s);});add.classList.add('paint-add');heading.before(header);header.append(heading,add);header.after(list);
-  const legacy=el('div','paint-legacy');legacy.hidden=true;legacy.append($(channel+'-enabled'),$(fill?'fill':'stroke-color'),$(channel+'-opacity'));host.append(legacy);
+  if(!hosts){const legacy=el('div','paint-legacy');legacy.hidden=true;legacy.append($(channel+'-enabled'),$(fill?'fill':'stroke-color'),$(channel+'-opacity'));host.append(legacy);
   const settings=el('details','paint-settings');settings.hidden=true;settings.append($(fill?'gradient-controls':'stroke-gradient-controls'));list.after(settings);
   if(fill){$('solid-fill-controls').hidden=true;$('fill-value').classList.add('compact-hidden');$('fill-opacity-value').classList.add('compact-hidden');}
   else{const dims=el('div','stroke-dimensions');dims.append($('stroke-alignment-row'),$('stroke-width').closest('label'));settings.after(dims);}
   for(const label of [...host.querySelectorAll(':scope > label')])if(!label.querySelector('input,select'))label.remove();
+  }
   let previous=0,dragged=null;const rows=new Map();
   sync.push(shape=>{
    const stack=paints(shape,channel);if(previous!==shape.id){list.replaceChildren();rows.clear();previous=shape.id;}
@@ -28,7 +29,7 @@ export function installPaintStacks(current,change,{document:read,bind}){
      const grip=button('Reorder '+channel,'grip-vertical');grip.classList.add('paint-grip');grip.draggable=true;grip.onkeydown=e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();const s=current(),i=paints(s,channel).findIndex(p=>p.id===paint.id);change(movePaint(s,channel,paint.id,i+(e.key==='ArrowUp'?-1:1)));rows.get(paint.id)?.querySelector('.paint-grip').focus();}};
      grip.ondragstart=e=>{dragged=paint.id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(paint.id));row.classList.add('paint-dragging');};grip.ondragend=()=>{dragged=null;row.classList.remove('paint-dragging');list.querySelectorAll('.paint-drop').forEach(n=>n.classList.remove('paint-drop'));};
      row.ondragover=e=>{if(dragged!==null){e.preventDefault();e.dataTransfer.dropEffect='move';row.classList.add('paint-drop');}};row.ondragleave=()=>row.classList.remove('paint-drop');row.ondrop=e=>{e.preventDefault();row.classList.remove('paint-drop');if(dragged!==null){const s=current();change(movePaint(s,channel,dragged,paints(s,channel).findIndex(p=>p.id===paint.id)));dragged=null;}};
-     const values=el('div','paint-value-fields'),color=el('div','paint-color-field'),swatch=el('span','paint-swatch'),picker=el('button','paint-picker-trigger');picker.type='button';picker.setAttribute('aria-haspopup','dialog');picker.setAttribute('aria-controls',channel+'-paint-popover');picker.onclick=()=>{selectPaint(current(),channel,paint.id);host.dispatchEvent(new CustomEvent('paint-open',{detail:{id:paint.id}}));};swatch.append(picker);
+     const values=el('div','paint-value-fields'),color=el('div','paint-color-field'),swatch=el('span','paint-swatch'),picker=el('button','paint-picker-trigger');picker.type='button';picker.setAttribute('aria-haspopup','dialog');picker.setAttribute('aria-controls',idPrefix+channel+'-paint-popover');picker.onclick=()=>{selectPaint(current(),channel,paint.id);host.dispatchEvent(new CustomEvent('paint-open',{detail:{id:paint.id}}));};swatch.append(picker);
      const variableName=el('button','paint-variable-name');variableName.type='button';variableName.onclick=()=>{selectPaint(current(),channel,paint.id);host.dispatchEvent(new CustomEvent('paint-open',{detail:{variables:true}}));};
      const detach=button('Detach variable','unlink',()=>{const s=current(),binding=paintBinding(s,channel,paint.id);if(binding.variable)bind(s.id,binding.path,0);});detach.classList.add('paint-variable-detach');
      const hex=el('input','paint-hex');hex.maxLength=7;hex.spellcheck=false;hex.onchange=()=>{const value='#'+hex.value.replace(/^#/,'');if(!/^#[\da-f]{6}$/i.test(value)){hex.setCustomValidity('Enter six hexadecimal digits');hex.reportValidity();return;}hex.setCustomValidity('');edit({color:value});};hex.oninput=()=>hex.setCustomValidity('');

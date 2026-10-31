@@ -119,6 +119,8 @@
 .figma-inspector .font-style-row>label>input,.figma-inspector .font-style-row>label>.inspector-select-trigger{margin-top:0!important}
 .figma-inspector .font-style-row>label{line-height:0!important}
 .figma-inspector .font-style-row>label .inspector-select-trigger{font-size:11px!important}
+.figma-inspector .font-style-row>label .inspector-select-trigger{gap:4px}
+.figma-inspector .font-style-row>label .inspector-select-trigger>svg{width:12px;height:12px}
 .figma-inspector #text-section .text-align-tools+details{padding:0}
 .figma-inspector .blend-popover>.inspector-select-icon{width:24px!important;height:24px!important;min-width:24px!important;padding:4px!important;background:transparent!important;border:0!important;justify-content:center}
 .figma-inspector .inspector-select-glyph{display:flex;width:16px;height:16px;color:var(--ui-text-strong)}

@@ -6,6 +6,7 @@ import {codeExportFiles} from './code-export.js';
 import {svgDocument,exportBounds,exportSize,exportShapes} from './export.js';
 import {reconcilePaints} from './paints.js';
 import {appearance} from './appearance.js';
+import {exportChunks} from './export-chunks.js';
 import {drawnShape,vectorTools} from './vectors.js';
 
 export const layerKinds=['frame','group','rectangle','ellipse','text','image','line','arrow','polygon','star','pen','pencil'];
@@ -30,7 +31,7 @@ const summary=doc=>({name:doc.name,activePage:doc.active_page,pages:doc.pages,la
 const autoLayoutDefaults={direction:'horizontal',gap:16,padding_top:16,padding_right:16,padding_bottom:16,padding_left:16,align:'start',justify:'start',hug_width:false,hug_height:false,strokes_included:true,canvas_stacking:'last',wrap:false,align_content:'start'};
 // The host owns persistence, permissions, and editor refresh. All mutations go
 // through a scratch engine and commit once only after the whole batch succeeds.
-export function createAgentRuntime({editor,createEditor,guard=()=>null,options=()=>({}),finalize=()=>{},changed=()=>{},busy=()=>false,selection=()=>[],select}){
+export function createAgentRuntime({editor,createEditor,guard=()=>null,options=()=>({}),finalize=()=>{},changed=()=>{},busy=()=>false,selection=()=>[],select,libraries}){
  const epoch=globalThis.crypto.randomUUID();let last='',revision=0;
  const version=()=>{const document=snapshot(editor);delete document.active_page;const value=JSON.stringify(document);if(value!==last){last=value;revision++;}return `${epoch}:${revision}`;};
  const state=()=>({revision:version(),...summary(snapshot(editor)),selection:selection()});
@@ -81,7 +82,7 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
     const offset=op.coordinate_space==='parent'?parent:{x:0,y:0};
     result=engine.add(vector||kind==='image'?'rectangle':kind,x+offset.x,y+offset.y);
     properties={...properties,x:x+offset.x,y:y+offset.y};
-    if(vector){const geometry=['pen','pencil'].includes(kind)?{points:[[0,0],[1,1]],closed:false}:drawnShape(kind,{x:0,y:0},{x:160,y:120});properties={points:geometry.points,closed:geometry.closed??false,...properties,kind};}
+    if(vector){const geometry=['pen','pencil'].includes(kind)?{points:[[0,0],[1,1]],closed:false}:drawnShape(kind,{x:0,y:0},{x:160,y:120});properties={points:geometry.points,closed:geometry.closed??false,...properties,kind};properties.appearance={...appearance({...properties,appearance:null,fill:properties.fill??'#d9d9d9'}),...properties.appearance};}
     if(kind==='image')properties={...properties,kind};
     if(op.control){if(!controlTypes.includes(op.control))throw new Error('Unknown control kind.');properties={...properties,control:mergeProperties({...newControl(op.control,properties.name??op.control),starter:true},properties.control??{})};}
     patch(engine,result,properties);
@@ -97,6 +98,11 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
   }return {results,refs};
  },page);
  return {state,async request(method,args={}){
+  if(method==='libraries'){
+   if(!libraries)throw new Error('Library publishing and discovery require a connected live editor. Open the project in PixlPrfct and use its live session.');
+   const action=args.action??'list',assertCurrent=()=>checkRevision(args.revision);if(action!=='list')assertCurrent();
+   const result=await libraries({...args,action},assertCurrent);return {...state(),...result};
+  }
   if(method==='read'){
    const doc=snapshot(editor);let layers=doc.shapes;
    if(args.page)layers=layers.filter(s=>s.page_id===args.page);
@@ -134,14 +140,14 @@ export function createAgentRuntime({editor,createEditor,guard=()=>null,options=(
    select(args.ids,page);return state();
   }
   if(method==='export'){
-   const doc=snapshot(editor),target=args.target??'pixl';
-   if(target==='pixl')return {...state(),files:[{name:doc.name.replace(/[^\w-]/g,'_')+'.pixl',text:editor.snapshot()}]};
+   const doc=snapshot(editor),target=args.target??'pixl',current=state(),scope=JSON.stringify([target,args.scope??'page',args.page??doc.active_page,args.ids??[],doc.active_page]),result=files=>exportChunks(files,current,args,scope);
+   if(target==='pixl')return result([{name:doc.name.replace(/[^\w-]/g,'_')+'.pixl',text:editor.snapshot()}]);
    if(target==='svg'){
     const layers=exportShapes(doc.shapes.filter(s=>s.page_id===(args.page??doc.active_page)),args.ids??[],args.scope==='selection'?'selection':'page'),box=exportBounds(layers);exportSize(box,1,'svg',layers);
-    return {...state(),files:[{name:'design.svg',text:svgDocument(layers,box,1,null,options().textLayout)}]};
+    return result([{name:'design.svg',text:svgDocument(layers,box,1,null,options().textLayout)}]);
    }
    if(!['html','react','vue','angular','rust'].includes(target))throw new Error('Unsupported export target.');
-   return {...state(),files:codeExportFiles(doc,{scope:args.scope??'page',pageId:args.page??doc.active_page,ids:args.ids??[],target,textLayout:options().textLayout}).map(file=>({name:file.name,text:new TextDecoder().decode(file.data)}))};
+   return result(codeExportFiles(doc,{scope:args.scope??'page',pageId:args.page??doc.active_page,ids:args.ids??[],target,textLayout:options().textLayout}).map(file=>({name:file.name,text:new TextDecoder().decode(file.data)})));
   }
   throw new Error('Unknown agent request: '+method);
  }};
