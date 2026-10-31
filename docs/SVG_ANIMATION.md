@@ -82,6 +82,30 @@ The curves remain in native `.pixl` saves and animated SVG exports.
 Editing an individual property value or adding an animator clears the grouped
 selection and returns the inspector to that single key.
 
+## Timing a selection
+
+This is a source update after Windows v0.1.1-alpha.15; that download does not
+include selection timing controls.
+
+Select timeline keys and use **Keyframe timing** in the right inspector.
+**Start (ms)** moves the selection's earliest key to an exact time, keeping its
+spacing. **Duration (ms)** stretches or compresses the selection from its earliest
+key, preserving proportional spacing across tracks and elements. For example,
+keys at 0, 1000 and 3000 ms become 0, 500 and 1500 ms when their duration is 1500 ms.
+The animation's overall duration stays unchanged; extend it first to make more room.
+
+Values, easing curves, motion paths, and morph geometry stay with their keys.
+Unselected keys stay in place. Times round to the nearest whole millisecond. If
+rounding or moving would overlap keys on the same track, the entire edit is
+rejected. Keys at one shared time can move together, but their Duration field is
+disabled because there is no span to scale.
+
+Enter or leaving a field commits one undo step; Escape restores its previous
+value. The selection follows the changed times, and the playhead follows its
+active key. Read-only files disable both fields. Timing persists in `.pixl` saves
+and exported SVG. Selection timing does not add timeline stretch handles or
+change the existing group-drag gesture.
+
 ## Motion paths
 
 Select the element to animate, then choose an existing shape in the inspector's
@@ -241,8 +265,14 @@ edits, drag/cancel/undo, stale drags, grouped deletion, export, reopening and
 read-only controls. Proofs: `.local/svg-animation/group-easing-mixed.png` and
 `group-easing-workspace.png`.
 
-Local verification on 2026-10-31: 29 SVG browser cases and 19 SVG model/controller
-cases pass. Changed-code lint has zero errors and one existing navigation warning.
+Local verification on 2026-10-31: 32 SVG browser cases and 22 SVG model/controller
+cases pass. Selection timing coverage includes scaling and shifting across tracks,
+single-time selections, collision/rounding rejection, invalid ranges, Escape,
+undo/redo, selection continuity, export, reopening, and read-only fields. It also
+covers queued scroll events in shared inspector menus. Timing proof:
+`.local/svg-animation/selection-timing-workspace.png`.
+Changed-code lint has zero errors and two existing warnings (navigation and a
+dropdown expression).
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.
 Demo proofs: `.local/svg-animation/motion-path-workspace.png` and

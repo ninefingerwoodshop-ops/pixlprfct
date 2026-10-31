@@ -1,6 +1,6 @@
 import {icon} from './icons.js';
 import {installInspectorDropdowns} from './inspector-dropdown.js';
-import {numberField,choose} from './inspector-settings.js';
+import {numberField,settingRow,choose} from './inspector-settings.js';
 import {LocalDrafts,withDraftLock} from './local-drafts.js';
 import {LocalPersistence} from './local-persistence.js';
 import {localRecovery} from './local-recovery.js';
@@ -15,7 +15,7 @@ import {sanitizeSvg,normalizeSvgAnimation,animationLayers,animationScene,baseVal
 import {installSvgTimeline} from './svg-animation-timeline.js';
 import {captureMotionPath,pathKinds} from './svg-animation-path.js';
 import {easingEditor} from './svg-animation-easing.js';
-import {keyframeId,keyframeEasing,setKeyframeEasing,deleteKeyframes} from './svg-animation-keyframes.js';
+import {keyframeId,keyframeTiming,keyframeEasing,setKeyframeEasing,deleteKeyframes} from './svg-animation-keyframes.js';
 import {morphData,moveMorphPoint} from './svg-animation-morph.js';
 import {installMorphNodes} from './svg-animation-nodes.js';
 import {installSvgExport} from './svg-animation-export.js';
@@ -101,14 +101,26 @@ function renderInspector(){
  for(const [title,keys] of groups){const s=section(title);for(const property of keys)propertyRow(s,property);}
  const origin=section('Transform origin'),pair=el('div','svg-field-pair svg-origin');for(const [index,name] of ['Origin X','Origin Y'].entries()){const label=el('label','',name),input=numberField(name,(animation().origins[selected]??originFor(layer))[index],safe(value=>{const values=[...(animation().origins[selected]??originFor(layer))];values[index]=value;changeAnimation({...animation(),origins:{...animation().origins,[selected]:values}});}));label.append(input);pair.append(label);}origin.append(pair,button('Center origin',null,()=>changeAnimation({...animation(),origins:{...animation().origins,[selected]:originFor(layer)}})));
  const easing=section('Keyframe easing'),track=keySelection?.property?currentTrack(keySelection.property):null,key=track?.keys.find(k=>k.time===keySelection.time);
+ let timing;
  if(key){
   const before=animation(),existing=new Set(before.tracks.flatMap(t=>t.keys.map(k=>keyframeId({...t,time:k.time})))),keys=(keySelection.keys??[keySelection]).filter(k=>existing.has(keyframeId(k))),state=keyframeEasing(before,keys),disabled=!!team&&!team.editable();
   const checkCurrent=()=>{if(animation()!==before||!easing.isConnected)throw new Error('The keyframe selection changed. Select the keyframes again.');};
+  timing=section('Keyframe timing');timing.classList.add('svg-keyframe-timing');const range=keyframeTiming(before,keys),primary={element:keySelection.element,property:keySelection.property,time:keySelection.time};
+  for(const [label,value,maximum,locked,run] of [
+   ['Selection start',range.start,before.duration-range.duration,disabled,value=>timeline.retime(keys,value,range.duration,primary)],
+   ['Selection duration',range.duration,before.duration-range.start,disabled||range.duration===0,value=>timeline.retime(keys,range.start,value,primary)],
+  ]){
+   const control=numberField(label,value,safe(next=>{try{checkCurrent();run(next);}catch(error){renderInspector();throw error;}}),{min:label==='Selection duration'&&range.duration?1:0,max:maximum,step:1,disabled:locked});
+   const input=control.querySelector('input'),keydown=input.onkeydown;input.onkeydown=e=>{keydown?.(e);if(e.key==='Enter'||e.key==='Escape')input.blur();};
+   timing.append(settingRow(label==='Selection start'?'Start (ms)':'Duration (ms)',control));
+  }
+  timing.append(el('p','svg-hint',range.duration?'Duration scales the selected keys from their first keyframe.':'Select keys at different times to scale their duration.'));
   easing.append(easingEditor({value:key.easing,mixed:state.mixed,disabled,change:safe(value=>{checkCurrent();changeAnimation(setKeyframeEasing(before,keys,value));})}));
   easing.append(el('p','svg-hint',state.count>1?`${state.count} keyframes selected. ${state.mixed?'Choose an easing to apply to all. ':''}Easing applies from each key toward the next keyframe.`:`${properties[track.property].label} · ${key.time} ms. Easing applies toward the next keyframe.`));
   const removeKeys=button(state.count>1?'Delete selected keyframes':'Delete keyframe',null,safe(()=>{checkCurrent();if(!canEdit())return;const next=deleteKeyframes(before,keys);keySelection=null;timeline.clearSelection();changeAnimation(next);}));removeKeys.disabled=disabled;easing.append(removeKeys);
  }else easing.append(el('p','svg-hint','Select a keyframe to edit its easing curve.'));
  (morphEditing&&morphSection?morphSection:heading).after(easing);
+ if(timing)easing.before(timing);
  const remove=section('Element');remove.append(button('Delete element',null,safe(deleteElement)));renderFields();dropdowns?.();
 }
 function renderFields(){for(const [property,input] of fields){if(document.activeElement!==input){const value=valueAt(property);input.value=typeof value==='number'?Number(value.toFixed(4)):value;}}for(const [property,key] of diamonds)key.setAttribute('aria-pressed',String(!!currentTrack(property)?.keys.some(k=>k.time===Math.round(currentTime))));if(morphFields.size&&currentTrack('morph')){const point=valueAt('morph')[morphPoint[0]]?.points[morphPoint[1]];if(point)for(const [offset,input] of morphFields)if(document.activeElement!==input)input.value=Number(point[offset].toFixed(4));}}

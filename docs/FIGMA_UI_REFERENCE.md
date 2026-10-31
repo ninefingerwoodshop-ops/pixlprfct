@@ -473,3 +473,38 @@ confirmed Mixed → Ease out across Rotation and Scale X, with both keys still
 selected. Proofs: `.local/svg-animation/group-easing-mixed.png` and
 `group-easing-workspace.png`. This source update is not in Windows alpha.15.
 No TT design-system gap is closed by this pass.
+
+### SVG selection timing — 2026-10-31
+
+Rechecked the native Figma Motion surface before changing the inspector. The
+1800 × 1003 logical window still shows a 200 px dock and 241 px right inspector,
+with 24 px paint controls. No animation tracks were visible. A subsequent attempt
+to inspect a selected shape was unavailable; the native tool then reported that
+the Mac was locked. Selected-key timing states were therefore not verified.
+
+Selection Start and Duration are an SVG-workspace extension in the right
+inspector. They use shared `numberField` and `settingRow` components, 24 px
+fields, 16 px section insets, 8 px row gaps, and the existing dark palette. The
+full-width timeline, keyframe selection, and group drag gestures are retained.
+This does not claim exact parity with a Figma timing editor. SVGator's official
+[keyframe guide](https://www.svgator.com/help/animation-and-interactivity/how-to-change-keyframe-values)
+remains the reference for group selection and timing workflows; this pass adds
+numeric proportional retiming to pxlprfct.
+
+Manual verification compressed all five orbit-sample keys to 1800 ms, shifted
+their start to 400 ms, and reopened the saved project. Both tracks retain their
+selection, values and easing. At a 1280 × 720 viewport, the new fields measure
+103 × 24 px; proof: `.local/svg-animation/selection-timing-workspace.png`.
+
+The taller inspector exposed a shared dropdown bug: a queued scroll event from
+revealing a trigger could dismiss its newly opened menu. Menus now ignore scroll
+events that leave the positioned anchor unchanged, and still close when the
+anchor moves. Browser coverage exercises both cases and the motion-path
+orientation workflow that revealed the issue.
+
+This pass is local pending merge and is not in Windows alpha.15. No TT
+design-system gap is closed by it.
+
+Verification: all 32 SVG browser cases and 22 model/controller cases pass.
+Changed-code lint has zero errors and two existing warnings; editor asset
+preparation and the browser editor build pass.

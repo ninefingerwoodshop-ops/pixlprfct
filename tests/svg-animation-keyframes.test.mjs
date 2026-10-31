@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newSvgAnimation,putKey,setMotionPath} from '../web/svg-animation-model.js';
 import {morphPath,moveMorphPoint} from '../web/svg-animation-morph.js';
-import {keyframeMoveDelta,moveKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
+import {keyframeMoveDelta,moveKeyframes,keyframeTiming,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
 const ref=(element,property,time)=>({element,property,time});
 function example(){let a=newSvgAnimation().svg_animation;for(const [id,prop,keys] of [['one','x',[[0,0],[1000,40],[2000,80]]],['two','opacity',[[0,1],[500,.5],[2000,0]]]])for(const [time,value] of keys)a=putKey(a,id,prop,time,value,[.2,.7,.7,.9]);return a;}
 
@@ -34,6 +34,38 @@ test('group moves allow vacated selected times but reject collisions atomically'
  const moved=moveKeyframes(a,[ref('one','x',0),ref('one','x',1000),ref('one','x',2000)],500);assert.deepEqual(moved.animation.tracks[0].keys.map(k=>k.time),[500,1500,2500]);
  assert.throws(()=>moveKeyframes(a,[ref('one','x',1000),ref('two','opacity',500)],1000),/already/);assert.deepEqual(a,before);
  assert.throws(()=>moveKeyframes(a,[ref('one','x',123)],10),/changed/);assert.throws(()=>keyframeMoveDelta(a,[],NaN),/valid/);
+});
+
+test('selection timing scales across tracks, preserving key values, curves and unselected keys',()=>{
+ const a=example(),before=structuredClone(a),keys=[ref('one','x',1000),ref('two','opacity',500),ref('one','x',2000)];
+ assert.deepEqual(keyframeTiming(a,keys),{start:500,duration:1500,count:3});
+ const {animation,selection}=retimeKeyframes(a,keys,1000,1800),expected=structuredClone(a);
+ expected.tracks[0].keys[1].time=1600;expected.tracks[0].keys[2].time=2800;expected.tracks[1].keys[1].time=1000;
+ assert.deepEqual(animation,expected);assert.deepEqual(selection.map(k=>k.time),[1600,1000,2800]);assert.deepEqual(a,before);
+ assert.equal(retimeKeyframes(a,keys,500,1500).animation,a);
+ const compressed=retimeKeyframes(animation,selection,100,300);assert.deepEqual(compressed.selection.map(k=>k.time),[200,100,400]);
+});
+
+test('selection timing rejects collisions, rounding overlaps, invalid ranges and stale selections atomically',()=>{
+ const a=example(),before=structuredClone(a),keys=[ref('one','x',0),ref('one','x',1000)];
+ assert.throws(()=>retimeKeyframes(a,keys,1000,1000),/overlap/);
+ const all=a.tracks[0].keys.map(k=>ref('one','x',k.time));assert.throws(()=>retimeKeyframes(a,all,0,1),/overlap/);
+ for(const [start,duration] of [[-1,100],[NaN,100],[0,Infinity],[.5,100],[0,10.5],[0,-1]])assert.throws(()=>retimeKeyframes(a,keys,start,duration),/whole milliseconds/);
+ assert.throws(()=>retimeKeyframes(a,keys,2500,1000),/exceed/);assert.throws(()=>retimeKeyframes(a,keys,0,0),/at least/);
+ assert.throws(()=>retimeKeyframes(a,[ref('one','x',999)],0,0),/changed/);assert.throws(()=>retimeKeyframes(a,[],0,0),/Select/);assert.deepEqual(a,before);
+});
+
+test('selection timing moves a single instant and rounds proportional times without losing metadata',()=>{
+ const a=example(),keys=[ref('one','x',0),ref('two','opacity',0)];
+ assert.deepEqual(retimeKeyframes(a,keys,3000,0).selection.map(k=>k.time),[3000,3000]);
+ assert.throws(()=>retimeKeyframes(a,keys,10,100),/different times/);
+ assert.deepEqual(retimeKeyframes(a,[ref('one','x',0)],250,0).animation.tracks[0].keys[0],{...a.tracks[0].keys[0],time:250});
+ const all=a.tracks[0].keys.map(k=>ref('one','x',k.time));assert.deepEqual(retimeKeyframes(a,all,0,1001).selection.map(k=>k.time),[0,501,1001]);
+ let rich=setMotionPath(newSvgAnimation().svg_animation,'one',{d:'M0 0L100 100',name:'Route',rotate:'auto'},[10,10]);
+ const shape=morphPath('M0 0L20 0L20 20Z');rich=putKey(rich,'two','morph',0,shape);rich=putKey(rich,'two','morph',3000,moveMorphPoint(shape,0,1,'anchor',30,0));
+ const selection=rich.tracks.flatMap(t=>t.keys.map(k=>ref(t.element,t.property,k.time))),result=retimeKeyframes(rich,selection,500,2000),expected=structuredClone(rich);
+ for(const track of expected.tracks){track.keys[0].time=500;track.keys[1].time=2500;}
+ assert.deepEqual(result.animation,expected);
 });
 
 test('clipboard snapshots paste at the playhead with relative timing and independent values',()=>{
