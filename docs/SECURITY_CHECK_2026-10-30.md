@@ -1,5 +1,22 @@
 # Focused local security check — 2026-10-30
 
+## Audit follow-up — 2026-10-31
+
+A fresh audit of the integrated lockfile reports zero high/critical advisories
+and 30 moderate dependency-chain entries, all originating from the newly published
+[minimatch pattern-amplification advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249).
+This supersedes the earlier zero-advisory snapshot below. Affected paths are
+linting and desktop packaging dependencies; they are not shipped in the static
+product website or the prepared desktop application's runtime dependencies.
+
+The advisory's fixed version is minimatch 11.0.1. The tree includes legacy callers
+of minimatch 3 and 5, as well as 9 and 10. A global major-version override changes
+the legacy callable API; npm's suggested force fix instead downgrades ESLint and
+electron-builder to incompatible historical releases. Neither has been applied.
+Keep build inputs and glob configuration trusted while upstream compatible fixes
+are evaluated. This is a documented build-tool risk, not a clean dependency audit
+or a reason to claim that repository approval rules certify software security.
+
 Scope: alpha.14's team server, local desktop packaging, notification delivery and
 new library/live-editing routes. This is an engineering check, not an independent
 penetration test or a security certification.
