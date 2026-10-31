@@ -421,3 +421,28 @@ and response controls work. This extends the prior morph pass; scroll and
 programmatic triggers remain unsupported. Nineteen SVG browser cases pass,
 including keyboard playback, motion-path fallback, and read-only export.
 Local proof: `site/assets/animation-export.png` (sample artwork, no reference UI).
+
+### Grouped SVG timeline editing — 2026-10-31
+
+Re-inspected live Figma Motion in Capwah Components before this pass. The dock
+remains full-width, 200 px high, with a 48 px ruler/controls row and a 241 px
+minimum right inspector. The live accessibility description identifies modifier
+multi-selection, keyframe dragging and double-click key creation. The reference
+file has no animation tracks, so selected-key styling and grouped-edit outcomes
+could not be compared in that file. Reference capture:
+`.local/svg-animation/figma-multiselect-reference.png`.
+
+The separate SVG workspace retains that dock and inspector structure. Selected
+diamonds reuse the existing blue Motion state; drag selection adds a blue marquee.
+Copy/Paste/Delete/Select all use the shared keyboard-accessible context menu and
+dark palette. Properties and active-key easing stay in the right inspector.
+The clipboard currently targets the same elements/properties in the same tab.
+This is implemented group editing, not a claim of full Figma/SVGator parity.
+
+Verification: 25 SVG browser cases and 17 model/controller cases pass, including
+group dragging, cancel, boundaries, selection-only document stability, paste
+rejection, restored tracks, undo/redo and read-only gates. The manual browser
+check moved two tracks together and pasted at 500/2000 ms with their 1500 ms
+offset intact. Proofs: `.local/svg-animation/timeline-multiselect.png` and
+`timeline-multiselect-menu.png`. This pass is local pending merge and has not
+been packaged in a desktop release. No TT design-system gap is closed by it.

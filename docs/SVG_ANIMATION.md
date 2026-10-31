@@ -1,8 +1,10 @@
 # SVG Animation
 
-Implemented locally on 2026-10-31. This is a separate design type, available from
-**Projects → New design → SVG Animation**. It does not replace Design or its
-existing Motion mode. These changes have not been released.
+This separate design type is available from **Projects → New design → SVG
+Animation** in the repository source. It does not replace Design or its existing
+Motion mode. The public Windows alpha download predates this workspace. The
+grouped timeline editing described below is verified locally on 2026-10-31 and
+pending merge; it has not been packaged in a desktop release.
 
 ## Core workflow
 
@@ -19,8 +21,8 @@ existing Motion mode. These changes have not been released.
    Escape cancels a drag; undo restores the previous curve. Easing belongs to the
    segment from that keyframe toward the next keyframe.
 5. Scrub the time ruler, drag diamonds, or use playback. Space toggles playback;
-   arrow keys move a selected keyframe by 10 ms (Shift: 100 ms), and Delete removes
-   it. Undo/redo applies to document edits. Duration changes cannot discard keys.
+   arrow keys move selected keyframes by 10 ms (Shift: 100 ms), and Delete removes
+   them. Undo/redo applies to document edits. Duration changes cannot discard keys.
 6. **Export** previews the actual generated SVG. Choose animated or static output,
    playback trigger, and repeat behavior, then download the file. **Static SVG**
    exports the first frame. **Save settings** stores export behavior without downloading.
@@ -29,6 +31,35 @@ Transform origins can be entered or centered on the source element. Position is
 an offset from imported geometry; scales multiply the imported geometry. The
 original transforms and hierarchy remain inside animation wrappers. Canvas fit,
 zoom, timeline zoom, timeline resize/collapse, and loop/once playback work.
+
+## Selecting, moving and copying keyframes
+
+Click a diamond to select it. Shift, Cmd or Ctrl-click toggles other diamonds in
+the selection, including keys on different property tracks and elements. Drag a
+box through the tracks to select a group; hold a modifier to add to the selection.
+Click a property label to select its keys, or an element label to select all of
+its tracks. Cmd/Ctrl+A selects every key while the timeline has focus. Escape
+clears the selection, or cancels an active drag.
+
+Drag any selected diamond to move the whole group. Arrow keys move it by 10 ms,
+or 100 ms with Shift. Shift-drag snaps the dragged diamond to 100 ms intervals.
+The group keeps its relative spacing and stops together at the beginning/end of
+the animation. A collision with an unselected key on the same track rejects the
+whole move. Double-clicking empty space on a property row still adds a key there.
+
+Cmd/Ctrl+C copies the selection. Move the playhead with the ruler or **Current
+time**, then Cmd/Ctrl+V pastes the earliest copied key at that time, preserving
+all offsets, values and easing. Paste restores a deleted track and its motion
+path metadata when needed. It rejects occupied times, out-of-range keys,
+incompatible morph geometry and document limits without partial changes.
+Delete/Backspace removes the selected keys. Each group edit is one undo step.
+Right-click the timeline (or Shift+F10) for Copy, Paste, Delete and Select all.
+
+The clipboard belongs to this open project tab and pastes onto the original
+elements/properties. It is cleared on reload or changes to the source SVG. It
+does not support cross-project or cross-element copying. The right inspector
+edits the active key's easing individually. Read-only shared files allow
+selection and copying but block moves, pastes and deletions.
 
 ## Motion paths
 
@@ -169,7 +200,18 @@ Interaction checks cover click, keyboard, hover reversal, pause/resume, saved
 settings, cancellation, standalone SVG playback, a script-disabled motion-path
 fallback, and read-only export without cloud writes.
 
-Local verification on 2026-10-31: 19 SVG browser cases and 12 SVG model/controller cases pass.
+Grouped timeline editing was checked against live Figma Motion's dock and
+selection hints, plus SVGator's
+[keyframe operations guide](https://www.svgator.com/help/animation-and-interactivity/how-to-change-keyframe-values)
+and [selection tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-keyframes).
+Coverage includes cross-track selection, marquee, group movement, relative-time
+copy/paste, collisions, duration boundaries, one-step undo/redo, persistence,
+source replacement, restored motion/morph tracks and read-only cloud gates.
+
+Local verification on 2026-10-31: 25 SVG browser cases and 17 SVG model/controller
+cases pass. Changed-code lint has zero errors and one existing navigation warning.
+Editor asset preparation and the browser editor build pass. Timeline proof:
+`.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.
 Demo proofs: `.local/svg-animation/motion-path-workspace.png` and
 `.local/svg-animation/morph-workspace.png`. The editable morph example is
 `.local/svg-animation/morph-study.pixl`.
