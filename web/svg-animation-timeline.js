@@ -1,6 +1,6 @@
 import {icon} from './icons.js';
 import {properties,resizeDuration} from './svg-animation-model.js';
-import {keyframeId,keyframeMoveDelta,moveKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes} from './svg-animation-keyframes.js';
+import {keyframeId,keyframeMoveDelta,moveKeyframes,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes} from './svg-animation-keyframes.js';
 import {showContextMenu} from './context-menu.js';
 
 export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,editable=()=>true}){
@@ -128,5 +128,11 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   if(!a.tracks.length)tracks.append(el('p','svg-timeline-empty','Select an element and add an animator to start.'));
   paintSelection();
  }
- const observer=new ResizeObserver(()=>render());observer.observe(viewport);layout();return {render,update,clearSelection(){selection=[];active=null;paintSelection();}};
+ const observer=new ResizeObserver(()=>render());observer.observe(viewport);layout();return {render,update,
+  retime(keys,start,duration,primary){
+   if(!canChange())return;
+   const index=keys.findIndex(key=>keyframeId(key)===keyframeId(primary)),result=retimeKeyframes(read(),keys,start,duration);
+   apply(result,result.selection[index]);if(active)seek(active.time);
+  },
+  clearSelection(){selection=[];active=null;paintSelection();}};
 }

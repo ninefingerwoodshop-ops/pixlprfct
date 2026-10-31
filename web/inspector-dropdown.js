@@ -5,13 +5,13 @@ export function installInspectorDropdowns(root){
  const roots=[root],controller=new AbortController(),signal=controller.signal;let destroyed=false;
  const chrome='.left-panel,.right-panel,.paint-popover,.workspace-window,.variables-workspace,dialog,#project-home,#admin-app,.account-app';
  const selects=()=>[...root.querySelectorAll('select:not([multiple])')].filter(select=>select.closest(chrome)&&!select.closest('#workspace,.prototype-player')); 
- const entries=new Map();let active=null,sequence=0,pending=false,typeBuffer='',typeTime=0;
+ const entries=new Map();let active=null,anchorBounds=null,sequence=0,pending=false,typeBuffer='',typeTime=0;
  const menu=document.createElement('div');menu.className='inspector-select-menu';menu.setAttribute('popover','manual');menu.setAttribute('role','listbox');menu.id='inspector-select-menu';document.body.append(menu);
  const close=(restore=false)=>{if(!active)return;const previous=active;active=null;previous.button.setAttribute('aria-expanded','false');if(menu.matches(':popover-open'))menu.hidePopover();if(restore&&previous.button.isConnected)previous.button.focus();};
  // The custom trigger is a sibling of the select and inherits the same ancestor
  // visibility. Measuring every parent forced layout even for closed controls.
  const visible=select=>!select.hidden&&!select.closest('[hidden]');
- const position=()=>{if(!active)return;const r=active.button.getBoundingClientRect();positionPopover(menu,r,{placement:'below',width:Number(active.select.dataset.menuWidth)||Math.max(r.width,180),maxHeight:Number(active.select.dataset.menuHeight)||320,gap:5});};
+ const position=()=>{if(!active)return;const r=active.button.getBoundingClientRect();anchorBounds=r;positionPopover(menu,r,{placement:'below',width:Number(active.select.dataset.menuWidth)||Math.max(r.width,180),maxHeight:Number(active.select.dataset.menuHeight)||320,gap:5});};
  const optionButtons=()=>[...menu.querySelectorAll('[role="option"]:not(:disabled)')];
  const open=entry=>{
   if(entry.select.disabled)return;close();active=entry;typeBuffer='';const {select,button}=entry;button.setAttribute('aria-expanded','true');menu.setAttribute('aria-label',button.getAttribute('aria-label'));menu.replaceChildren();
@@ -45,7 +45,13 @@ export function installInspectorDropdowns(root){
  menu.onkeydown=e=>{if(e.ctrlKey||e.metaKey){close(true);return;}e.stopPropagation();const items=optionButtons(),index=items.indexOf(document.activeElement);if(e.key==='Escape'){e.preventDefault();close(true);}else if(e.key==='Tab'){close(true);}else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?items.length-1:e.key==='ArrowDown'?(index+1)%items.length:(index-1+items.length)%items.length;items[next]?.focus();items[next]?.scrollIntoView({block:'nearest'});}else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&e.key!==' '){e.preventDefault();typeBuffer=Date.now()-typeTime>700?e.key:typeBuffer+e.key;typeTime=Date.now();items.find(item=>item.textContent.toLowerCase().startsWith(typeBuffer.toLowerCase()))?.focus();}};
  document.addEventListener('pointerdown',e=>{if(active&&!menu.contains(e.target)&&!active.button.contains(e.target))close();},{signal});
  document.addEventListener('focusin',e=>{if(active&&!menu.contains(e.target)&&e.target!==active.button)close();},{signal});
- for(const host of roots){host.addEventListener('scroll',event=>{if(!menu.contains(event.target))close();},{capture:true,signal});host.addEventListener('toggle',()=>{sync();},{capture:true,signal});}
+ for(const host of roots){host.addEventListener('scroll',event=>{
+  if(!active||menu.contains(event.target))return;
+  // A scroll that revealed the trigger may be delivered after its click. Only
+  // dismiss when the anchor actually moves after the menu has been positioned.
+  const bounds=active.button.getBoundingClientRect();
+  if(!anchorBounds||bounds.x!==anchorBounds.x||bounds.y!==anchorBounds.y)close();
+ },{capture:true,signal});host.addEventListener('toggle',()=>{sync();},{capture:true,signal});}
  window.addEventListener('resize',()=>close(),{signal});
  const observer=new MutationObserver(records=>{if(!records.some(record=>record.target===root||record.target.closest?.(chrome)))return;if(!pending){pending=true;queueMicrotask(()=>{pending=false;sync();});}});
  for(const host of roots)observer.observe(host,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','disabled','label','value','selected','open','class']});

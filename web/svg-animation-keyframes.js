@@ -50,6 +50,32 @@ export function moveKeyframes(animation,selection,delta){
  return {animation:checked(next),selection:selection.map(key=>({...key,time:key.time+delta}))};
 }
 
+export function keyframeTiming(animation,selection){
+ const keys=selectedKeys(animation,selection);if(!keys.length)throw new Error('Select keyframes to edit their timing.');
+ const start=keys.reduce((time,{key})=>Math.min(time,key.time),Infinity),end=keys.reduce((time,{key})=>Math.max(time,key.time),0);
+ return {start,duration:end-start,count:keys.length};
+}
+
+export function retimeKeyframes(animation,selection,start,duration){
+ const before=keyframeTiming(animation,selection);
+ if(!Number.isInteger(start)||!Number.isInteger(duration)||start<0||duration<0)throw new Error('Enter whole milliseconds for the selection timing.');
+ if(start+duration>animation.duration)throw new Error('The selection would exceed the animation duration. Extend the animation first.');
+ if((before.duration===0)!==(duration===0))throw new Error(before.duration===0?'Select keyframes at different times to scale their duration.':'The selection duration must be at least 1 ms.');
+ if(before.start===start&&before.duration===duration)return {animation,selection:structuredClone(selection)};
+ const at=time=>start+(before.duration?Math.round((time-before.start)*duration/before.duration):0);
+ const ids=new Set(selection.map(keyframeId)),next=structuredClone(animation);
+ for(const track of next.tracks){
+  const occupied=new Set();
+  for(const key of track.keys){
+   if(ids.has(keyframeId({...track,time:key.time})))key.time=at(key.time);
+   if(occupied.has(key.time))throw new Error('The timing would overlap keyframes on the same track. Nothing was changed.');
+   occupied.add(key.time);
+  }
+  track.keys.sort((a,b)=>a.time-b.time);
+ }
+ return {animation:checked(next),selection:selection.map(key=>({...key,time:at(key.time)}))};
+}
+
 export function deleteKeyframes(animation,selection){
  selectedKeys(animation,selection);
  const ids=new Set(selection.map(keyframeId)),next=structuredClone(animation);
