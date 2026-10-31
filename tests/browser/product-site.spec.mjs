@@ -20,7 +20,8 @@ for(const width of [390,768,1280])test(`product site works at ${width}px under t
  const images=page.locator('main img');for(const image of await images.all())await expect.poll(()=>image.evaluate(n=>n.complete&&n.naturalWidth>0)).toBe(true);
  const shot=page.locator('[data-lightbox]').first();await shot.click();const dialog=page.getByRole('dialog',{name:'Product screenshot'});await expect(dialog).toBeVisible();await expect(dialog.getByRole('img')).toBeVisible();await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await expect(shot).toBeFocused();
  await page.getByRole('link',{name:'Get Pixel Perfect',exact:false}).click();await expect(page.getByRole('heading',{name:'Get Pixel Perfect.',exact:true})).toBeInViewport();await expect(page.getByRole('link',{name:'Download Windows installer'})).toHaveAttribute('href',/^https:\/\/github.com\/ninefingerwoodshop-ops\/pixlprfct\/releases\/download\/.+\.exe$/);
- await page.getByText('Can I modify it or use my fork commercially?',{exact:true}).click();await expect(page.locator('details[open]')).toContainText('MIT or Apache 2.0');
+ await page.getByText('Can I sell or monetize a fork?',{exact:true}).click();await expect(page.locator('details[open]')).toContainText('Under the Community License, you cannot sell');
+ await page.getByRole('link',{name:'Meet the SVG animator',exact:false}).click();await expect(page.getByRole('heading',{name:'Meet the SVG animator.',exact:true})).toBeInViewport();
  await page.getByRole('link',{name:'Pixel Perfect home',exact:true}).click();await page.screenshot({path:info.outputPath(`product-site-${width}.png`),fullPage:true});expect(errors).toEqual([]);
 });
 

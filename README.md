@@ -1,6 +1,6 @@
 # Pixel Perfect (PixlPrfct)
 
-**[Product website & free downloads](https://ninefingerwoodshop-ops.github.io/pixlprfct/)** — screenshots, the project overview, and Windows preview downloads. Pixel Perfect is free and open source under your choice of MIT or Apache 2.0.
+**[Product website & free downloads](https://ninefingerwoodshop-ops.github.io/pixlprfct/)** — screenshots, the project overview, and Windows preview downloads. Pixel Perfect is free to use with source available under the [Community License](LICENSE). Create and sell your own work; do not sell the editor or software derived from its code.
 
 [Contribution guide](CONTRIBUTING.md) · [GitHub Releases](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases)
 
@@ -23,8 +23,8 @@ The app opens at **All projects** (`/`). Create a design, import a `.pixl` proje
 **New design → SVG Animation** opens a separate SVG animator with SVG import,
 property keyframes, path morphing, motion paths, custom Bézier easing, a docked timeline,
 playback, click/hover triggers, and animated SVG export with a live preview.
-Editable timelines save as `.pixl` projects. See [SVG Animation](docs/SVG_ANIMATION.md)
-for the workflow, verification, and current limitations. This addition is in the development source and is not yet included in desktop releases.
+Editable timelines save as `.pixl` projects. See the [SVG animator walkthrough](https://ninefingerwoodshop-ops.github.io/pixlprfct/#svg-animator)
+and [SVG Animation guide](docs/SVG_ANIMATION.md) for the workflow, verification, and current limitations. This addition is in the development source and is not yet included in desktop releases.
 
 The contextual inspector includes 18 blend modes, persistent aspect-ratio locking, text resizing and horizontal/vertical alignment buttons, arrow endpoint swapping, and selection-specific vector/image actions. These properties participate in Rust validation, undo, saved documents, and component overrides. Blend modes render in Canvas, SVG, and HTML/CSS; Plus darker is not yet supported. The selection-by-selection reference survey and remaining gaps are tracked in `inspector-parity.json`.
 
@@ -295,18 +295,25 @@ The right inspector uses compact paint rows (swatch, editable hex, opacity, visi
 
 ## License
 
-Licensed under either of
+Current source is offered under the [Pixel Perfect Community License 1.0](LICENSE).
+You may use the editor for paid client work and create or sell websites, apps,
+designs, and animations. The license explicitly permits normal exported code
+and animation players as part of your output; your output need not be public.
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+You may fork and modify the editor, but may not sell it, monetize a derived
+software product, or charge for hosted access. Shared and hosted versions must
+include their corresponding source at no charge under the same license.
 
-at your option.
+This is **source-available**, not OSI-approved open source. Earlier published
+versions, including Windows v0.1.0-alpha.1, keep their MIT / Apache 2.0 terms;
+this change cannot revoke those permissions. Third-party licenses are unchanged.
+See [licensing details and the transition boundary](docs/LICENSING.md).
 
 ### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+New intentional contributions are offered under the Community License. Submit
+only material you have authority to license and retain all third-party notices.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Figma file import
 

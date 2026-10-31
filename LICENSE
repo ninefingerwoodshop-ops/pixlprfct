@@ -1,0 +1,114 @@
+Pixel Perfect Community License 1.0
+Effective for versions first distributed under this license on or after 2026-10-31.
+Copyright (c) 2026 the PixlPrfct contributors.
+
+1. Scope and definitions
+
+"Software" means the Pixel Perfect / PixlPrfct code, documentation, and other
+project material expressly offered under this license. "Modified Software"
+means modifications of the Software and works incorporating its code, in source
+or compiled form. It includes renamed forks, ports, and embedded copies.
+"Licensor" means each copyright holder offering their material under this
+license. "You" means the person or organization exercising these permissions.
+
+"Output" means websites, applications, designs, artwork, animations, documents,
+and other work you create USING the Software, rather than by incorporating or
+modifying the editor's implementation. Output includes code and assets generated
+by the Software's ordinary export functions, including SVG animation players and
+HTML/CSS runtime helpers, when used to display, animate, or operate your exported
+work. Copying the editor, engine, server, or other implementation into a product
+is not Output merely because you also used the editor to create that product.
+
+2. Permission to use, study, and change
+
+Subject to these terms, each Licensor grants you a worldwide, non-exclusive,
+royalty-free copyright license to use, run, study, copy, modify, and distribute
+their Software, and to make it available over a network. You may use it privately,
+within a business, for paid client work, or to create commercial products. You
+may maintain private modifications. Distribution and hosted access must also
+meet sections 4 and 5. These permissions continue while you comply with this
+license; no later license change withdraws permissions already granted here.
+
+3. Your work is yours to commercialize
+
+This license does not restrict selling, licensing, hosting, charging for access
+to, or otherwise monetizing your Output. It does not require you to disclose
+Output's source code or apply this license to Output. Licensors claim no rights
+in your original Output by reason of your using the Software.
+
+To the extent exported Output contains Licensor-owned code or assets generated
+by ordinary export functions as described in section 1, you may use, reproduce,
+modify, distribute, sublicense, and sell that material as part of your Output,
+without the restrictions in sections 4 and 5. This exception does not cover
+extracting Software implementation to create another editor, engine, or service.
+Your own and third-party content remain subject to their respective rights.
+
+4. Do not sell or monetize the Software
+
+You may not sell, rent, sublicense for payment, or otherwise monetize the
+Software or Modified Software. This includes charging for copies, downloads,
+distribution, licenses, features, updates, or access; paid hosted or managed
+versions; advertising-funded access to the Software; and including its code in a
+paid product or paid bundle. Renaming it, adding functionality, or compiling it
+does not remove these restrictions. Do not impose a required donation or other
+consideration in place of a price.
+
+This restriction concerns the Software and Modified Software, not Output or
+commercial work performed using them. You may pay your own infrastructure
+provider to run the Software for yourself or your organization. Doing so does
+not authorize reselling access to others.
+
+5. Keep shared versions free and source-available
+
+When you distribute the Software or Modified Software, or provide others access
+to a hosted version, provide those recipients or users with the complete
+corresponding source at no charge under this same license. Provide it with the
+Software or through a conspicuous, freely accessible download available for as
+long as you distribute or host that version. Corresponding source includes the
+preferred form for modification, your modifications, and the build and install
+scripts needed to reproduce that version. It does not require passwords,
+private user data, or unmodified general-purpose build tools.
+
+Include this license and retain copyright, license, and attribution notices.
+Identify your modifications and do not imply they are the official project.
+Do not relicense covered material under terms allowing paid or closed-source
+distribution, or add restrictions preventing recipients from exercising the
+permissions in this license. Independent works merely used alongside the
+Software are not brought under this license by that fact alone.
+
+6. Existing and third-party rights
+
+This license does not revoke or narrow permissions already granted for earlier
+versions under MIT, Apache 2.0, or another license. It does not override separate
+licenses on dependencies, bundled third-party material, or identifiable
+previously licensed code. Keep their required notices and comply with their
+licenses. The historical notices supplied with this distribution (in
+docs/licenses/legacy in the source tree) are preserved for previously
+distributed material; they are not an alternative license for new
+material expressly offered only under this license.
+
+7. Contributions and trademarks
+
+If you intentionally submit a contribution for inclusion in the Software under
+this license, you offer your contribution under these same terms and represent
+that you have authority to do so. You retain ownership of your contribution.
+No trademark rights or right to imply endorsement are granted.
+
+8. Termination
+
+Permissions under this license terminate if you violate its terms. They are
+reinstated if you stop the violation and remedy it within 30 days after receiving
+your first written notice of that violation from a Licensor. Rights of recipients
+who remain in compliance are not terminated by your violation.
+
+9. Warranty and liability
+
+To the extent permitted by law, the Software is provided "AS IS", without
+warranties of any kind, including merchantability, fitness for a particular
+purpose, title, or noninfringement. Licensors are not liable for claims, damages,
+or other liability arising from the Software or its use. Nothing in this
+license limits rights or liabilities that applicable law does not permit to be
+limited.
+
+This is a custom source-available license, not an OSI-approved open-source
+license. The restrictions on monetizing the Software are intentional.

@@ -1,9 +1,11 @@
 # Contributing to Pixel Perfect
 
-Pixel Perfect (the `pixlprfct` repository) is free and open source. Fork it,
-experiment, and adapt it to your workflow. You may use, modify, and redistribute
-your fork, including commercially, under your choice of the [MIT](LICENSE-MIT)
-or [Apache 2.0](LICENSE-APACHE) license. Preserve the applicable notices and terms.
+Pixel Perfect is free to use and source-available under the
+[Community License](LICENSE). You can use it for commercial design work, study
+its code, and maintain a fork. Do not sell the editor, derived software, or
+hosted access. Shared versions must include their corresponding source for free
+under the same terms. See [the licensing guide](docs/LICENSING.md), including the
+unchanged permissions on earlier MIT / Apache 2.0 versions and third-party code.
 
 ## Changes to the official project
 
@@ -28,8 +30,10 @@ For bugs and feature requests, open a GitHub issue with reproduction steps and
 the version you used. Report vulnerabilities privately as described in
 [SECURITY.md](SECURITY.md). Do not include credentials or private design files.
 
-Unless explicitly stated otherwise, intentional contributions are dual-licensed
-under the project's existing MIT / Apache 2.0 terms, without additional terms.
+New intentional contributions are offered under the Community License. You must
+have authority to grant those permissions; ownership stays with the contributor.
+Identify third-party material and retain its separate license and notices.
+Previously accepted contributions keep the permissions already granted.
 
 ## Product site
 
