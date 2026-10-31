@@ -224,12 +224,12 @@ test('read-only shared timelines allow grouped selection and copy without changi
  expect(await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))).toEqual(names);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();expect(writes).toBe(0);
 });
 
-test.describe('desktop policy',()=>{
+for(const origin of ['https://desktop-preview.test','http://127.0.0.1:4197'])test.describe('desktop policy at '+origin,()=>{
  // An intercepted HTTPS origin models the secure desktop protocol without
  // Chromium's separate localhost/private-network permission rules.
- test.use({baseURL:'https://desktop-preview.test'});
+ test.use({baseURL:origin});
  test('interactive export preview works under the packaged desktop content security policy',async({page})=>{
- await page.route('https://desktop-preview.test/**',async route=>{
+ await page.route(origin+'/**',async route=>{
   const pathname=new URL(route.request().url()).pathname,types={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',woff2:'font/woff2'};
   if(!pathname.startsWith('/editor/'))return route.fulfill({status:404,body:''});
   try{const body=await readFile(new URL('../../web/'+pathname.slice(8),import.meta.url));await route.fulfill({body,contentType:types[pathname.split('.').at(-1)]??'application/octet-stream',headers:{'content-security-policy':desktopPolicy.contentSecurityPolicy('pixlprfct://app'+pathname)}});}catch{return route.fulfill({status:404,body:''});}

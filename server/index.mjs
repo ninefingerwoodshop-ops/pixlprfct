@@ -37,7 +37,12 @@ export async function startServer(config,{migrate=false,deliver}={}) {
      if(!relative){res.writeHead(404).end('Not found');return;}
      const file=path.resolve(root,relative);
      if(!file.startsWith(root+path.sep)||!types[path.extname(file)]){res.writeHead(404).end('Not found');return;}
-     const body=await readFile(file);res.setHeader('Content-Type',types[path.extname(file)]);res.setHeader('Cache-Control','no-store');res.end(req.method==='HEAD'?undefined:body);
+     const body=await readFile(file);
+     if(url.pathname==='/editor/svg-animation-preview.html'){
+       res.setHeader('X-Frame-Options','SAMEORIGIN');
+       res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'self'; form-action 'none'");
+     }
+     res.setHeader('Content-Type',types[path.extname(file)]);res.setHeader('Cache-Control','no-store');res.end(req.method==='HEAD'?undefined:body);
    }catch(error){if(!res.headersSent)res.writeHead(error.code==='ENOENT'?404:500,{'Content-Type':'text/plain'});res.end('Unable to complete request.');}
  });
  server.requestTimeout=30000;server.headersTimeout=10000;

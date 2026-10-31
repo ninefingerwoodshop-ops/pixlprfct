@@ -211,11 +211,12 @@ and [selection tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-
 Coverage includes cross-track selection, marquee, group movement, relative-time
 copy/paste, collisions, duration boundaries, one-step undo/redo, persistence,
 source replacement, restored motion/morph tracks and read-only cloud gates.
-The desktop-policy regression covers interactive preview playback and isolation
+The desktop-policy regressions cover secure and loopback origins, interactive
+preview playback and isolation
 from the parent editor; native Mac runtime inspection confirms the same workflow
 through the application protocol.
 
-Local verification on 2026-10-31: 26 SVG browser cases and 17 SVG model/controller
+Local verification on 2026-10-31: 27 SVG browser cases and 17 SVG model/controller
 cases pass. Changed-code lint has zero errors and one existing navigation warning.
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

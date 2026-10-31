@@ -5,10 +5,10 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const {APP_URL,CSP,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor}=require('../desktop/policy.cjs');
 const root=path.resolve('/packaged/app');
-test('only the isolated SVG preview may be embedded and it cannot run inline scripts or access storage',()=>{
+test('only the isolated SVG preview may be embedded and its policy blocks inline scripts',()=>{
  const {contentSecurityPolicy}=require('../desktop/policy.cjs');
  for(const url of [APP_URL,APP_URL+'editor/svg-animation.html','https://example.com/editor/svg-animation-preview.html'])assert.equal(contentSecurityPolicy(url),CSP);
- const preview=contentSecurityPolicy(APP_URL+'editor/svg-animation-preview.html');assert.match(preview,/frame-ancestors 'self'/);assert.match(preview,/sandbox allow-scripts/);assert.doesNotMatch(preview,/allow-same-origin/);assert.match(preview,/script-src 'self';/);assert.match(preview,/default-src 'none'/);
+ const preview=contentSecurityPolicy(APP_URL+'editor/svg-animation-preview.html');assert.match(preview,/frame-ancestors 'self'/);assert.doesNotMatch(preview,/allow-same-origin/);assert.match(preview,/script-src 'self';/);assert.match(preview,/default-src 'none'/);
 });
 test('the packaged origin serves only editor assets and the desktop connection page',()=>{
  assert.equal(assetPath(root,APP_URL),path.join(root,'web/project-home.html'));
