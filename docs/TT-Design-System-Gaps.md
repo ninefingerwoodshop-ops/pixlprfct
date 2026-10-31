@@ -396,3 +396,12 @@ acceptance requirements. Local trials need neither SMTP nor an update service.
 
 These are local source changes; the installed alpha.14 app and existing team
 database were not replaced or reconfigured by this follow-up.
+
+- Cross-environment follow-up (2026-10-31, source verification): the completed
+  final GitHub Linux browser run passed 48 functional scenarios but the 727-layer
+  latency scenario measured 142–148.7 ms p95; macOS measured 219.3–221.4 ms. Both
+  exceed the 100 ms target. macOS passed 47 scenarios and the library import
+  scenario passed on retry. Local serial evidence above remains valid; B33 stays
+  open for broader performance.
+  Automatic CI workflows and required status checks were removed at the
+  owner’s request. This policy change does not resolve the performance gap.

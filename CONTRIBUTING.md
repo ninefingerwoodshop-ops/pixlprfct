@@ -10,16 +10,17 @@ or [Apache 2.0](LICENSE-APACHE) license. Preserve the applicable notices and ter
 1. Fork the repository and create a branch for your change.
 2. Follow [AGENTS.md](AGENTS.md), including the interface reference requirements.
 3. Explain the problem, the resulting behavior, and how you verified it in a PR.
-4. Run the relevant checks. The full checks include `npm run build`, `npm test`,
+4. Run the relevant checks locally. The full checks include `npm run build`, `npm test`,
    `npm run lint`, `npm run typecheck`, `npm run test:browser`,
    `node scripts/generate-editor-api.mjs --check`, `cargo fmt --all --check`,
    and `cargo clippy --all-targets --all-features -- -D warnings`.
 5. Wait for maintainer review. Submitting a PR does not grant write or merge access.
 
 `@ninefingerwoodshop-ops` owns every path through `.github/CODEOWNERS`. The main
-branch requires a pull request, owner review, resolved conversations, and passing
-required checks. New commits dismiss stale approvals. Force pushes and deletion
-of main are blocked. The repository owner retains the existing administrator
+branch requires a pull request, owner review, and resolved conversations.
+Automatic CI and required status checks are disabled; GitHub Pages publishing
+and manually requested desktop packages remain available. New commits dismiss
+stale approvals. Force pushes and deletion of main are blocked. The repository owner retains the existing administrator
 override through a pull request for owner-authored changes; there is no direct
 push exception. External contributors cannot use that override.
 
