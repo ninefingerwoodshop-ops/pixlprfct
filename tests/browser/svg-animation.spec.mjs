@@ -161,3 +161,63 @@ test('read-only cloud export previews temporary interaction settings without sav
  await page.route('**/api/documents/'+id+'**',route=>{const request=route.request();if(request.method()!=='GET')writes++;if(new URL(request.url()).pathname.endsWith('/editing'))return route.fulfill({json:{editingMode:'handoff',documentRevision:1,canEdit:false,serverNow:Date.now(),lease:null}});return route.fulfill({json:{id,body,revision:1,collaboration:true,can_edit:false}});});
  await page.goto('/editor/svg-animation.html?cloud='+id+'&workspace=team%3Asvg');await expect(page.getByRole('button',{name:'Start editing',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Export',exact:true}).click();await chooseExport(page,'Animation start','On click');await expect(page.getByRole('button',{name:'Save settings',exact:true})).toBeDisabled();const output=await downloadSvg(page);expect(output).toContain('<script');expect(writes).toBe(0);await page.getByRole('button',{name:'Export',exact:true}).click();await expect(page.getByRole('button',{name:'Animation start: On load',exact:true})).toBeVisible();
 });
+
+test('timeline multi-selection copies relative timing, moves together and undoes each group edit',async({page})=>{
+ await create(page,'Grouped keyframes');await page.getByRole('button',{name:'Try an example'}).click();
+ const key=name=>page.getByRole('button',{name,exact:true}),timeline=page.getByLabel('Keyframes timeline',{exact:true}),selected=page.locator('.timeline-keyframe[aria-pressed=true]');
+ await key('Satellite Rotation keyframe at 0 ms').click();await key('Core Scale X keyframe at 1500 ms').click({modifiers:['ControlOrMeta']});await expect(selected).toHaveCount(2);
+ await timeline.press('Shift+ArrowRight');await expect(key('Satellite Rotation keyframe at 100 ms')).toBeVisible();await expect(key('Core Scale X keyframe at 1600 ms')).toBeVisible();await expect(selected).toHaveCount(2);
+ const before=await saved(page);await timeline.press('ControlOrMeta+c');await field(page,'Current time','500');await timeline.press('ControlOrMeta+v');await expect(key('Satellite Rotation keyframe at 500 ms')).toBeVisible();await expect(key('Core Scale X keyframe at 2000 ms')).toBeVisible();await expect(selected).toHaveCount(2);
+ const pasted=await saved(page);expect(pasted.svg_animation.tracks[1].keys.find(k=>k.time===2000).easing).toBe('ease-in-out');
+ await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(before);await key('Redo').click();await expect.poll(()=>saved(page)).toEqual(pasted);
+ await key('Satellite Rotation keyframe at 500 ms').click();await key('Core Scale X keyframe at 2000 ms').click({modifiers:['Shift']});await timeline.press('Delete');await expect(key('Satellite Rotation keyframe at 500 ms')).toHaveCount(0);await expect(key('Core Scale X keyframe at 2000 ms')).toHaveCount(0);await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(pasted);
+ await page.reload();await expect(page.getByLabel('Document name',{exact:true})).toHaveValue('Grouped keyframes');expect(await saved(page)).toEqual(pasted);
+});
+
+test('timeline group dragging preserves spacing, cancels on Escape, and clamps at the duration',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();
+ const satellite=page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}),core=page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true});
+ await satellite.click();await core.click({modifiers:['Shift']});const before=await saved(page),bounds=await satellite.boundingBox();
+ await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+100,bounds.y+bounds.height/2,{steps:5});await page.keyboard.press('Escape');await page.mouse.up();expect(await saved(page)).toEqual(before);await expect(page.locator('.timeline-keyframe[aria-pressed=true]')).toHaveCount(2);
+ await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+100,bounds.y+bounds.height/2,{steps:5});await page.mouse.up();
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys[0].time).toBeGreaterThan(0);const moved=(await saved(page)).svg_animation,delta=moved.tracks[0].keys[0].time;expect(moved.tracks[1].keys[1].time).toBe(1500+delta);expect(moved.tracks[0].keys[1].time).toBe(3000);
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await page.getByRole('button',{name:'Satellite Rotation keyframe at 3000 ms',exact:true}).click();await core.click({modifiers:['ControlOrMeta']});await page.getByLabel('Keyframes timeline',{exact:true}).press('Shift+ArrowRight');expect(await saved(page)).toEqual(before);
+ const latest=await core.boundingBox();await page.mouse.move(latest.x+latest.width/2,latest.y+latest.height/2);await page.mouse.down();await page.mouse.move(latest.x-100,latest.y+latest.height/2,{steps:4});await page.keyboard.press('ControlOrMeta+z');await page.mouse.up();
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(0);await expect(page.locator('#svg-notice')).toContainText('changed during the drag');
+});
+
+test('timeline drag selection, modifier toggles, and select-all leave artwork unchanged',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);const before=await saved(page),selected=page.locator('.timeline-keyframe[aria-pressed=true]');
+ const a=await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).boundingBox(),b=await page.getByRole('button',{name:'Core Scale X keyframe at 0 ms',exact:true}).boundingBox();
+ await page.mouse.move(a.x-5,a.y-5);await page.mouse.down();await page.mouse.move(b.x+b.width+5,b.y+b.height+5,{steps:6});await page.mouse.up();await expect(selected).toHaveCount(2);
+ await page.getByRole('button',{name:'Core Scale X keyframe at 0 ms',exact:true}).click({modifiers:['Shift']});await expect(selected).toHaveCount(1);
+ const timeline=page.getByLabel('Keyframes timeline',{exact:true});await timeline.press('ControlOrMeta+a');await expect(selected).toHaveCount(5);await timeline.press('Escape');await expect(selected).toHaveCount(0);expect(await saved(page)).toEqual(before);
+});
+
+test('timeline context menu restores deleted tracks and rejects conflicting or oversized paste',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();const timeline=page.getByLabel('Keyframes timeline',{exact:true}),menu=page.getByRole('menu',{name:'Keyframe actions'});
+ await page.locator('.timeline-track-label').filter({hasText:/^Scale X$/}).click();await expect(page.locator('.timeline-keyframe[aria-pressed=true]')).toHaveCount(3);await timeline.press('Shift+F10');await expect(menu).toBeVisible();await menu.getByRole('menuitem',{name:'Copy keyframes',exact:false}).click();const before=await saved(page);
+ await timeline.press('Delete');await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(1);await field(page,'Current time','0');await timeline.press('Shift+F10');await menu.getByRole('menuitem',{name:'Paste keyframes',exact:false}).click();await expect.poll(()=>saved(page)).toEqual(before);
+ await timeline.press('ControlOrMeta+v');await expect(page.locator('#svg-notice')).toContainText('already a keyframe');expect(await saved(page)).toEqual(before);
+ await field(page,'Current time','1');await timeline.press('ControlOrMeta+v');await expect(page.locator('#svg-notice')).toContainText('duration');expect(await saved(page)).toEqual(before);
+ await field(page,'Duration','7000');await field(page,'Current time','3500');await timeline.press('ControlOrMeta+v');await expect.poll(async()=>(await saved(page)).svg_animation.tracks[1].keys.map(k=>k.time)).toEqual([0,1500,3000,3500,5000,6500]);
+});
+
+test('timeline clipboard is reset when SVG artwork is replaced and double-click still adds keys',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();const timeline=page.getByLabel('Keyframes timeline',{exact:true});
+ await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).press('Enter');await timeline.press('ControlOrMeta+c');
+ const row=page.locator('.timeline-track:not(.timeline-layer-row)').first(),bounds=await row.boundingBox();await row.dblclick({position:{x:bounds.width/3,y:14}});await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys.length).toBe(3);
+ await upload(page);await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(0);const before=await saved(page);await timeline.press('ControlOrMeta+v');await expect(page.locator('#svg-notice')).toContainText('Copy timeline keyframes first');expect(await saved(page)).toEqual(before);
+});
+
+test('read-only shared timelines allow grouped selection and copy without changing keyframes',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);const body=JSON.stringify(await saved(page)),id='00000000-0000-4000-8000-000000000004';let writes=0;
+ await page.route('**/api/documents/'+id+'**',route=>{const request=route.request();if(request.method()!=='GET')writes++;if(new URL(request.url()).pathname.endsWith('/editing'))return route.fulfill({json:{editingMode:'handoff',documentRevision:1,canEdit:false,serverNow:Date.now(),lease:null}});return route.fulfill({json:{id,body,revision:1,collaboration:true,can_edit:false}});});
+ await page.goto('/editor/svg-animation.html?cloud='+id+'&workspace=team%3Asvg');await expect(page.getByRole('button',{name:'Start editing',exact:true})).toBeDisabled();
+ const timeline=page.getByLabel('Keyframes timeline',{exact:true}),keys=page.locator('.timeline-keyframe'),names=await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')));
+ await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).click();await page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true}).click({modifiers:['Shift']});await timeline.press('ControlOrMeta+c');await expect(page.getByRole('status').filter({hasText:'2 keyframes copied'})).toBeVisible();
+ await timeline.press('ArrowRight');await expect(page.locator('#svg-notice')).toContainText('read-only');await timeline.press('Delete');await timeline.press('ControlOrMeta+v');
+ await timeline.press('Shift+F10');const menu=page.getByRole('menu',{name:'Keyframe actions'});await expect(menu.getByRole('menuitem',{name:'Copy keyframes',exact:false})).toBeEnabled();await expect(menu.getByRole('menuitem',{name:'Paste keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Delete keyframes',exact:false})).toBeDisabled();await menu.press('Escape');
+ const key=page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}),bounds=await key.boundingBox();await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+100,bounds.y+bounds.height/2,{steps:5});await page.mouse.up();
+ expect(await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))).toEqual(names);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();expect(writes).toBe(0);
+});
