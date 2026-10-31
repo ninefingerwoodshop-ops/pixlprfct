@@ -1,7 +1,7 @@
 module.exports={
  appId:process.env.PIXL_DESKTOP_APP_ID||'app.pixlprfct.desktop',productName:'PixlPrfct',
  directories:{app:'.desktop/app',output:'releases/desktop',buildResources:'.desktop/icons'},
- files:['main.cjs','updates.cjs','update-config.json','design-files.cjs','policy.cjs','preferences.cjs','mcp-discovery.cjs','preload*.cjs','desktop/**/*','web/**/*','package.json','LICENSE-*','PRIVACY.md','CODE_SIGNING.md','!node_modules/**/*','!**/.DS_Store','!**/*.map'],asar:true,npmRebuild:false,publish:null,
+ files:['main.cjs','updates.cjs','update-config.json','design-files.cjs','policy.cjs','preferences.cjs','mcp-discovery.cjs','preload*.cjs','desktop/**/*','web/**/*','package.json','LICENSE','LICENSING.md','licenses/**/*','PRIVACY.md','CODE_SIGNING.md','!node_modules/**/*','!**/.DS_Store','!**/*.map'],asar:true,npmRebuild:false,publish:null,
  artifactName:'PixlPrfct-${version}-${os}-${arch}.${ext}',
  electronFuses:{runAsNode:false,enableNodeOptionsEnvironmentVariable:false,enableNodeCliInspectArguments:false,enableEmbeddedAsarIntegrityValidation:true,onlyLoadAppFromAsar:true,grantFileProtocolExtraPrivileges:false},
  fileAssociations:[{ext:'pixl',name:'PixlPrfct design',role:'Editor',mimeType:'application/vnd.pixlprfct+json'}],

@@ -15,6 +15,8 @@ const keep=source=>{const name=path.basename(source);return !name.startsWith('.'
 await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
 await cp(web,path.join(out,'editor'),{recursive:true,filter:source=>source===web||keep(source)});
 await cp(path.join(web,'project-home.html'),path.join(out,'index.html'));
+await cp(path.join(root,'LICENSE'),path.join(out,'LICENSE'));
+await cp(path.join(root,'docs/licenses'),path.join(out,'licenses'),{recursive:true});
 // web/static-host.js reads this mark and hides what needs a server.
 const pages=[path.join(out,'index.html'),...(await readdir(path.join(out,'editor'))).filter(name=>name.endsWith('.html')).map(name=>path.join(out,'editor',name))];
 for(const page of pages){const html=await readFile(page,'utf8');if(!/<html\b/i.test(html))throw new Error(page+' has no <html> tag to mark.');await writeFile(page,html.replace(/<html\b/i,'<html data-host="static"'));}

@@ -5,10 +5,12 @@ const root=path.resolve(import.meta.dirname,'../..'),target=path.join(root,'.des
 await rm(target,{recursive:true,force:true});await mkdir(target,{recursive:true});
 await cp(path.join(root,'web'),path.join(target,'web'),{recursive:true,filter:source=>!source.endsWith('.DS_Store')});
 for(const file of ['main.cjs','updates.cjs','design-files.cjs','policy.cjs','preferences.cjs','mcp-discovery.cjs','preload.cjs','preload-remote.cjs'])await cp(path.join(root,'desktop',file),path.join(target,file));
-for(const file of ['LICENSE-MIT','LICENSE-APACHE','PRIVACY.md','CODE_SIGNING.md'])await cp(path.join(root,file),path.join(target,file));
+for(const file of ['LICENSE','PRIVACY.md','CODE_SIGNING.md'])await cp(path.join(root,file),path.join(target,file));
+await cp(path.join(root,'docs/licenses'),path.join(target,'licenses'),{recursive:true});
+await writeFile(path.join(target,'LICENSING.md'),(await readFile(path.join(root,'docs/LICENSING.md'),'utf8')).replace('(../LICENSE)','(LICENSE)'));
 await mkdir(path.join(target,'desktop'));for(const file of ['connect.html','connect.css','connect.js'])await cp(path.join(root,'desktop',file),path.join(target,'desktop',file));
 const pkg=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
-await writeFile(path.join(target,'package.json'),JSON.stringify({name:'pixlprfct-desktop',productName:'PixlPrfct',version:pkg.version,description:'Free design software for local and shared workspaces',author:'PixlPrfct contributors',private:true,main:'main.cjs',dependencies:{}},null,2)+'\n');
+await writeFile(path.join(target,'package.json'),JSON.stringify({name:'pixlprfct-desktop',productName:'PixlPrfct',version:pkg.version,description:'Free design software for local and shared workspaces',author:'PixlPrfct contributors',license:pkg.license,private:true,main:'main.cjs',dependencies:{}},null,2)+'\n');
 await writeFile(path.join(target,'update-config.json'),JSON.stringify({release:false,feed:null}));
 await readFile(path.join(target,'web/pkg/pixlprfct_core_bg.wasm'));
 const icons=path.join(root,'.desktop/icons');await mkdir(icons,{recursive:true});
