@@ -58,9 +58,29 @@ Right-click the timeline (or Shift+F10) for Copy, Paste, Delete and Select all.
 
 The clipboard belongs to this open project tab and pastes onto the original
 elements/properties. It is cleared on reload or changes to the source SVG. It
-does not support cross-project or cross-element copying. The right inspector
-edits the active key's easing individually. Read-only shared files allow
+does not support cross-project or cross-element copying. Read-only shared files allow
 selection and copying but block moves, pastes and deletions.
+
+## Easing a selection
+
+This is a source update after Windows v0.1.1-alpha.15; that download still edits
+one key's easing at a time.
+
+Select keys across one or more tracks, then use **Keyframe easing** in the right
+inspector. A preset, numeric Bézier edit, or handle edit applies to every selected
+key without changing its time or value. Each committed edit is one undo step.
+Equivalent preset/custom curves share one editor. Different curves show **Mixed**;
+choose a preset or **Custom** before editing a common curve. Custom starts with
+the active key's curve. The inspector shows the number of affected keys.
+
+Easing applies from each key toward its next key on the same track. A final key
+can store easing, but it has no outgoing segment until another key follows it.
+**Delete selected keyframes** removes the whole selection in one undo step.
+Escape cancels a curve drag; undo or a changed selection prevents an old drag
+from overwriting newer work. Read-only files show disabled curve controls.
+The curves remain in native `.pixl` saves and animated SVG exports.
+Editing an individual property value or adding an animator clears the grouped
+selection and returns the inspector to that single key.
 
 ## Motion paths
 
@@ -216,7 +236,12 @@ preview playback and isolation
 from the parent editor; native Mac runtime inspection confirms the same workflow
 through the application protocol.
 
-Local verification on 2026-10-31: 27 SVG browser cases and 17 SVG model/controller
+Group-easing checks cover mixed values, presets, custom numeric and keyboard
+edits, drag/cancel/undo, stale drags, grouped deletion, export, reopening and
+read-only controls. Proofs: `.local/svg-animation/group-easing-mixed.png` and
+`group-easing-workspace.png`.
+
+Local verification on 2026-10-31: 29 SVG browser cases and 19 SVG model/controller
 cases pass. Changed-code lint has zero errors and one existing navigation warning.
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

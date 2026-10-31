@@ -2,9 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newSvgAnimation,putKey,setMotionPath} from '../web/svg-animation-model.js';
 import {morphPath,moveMorphPoint} from '../web/svg-animation-morph.js';
-import {keyframeMoveDelta,moveKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes} from '../web/svg-animation-keyframes.js';
+import {keyframeMoveDelta,moveKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
 const ref=(element,property,time)=>({element,property,time});
 function example(){let a=newSvgAnimation().svg_animation;for(const [id,prop,keys] of [['one','x',[[0,0],[1000,40],[2000,80]]],['two','opacity',[[0,1],[500,.5],[2000,0]]]])for(const [time,value] of keys)a=putKey(a,id,prop,time,value,[.2,.7,.7,.9]);return a;}
+
+test('group easing updates only selected curves, preserves timing and values, and isolates arrays',()=>{
+ const a=example(),before=structuredClone(a),keys=[ref('one','x',1000),ref('two','opacity',500)],curve=[.1,.2,.3,.4];
+ const next=setKeyframeEasing(a,keys,curve),expected=structuredClone(a);expected.tracks[0].keys[1].easing=[...curve];expected.tracks[1].keys[1].easing=[...curve];
+ assert.deepEqual(next,expected);assert.deepEqual(a,before);assert.deepEqual(keyframeEasing(next,keys),{value:curve,mixed:false,count:2});
+ assert.equal(setKeyframeEasing(next,keys,curve),next);curve[0]=.9;next.tracks[0].keys[1].easing[1]=.8;assert.deepEqual(next.tracks[1].keys[1].easing,[.1,.2,.3,.4]);
+});
+
+test('group easing distinguishes mixed curves and rejects invalid or stale selections atomically',()=>{
+ let a=example();const keys=[ref('one','x',0),ref('two','opacity',0)];a=setKeyframeEasing(a,[keys[0]],'linear');assert.equal(keyframeEasing(a,keys).mixed,true);
+ a=setKeyframeEasing(a,[keys[1]],[0,0,1,1]);assert.deepEqual(keyframeEasing(a,[...keys,keys[0]]),{value:'linear',mixed:false,count:2});
+ const before=structuredClone(a);
+ for(const value of ['unknown',[-.1,0,1,1],[0,0,1,NaN],[0,0,1]])assert.throws(()=>setKeyframeEasing(a,keys,value),/valid/);
+ assert.throws(()=>setKeyframeEasing(a,[...keys,ref('missing','x',0)],'ease'),/changed/);assert.throws(()=>setKeyframeEasing(a,[],'ease'),/Select/);assert.deepEqual(a,before);
+});
 
 test('group retiming preserves offsets, values and easing across tracks and clamps as a unit',()=>{
  const a=example(),before=structuredClone(a),selected=[ref('one','x',1000),ref('two','opacity',500)];

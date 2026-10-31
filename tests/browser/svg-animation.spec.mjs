@@ -218,10 +218,38 @@ test('read-only shared timelines allow grouped selection and copy without changi
  await page.goto('/editor/svg-animation.html?cloud='+id+'&workspace=team%3Asvg');await expect(page.getByRole('button',{name:'Start editing',exact:true})).toBeDisabled();
  const timeline=page.getByLabel('Keyframes timeline',{exact:true}),keys=page.locator('.timeline-keyframe'),names=await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')));
  await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).click();await page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true}).click({modifiers:['Shift']});await timeline.press('ControlOrMeta+c');await expect(page.getByRole('status').filter({hasText:'2 keyframes copied'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Keyframe easing: Mixed',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'Delete selected keyframes',exact:true})).toBeDisabled();
  await timeline.press('ArrowRight');await expect(page.locator('#svg-notice')).toContainText('read-only');await timeline.press('Delete');await timeline.press('ControlOrMeta+v');
  await timeline.press('Shift+F10');const menu=page.getByRole('menu',{name:'Keyframe actions'});await expect(menu.getByRole('menuitem',{name:'Copy keyframes',exact:false})).toBeEnabled();await expect(menu.getByRole('menuitem',{name:'Paste keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Delete keyframes',exact:false})).toBeDisabled();await menu.press('Escape');
  const key=page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}),bounds=await key.boundingBox();await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+100,bounds.y+bounds.height/2,{steps:5});await page.mouse.up();
  expect(await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))).toEqual(names);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();expect(writes).toBe(0);
+ await timeline.press('Escape');await page.getByRole('button',{name:'Core Scale X keyframe at 0 ms',exact:true}).click();await page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true}).click({modifiers:['Shift']});await expect(page.getByLabel('Easing X1',{exact:true})).toBeDisabled();await expect(page.getByRole('slider',{name:'Easing handle 1',exact:true})).toHaveAttribute('aria-disabled','true');expect(writes).toBe(0);
+});
+
+test('group easing resolves mixed curves, updates only selected keys, exports and reopens',async({page})=>{
+ await create(page,'Group easing');await page.getByRole('button',{name:'Try an example'}).click();
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);
+ const key=name=>page.getByRole('button',{name,exact:true}),selectPair=async()=>{await key('Satellite Rotation keyframe at 0 ms').click();await key('Core Scale X keyframe at 0 ms').click({modifiers:['Shift']});};
+ const before=await saved(page);await selectPair();await expect(key('Keyframe easing: Mixed')).toBeVisible();await expect(page.getByLabel('Easing X1',{exact:true})).toHaveCount(0);expect(await saved(page)).toEqual(before);
+ await key('Keyframe easing: Mixed').click();await page.getByRole('option',{name:'Custom',exact:true}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.map(t=>t.keys[0].easing)).toEqual([[.42,0,.58,1],[.42,0,.58,1]]);
+ await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(before);await selectPair();await key('Keyframe easing: Mixed').click();await page.getByRole('option',{name:'Ease out',exact:true}).click();
+ const expected=structuredClone(before);for(const track of expected.svg_animation.tracks)track.keys[0].easing='ease-out';await expect.poll(()=>saved(page)).toEqual(expected);await expect(page.locator('.timeline-keyframe[aria-pressed=true]')).toHaveCount(2);
+ await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(before);await key('Redo').click();await expect.poll(()=>saved(page)).toEqual(expected);
+ await key('Export').click();const download=page.waitForEvent('download');await key('Download SVG').click();const exported=await readFile(await (await download).path(),'utf8');expect((exported.match(/keySplines="0 0 0.58 1/g)??[]).length).toBe(2);
+ await page.reload();await selectPair();await expect(key('Keyframe easing: Ease out')).toBeVisible();expect(await saved(page)).toEqual(expected);
+});
+
+test('group curve edits, cancellation, deletion and stale drags remain single undo operations',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();
+ const key=name=>page.getByRole('button',{name,exact:true}),selectPair=async()=>{await key('Core Scale X keyframe at 0 ms').click();await key('Core Scale X keyframe at 1500 ms').click({modifiers:['Shift']});},curves=async()=>(await saved(page)).svg_animation.tracks[1].keys.slice(0,2).map(k=>k.easing);
+ await selectPair();const handle=page.getByRole('slider',{name:'Easing handle 1',exact:true});await handle.press('ArrowRight');await expect.poll(curves).toEqual([[.43,0,.58,1],[.43,0,.58,1]]);await expect(handle).toBeFocused();
+ await field(page,'Easing X1','.2');await expect.poll(curves).toEqual([[.2,0,.58,1],[.2,0,.58,1]]);const before=await saved(page),box=await handle.boundingBox();
+ const startDrag=async()=>{await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+30,box.y-20,{steps:5});};
+ await startDrag();await page.keyboard.press('Escape');await page.mouse.up();expect(await saved(page)).toEqual(before);
+ await startDrag();await page.mouse.up();await expect.poll(async()=>(await curves())[0][0]).toBeGreaterThan(.2);const edited=await curves();expect(edited[0]).toEqual(edited[1]);await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(before);
+ await selectPair();await startDrag();await page.keyboard.press('ControlOrMeta+z');await page.mouse.up();await expect.poll(curves).toEqual([[.43,0,.58,1],[.43,0,.58,1]]);
+ await selectPair();const intact=await saved(page);await key('Delete selected keyframes').click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks[1].keys.map(k=>k.time)).toEqual([3000]);await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(intact);
+ await selectPair();await field(page,'Scale X','1.2');await expect(page.locator('.timeline-keyframe[aria-pressed=true]')).toHaveCount(0);await expect(key('Delete keyframe')).toBeVisible();await field(page,'Easing Y1','.3');await expect.poll(curves).toEqual([[.43,0,.58,1],[.43,.3,.58,1]]);
 });
 
 for(const origin of ['https://desktop-preview.test','http://127.0.0.1:4197'])test.describe('desktop policy at '+origin,()=>{

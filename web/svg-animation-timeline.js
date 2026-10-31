@@ -30,7 +30,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  const focus=()=>viewport.focus({preventScroll:true});
  function announce(text=`${selection.length} keyframe${selection.length===1?'':'s'} selected.`){status.textContent=text;}
  function paintSelection(){const ids=new Set(selection.map(keyframeId));for(const button of tracks.querySelectorAll('[data-keyframe]')){const selected=ids.has(button.dataset.keyframe);button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));}announce();}
- function notify(){if(!active||!has(active))active=selection.at(-1)??null;selectKey(active);paintSelection();}
+ function notify(){if(!active||!has(active))active=selection.at(-1)??null;selectKey(active,structuredClone(selection));paintSelection();}
  function setSelection(keys,primary=keys.at(-1)??null){selection=unique(keys);active=primary;notify();}
  function canChange(){if(editable())return true;report('This timeline is read-only. Start editing before changing keyframes.');return false;}
  function apply(result,primary=result.selection.at(-1)??null){if(!canChange()){render();return;}selection=result.selection;active=primary;change(result.animation);notify();render();focus();}
