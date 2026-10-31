@@ -28,6 +28,15 @@ dispatched packaging workflow. This does not claim interactive Windows coverage
 of every editor feature. SVG workflow checks run in Chromium; cloud tests use a
 mocked API rather than a deployed multi-user server.
 
+The SVG export preview uses a bundled player in a dedicated opaque sandbox. This
+fixes the inline-player restriction found during release preparation. The main
+editor retains its existing content security policy; only the preview document
+can be framed by the app. Its policy blocks network requests and inline scripts,
+and the sandbox denies access to the parent document and application storage.
+Click playback was also inspected through the actual `pixlprfct://app` desktop
+protocol in an isolated Mac test profile. This is source-runtime verification,
+not a claim of a notarized Mac download.
+
 ## Run and build
 
 Use Node.js 24+, Rust and the `wasm32-unknown-unknown` target. Run `npm ci`; if your npm installation blocks lifecycle scripts, run `node node_modules/electron/install.js` to download the official Electron runtime.

@@ -124,7 +124,10 @@ CSS backgrounds. Static exports contain neither animation nor scripts.
 Changes in this dialog are temporary until **Save settings** or **Download SVG**.
 Cancel discards them. Settings are saved in `.pixl` files and support undo/redo.
 Read-only shared documents can preview and download temporary export settings
-without changing the saved project. Preview runs in a sandboxed frame.
+without changing the saved project. Preview runs in an opaque sandboxed frame
+with the exported geometry and the same trusted player used by downloads. The
+player is loaded from a bundled file so the desktop editor continues to block
+inline scripts. Preview cannot access the parent document, storage or network.
 
 ## Persistence and boundaries
 
@@ -208,8 +211,11 @@ and [selection tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-
 Coverage includes cross-track selection, marquee, group movement, relative-time
 copy/paste, collisions, duration boundaries, one-step undo/redo, persistence,
 source replacement, restored motion/morph tracks and read-only cloud gates.
+The desktop-policy regression covers interactive preview playback and isolation
+from the parent editor; native Mac runtime inspection confirms the same workflow
+through the application protocol.
 
-Local verification on 2026-10-31: 25 SVG browser cases and 17 SVG model/controller
+Local verification on 2026-10-31: 26 SVG browser cases and 17 SVG model/controller
 cases pass. Changed-code lint has zero errors and one existing navigation warning.
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

@@ -1,4 +1,6 @@
 import { cp, mkdir } from 'node:fs/promises';
+import {build} from 'esbuild';
+await build({entryPoints:['web/svg-animation-preview.js'],outfile:'web/vendor/svg-animation-preview.js',bundle:true,format:'iife',platform:'browser',target:'es2022'});
 await mkdir('dist', { recursive: true });
 await cp('web', 'dist', { recursive: true });
 await mkdir('dist/editor', { recursive: true });

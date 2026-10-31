@@ -2,6 +2,11 @@ const path = require('node:path');
 const {createHash} = require('node:crypto');
 const APP_URL = 'pixlprfct://app/';
 const CSP = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' ws://127.0.0.1:* https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+function contentSecurityPolicy(value) {
+ // Only this dedicated, opaque preview document can be embedded by the editor.
+ if(isLocalURL(value)&&new URL(value).pathname==='/editor/svg-animation-preview.html')return "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; frame-ancestors 'self'; form-action 'none'; sandbox allow-scripts";
+ return CSP;
+}
 function isLocalURL(value) {
  try { const url = new URL(value); return url.protocol === 'pixlprfct:' && url.host === 'app' && !url.username && !url.password; } catch { return false; }
 }
@@ -30,4 +35,4 @@ function sameWorkspace(url, base) {
  try{return !new URL(url).username&&!new URL(url).password&&new URL(url).origin===serverURL(new URL(base).origin);}catch{return false;}
 }
 function partitionFor(base) {return isLocalURL(base)?'persist:pixlprfct-local':'persist:workspace-'+createHash('sha256').update(serverURL(new URL(base).origin)).digest('hex').slice(0,24);}
-module.exports={APP_URL,CSP,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor};
+module.exports={APP_URL,CSP,contentSecurityPolicy,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor};
