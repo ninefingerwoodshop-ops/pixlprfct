@@ -8,7 +8,9 @@ export function installInspectorDropdowns(root){
  const entries=new Map();let active=null,sequence=0,pending=false,typeBuffer='',typeTime=0;
  const menu=document.createElement('div');menu.className='inspector-select-menu';menu.setAttribute('popover','manual');menu.setAttribute('role','listbox');menu.id='inspector-select-menu';document.body.append(menu);
  const close=(restore=false)=>{if(!active)return;const previous=active;active=null;previous.button.setAttribute('aria-expanded','false');if(menu.matches(':popover-open'))menu.hidePopover();if(restore&&previous.button.isConnected)previous.button.focus();};
- const visible=select=>!select.hidden&&!select.closest('[hidden]')&&select.parentElement.getClientRects().length>0;
+ // The custom trigger is a sibling of the select and inherits the same ancestor
+ // visibility. Measuring every parent forced layout even for closed controls.
+ const visible=select=>!select.hidden&&!select.closest('[hidden]');
  const position=()=>{if(!active)return;const r=active.button.getBoundingClientRect();positionPopover(menu,r,{placement:'below',width:Number(active.select.dataset.menuWidth)||Math.max(r.width,180),maxHeight:Number(active.select.dataset.menuHeight)||320,gap:5});};
  const optionButtons=()=>[...menu.querySelectorAll('[role="option"]:not(:disabled)')];
  const open=entry=>{
@@ -34,9 +36,11 @@ export function installInspectorDropdowns(root){
    }
    const text=select.selectedOptions[0]?.dataset.shortLabel||select.selectedOptions[0]?.label||'Choose…';if(entry.label.textContent!==text){entry.label.textContent=text;entry.button.setAttribute('aria-label',entry.caption+': '+text);}
    if(entry.button.disabled!==select.disabled)entry.button.disabled=select.disabled;
-   const hidden=!visible(select);if(entry.button.hidden!==hidden)entry.button.hidden=hidden;
-   if(active===entry&&(hidden||select.disabled))close();
   }
+  // Read visibility in one phase. Interleaving getClientRects with hidden/text
+  // writes forced a full inspector layout for each dropdown on every edit.
+  const visibility=[...entries.values()].map(entry=>[entry,!visible(entry.select)]);
+  for(const [entry,hidden] of visibility){if(entry.button.hidden!==hidden)entry.button.hidden=hidden;if(active===entry&&(hidden||entry.select.disabled||!entry.button.getClientRects().length))close();}
  }
  menu.onkeydown=e=>{if(e.ctrlKey||e.metaKey){close(true);return;}e.stopPropagation();const items=optionButtons(),index=items.indexOf(document.activeElement);if(e.key==='Escape'){e.preventDefault();close(true);}else if(e.key==='Tab'){close(true);}else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?items.length-1:e.key==='ArrowDown'?(index+1)%items.length:(index-1+items.length)%items.length;items[next]?.focus();items[next]?.scrollIntoView({block:'nearest'});}else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&e.key!==' '){e.preventDefault();typeBuffer=Date.now()-typeTime>700?e.key:typeBuffer+e.key;typeTime=Date.now();items.find(item=>item.textContent.toLowerCase().startsWith(typeBuffer.toLowerCase()))?.focus();}};
  document.addEventListener('pointerdown',e=>{if(active&&!menu.contains(e.target)&&!active.button.contains(e.target))close();},{signal});

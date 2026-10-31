@@ -1,11 +1,22 @@
+const graphemes=new Intl.Segmenter(undefined,{granularity:'grapheme'});
+export const letterSpacing=style=>(style.letter_spacing??0)*(style.letter_spacing_unit==='%'?style.font_size/100:1);
+export const textTransform=style=>({upper:'uppercase',lower:'lowercase',title:'capitalize'}[style.text_case]??'none');
+export function displayedText(text,style){
+ if(style.text_case==='upper')return text.toUpperCase();
+ if(style.text_case==='lower')return text.toLowerCase();
+ if(style.text_case==='title')return text.replace(/(^|[^\p{L}\p{N}])(\p{L})/gu,(_,before,letter)=>before+letter.toUpperCase());
+ return text;
+}
+export const spacedMeasure=(measure,style)=>{const spacing=letterSpacing(style);return spacing?value=>Math.max(0,measure(value)+[...graphemes.segment(value)].length*spacing):measure;};
+
 export function textStyle(shape) {
   const style = shape.typography || { font_size: Math.max(10, Math.min(72, shape.height * .66)), font_family: 'Manrope', font_weight: 600, align: 'left', line_height: 1.2, wrap: false };
   return {...style, sizing:style.sizing||'fixed', wrap:style.sizing==='width'?shape.layout_item?.max_width!=null:style.sizing==='height'?true:style.wrap};
 }
 
 export function textSize(shape, measure) {
-  const style=textStyle(shape);
-  const natural=style.sizing==='width'?Math.max(1,Math.ceil(Math.max(...shape.text.replace(/\r\n?/g,'\n').split('\n').map(measure)))):shape.width;
+  const style=textStyle(shape),widthOf=spacedMeasure(measure,style);
+  const natural=style.sizing==='width'?Math.max(1,Math.ceil(Math.max(...displayedText(shape.text,style).replace(/\r\n?/g,'\n').split('\n').map(widthOf)))):shape.width;
   const width=Math.min(shape.layout_item?.max_width??1e6,Math.max(shape.layout_item?.min_width??1,natural));
   return [width,Math.max(1,Math.ceil(layoutText({...shape,width},measure).height))];
 }
@@ -44,9 +55,9 @@ export function fontCss(style) {
 // Hard line breaks and blank lines are retained. Long words break at grapheme
 // boundaries, avoiding split emoji and combining marks.
 export function layoutText(shape, measure, baseline=fontBaseline(textStyle(shape))) {
-  const style = textStyle(shape), lines = [];
+  const style = textStyle(shape), lines = [];measure=spacedMeasure(measure,style);
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-  for (const paragraph of shape.text.replace(/\r\n?/g, '\n').split('\n')) {
+  for (const paragraph of displayedText(shape.text,style).replace(/\r\n?/g, '\n').split('\n')) {
     if (!style.wrap || !paragraph) { lines.push(paragraph); continue; }
     let line = '', paragraphStart=lines.length;
     for (const token of paragraph.match(/\S+|\s+/gu) || []) {
@@ -75,9 +86,9 @@ export function escapeXml(value) { return String(value).replace(/[&<>"']/g, c =>
 
 export function textSvg(shape, layout) {
   const { style, lines, baseline=fontBaseline(layout.style) } = layout;
-  if(shape.editor_meta?.text_path){const p=shape.editor_meta.text_path,points=p.reverse?[...p.points].reverse():p.points,d=points.map(([x,y],i)=>(i?'L':'M')+(shape.x+x*shape.width)+' '+(shape.y+y*shape.height)).join(' '),offset=style.align==='center'?50:style.align==='right'?100:p.offset*100;return `<defs><path id="text-path-${shape.id}" d="${d}"/></defs><text ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${style.align==='center'?'middle':style.align==='right'?'end':'start'}"><textPath href="#text-path-${shape.id}" startOffset="${offset}%">${escapeXml(shape.text)}</textPath></text>`;}
+  if(shape.editor_meta?.text_path){const p=shape.editor_meta.text_path,points=p.reverse?[...p.points].reverse():p.points,d=points.map(([x,y],i)=>(i?'L':'M')+(shape.x+x*shape.width)+' '+(shape.y+y*shape.height)).join(' '),offset=style.align==='center'?50:style.align==='right'?100:p.offset*100;return `<defs><path id="text-path-${shape.id}" d="${d}"/></defs><text ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}"${letterSpacing(style)?` letter-spacing="${letterSpacing(style)}"`:""} text-anchor="${style.align==='center'?'middle':style.align==='right'?'end':'start'}"><textPath href="#text-path-${shape.id}" startOffset="${offset}%">${escapeXml(displayedText(shape.text,style))}</textPath></text>`;}
 
   const anchor = { left: 'start', center: 'middle', right: 'end' }[style.align];
-  return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}" text-anchor="${anchor}" dominant-baseline="alphabetic" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y+baseline}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
+  return `<clipPath id="clip${shape.id}"><rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}"/></clipPath><text clip-path="url(#clip${shape.id})" ${paintAttributes(shape)} font-family="${escapeXml(style.font_family)}" font-size="${style.font_size}" font-weight="${style.font_weight}"${letterSpacing(style)?` letter-spacing="${letterSpacing(style)}"`:""} text-anchor="${anchor}" dominant-baseline="alphabetic" xml:space="preserve">${lines.map(line => `<tspan x="${line.x}" y="${line.y+baseline}">${escapeXml(line.text)}</tspan>`).join('')}</text>`;
 }
 import {paintAttributes} from './appearance.js';

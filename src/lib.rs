@@ -9,11 +9,14 @@ mod starter_defaults;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 mod arrangement;
+mod color_styles;
+mod document_order;
 mod editor_tools;
 mod effect_styles;
 mod grid;
 mod groups;
 mod guide_styles;
+mod page_background;
 mod paint;
 mod path_join;
 mod path_split;
@@ -86,6 +89,10 @@ pub struct Shape {
     pub effect_style: u32,
     #[serde(default)]
     pub text_style: u32,
+    #[serde(default)]
+    pub fill_style: u32,
+    #[serde(default)]
+    pub stroke_style: u32,
     #[serde(default)]
     pub prototype: Option<Prototype>,
     #[serde(default)]
@@ -726,6 +733,12 @@ fn path_polyline(shape: &Shape) -> Vec<[f64; 2]> {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Typography {
+    #[serde(default, skip_serializing_if = "text_styles::zero")]
+    pub letter_spacing: f64,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub letter_spacing_unit: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub text_case: String,
     #[serde(default = "default_vertical_align")]
     pub vertical_align: String,
     #[serde(default = "fixed_text")]
@@ -741,6 +754,9 @@ pub struct Typography {
 impl Default for Typography {
     fn default() -> Self {
         Self {
+            letter_spacing: 0.0,
+            letter_spacing_unit: String::new(),
+            text_case: String::new(),
             sizing: fixed_text(),
             vertical_align: default_vertical_align(),
             font_size: 32.0,
@@ -787,6 +803,8 @@ pub struct Document {
     #[serde(default)]
     pub text_styles: Vec<text_styles::TextStyle>,
     #[serde(default)]
+    pub color_styles: Vec<color_styles::ColorStyle>,
+    #[serde(default)]
     pub component_properties: Vec<component_properties::ComponentProperty>,
 }
 
@@ -805,6 +823,8 @@ struct LayerClipboard {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Page {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background: Option<page_background::PageBackground>,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
     pub variable_modes: std::collections::BTreeMap<u32, u32>,
     pub id: u32,
@@ -817,6 +837,7 @@ fn first_page() -> u32 {
 fn default_pages() -> Vec<Page> {
     vec![Page {
         variable_modes: Default::default(),
+        background: None,
         id: 1,
         name: "Page 1".into(),
     }]
@@ -895,6 +916,7 @@ fn validate(document: &Document) -> Result<(), String> {
     guide_styles::validate_styles(document)?;
     effect_styles::validate_styles(document)?;
     text_styles::validate_styles(document)?;
+    color_styles::validate_styles(document)?;
     if document.version != 2 || document.shapes.len() > 10_000 || document.name.len() > 256 {
         return Err("Unsupported document version or document too large".into());
     }
@@ -904,6 +926,9 @@ fn validate(document: &Document) -> Result<(), String> {
         return Err("Documents must have between 1 and 100 pages".into());
     }
     for page in &document.pages {
+        if let Some(background) = &page.background {
+            page_background::validate(background)?;
+        }
         if page.id == 0
             || page.id == u32::MAX
             || !pages.insert(page.id)
@@ -1057,23 +1082,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 return Err("Invalid image opacity".into());
             }
             for stack in [&a.fills, &a.strokes].into_iter().flatten() {
-                for p in stack {
-                    paint::validate(p)?;
-                }
-                let mut ids = std::collections::HashSet::new();
-                if stack.len() > 64
-                    || stack.iter().any(|p| {
-                        p.id == 0
-                            || !ids.insert(p.id)
-                            || !p.opacity.is_finite()
-                            || !(0.0..=1.0).contains(&p.opacity)
-                            || p.color.len() != 7
-                            || !p.color.starts_with('#')
-                            || !p.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
-                    })
-                {
-                    return Err("Invalid paint stack (up to 64 paints per channel)".into());
-                }
+                paint::validate_stack(stack)?;
             }
             for g in a.gradient.iter().chain(a.stroke_gradient.iter()).chain(
                 a.fills
@@ -1082,37 +1091,7 @@ fn validate(document: &Document) -> Result<(), String> {
                     .flatten()
                     .filter_map(|p| p.gradient.as_ref()),
             ) {
-                if g.radial_transform.is_some_and(|m| {
-                    m.iter().any(|v| !v.is_finite() || v.abs() > 100000.0)
-                        || (m[0] * m[3] - m[1] * m[2]).abs() < 1e-12
-                }) || g
-                    .focal
-                    .is_some_and(|p| p.iter().any(|v| !v.is_finite() || v.abs() > 10.0))
-                    || !g.focal_radius.is_finite()
-                    || !(0.0..=1.0).contains(&g.focal_radius)
-                {
-                    return Err("Invalid radial gradient transform or focal circle".into());
-                }
-                if !["linear", "radial", "angular", "diamond"].contains(&g.kind.as_str())
-                    || g.start
-                        .iter()
-                        .chain(g.end.iter())
-                        .any(|v| !v.is_finite() || !(-10.0..=10.0).contains(v))
-                    || (g.start[0] - g.end[0]).hypot(g.start[1] - g.end[1]) < 0.0001
-                    || !(2..=16).contains(&g.stops.len())
-                    || g.stops.windows(2).any(|s| s[0].position > s[1].position)
-                    || g.stops.iter().any(|s| {
-                        !s.position.is_finite()
-                            || !(0.0..=1.0).contains(&s.position)
-                            || !s.opacity.is_finite()
-                            || !(0.0..=1.0).contains(&s.opacity)
-                            || s.color.len() != 7
-                            || !s.color.starts_with('#')
-                            || !s.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
-                    })
-                {
-                    return Err("Invalid gradient geometry or color stops".into());
-                }
+                paint::validate_gradient(g)?;
             }
             effect_styles::Effects::from_appearance(Some(a)).validate()?;
             if ![
@@ -1348,13 +1327,22 @@ fn validate(document: &Document) -> Result<(), String> {
 }
 
 impl Editor {
-    fn check_write(&self, document: &Document, history: bool) -> Result<(), String> {
+    fn check_write(
+        &self,
+        document: &Document,
+        history: bool,
+        serialized: Option<&str>,
+    ) -> Result<(), String> {
         if let Some(guard) = &self.write_guard {
+            let after = serialized.map_or_else(
+                || std::borrow::Cow::Owned(serde_json::to_string(document).unwrap()),
+                std::borrow::Cow::Borrowed,
+            );
             let result = guard
                 .call3(
                     &JsValue::NULL,
                     &JsValue::from_str(&serde_json::to_string(&self.document).unwrap()),
-                    &JsValue::from_str(&serde_json::to_string(document).unwrap()),
+                    &JsValue::from_str(&after),
                     &JsValue::from_bool(history),
                 )
                 .map_err(|_| "Library permissions could not be checked")?;
@@ -1610,11 +1598,15 @@ impl Editor {
         component_properties::prune(&mut document);
         validate(&document)?;
         components::protect_structure(&self.document, &document)?;
-        self.commit_document(document)
+        self.commit_validated_document(document)
     }
 
-    fn commit_document(&mut self, mut document: Document) -> Result<(), String> {
+    fn commit_document(&mut self, document: Document) -> Result<(), String> {
         validate(&document)?;
+        self.commit_validated_document(document)
+    }
+
+    fn commit_validated_document(&mut self, mut document: Document) -> Result<(), String> {
         let original_shape_count = document.shapes.len();
         grid::ensure_containers(&mut document, self.next_id)?;
         let containers_added = document.shapes.len() > original_shape_count;
@@ -1631,15 +1623,7 @@ impl Editor {
         {
             return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
         }
-        fn append(parent: u32, source: &[Shape], out: &mut Vec<Shape>) {
-            for s in source.iter().filter(|s| s.parent_id == parent) {
-                out.push(s.clone());
-                append(s.id, source, out);
-            }
-        }
-        let mut ordered = vec![];
-        append(0, &document.shapes, &mut ordered);
-        document.shapes = ordered;
+        document_order::parents_first(&mut document.shapes);
         self.reflow_text(&mut document)?;
         let base = self.next_id.max(
             document
@@ -1661,6 +1645,7 @@ impl Editor {
         guide_styles::resolve(&mut document);
         effect_styles::resolve(&mut document);
         text_styles::resolve(&mut document);
+        color_styles::resolve(&mut document);
         variables::resolve(&mut document)?;
         sync_paint_stacks(&mut document);
         let after_sync: std::collections::HashSet<_> = document
@@ -1751,24 +1736,21 @@ impl Editor {
         }
         validate(&document)?;
         components::validate_links(&document)?;
-        if serde_json::to_string(&document)
-            .map_err(|e| e.to_string())?
-            .len()
-            > 5_000_000
-        {
+        let serialized = serde_json::to_string(&document).map_err(|e| e.to_string())?;
+        if serialized.len() > 5_000_000 {
             return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
         }
-        self.check_write(&document, false)?;
+        self.check_write(&document, false, Some(&serialized))?;
         if next > base || containers_added {
             self.next_id = self.next_id.max(next);
         }
         if document != self.document {
-            self.undo.push(self.document.clone());
+            self.undo
+                .push(std::mem::replace(&mut self.document, document));
             if self.undo.len() > 100 {
                 self.undo.remove(0);
             }
             self.redo.clear();
-            self.document = document;
         }
         Ok(())
     }
@@ -1801,6 +1783,7 @@ impl Editor {
                 guide_styles: vec![],
                 effect_styles: vec![],
                 text_styles: vec![],
+                color_styles: vec![],
                 component_properties: vec![],
             },
             undo: vec![],
@@ -1814,8 +1797,8 @@ impl Editor {
         serde_json::to_string(&self.document).unwrap()
     }
 
-    pub fn set_write_guard(&mut self, callback: js_sys::Function) {
-        self.write_guard = Some(callback);
+    pub fn set_write_guard(&mut self, callback: Option<js_sys::Function>) {
+        self.write_guard = callback;
     }
 
     pub fn set_text_measurer(&mut self, callback: js_sys::Function) {
@@ -1848,6 +1831,8 @@ impl Editor {
                 copy.guide_style = 0;
                 copy.effect_style = 0;
                 copy.text_style = 0;
+                copy.fill_style = 0;
+                copy.stroke_style = 0;
                 if let Some(a) = &mut copy.appearance {
                     for shadow in &mut a.shadows {
                         shadow.color_variable = 0;
@@ -1958,6 +1943,8 @@ impl Editor {
             s.guide_style = 0;
             s.effect_style = 0;
             s.text_style = 0;
+            s.fill_style = 0;
+            s.stroke_style = 0;
             if let Some(a) = &mut s.appearance {
                 for shadow in &mut a.shadows {
                     shadow.color_variable = 0;
@@ -1979,6 +1966,7 @@ impl Editor {
             guide_styles: vec![],
             effect_styles: vec![],
             text_styles: vec![],
+            color_styles: vec![],
             component_properties: vec![],
         })?;
         let next = self
@@ -2319,6 +2307,8 @@ impl Editor {
             guide_style: 0,
             effect_style: 0,
             text_style: 0,
+            fill_style: 0,
+            stroke_style: 0,
             prototype: None,
             additional_interactions: vec![],
             flow_name: String::new(),
@@ -3616,6 +3606,7 @@ impl Editor {
             number += 1;
         }
         document.pages.push(Page {
+            background: None,
             variable_modes: Default::default(),
             id,
             name: format!("Page {}", number),
@@ -3770,21 +3761,21 @@ impl Editor {
 
     pub fn undo(&mut self) -> Result<(), String> {
         if let Some(document) = self.undo.last() {
-            self.check_write(document, true)?;
+            self.check_write(document, true, None)?;
         }
         if let Some(document) = self.undo.pop() {
-            self.redo.push(self.document.clone());
-            self.document = document;
+            self.redo
+                .push(std::mem::replace(&mut self.document, document));
         }
         Ok(())
     }
     pub fn redo(&mut self) -> Result<(), String> {
         if let Some(document) = self.redo.last() {
-            self.check_write(document, true)?;
+            self.check_write(document, true, None)?;
         }
         if let Some(document) = self.redo.pop() {
-            self.undo.push(self.document.clone());
-            self.document = document;
+            self.undo
+                .push(std::mem::replace(&mut self.document, document));
         }
         Ok(())
     }
@@ -3794,6 +3785,43 @@ impl Editor {
     pub fn can_redo(&self) -> bool {
         !self.redo.is_empty()
     }
+    /// Reserve a server-assigned shape/page ID range for concurrent creation.
+    pub fn reserve_ids(&mut self, start: u32, end: u32) -> Result<(), String> {
+        if start == 0 || end <= start || end == u32::MAX {
+            return Err("Invalid editing ID range".into());
+        }
+        let shape_next = self
+            .document
+            .shapes
+            .iter()
+            .filter(|s| s.id >= start && s.id < end)
+            .map(|s| s.id + 1)
+            .max()
+            .unwrap_or(start);
+        let page_next = self
+            .document
+            .pages
+            .iter()
+            .filter(|p| p.id >= start && p.id < end)
+            .map(|p| p.id + 1)
+            .max()
+            .unwrap_or(start);
+        self.next_id = if self.next_id >= start && self.next_id < end {
+            self.next_id.max(shape_next)
+        } else {
+            shape_next
+        };
+        self.next_page_id = if self.next_page_id >= start && self.next_page_id < end {
+            self.next_page_id.max(page_next)
+        } else {
+            page_next
+        };
+        if self.next_id >= end || self.next_page_id >= end {
+            return Err("This editing session exhausted its ID range. Reopen the file.".into());
+        }
+        Ok(())
+    }
+
     pub fn clear_history(&mut self) {
         self.undo.clear();
         self.redo.clear();

@@ -26,7 +26,7 @@ test('saved projects are confined, revision checked, saved atomically, and resto
 });
 test('real MCP client discovers tools, resources and prompts, builds, exports and saves through the protocol',async t=>{
  const instance=await createPixlMcp({workspace:await temporary(t),live:false}),client=new Client({name:'test',version:'1.0'}),[a,b]=InMemoryTransport.createLinkedPair();t.after(async()=>{await client.close();await instance.close();});
- await instance.server.connect(a);await client.connect(b);const list=await client.listTools();assert.equal(list.tools.length,13);assert.ok(list.tools.find(tool=>tool.name==='pixlprfct_build').inputSchema);
+ await instance.server.connect(a);await client.connect(b);const list=await client.listTools();assert.equal(list.tools.length,20);assert.ok(list.tools.find(tool=>tool.name==='pixlprfct_build').inputSchema);assert.ok(list.tools.find(tool=>tool.name==='pixlprfct_libraries').inputSchema);
  assert.ok((await client.listResources()).resources.length>=10);assert.equal((await client.listPrompts()).prompts[0].name,'build-design');
  assert.match((await client.readResource({uri:'pixlprfct://reference/overview'})).contents[0].text,/Rust document engine/);
  const models=unpack(await client.callTool({name:'pixlprfct_reference',arguments:{topic:'models',query:['Typography','Value']}}));assert.ok(models.models.Typography);assert.deepEqual(models.constraints.Value.examples.alias,{alias:1});

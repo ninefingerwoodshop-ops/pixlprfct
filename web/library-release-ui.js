@@ -1,0 +1,11 @@
+import {el,button} from './account-ui.js';
+import {libraryChanges} from './library-changes.js';
+export function releaseDialog(title){
+ const dialog=el('dialog',undefined,'library-release-dialog'),header=el('header'),body=el('section'),footer=el('footer'),error=el('p',undefined,'library-release-error');error.setAttribute('role','alert');header.append(el('strong',title),button('Close',()=>dialog.close()));footer.append(button('Cancel',()=>dialog.close()));dialog.append(header,body,error,footer);dialog.setAttribute('aria-label',title);dialog.addEventListener('keydown',e=>e.stopPropagation());dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();return {dialog,body,footer,async run(fn){error.textContent='';dialog.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn();}catch(e){error.textContent=e.message;}finally{dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}}};
+}
+export function previewRelease({previous,next,title='Review changes',accept='Apply update',notes='',editNotes=false,onAccept}){
+ const ui=releaseDialog(title),diff=libraryChanges(previous,next),search=el('input'),description=el('textarea'),list=el('div',undefined,'library-change-list');search.type='search';search.placeholder='Search';search.setAttribute('aria-label','Search changes');description.placeholder='Description of changes (optional)';description.setAttribute('aria-label','Description of changes');description.maxLength=4000;description.value=notes;
+ ui.body.append(search);if(editNotes)ui.body.append(description);else if(notes)ui.body.append(el('p',notes));ui.body.append(el('p',`${diff.added} added · ${diff.changed} changed · ${diff.removed} removed`),list);
+ const draw=()=>{list.replaceChildren();for(const change of diff.changes.filter(c=>c.name.toLowerCase().includes(search.value.toLowerCase())).slice(0,200)){const item=el('p');item.append(el('strong',change.kind+' · '+change.name));if(change.properties.length)item.append(el('small',change.properties.join(', ')));list.append(item);}if(!diff.changes.length)list.append(el('p','No component, style or variable changes.'));};search.oninput=draw;draw();
+ ui.footer.append(button(accept,()=>ui.run(async()=>{await onAccept(description.value);ui.dialog.close();}),'primary'));return ui;
+}

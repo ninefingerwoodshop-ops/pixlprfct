@@ -1,3 +1,4 @@
+import {completeExport} from './helpers/export.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initializeEngine,createHeadlessEditor,headlessOptions,localGuard} from '../mcp/projects.mjs';
@@ -23,7 +24,7 @@ test('MCP aliases cascade across collections, modes, persistence and CSS length 
  const changed=structuredClone(variables);changed.values[0].values[1]='#345678';
  await build([{op:'command',name:'save_variables',args:[changed]}]);assert.equal(get().appearance.stroke_color,'#345678');
  await build([{op:'command',name:'set_variable_mode',args:[id,1,2]}]);assert.equal(get().appearance.stroke_color,'#abcdef');
- const css=(await runtime.request('export',{target:'html'})).files.find(f=>f.name.endsWith('.css')).text;
+ const css=(await completeExport(runtime,{target:'html'})).files.find(f=>f.name.endsWith('.css')).text;
  assert.match(css,/solid rgb\(from var\(--px-button-border-2,#abcdef\) r g b \/ 0.4\)/);
  assert.match(css,/width:calc\(var\(--px-space-3,16\) \* 1px\)/);
  assert.match(css,/--px-space-3:16(?:;|})/);
@@ -75,7 +76,7 @@ test('stroke variables survive stack paints, aligned masks, borders and framewor
  const rendered=compileCssScene(doc().shapes,{variables:doc().variables});
  assert.match(rendered.html,/stroke="var\(--px-button-border-2,#102a47\)"/);assert.match(rendered.html,/fill="var\(--px-button-border-2,#102a47\)"/);
  assert.match(rendered.html,/stroke="#ffffff"/);assert.match(rendered.html,/stroke="#102a47"/);
- for(const target of ['html','react','vue','angular']){const exported=await runtime.request('export',{target});assert.ok(exported.files.some(f=>f.text.includes('var(--px-button-border-2,#102a47)')));}
+ for(const target of ['html','react','vue','angular']){const exported=await completeExport(runtime,{target});assert.ok(exported.files.some(f=>f.text.includes('var(--px-button-border-2,#102a47)')));}
  await build([{op:'create',as:'border',properties:{border_widths:[1,2,3,4],appearance:{stroke_enabled:true}}},{op:'command',name:'bind_variable',args:[{$ref:'border'},'appearance.stroke_color',2]}]);
  assert.match(compileCssScene(doc().shapes,{variables:doc().variables}).css,/border-color:rgb\(from var\(--px-button-border-2,#102a47\)/);
  const native=await build([{op:'create',control:'button',as:'native',properties:{name:'Native button',appearance:{stroke_enabled:true,stroke_opacity:.6}}},{op:'command',name:'bind_variable',args:[{$ref:'native'},'appearance.stroke_color',2]}]);

@@ -3,7 +3,7 @@ import {fileURLToPath} from 'node:url';
 const root=new URL('../',import.meta.url);
 // Keep agent discovery tied to the actual compiled engine, rather than a second API.
 const types=await readFile(new URL('web/pkg/pixlprfct_core.d.ts',root),'utf8');
-const excluded=new Set(['free','clear_history','load','set_write_guard','set_text_measurer','refresh_text_layout','undo','redo','snapshot']);
+const excluded=new Set(['reserve_ids','free','clear_history','load','set_write_guard','set_text_measurer','refresh_text_layout','undo','redo','snapshot']);
 const readOnly=new Set(['copy_layers','can_redo','can_undo','grid_layout','hit_test','prototype_hit_test','prototype_hits','prototype_pointer_hits','preview_update_many','preview_layout_update','preview_grid_drop']);
 const jsonNames=new Set(['json','selection','variables','placements']);
 const notes={
@@ -25,6 +25,9 @@ const notes={
  apply_text_style:'Apply a text style to text layer IDs across pages. style_id 0 detaches, retaining typography.',
  remove_text_style:'Delete a text style and detach linked layers without changing their appearance.',
  bind_shadow_color:'Bind a color variable to a shadow by zero-based index. variable 0 detaches. Binding travels with the shadow when reordered. For reusable styles, set effects.shadows[index].color_variable in save_effect_style.',
+ save_color_style:'Create or update ColorStyle {id,name,description?,paints,color_variables?}. ID 0 creates; layer_id 0 saves without binding; stroke false applies fills, true applies strokes. color_variables maps paint IDs to color variable IDs. Updates propagate across pages.',
+ apply_color_style:'Apply a color style to selected layer IDs on fill (stroke false) or stroke (true). Style 0 detaches, preserving resolved paints. Stroke width remains local.',
+ remove_color_style:'Delete a color style and detach all linked fill and stroke channels while preserving their resolved paint stacks. Undoable.',
  save_effect_style:'Create or update an EffectStyle {id,name,description?,effects}. ID 0 creates; layer_id 0 saves without binding. Updates propagate to all linked layers across pages. Effects contains shadows, layer_blur, backdrop_blur and their enabled/present flags; other appearance is preserved.',
  apply_effect_style:'Apply a saved effect style to selected layer IDs. style_id 0 detaches, preserving current effects. Component instances inherit from the main component.',
  remove_effect_style:'Delete a saved effect style and detach all linked layers, preserving their current effects. Undoable.',

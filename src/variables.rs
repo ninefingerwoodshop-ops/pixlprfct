@@ -199,6 +199,10 @@ pub fn property_kind(path: &str) -> Option<&'static str> {
         | "appearance.corner_radii.3"
         | "width"
         | "height"
+        | "layout_item.min_width"
+        | "layout_item.max_width"
+        | "layout_item.min_height"
+        | "layout_item.max_height"
         | "stroke_width"
         | "appearance.opacity"
         | "appearance.corner_radius"
@@ -763,6 +767,36 @@ impl Editor {
             }
         }
 
+        for style in &mut doc.color_styles {
+            let removed: Vec<_> = style
+                .color_variables
+                .iter()
+                .filter(|(_, id)| !doc.variables.values.iter().any(|v| v.id == **id))
+                .map(|(paint, id)| (*paint, *id))
+                .collect();
+            for (paint, id) in removed {
+                // Keep each linked layer's last mode-resolved paint when its token disappears.
+                for shape in &mut doc.shapes {
+                    if shape.fill_style == style.id {
+                        shape.fill_style = 0;
+                    }
+                    if shape.stroke_style == style.id {
+                        shape.stroke_style = 0;
+                    }
+                }
+                if let Ok(Value::String(color)) = resolved(
+                    &self.document.variables,
+                    id,
+                    &BTreeMap::new(),
+                    &mut HashSet::new(),
+                ) {
+                    if let Some(p) = style.paints.iter_mut().find(|p| p.id == paint) {
+                        p.color = color;
+                    }
+                }
+                style.color_variables.remove(&paint);
+            }
+        }
         for page in &mut doc.pages {
             page.variable_modes.retain(|c, m| {
                 doc.variables

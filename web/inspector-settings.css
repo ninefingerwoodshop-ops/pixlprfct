@@ -110,3 +110,94 @@
 .effect-style-editor button.effect-style-delete{color:#b3b3b3;margin-top:8px}
 .effect-style-properties button.effect-edit{height:26px!important;min-height:26px!important;max-height:26px!important;padding:0!important;gap:0!important;border:1px solid #444!important;justify-content:flex-start;background-color:transparent!important;color:#fff!important}
 .effect-style-properties button.effect-edit[aria-expanded=true]{background-color:#4a5878!important;color:#a8d7ff!important;border-color:transparent!important}
+/* Typography / Page: native Figma desktop inspection, 2026-10-30. */
+#text-section .typography-heading{height:32px;margin-bottom:4px}
+#text-section .typography-heading h3{margin:0 auto 0 0;line-height:32px}
+#text-section .type-grid:not(.font-style-row){grid-template-columns:1fr 1fr}
+#text-section .text-align-tools{position:relative}
+#text-section button.type-settings-trigger{position:absolute;right:-32px;top:0;width:24px!important;height:24px!important;min-width:24px!important}
+#text-section .text-style-chip{margin:0 0 8px;padding:0;gap:4px;height:26px}
+#text-section .text-style-chip .effect-edit{padding:0 8px}
+.text-style-caption{display:flex;flex-direction:column;gap:0;min-width:0}
+.text-style-caption small{font-size:10px;color:#b3b3b3;line-height:12px}
+.text-style-sample{flex:0 0 24px;font:16px Georgia,serif}
+.text-style-group{padding:8px 4px 4px;color:#b3b3b3;font-size:10px}
+.text-style-editor .setting-body{padding-top:16px}
+.text-style-properties>summary{cursor:pointer;padding:8px 0;font-size:11px;color:#b3b3b3}
+.text-style-properties>div{display:flex;flex-direction:column;gap:8px}
+.text-style-preview{min-height:64px;padding:8px;display:grid;place-items:center;overflow:hidden}
+.page-text-editor .page-text-preview{height:120px;min-height:120px;margin:-16px -16px 8px;padding:16px;background:#383838}
+.page-text-editor .text-style-properties>summary{list-style:none;pointer-events:none;font-size:12px;color:#fff;font-weight:600}
+.page-text-metrics-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.page-text-editor .text-style-properties{margin-top:8px}
+.page-text-editor .text-style-properties>summary{padding:0 0 8px}
+.page-text-editor .setting-body>.setting-row{grid-template-columns:88px minmax(0,1fr)}
+#page-styles{padding:8px 0 16px}
+#page-styles>.setting-section-heading{height:40px;margin:0;padding:0 16px}
+#page-styles h3{margin:0;font-size:12px}
+.page-style-category-heading{height:32px;padding:0 8px 0 16px;display:flex;align-items:center;justify-content:space-between;color:#b3b3b3;font-size:12px}
+.page-style-category-heading>.setting-action{opacity:0}
+.page-style-category-heading:hover>.setting-action,.page-style-category-heading:focus-within>.setting-action{opacity:1}
+.page-style-row{display:flex;gap:8px;align-items:center;height:32px;padding:0 8px 0 16px;min-width:0}
+.page-style-row:hover,.page-style-row:focus-within{background:#383838}
+.page-style-row.grouped{padding-left:32px}
+.page-style-name,.page-style-group{font:12px Inter,sans-serif!important;color:#fff!important;background:transparent!important;border:0!important;text-align:left;min-width:0;height:32px!important;padding:0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page-style-name{flex:0 1 auto}
+.page-style-group{display:block;width:100%;padding-left:16px!important;color:#b3b3b3!important}
+.page-style-sample{display:block;flex:0 0 16px;width:16px;height:16px;font:16px Georgia,serif;line-height:16px}
+.page-style-sample.color{border-radius:50%;box-shadow:inset 0 0 0 1px #ffffff1a}
+.page-style-sample.effect{border:1px solid #888;border-radius:3px;box-shadow:0 2px 3px #0008}
+.page-style-metrics{font-size:11px;color:#b3b3b3;white-space:nowrap;margin-left:-4px}
+.page-style-row>.setting-action{display:none;margin-left:auto}
+.page-style-row:hover>.setting-action,.page-style-row:focus-within>.setting-action{display:flex}
+.page-style-row:hover>.page-style-metrics,.page-style-row:focus-within>.page-style-metrics{display:none}
+.page-style-rename{min-width:0;flex:1;width:100%;height:24px}
+.right-panel #page-styles button.page-style-name,.right-panel #page-styles button.page-style-group{font:400 12px/16px Inter,Arial,sans-serif!important;justify-content:flex-start!important;text-align:left!important;height:32px!important;padding:0!important}
+.right-panel #page-styles button.page-style-group{padding-left:16px!important;display:flex;gap:4px}
+.page-style-group>svg{width:12px!important;height:12px!important}
+.color-style-editor .setting-body{padding-top:16px}
+.color-style-preview{height:104px;min-height:104px;margin-bottom:8px;border-radius:2px}
+.color-style-properties{padding:0!important;border:0!important;margin-top:8px}
+.color-style-properties .paint-section-heading{display:flex;align-items:center;gap:4px;height:32px;margin:0 0 8px}
+.color-style-properties .paint-section-heading h3{flex:1;margin:0;font-size:12px}
+.color-style-properties .inspector-icon,.color-style-properties .paint-variable-trigger{width:24px;height:24px;min-height:24px;padding:4px}
+.color-style-properties .paint-color-field .paint-hex{background:transparent!important}
+.color-style-properties .paint-swatch .paint-picker-trigger{padding:0;min-height:16px;width:16px;height:16px}
+.color-style-properties .paint-swatch{display:grid;place-items:center}
+.color-style-properties .compact-paint-row{margin:0}
+.color-style-chip{margin:0 0 8px;padding:0;gap:4px}
+.color-style-chip .effect-edit{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.type-case-options{display:flex;height:24px;border-radius:5px;background:#383838}
+.type-case-options>button{flex:1;padding:0;height:24px;min-width:0;border:0;border-radius:5px;font:11px Inter,sans-serif;color:#fff}
+.type-case-options>button[aria-pressed=true]{background:#555}
+#page-section h3{margin:0 0 16px}
+#page-section .page-paint-row{display:flex;gap:8px;align-items:center}
+#page-section .setting-color-field{display:flex;align-items:center;flex:1;min-width:0;height:24px;border-radius:5px;background:#383838;padding-left:5px}
+#page-section .setting-color-field .setting-swatch{width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;padding:0!important;flex:0 0 14px;background:var(--swatch-color)!important;border-radius:2px}
+#page-section .setting-color-field .setting-hex{width:0;min-width:0;flex:1;background:transparent!important;padding:0 5px!important}
+#page-section .setting-alpha{width:54px;flex:0 0 54px;display:flex;align-items:center;border-left:1px solid #2c2c2c;padding-right:7px}
+#page-section .setting-alpha input{width:0;min-width:0;flex:1;padding:0 4px!important;text-align:center;background:transparent!important}
+.setting-color-picker .paint-popover-tabs{display:flex;gap:4px;flex:1}
+.setting-color-picker .paint-popover-tabs button{height:24px;min-height:24px;padding:0 8px;border:0;border-radius:5px;color:#b3b3b3;font:11px Inter,sans-serif}
+.setting-color-picker .paint-popover-tabs button[aria-selected=true]{background:#383838;color:#fff}
+.setting-color-picker .paint-library-search{height:40px;padding:8px 16px;box-sizing:border-box;border-bottom:1px solid #444}
+.setting-color-picker .paint-library-search input{background:transparent!important}
+.setting-color-picker .paint-library-toolbar{height:42px;padding:8px;box-sizing:border-box;border-bottom:1px solid #444;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.setting-color-picker .paint-library-toolbar>.inspector-select-trigger{width:auto!important;border:1px solid #444!important;background:transparent!important}
+.setting-color-picker .paint-variable-list{padding:8px;min-height:80px;max-height:256px;overflow:auto}
+.setting-color-picker .paint-variable-choice{height:32px;min-height:32px}
+.setting-color-picker .paint-empty{padding:16px 8px;text-align:center}
+.setting-variable-name{flex:1;min-width:0;width:0;padding:0 5px!important;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bdb4ff;font-size:11px}
+.setting-color-field [hidden]{display:none!important}
+.color-variable-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.color-variable-grid .paint-variable-choice{width:32px;padding:4px!important}
+.color-variable-grid .paint-variable-choice>span:not(.paint-library-swatch){display:none}
+/* Same 240px library surface and 32px swatch rows as the paint picker. */
+.paint-popover.setting-color-picker .paint-library{padding:0}
+.paint-popover.setting-color-picker .paint-variable-choice{display:flex;align-items:center;gap:12px;width:100%;height:32px!important;min-height:32px!important;padding:0 16px!important;border:0;border-radius:0;background:transparent!important;color:#fff!important;font:11px var(--ui-font);text-align:left}
+.paint-popover.setting-color-picker .paint-variable-choice:is(:hover,[aria-pressed=true]){background:#383838!important}
+.paint-popover.setting-color-picker .paint-library-swatch{display:block;width:16px;height:16px;flex:none;border:1px solid #ffffff12;border-radius:3px}
+.paint-popover.setting-color-picker .paint-variable-choice>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.paint-popover.setting-color-picker .color-variable-grid .paint-variable-choice{width:32px;padding:4px!important}
+.type-case-options>button{background:transparent}
+.paint-popover.setting-color-picker .paint-variable-choice,.text-style-picker .effect-style-apply{justify-content:flex-start!important}

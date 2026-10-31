@@ -7,5 +7,5 @@ export async function workspaceAccess(db,userId,workspace='personal') {
  const manage=!!member?.role.split(',').some(role=>['owner','admin'].includes(role));
  if(!member)throw new DocumentError(403,'You no longer have access to this workspace.');
  if(kind==='team'&&!manage&&!(await db.query('SELECT id FROM teamMember WHERE teamId=? AND userId=?',[id,userId])).length)throw new DocumentError(403,'You no longer have access to this team.');
- return {owner:workspace,manage,userId,workspace,organizationId:org,teamId:kind==='team'?id:null};
+ return {owner:workspace,manage,userId,workspace,memberRole:member.role,organizationId:org,teamId:kind==='team'?id:null};
 }

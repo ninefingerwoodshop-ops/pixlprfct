@@ -5,7 +5,7 @@ export function fromPoints(kind, points, closed = false) {
   const x = Math.min(...all.map(p=>p.x)), y = Math.min(...all.map(p=>p.y));
   const width = Math.max(1,Math.max(...all.map(p=>p.x))-x), height = Math.max(1,Math.max(...all.map(p=>p.y))-y);
   const normalize=p=>[(p.x-x)/width,(p.y-y)/height];
-  return {id:0,kind,name:kind[0].toUpperCase()+kind.slice(1),x,y,width,height,fill:'#1e1e1e',text:'',hidden:false,closed,stroke_width:2,points:points.map(normalize),handles:points.some(p=>p.in||p.out)?points.map(p=>[normalize(p.in??p),normalize(p.out??p)]):[]};
+  return {id:0,kind,name:kind[0].toUpperCase()+kind.slice(1),x,y,width,height,fill:'#1e1e1e',text:'',hidden:false,closed,stroke_width:2,appearance:{opacity:1,corner_radius:0,fill_enabled:closed,stroke_enabled:true,stroke_color:'#1e1e1e'},points:points.map(normalize),handles:points.some(p=>p.in||p.out)?points.map(p=>[normalize(p.in??p),normalize(p.out??p)]):[]};
 }
 export function anchors(shape) {
   const world=p=>({x:shape.x+p[0]*shape.width,y:shape.y+p[1]*shape.height});

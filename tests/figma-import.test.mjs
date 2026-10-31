@@ -81,3 +81,22 @@ test('native desktop reads binary Figma files and keeps PixlPrfct JSON import co
   await writeFile(path.join(dir,'large.pixl'),new Uint8Array(5_000_001));await assert.rejects(()=>readDesign(path.join(dir,'large.pixl')),/smaller/);await assert.rejects(()=>readDesign(path.join(dir,'code.js')),/Choose/);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('Figma library variables, aliases, shared styles and variant sets remain reusable after merge',async()=>{
+ const {librarySnapshot,mergeLibrary}=await import('../web/library-model.js');
+ const variable=(id,values)=>node(id,'VARIABLE','internal',{key:id,variableSetID:{guid:'tokens'},variableResolvedType:'COLOR',variableDataValues:{entries:values.map((value,i)=>({modeID:'mode'+i,variableData:{value}}))}});
+ const alias={value:{alias:{assetRef:{key:'brand'}}}},p=parsed([
+  node('internal','CANVAS',null,{isInternalOnly:true}),node('tokens','VARIABLE_SET','internal',{key:'token-key',variableSetModes:[{id:'mode0',name:'Light'},{id:'mode1',name:'Dark'}]}),
+  variable('brand',[{colorValue:{r:1,g:0,b:0,a:1}},{colorValue:{r:0,g:0,b:1,a:1}}]),variable('semantic',[{alias:{assetRef:{key:'brand'}}},{alias:{assetRef:{key:'brand'}}}]),
+  node('paint-style','ROUNDED_RECTANGLE','internal',{styleType:'FILL',key:'paint-style-key',fillPaints:[{...solid(1,0,0),colorVar:alias}]}),
+  node('type-style','TEXT','internal',{styleType:'TEXT',key:'type-style-key',fontName:{family:'Arial',style:'Bold'},fontSize:24}),
+  node('set','FRAME','page',{name:'Button',isStateGroup:true,componentPropDefs:[{id:'state',name:'State',type:'VARIANT'}]}),
+  ...['Default','Hover'].flatMap((value,i)=>[node('main'+i,'SYMBOL','set',{name:'State='+value,variantPropSpecs:[{propDefId:'state',value}],fillPaints:[solid(1,0,0)],styleIdForFill:{assetRef:{key:'paint-style-key'}}}),node('label'+i,'TEXT','main'+i,{textData:{characters:value},styleIdForText:{assetRef:{key:'type-style-key'}}})]),
+ ]);
+ const {body,report}=await convertFigma(p,'System.fig'),d=load(body);assert.equal(report.variables,2);assert.equal(report.styles,2);assert.equal(report.variantSets,1);assert.equal(d.component_sets[0].name,'Button');assert.deepEqual(d.component_sets[0].variants.map(v=>v.values),[['Default'],['Hover']]);assert.deepEqual(d.variables.values[1].values,{1:{alias:1},2:{alias:1}});assert.equal(d.shapes.find(s=>s.name==='label0').text_style,1);
+ const e=new Editor();try{e.add('rectangle',0,0);e.load(JSON.stringify(mergeLibrary(JSON.parse(e.snapshot()),{id:'figma-library',workspace:'local',name:'System',revision:1,body:librarySnapshot(d)})));const doc=JSON.parse(e.snapshot()),master=doc.component_sets[0].variants[0].component_id,instance=e.create_instance(master,500,500);assert.equal(JSON.parse(e.snapshot()).shapes.find(s=>s.id===instance).component.master,master);assert.equal(doc.color_styles[0].color_variables[1],doc.variables.values[0].id);}finally{e.free();}
+});
+test('cyclic and unavailable Figma variable aliases produce explicit warnings without broken bindings',async()=>{
+ const p=parsed([node('tokens','VARIABLE_SET','page',{variableSetModes:[{id:'light',name:'Light'}]}),...['a','b'].map((id,i)=>node(id,'VARIABLE','page',{variableSetID:{guid:'tokens'},variableResolvedType:'COLOR',variableDataValues:{entries:[{modeID:'light',variableData:{value:{alias:{guid:i?'a':'b'}}}}]}})),node('main','SYMBOL','page',{fillPaints:[{...solid(1,0,0),colorVar:{value:{alias:{guid:'a'}}}}]})]);
+ const {body,report}=await convertFigma(p);assert.equal(load(body).variables.values.length,0);assert(report.warnings.some(w=>w.message.includes('cyclic alias')));assert(report.warnings.some(w=>w.message.includes('unavailable paint variable')));
+});

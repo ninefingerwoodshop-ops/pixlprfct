@@ -5,13 +5,14 @@ import {pathToFileURL} from 'node:url';
 import {readConfig} from './config.mjs';
 import {connectDatabase,migrateDocuments} from './database.mjs';
 import {createAuth,migrateAuth} from './auth.mjs';
+import {operations} from './operations.mjs';
 import {createApplication} from './application.mjs';
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.wasm':'application/wasm','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf'};
 export async function startServer(config,{migrate=false,deliver}={}) {
  const db=await connectDatabase(config);
  if(migrate){await migrateAuth(createAuth(config,db,deliver,{migrating:true}));await migrateDocuments(db,config.engine);}
  else {try{await db.query('SELECT id FROM documents LIMIT 1');}catch{await db.close();throw new Error('Initialize the database with npm run selfhost:migrate first.');}}
- const auth=createAuth(config,db,deliver),handle=createApplication({config,db,auth}),root=path.resolve('web');
+ const ops=operations(config,db,{deliver}),auth=createAuth(config,db,deliver),handle=createApplication({config,db,auth,operations:ops}),root=path.resolve(config.webRoot??'web');
  const server=http.createServer(async(req,res)=>{
    res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','same-origin');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
    if(!config.local)res.setHeader('Strict-Transport-Security','max-age=31536000');
@@ -41,7 +42,8 @@ export async function startServer(config,{migrate=false,deliver}={}) {
  });
  server.requestTimeout=30000;server.headersTimeout=10000;
  try{await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(config.port,config.host,resolve);});}catch(error){await db.close();throw error;}
- return {server,db,auth,close:()=>new Promise(resolve=>server.close(async()=>{await db.close();resolve();}))};
+ ops.start();
+ return {server,db,auth,operations:ops,close:()=>new Promise(resolve=>{const stopped=ops.stop();server.close(async()=>{await stopped;await db.close();resolve();});})};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  try{const config=readConfig(),instance=await startServer(config);console.log('PixlPrfct: '+config.baseURL);for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>instance.close().then(()=>process.exit(0)));}

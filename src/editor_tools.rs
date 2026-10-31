@@ -8,6 +8,15 @@ pub struct EditorMeta {
     pub replies: Vec<String>,
     pub text_path: Option<TextPath>,
     pub motion: Option<Motion>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub library_overrides: Option<LibraryOverrides>,
+}
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct LibraryOverrides {
+    pub properties: bool,
+    pub sizing: bool,
+    pub variants: bool,
 }
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]

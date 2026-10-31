@@ -2,13 +2,14 @@
 
 PixlPrfct projects can publish reusable component libraries into their personal,
 organization, or team workspace. Other projects in that same workspace add the
-library from **Assets → Manage libraries → Teams**. This first workflow links
-PixlPrfct projects; it does not import Figma files.
+library from **Assets → Manage libraries → Teams**. External `.pixllib`, `.pixl` and `.fig` snapshots are supported through the
+[library import workflow](LIBRARIES.md). Shared consumers use a source published
+in their workspace. See [team editing and review](TEAM_WORKFLOWS.md).
 
 ## Publish and use a library
 
 1. Save the design-system project in a self-hosted workspace and create its main
-   components. Workspace owners and administrators can publish the first release.
+   components. Click **Start editing** to acquire the editing lease. Workspace owners and administrators can publish the first release.
 2. Open **Assets → Manage libraries → This file → Publish**.
 3. Open **Permissions** to assign maintainers to the entire library or individual
    main components. Only owners and administrators can change these assignments.
@@ -30,14 +31,20 @@ until those instances are removed.
 | --- | --- | --- | --- | --- |
 | Add a published library and place its instances | Yes | Yes | Yes | Yes |
 | Move, duplicate, or remove a whole placed instance | Yes | Yes | Yes | Yes |
-| Override instance text, style, dimensions, or internal structure | No | No | No | No |
+| Use author-approved exposed properties, sizing/layout and variants | Yes | Yes | Yes | Yes |
+| Change protected styling, hierarchy or detach a linked instance | No | No | No | No |
 | Edit an assigned source component and its children | No | Yes | Yes | Yes |
 | Edit other source components or shared definitions | No | No | Yes | Yes |
 | Publish a new release | No | No | Yes | Yes |
 | Publish a new library or assign maintainers | No | No | No | Yes |
 
-Maintainers change the source and publish releases instead of overriding consumer
-instances. Component grants apply to an entire main-component subtree. They do
+All artwork actions also require file editing access and the active editing lease.
+Library authors explicitly enable consumer overrides in the main component’s
+**Library instance permissions** section and publish them. Defaults stay protected.
+Exposed content permission covers authored text and visibility bindings; layout
+permission covers dimensions, positions, layout-item settings and constraints;
+variant permission allows switching within the published component set. Source
+styles and structure remain protected. Maintainers publish other source changes. Component grants apply to an entire main-component subtree. They do
 not grant changes to other components, project-wide variables/settings, or the
 ability to delete or reparent the assigned main component. Existing ordinary
 components retain their normal editable-instance behavior.
@@ -96,3 +103,15 @@ need deployment-specific integration testing.
   TypeScript and the three Rust tests passed. Release validation: all 807
   JavaScript tests pass after rebuilding the icon font and omitting empty motion
   rules from CSS output. The production build, Rust formatting, and Clippy pass.
+
+## Release management — alpha.14 (2026-10-30)
+
+Publish opens a change preview and accepts release notes. The manager's More menu
+contains release history, affected-project usage, export and retirement actions
+when permitted. Consumers can pin a release; updates require unpinning and an
+explicit preview/apply action. Releases remain immutable. Publishing a rollback
+creates a new release from an archived snapshot and does not overwrite the source
+artwork. Retirement removes a library from discovery while existing projects keep
+using their linked release. Usage results only include projects the caller may
+read. These controls work for workspace and local libraries; imported local
+archives contain only releases that were retained on that device.

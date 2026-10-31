@@ -41,7 +41,11 @@ async function loadAccount(){
  heading('Your workspace',`Signed in as ${workspace.user.email}`);
  const actions=el('div',undefined,'account-actions');actions.append(link('Open projects','/'),button('Sign out',run(async()=>{await auth('sign-out',{});location.assign('/editor/account.html');})));
  content.append(actions);
- if(params.get('invitation')){const invite=card('You have a team invitation','Accept this invitation with the email address it was sent to.');invite.append(button('Accept invitation',run(async()=>{await auth('organization/accept-invitation',{invitationId:params.get('invitation')});params.delete('invitation');history.replaceState(null,'',location.pathname);await loadAccount();}),'primary'));content.append(invite);}
+ if(params.get('invitation')){
+  const invite=card('Team invitation');content.append(invite);
+  try{const invitation=await auth('organization/get-invitation?'+new URLSearchParams({id:params.get('invitation')}));invite.append(el('p','Join '+invitation.organizationName+' as '+invitation.role+'. This invitation expires '+new Date(invitation.expiresAt).toLocaleString()+'.'),button('Accept invitation',run(async()=>{await auth('organization/accept-invitation',{invitationId:invitation.id});location.assign('/?'+new URLSearchParams({workspace:'org:'+invitation.organizationId}));}),'primary'));}
+  catch(error){invite.append(el('p',error.status===403?'This invitation belongs to another email address. Sign out and use the address it was sent to.':'This invitation expired, was canceled, or has already been accepted. Open your workspaces or ask an administrator for a new invitation.','account-message'),link('Open my workspaces','/'));}
+ }
  const profile=card('Account','Keep your profile and account security up to date.');
  profile.append(form('Profile',[field('Display name','name',{value:workspace.user.name,autocomplete:'name',maxLength:100})],'Save profile',async data=>{await auth('update-user',data);message(profile,'Profile updated.');}));
  const password=el('details');password.append(el('summary','Change password'));password.append(form('Change password',[field('Current password','currentPassword',{type:'password',autocomplete:'current-password',maxLength:128}),field('New password · at least 12 characters','newPassword',{type:'password',autocomplete:'new-password',minLength:12,maxLength:128})],'Update password',async(data,node)=>{await auth('change-password',{...data,revokeOtherSessions:true});node.reset();message(password,'Password updated. Other sessions have been signed out.');}));profile.append(password);

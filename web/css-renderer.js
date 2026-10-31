@@ -14,7 +14,7 @@ import {fontImports} from './google-fonts.js';
 import {controlMarkup,controlCss,controlPreviewStates,controlWithStates} from './controls.js';
 import {visualBounds,rotatedContains,worldShape,ancestorsOf,sceneToWorld} from './rotation.js';
 import {appearance,radii} from './appearance.js';
-import {textStyle} from './typography.js';
+import {textStyle,letterSpacing,textTransform} from './typography.js';
 import {paintBindingPath} from './paints.js';
 import {svgDocument} from './export.js';
 
@@ -52,7 +52,7 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   if(!flow&&s.control&&(item.fill_width||s.control.width_sizing==='fill'))style.width='100%';
   if(s.control?.width_sizing==='hug')style.width='max-content';
   if(!flow){style.left=px(s.x-(parent?.x??0));style.top=px(s.y-(parent?.y??0));if(parent&&s.control&&item.fill_width)style.left='0px';}
-  for(const axis of ['width','height']){for(const limit of ['min','max'])if(item[`${limit}_${axis}`]!=null)style[`${limit}-${axis}`]=px(item[`${limit}_${axis}`]);}
+  for(const axis of ['width','height']){for(const limit of ['min','max'])if(item[`${limit}_${axis}`]!=null)style[`${limit}-${axis}`]=bound(`layout_item.${limit}_${axis}`,item[`${limit}_${axis}`],'px');}
   const margins=item.margin??[0,0,0,0];if(flow)style.margin=margins.map(px).join(' ');const marginVar=vars.values.find(v=>v.id===s.variable_bindings?.['layout_item.margin']&&v.kind==='margin');if(flow&&marginVar)style.margin=`var(${variableName(marginVar)},${style.margin})`;
   if(flow){const horizontal=parent.auto_layout.direction==='horizontal',grid=parent.auto_layout.direction==='grid';
    const siblings=(children.get(parent.id)??[]).filter(c=>!c.hidden&&!c.layout_item?.absolute);
@@ -79,7 +79,7 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   }
   if(s.control){
    const t=s.typography??{font_family:'Arial',font_size:16,font_weight:400,line_height:1.2};
-   style['font-family']=quoted(t.font_family)+', sans-serif';style['font-size']=px(t.font_size);style['font-weight']=t.font_weight;style['line-height']=t.line_height;
+   style['font-family']=quoted(t.font_family)+', sans-serif';style['font-size']=px(t.font_size);style['font-weight']=t.font_weight;style['line-height']=t.line_height;style['letter-spacing']=letterSpacing(t)+'px';style['text-transform']=textTransform(t);
   }
   if(s.clip_content)style.overflow='hidden';
   if(a.blend_mode&&a.blend_mode!=='pass-through'){style['mix-blend-mode']=a.blend_mode;style.isolation='isolate';}
@@ -96,7 +96,7 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
    const bindPaint=layer=>{const stack=String(layer.id).match(/-(fill|stroke)-(\d+)$/),id=stack?Number(stack[2]):1;return {...layer,fill:bound(paintBindingPath(s,'fill',id),layer.fill),appearance:{...layer.appearance,stroke_color:bound(paintBindingPath(s,'stroke',id),layer.appearance.stroke_color)}};};
    content=`<span class="px-paint" aria-hidden="true">${svgDocument([paint],container?s:rotated,1,null,textLayout,bindPaint)}</span>`;warnings.add('Vector paths, images and gradient paint remain inline SVG inside CSS layout.');}
   else {
-   if(s.kind==='text'){const t=textStyle(s);style.color=a.fill_enabled?`rgb(from ${bound('fill',color(s.fill))} r g b / ${a.fill_opacity??1})`:'transparent';style['font-family']=quoted(t.font_family)+', sans-serif';style['font-size']=bound('typography.font_size',t.font_size,'px');style['font-weight']=t.font_weight;style['line-height']=t.line_height;style['text-align']=t.align;style['white-space']=t.wrap?'pre-wrap':'pre';style['overflow-wrap']='anywhere';if(t.sizing==='width'&&!item.fill_width)style.width='max-content';if(t.sizing!=='fixed'&&!item.fill_height)style.height='auto';if(t.vertical_align&&t.vertical_align!=='top'){style.display='flex';style['flex-direction']='column';style['justify-content']=t.vertical_align==='center'?'center':'flex-end';}content=escapeHtml(s.text);}
+   if(s.kind==='text'){const t=textStyle(s);style.color=a.fill_enabled?`rgb(from ${bound('fill',color(s.fill))} r g b / ${a.fill_opacity??1})`:'transparent';style['font-family']=quoted(t.font_family)+', sans-serif';style['font-size']=bound('typography.font_size',t.font_size,'px');style['font-weight']=t.font_weight;style['line-height']=t.line_height;style['letter-spacing']=letterSpacing(t)+'px';style['text-transform']=textTransform(t);style['text-align']=t.align;style['white-space']=t.wrap?'pre-wrap':'pre';style['overflow-wrap']='anywhere';if(t.sizing==='width'&&!item.fill_width)style.width='max-content';if(t.sizing!=='fixed'&&!item.fill_height)style.height='auto';if(t.vertical_align&&t.vertical_align!=='top'){style.display='flex';style['flex-direction']='column';style['justify-content']=t.vertical_align==='center'?'center':'flex-end';}content=escapeHtml(s.text);}
    else if(s.kind!=='group'&&a.fill_enabled)style.background=`rgb(from ${bound('fill',color(s.fill))} r g b / ${a.fill_opacity??1})`;
    if(s.kind!=='group'&&a.stroke_enabled){const width=number(s.stroke_width??2);rules.push(`.px-node-${s.id}::after{content:"";position:absolute;pointer-events:none;border:${bound('stroke_width',width,'px')} solid ${strokeColor};border-radius:inherit;inset:${a.stroke_alignment==='inside'?0:a.stroke_alignment==='outside'?-width:-width/2}px;box-sizing:border-box;}`);}
   }
@@ -112,7 +112,7 @@ export function compileCssScene(shapes,{variables={collections:[],values:[]},pag
   if(control?.width_sizing)rules.push('.px-node-'+s.id+'{width:'+style.width+'!important}');
   // SVG paint remains editable through ordinary CSS presentation properties.
   if(vector)for(const attribute of ['fill','stroke','stop-color']){let index=0;content=content.replace(new RegExp('\\s'+attribute+'="(#[a-f\\d]{3,8})"','gi'),(match,value)=>{const part=index++;rules.push(`.px-node-${s.id}>.px-paint [data-px-${attribute}="${part}"]{${attribute}:${value}}`);return match+` data-px-${attribute}="${part}"`;});}
-  if(vector&&s.kind==='text'){const t=textStyle(s);rules.push(`.px-node-${s.id}>.px-paint text{font-family:${quoted(t.font_family)},sans-serif;font-size:${px(t.font_size)};font-weight:${t.font_weight}}`);}
+  if(vector&&s.kind==='text'){const t=textStyle(s);rules.push(`.px-node-${s.id}>.px-paint text{font-family:${quoted(t.font_family)},sans-serif;font-size:${px(t.font_size)};font-weight:${t.font_weight};letter-spacing:${letterSpacing(t)}px}`);}
   layerCss[s.id]=rules.slice(ruleStart).join('\n');
   const controlHtml=interactive?native:native.replaceAll(' class="px-control"',' tabindex="-1" class="px-control"');
   const contentHtml=`<div class="px-node px-node-${s.id} ${layoutClass(s)}" data-px-id="${s.id}" data-layer="${escapeHtml(s.name)}"${layout?.direction==='grid'&&layout.grid?.masonry?` data-masonry="" data-masonry-hug="${!!layout.hug_height&&!item.fill_height}"`:""}${flow&&parent.auto_layout?.direction==='grid'&&parent.auto_layout.grid?.masonry?` data-masonry-item="" data-masonry-column="${(item.grid_cell?.row==null&&!item.grid_cell?.area?item.grid_cell?.column:null)??''}"`:""}${s.kind==='text'?' data-control-text=""':''}${s.component?` data-component="${escapeHtml(s.name)}"`:''}>${content}${(children.get(s.id)??[]).map(c=>visit(c,s,modes)).join('')}${controlHtml}</div>`;

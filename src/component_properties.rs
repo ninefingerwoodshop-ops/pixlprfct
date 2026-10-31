@@ -111,48 +111,38 @@ pub fn validate_properties(doc: &Document) -> Result<(), String> {
     Ok(())
 }
 pub fn prune(doc: &mut Document) {
-    let trees: HashMap<_, HashSet<_>> = doc
-        .component_properties
+    // Only bound targets need an ancestry check. Rebuilding a complete subtree
+    // for every property repeatedly scanned unrelated layers on every edit.
+    let parents: HashMap<_, _> = doc.shapes.iter().map(|s| (s.id, s.parent_id)).collect();
+    let masters: HashSet<_> = doc
+        .shapes
         .iter()
-        .map(|p| {
-            let ids = doc
-                .shapes
-                .iter()
-                .filter(|s| {
-                    let mut current = s.id;
-                    let mut seen = HashSet::new();
-                    while current != 0 && seen.insert(current) {
-                        if current == p.component_id {
-                            return true;
-                        }
-                        current = doc
-                            .shapes
-                            .iter()
-                            .find(|s| s.id == current)
-                            .map_or(0, |s| s.parent_id);
-                    }
-                    false
-                })
-                .map(|s| s.id)
-                .collect();
-            (p.component_id, ids)
-        })
+        .filter(|s| s.component == Some(components::Component::Master))
+        .map(|s| s.id)
         .collect();
     for p in &mut doc.component_properties {
-        p.targets.retain(|id| trees[&p.component_id].contains(id));
+        p.targets.retain(|id| {
+            if !parents.contains_key(id) {
+                return false;
+            }
+            let mut current = *id;
+            let mut seen = HashSet::new();
+            while current != 0 && seen.insert(current) {
+                if current == p.component_id {
+                    return true;
+                }
+                current = parents.get(&current).copied().unwrap_or(0);
+            }
+            false
+        });
         if let Some(settings) = &mut p.slot_settings {
-            settings.preferred_instances.retain(|id| {
-                doc.shapes
-                    .iter()
-                    .any(|s| s.id == *id && s.component == Some(components::Component::Master))
-            });
+            settings
+                .preferred_instances
+                .retain(|id| masters.contains(id));
         }
     }
     doc.component_properties.retain(|p| {
-        (!p.targets.is_empty() || p.kind == "slot")
-            && doc.shapes.iter().any(|s| {
-                s.id == p.component_id && s.component == Some(components::Component::Master)
-            })
+        (!p.targets.is_empty() || p.kind == "slot") && masters.contains(&p.component_id)
     });
 }
 pub fn targets(doc: &Document, root: u32, p: &ComponentProperty) -> Vec<u32> {

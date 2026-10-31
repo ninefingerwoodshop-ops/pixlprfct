@@ -125,3 +125,5 @@ body:has(#project-home) .selection-menu button:disabled{opacity:.4;cursor:defaul
 body:has(#project-home) .selection-menu-separator{height:1px;margin:8px 0}
 #project-home #home-admin{display:flex;align-items:center;gap:var(--ui-space-2);height:28px;padding:4px 8px;color:var(--ui-text-color);border-radius:var(--ui-radius-control);font-size:var(--ui-text);text-decoration:none}
 #project-home #home-admin:hover{background:var(--ui-hover)}
+
+.team-onboarding{border-top:1px solid #444;border-bottom:1px solid #444;padding:12px 0;margin-bottom:16px;font-size:12px;color:#b3b3b3}.team-onboarding summary{color:#fff;cursor:pointer}.team-onboarding-step{display:grid;grid-template-columns:16px 180px 1fr auto;gap:12px;align-items:center;padding:12px 0}.team-onboarding-step p{margin:0}.team-onboarding a{color:#80bfff}.team-onboarding-step strong{font-weight:500;color:#fff}@media(max-width:900px){.team-onboarding-step{grid-template-columns:16px 1fr}.team-onboarding-step p,.team-onboarding-step a{grid-column:2}}

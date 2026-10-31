@@ -1,3 +1,4 @@
+import {reference,definitionName,registerReference,importVariables,importVariantSets} from './library-data.js';
 const encoder=new TextEncoder();
 const number=(value,fallback=0)=>Number.isFinite(value)?value:fallback;
 const clamp=(value,min,max,fallback=min)=>Math.max(min,Math.min(max,number(value,fallback)));
@@ -71,7 +72,7 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
  if(!canvases.length)throw new Error('The Figma file has no design pages.');if(canvases.length>100)throw new Error('This file exceeds the editor’s 100-page limit.');
  const doc={version:2,name:name(parsed.meta?.file_name??parsed.meta?.name??fileName.replace(/\.(fig|json)$/i,'')),pages:canvases.map((p,i)=>({id:i+1,name:name(p.name)})),active_page:1,shapes:[]};
  const report={pages:doc.pages.length,layers:0,components:0,instances:0,images:0,warnings:[]};
- const cache=new Map();let next=1;
+ const cache=new Map(),mapped=new Map(),colorRefs=new Map(),effectRefs=new Map(),textRefs=new Map(),variableData=importVariables(nodes,color,warn);doc.variables=variableData.variables;const variable=ref=>variableData.refs.get(reference(ref));let next=1;
  const image=async(p,n)=>{
   const hash=p.image?.hash?Array.from(p.image.hash,b=>b.toString(16).padStart(2,'0')).join(''):p.image?.name??p.imageRef;
   const bytes=parsed.images?.get(hash);if(!bytes){warn('Missing embedded images were replaced with a gray fill.',n);return null;}
@@ -87,7 +88,7 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
   if(!Array.isArray(list))return [];if(list.length>64)warn('Paints beyond the editor’s 64-paint limit were omitted.',n);
   const result=[];for(const [index,p]of list.slice(0,64).entries()){
    const paint={id:index+1,color:color(p.color??p.stops?.[0]?.color),opacity:unit(p.opacity)*unit(p.color?.a),visible:p.visible!==false,blend_mode:blend(p.blendMode)};
-   if(p.colorVar||p.boundVariables)warn('Variable bindings were resolved to their saved values.',n);
+   if((p.colorVar&&!variable(p.colorVar.value?.alias))||p.boundVariables)warn('An unavailable paint variable was resolved to its saved value.',n);
    if(p.type?.startsWith('GRADIENT_')){paint.gradient=gradient(p,warn,n);if(!paint.gradient)warn('An unsupported gradient became a solid color.',n);}
    else if(p.type==='IMAGE'){
     const asset=await image(p,n);paint.color='#d9d9d9';
@@ -109,6 +110,21 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
    else warn(`The ${effect.type??'unknown'} effect is not supported.`,n);
   }return a;
  };
+ function typography(n){
+   const fontSize=clamp(n.fontSize,1,512,16),fontStyle=lower(n.fontName?.style),weights=[['thin',100],['extra-light',200],['light',300],['medium',500],['semi',600],['extra-bold',800],['black',900],['heavy',900],['bold',700]],weight=weights.find(([label])=>fontStyle.includes(label))?.[1]??400;
+   const line=n.lineHeight,lineHeight=line?.units==='PIXELS'?line.value/fontSize:line?.units==='PERCENT'?line.value/100:line?.units==='RAW'?line.value:1.2;
+   let family=n.fontName?.family??'Inter';if(!/^[a-z0-9 -]{1,100}$/i.test(family)){family='Inter';warn('A font name unsupported by the editor was replaced with Inter.',n);}
+   return {letter_spacing:clamp(n.letterSpacing?.value,-1000,1000,0),letter_spacing_unit:(n.letterSpacing?.unit??n.letterSpacing?.units)==='PERCENT'?'%':'px',text_case:({UPPER:'upper',LOWER:'lower',TITLE:'title'})[n.textCase]??'',font_size:fontSize,font_family:family,font_weight:weight,align:['CENTER','RIGHT'].includes(n.textAlignHorizontal)?lower(n.textAlignHorizontal):'left',vertical_align:n.textAlignVertical==='CENTER'?'center':n.textAlignVertical==='BOTTOM'?'bottom':'top',line_height:clamp(lineHeight,.5,4,1.2),sizing:n.textAutoResize==='WIDTH_AND_HEIGHT'?'width':n.textAutoResize==='HEIGHT'?'height':'fixed',wrap:n.textAutoResize!=='WIDTH_AND_HEIGHT'};
+ }
+ const uniqueName=(list,value)=>{const base=definitionName(value);let result=base,i=2;while(list.some(s=>s.name.toLowerCase()===result.toLowerCase()))result=base+' '+i++;return result;};
+ doc.color_styles=[];doc.effect_styles=[];doc.text_styles=[];
+ for(const n of nodes.filter(n=>n.styleType)){
+  const a=await appearance(n);
+  if(n.styleType==='FILL'&&a.fills.length){const style={id:doc.color_styles.length+1,name:uniqueName(doc.color_styles,n.name),paints:a.fills,color_variables:{}};for(const [i,p]of (n.fillPaints??[]).entries()){const v=variable(p.colorVar?.value?.alias);if(v?.kind==='color')style.color_variables[i+1]=v.id;}doc.color_styles.push(style);registerReference(colorRefs,n,style.id);}
+  else if(n.styleType==='EFFECT'){const style={id:doc.effect_styles.length+1,name:uniqueName(doc.effect_styles,n.name),effects:Object.fromEntries(Object.entries(a).filter(([key])=>key==='shadows'||key.startsWith('layer_blur')||key.startsWith('backdrop_blur')))};doc.effect_styles.push(style);registerReference(effectRefs,n,style.id);}
+  else if(n.styleType==='TEXT'){const style={id:doc.text_styles.length+1,name:uniqueName(doc.text_styles,n.name),typography:typography(n)};doc.text_styles.push(style);registerReference(textRefs,n,style.id);}
+  else warn('An unsupported shared style was resolved to saved layer values.',n);
+ }
  const append=s=>{if(doc.shapes.length>=10_000)throw new Error('This import exceeds the editor’s 10,000-layer limit.');doc.shapes.push(s);};
  async function walk(original,parent,context,depth=0,chain=new Set(),overridePath=[],overrides=[]){
   if(depth>64)throw new Error('The Figma hierarchy is nested too deeply.');
@@ -116,7 +132,7 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
   const key=guid(original.overrideKey??original.guid),nodePath=[...overridePath,key];
   let n=original;
   for(const override of overrides){const path=override.guidPath?.guids?.map(guid);if(path&&path.length===nodePath.length&&path.every((v,i)=>v===nodePath[i])){const properties={...override};delete properties.guid;delete properties.parentIndex;delete properties.guidPath;n={...n,...properties};}}
-  if(['VARIABLE','VARIABLE_SET','STYLE'].includes(n.type)){warn('Variables and shared styles were resolved to saved layer values.',n);return;}
+  if(['VARIABLE','VARIABLE_SET','STYLE'].includes(n.type)||n.styleType)return;
   let descendants=children.get(id)??[],source;
   if(n.type==='INSTANCE'){
    source=byId.get(guid(n.symbolData?.symbolID));report.instances++;warn('Component instances were detached into editable layers; Figma library links are not retained.',n);
@@ -126,32 +142,35 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
   const [a,b,c,d,tx,ty]=matrix(n.transform),sx=Math.hypot(a,b)*context.sx,sy=Math.hypot(c,d)*context.sy,rotation=-Math.atan2(b,a)*180/Math.PI;
   if(a*d-b*c<0||Math.abs(a*c+b*d)>.001)warn('Mirrored or skewed transforms may need adjustment.',n);
   const types={FRAME:'frame',SYMBOL:'frame',COMPONENT:'frame',INSTANCE:'frame',COMPONENT_SET:'frame',SECTION:'frame',GROUP:'group',RECTANGLE:'rectangle',ROUNDED_RECTANGLE:'rectangle',ELLIPSE:'ellipse',TEXT:'text',LINE:'line',VECTOR:'pen',BOOLEAN_GROUP:'pen',BOOLEAN_OPERATION:'pen',POLYGON:'pen',REGULAR_POLYGON:'pen',STAR:'pen'};
-  let kind=types[n.type];if(n.type==='FRAME'&&n.resizeToFit&&!n.stackMode&&!n.fillPaints?.length)kind='group';
+  let kind=types[n.type];if(n.type==='FRAME'&&!n.isStateGroup&&n.resizeToFit&&!n.stackMode&&!n.fillPaints?.length)kind='group';
   if(!kind){kind='frame';warn(`Unsupported ${n.type??'unknown'} layers were retained as empty containers.`,n);}
   const style=await appearance(n),s={id:next++,page_id:context.page,parent_id:parent,kind,name:name(n.name??n.type),x:context.x+tx*context.sx,y:context.y+ty*context.sy,width:Math.max(1,number(n.size?.x,100)*sx),height:Math.max(1,number(n.size?.y,100)*sy),rotation,fill:style.fills[0]?.color??'#d9d9d9',text:'',hidden:n.visible===false,locked:!!n.locked,appearance:style,stroke_width:clamp(n.strokeWeight,.1,100,1),clip_content:kind==='frame'&&!n.frameMaskDisabled,layout_item:{fill_width:false,fill_height:false,absolute:n.stackPositioning==='ABSOLUTE'},aspect_ratio_locked:!!n.proportionsConstrained};
   // Figma transforms rotate around the local origin; the editor rotates about the center.
   s.x+=(a*number(n.size?.x,100)+c*number(n.size?.y,100))*context.sx/2-s.width/2;
   s.y+=(b*number(n.size?.x,100)+d*number(n.size?.y,100))*context.sy/2-s.height/2;
+  if(n.componentPropDefs?.some(p=>p.type!=='VARIANT'))warn('Exposed component properties and slot metadata are not imported; their saved layers remain.',n);
   if(n.layoutGrids?.length)warn('Layout guides are not imported.',n);
   if(n.isMask)warn('Masks are imported as ordinary layers; their clipping behavior is not retained.',n);
   if(n.reactions?.length||n.transitionNodeID||n.prototypeInteractions?.length)warn('Prototype connections are not imported.',n);
   if(n.boundVariables||n.variableBindings)warn('Variable bindings were resolved to their saved values.',n);
   if(['SYMBOL','COMPONENT'].includes(n.type)&&!context.master){s.component={type:'master'};report.components++;}
-  if(n.type==='COMPONENT_SET')warn('Component variants were imported as separate component masters.',n);
+  if(!source&&!context.instance)mapped.set(id,s);
   if(kind==='text'){
    s.text=String(n.textData?.characters??'');if(encoder.encode(s.text).length>10_000)throw new Error(`“${s.name}” exceeds the editor’s 10 KB text-layer limit.`);
-   const fontSize=clamp(n.fontSize,1,512,16),fontStyle=lower(n.fontName?.style),weights=[['thin',100],['extra-light',200],['light',300],['medium',500],['semi',600],['extra-bold',800],['black',900],['heavy',900],['bold',700]],weight=weights.find(([label])=>fontStyle.includes(label))?.[1]??400;
-   const line=n.lineHeight,lineHeight=line?.units==='PIXELS'?line.value/fontSize:line?.units==='PERCENT'?line.value/100:line?.units==='RAW'?line.value:1.2;
-   let family=n.fontName?.family??'Inter';if(!/^[a-z0-9 -]{1,100}$/i.test(family)){family='Inter';warn('A font name unsupported by the editor was replaced with Inter.',n);}
-   s.typography={font_size:fontSize,font_family:family,font_weight:weight,align:['CENTER','RIGHT'].includes(n.textAlignHorizontal)?lower(n.textAlignHorizontal):'left',vertical_align:n.textAlignVertical==='CENTER'?'center':n.textAlignVertical==='BOTTOM'?'bottom':'top',line_height:clamp(lineHeight,.5,4,1.2),sizing:n.textAutoResize==='WIDTH_AND_HEIGHT'?'width':n.textAutoResize==='HEIGHT'?'height':'fixed',wrap:n.textAutoResize!=='WIDTH_AND_HEIGHT'};
+   s.typography=typography(n);
    if(n.textAlignHorizontal==='JUSTIFIED')warn('Justified text was imported with left alignment.',n);
-   if(n.textData?.styleOverrideTable?.length||fontStyle.includes('italic')||number(n.letterSpacing?.value)!==0)warn('Mixed text styles, italics, and letter spacing use the layer’s base text style.',n);
+   if(n.textData?.styleOverrideTable?.length||lower(n.fontName?.style).includes('italic'))warn('Mixed text styles and italics use the layer’s base text style.',n);
   }
   if(['HORIZONTAL','VERTICAL'].includes(n.stackMode)&&kind==='frame'){
    const horizontal=n.stackMode==='HORIZONTAL',alignment={MIN:'start',CENTER:'center',MAX:'end',BASELINE:'start',SPACE_BETWEEN:'between',SPACE_EVENLY:'evenly'};
    s.auto_layout={direction:horizontal?'horizontal':'vertical',gap:number(n.stackSpacing),padding_top:clamp(n.stackVerticalPadding??n.stackPadding,0,1e5),padding_right:clamp(n.stackPaddingRight??n.stackHorizontalPadding??n.stackPadding,0,1e5),padding_bottom:clamp(n.stackPaddingBottom??n.stackVerticalPadding??n.stackPadding,0,1e5),padding_left:clamp(n.stackHorizontalPadding??n.stackPadding,0,1e5),align:alignment[n.stackCounterAlignItems]??'start',justify:alignment[n.stackPrimaryAlignItems]??'start',hug_width:(horizontal?n.stackPrimarySizing:n.stackCounterSizing)?.startsWith('RESIZE_TO_FIT')??false,hug_height:(horizontal?n.stackCounterSizing:n.stackPrimarySizing)?.startsWith('RESIZE_TO_FIT')??false,wrap:n.stackWrap==='WRAP'};
   }else if(n.stackMode&&n.stackMode!=='NONE')warn('This layout mode was imported with fixed positions.',n);
   if(parent&&context.direction&&rotation===0){s.layout_item.fill_width=context.direction==='HORIZONTAL'?n.stackChildPrimaryGrow===1:n.stackChildAlignSelf==='STRETCH';s.layout_item.fill_height=context.direction==='VERTICAL'?n.stackChildPrimaryGrow===1:n.stackChildAlignSelf==='STRETCH';}
+  s.variable_bindings={};
+  for(const [channel,paints]of [['fills',n.fillPaints],['strokes',n.strokePaints]])for(const [i,p]of (paints??[]).entries()){const v=variable(p.colorVar?.value?.alias);if(v?.kind==='color'&&s.appearance[channel]?.some(p=>p.id===i+1))s.variable_bindings['appearance.'+channel+'.'+(i+1)+'.color']=v.id;}
+  const fields={WIDTH:'width',HEIGHT:'height',MIN_WIDTH:'layout_item.min_width',MAX_WIDTH:'layout_item.max_width',MIN_HEIGHT:'layout_item.min_height',MAX_HEIGHT:'layout_item.max_height',ITEM_SPACING:'auto_layout.gap',PADDING_TOP:'auto_layout.padding_top',PADDING_RIGHT:'auto_layout.padding_right',PADDING_BOTTOM:'auto_layout.padding_bottom',PADDING_LEFT:'auto_layout.padding_left',FONT_SIZE:'typography.font_size',CORNER_RADIUS:'appearance.corner_radius',STROKE_WEIGHT:'stroke_width',OPACITY:'appearance.opacity'};
+  for(const entry of n.variableConsumptionMap?.entries??[]){const v=variable(entry.variableData?.value?.alias),path=fields[entry.variableField];if(v?.kind==='number'&&path&&(!path.startsWith('typography.')||s.kind==='text')&&(!path.startsWith('auto_layout.')||s.auto_layout))s.variable_bindings[path]=v.id;else warn('An unsupported variable binding was resolved to its saved value.',n);}
+  s.fill_style=colorRefs.get(reference(n.styleIdForFill))??0;s.stroke_style=colorRefs.get(reference(n.styleIdForStrokeFill))??0;s.effect_style=effectRefs.get(reference(n.styleIdForEffect))??0;if(s.kind==='text')s.text_style=textRefs.get(reference(n.styleIdForText))??0;
   if(kind==='line'){s.points=[[0,0],[1,n.size?.y?1:0]];s.closed=false;style.fill_enabled=false;}
   if(kind==='pen'){
    let paths=[];
@@ -169,11 +188,12 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
     if(['BOOLEAN_GROUP','BOOLEAN_OPERATION'].includes(n.type)){warn('Boolean results were imported as editable vector paths.',n);descendants=[];}
    }else{s.kind='frame';s.clip_content=false;warn('A vector without supported path data was retained as an empty container.',n);s.appearance=plainAppearance();append(s);}
   }else append(s);
-  const childContext={page:context.page,x:s.x,y:s.y,sx,sy,master:context.master||!!s.component,direction:n.stackMode};
+  const childContext={page:context.page,x:s.x,y:s.y,sx,sy,master:context.master||!!s.component,direction:n.stackMode,instance:context.instance||!!source};
   if(source){childContext.sx*=number(n.size?.x,1)/Math.max(1,number(source.size?.x,1));childContext.sy*=number(n.size?.y,1)/Math.max(1,number(source.size?.y,1));active.add(guid(source.guid));}
   for(const child of descendants)await walk(child,s.id,childContext,depth+1,active,source?[]:nodePath,overrides);
  }
  for(const [i,page]of canvases.entries())for(const child of children.get(guid(page.guid))??[])await walk(child,0,{page:i+1,x:0,y:0,sx:1,sy:1,master:false},0,new Set());
+ doc.component_sets=importVariantSets(nodes,children,mapped,warn);report.variables=doc.variables.values.length;report.styles=doc.color_styles.length+doc.effect_styles.length+doc.text_styles.length;report.variantSets=doc.component_sets.length;
  report.layers=doc.shapes.length;report.warnings=[...warningMap.values()];
  const body=JSON.stringify(doc);if(encoder.encode(body).length>5_000_000)throw new Error('The converted design exceeds the editor’s 5 MB project limit. Export a smaller selection or page from Figma.');
  return {body,report};

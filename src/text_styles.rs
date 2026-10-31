@@ -11,14 +11,13 @@ pub struct TextStyle {
     pub typography: Typography,
 }
 
-pub fn style_values(style: Option<&Typography>) -> Option<(String, f64, u16, f64)> {
-    style.map(|t| {
-        (
-            t.font_family.clone(),
-            t.font_size,
-            t.font_weight,
-            t.line_height,
-        )
+pub fn style_values(style: Option<&Typography>) -> Option<Typography> {
+    style.map(|t| Typography {
+        align: "left".into(),
+        vertical_align: "top".into(),
+        sizing: "fixed".into(),
+        wrap: true,
+        ..t.clone()
     })
 }
 fn apply(shape: &mut Shape, style: &Typography) {
@@ -27,6 +26,9 @@ fn apply(shape: &mut Shape, style: &Typography) {
     t.font_size = style.font_size;
     t.font_weight = style.font_weight;
     t.line_height = style.line_height;
+    t.letter_spacing = style.letter_spacing;
+    t.letter_spacing_unit = style.letter_spacing_unit.clone();
+    t.text_case = style.text_case.clone();
     for field in ["font_family", "font_size", "font_weight", "line_height"] {
         shape
             .variable_bindings
@@ -34,7 +36,11 @@ fn apply(shape: &mut Shape, style: &Typography) {
     }
 }
 pub fn validate_typography(style: &Typography) -> Result<(), String> {
-    if !style.font_size.is_finite()
+    if !style.letter_spacing.is_finite()
+        || !(-1000.0..=1000.0).contains(&style.letter_spacing)
+        || !["", "px", "%"].contains(&style.letter_spacing_unit.as_str())
+        || !["", "original", "upper", "lower", "title"].contains(&style.text_case.as_str())
+        || !style.font_size.is_finite()
         || !["fixed", "width", "height"].contains(&style.sizing.as_str())
         || !(1.0..=512.0).contains(&style.font_size)
         || !style.line_height.is_finite()
@@ -185,4 +191,8 @@ impl Editor {
         }
         self.commit(doc)
     }
+}
+
+pub fn zero(value: &f64) -> bool {
+    *value == 0.0
 }

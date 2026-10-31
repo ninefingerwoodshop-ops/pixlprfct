@@ -1,0 +1,12 @@
+import {execFile as exec} from 'node:child_process';
+import {promisify} from 'node:util';
+import {readFile,access} from 'node:fs/promises';
+import path from 'node:path';
+const run=promisify(exec),bundle=process.argv[2];
+if(!bundle||!bundle.endsWith('.app'))throw new Error('Pass the signed PixlPrfct.app bundle to verify.');
+await access(bundle);await run('codesign',['--verify','--deep','--strict','--verbose=2',bundle]);
+const identity=await run('codesign',['-dv','--verbose=4',bundle]);if(!/Authority=Developer ID Application:/.test(identity.stderr))throw new Error('This is not a Developer ID release.');
+await run('spctl',['--assess','--type','execute','--verbose=4',bundle]);await run('xcrun',['stapler','validate',bundle]);
+const info=await run('/usr/libexec/PlistBuddy',['-c','Print :CFBundleShortVersionString',path.join(bundle,'Contents/Info.plist')]);const pkg=JSON.parse(await readFile(new URL('../../package.json',import.meta.url)));
+if(info.stdout.trim()!==pkg.version)throw new Error('Bundle version does not match package.json.');
+console.log(JSON.stringify({version:pkg.version,developerId:true,strictSignature:true,gatekeeper:true,stapledNotarization:true}));

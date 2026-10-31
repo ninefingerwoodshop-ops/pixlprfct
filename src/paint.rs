@@ -232,3 +232,58 @@ pub fn remap_sources(
         }
     }
 }
+
+pub fn validate_stack(stack: &[Paint]) -> Result<(), String> {
+    for p in stack {
+        validate(p)?;
+    }
+    let mut ids = std::collections::HashSet::new();
+    if stack.len() > 64
+        || stack.iter().any(|p| {
+            p.id == 0
+                || !ids.insert(p.id)
+                || !p.opacity.is_finite()
+                || !(0.0..=1.0).contains(&p.opacity)
+                || p.color.len() != 7
+                || !p.color.starts_with('#')
+                || !p.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+        })
+    {
+        return Err("Invalid paint stack (up to 64 paints per channel)".into());
+    }
+    Ok(())
+}
+pub fn validate_gradient(g: &crate::Gradient) -> Result<(), String> {
+    if g.radial_transform.is_some_and(|m| {
+        m.iter().any(|v| !v.is_finite() || v.abs() > 100000.0)
+            || (m[0] * m[3] - m[1] * m[2]).abs() < 1e-12
+    }) || g
+        .focal
+        .is_some_and(|p| p.iter().any(|v| !v.is_finite() || v.abs() > 10.0))
+        || !g.focal_radius.is_finite()
+        || !(0.0..=1.0).contains(&g.focal_radius)
+    {
+        return Err("Invalid radial gradient transform or focal circle".into());
+    }
+    if !["linear", "radial", "angular", "diamond"].contains(&g.kind.as_str())
+        || g.start
+            .iter()
+            .chain(g.end.iter())
+            .any(|v| !v.is_finite() || !(-10.0..=10.0).contains(v))
+        || (g.start[0] - g.end[0]).hypot(g.start[1] - g.end[1]) < 0.0001
+        || !(2..=16).contains(&g.stops.len())
+        || g.stops.windows(2).any(|s| s[0].position > s[1].position)
+        || g.stops.iter().any(|s| {
+            !s.position.is_finite()
+                || !(0.0..=1.0).contains(&s.position)
+                || !s.opacity.is_finite()
+                || !(0.0..=1.0).contains(&s.opacity)
+                || s.color.len() != 7
+                || !s.color.starts_with('#')
+                || !s.color[1..].bytes().all(|c| c.is_ascii_hexdigit())
+        })
+    {
+        return Err("Invalid gradient geometry or color stops".into());
+    }
+    Ok(())
+}

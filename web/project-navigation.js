@@ -1,7 +1,8 @@
 export function projectUrl(project){
  if(!['local','cloud'].includes(project.kind)||!project.id)throw new Error('Choose a project to open.');
  const params=new URLSearchParams({[project.kind==='local'?'draft':'cloud']:project.id});if(project.workspace&&project.workspace!=='personal')params.set('workspace',project.workspace);
- return '/editor/index.html?'+params;
+ let type=project.design_type;try{type??=project.body?JSON.parse(project.body).design_type:null;}catch{}
+ return '/editor/'+(type==='svg-animation'?'svg-animation.html':'index.html')+'?'+params;
 }
 export function projectRoute(search){
  const params=new URLSearchParams(search),draft=params.get('draft'),cloud=params.get('cloud');

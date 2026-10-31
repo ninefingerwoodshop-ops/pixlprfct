@@ -39,7 +39,7 @@
     "named prototype flow starting points, presentation flow switching/reset, same-page canvas connection wires and drag-to-connect with atomic undo",
     "instant, dissolve and directional slide prototype transitions with duration/easing, reduced-motion support and clean cancellation",
     "atomic paste-to-replace across selected destinations with parent/stack/layout preservation, subtree replacement, internal-link remapping and undo",
-    "adjustable Pencil point reduction and Bézier smoothing with corner/endpoint retention, zoom-adjusted tolerance and editable persistent handles",
+    "adjustable Pencil point reduction and B\u00e9zier smoothing with corner/endpoint retention, zoom-adjusted tolerance and editable persistent handles",
     "JPEG page/selection export with adjustable quality, opaque backgrounds, resolution scaling and bounded raster memory",
     "batch SVG/PNG/JPEG export of selected roots or top-level frames to ZIP with unique filenames, sequential rendering, progress and size limits",
     "Rust vector path splitting and closed-path opening at anchors with cubic preservation, separate bounds, inherited settings and atomic history",
@@ -66,7 +66,7 @@
     "named cloud version checkpoints with immutable snapshots, paginated history, ownership isolation, revision-checked transactional restoration, automatic pre-restore backups and open-version-as-copy",
     "transactional automatic backups of prior cloud saves at five-minute intervals, literal-name file search and cursor pagination across active files and Trash",
     "private immutable object storage for cloud document bodies above 1.5 MB with backward-compatible inline reads, object-backed history/restore, failure preservation and verified 2.56 MB browser round trip",
-    "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; Bézier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
+    "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; B\u00e9zier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
     "on-canvas auto-layout padding, main-gap and wrapped cross-gap handles with Rust descendant preview, linked opposite padding, keyboard adjustment, zoom-aware hit targets, clipping and atomic undo",
     "inside/center/outside stroke alignment for closed geometry, text and image outlines with shared masks, independent stroke opacity/gradients, outer-edge hit testing, bounded export buffers, component overrides and pixel-verified PNG/SVG placement",
     "per-frame inside-stroke inclusion in auto layout with independent nested settings, content-space fill allocation, padding/border minimums, stroke-aware wrapping and canvas handles, component overrides and legacy persistence",
@@ -95,25 +95,70 @@
     "Reference-matched Variables page/floating workspace with nonmodal dragging, eight-edge resizing, geometry restoration, collapsible sidebar, direct edit commits, group/value search, type filtering, multi-selection duplication/deletion, mode context actions and searchable alias selection/detachment",
     "shared browser CSS canvas and HTML/CSS ZIP export with native flex/grid, current-mode CSS variables and SVG vector paint",
     "real CSS backdrop-filter glass material with editable blur, fill opacity, border and shadow; Rust persistence, component overrides and history",
-    "compact right inspector paint rows, paired appearance controls, section add actions, component shortcut and collapsible effect/guide settings"
+    "compact right inspector paint rows, paired appearance controls, section add actions, component shortcut and collapsible effect/guide settings",
+    "Version-aware local writes, cross-tab Web Locks, conflict copies, session recovery and unsaved unload protection",
+    "Letter spacing in px/percent and text case across sizing, Canvas/SVG/CSS, text style picker and shadow color variable picker",
+    "Inline resizable Pages list and persistent per-page background paint",
+    "Desktop Electron application, local installations, native integration and MCP discovery",
+    "Multiple fill/stroke stacks, component-set containers, component slots, reusable text/effect styles and self-hosted team storage",
+    "Isolated Chromium workflow regression tests and macOS screenshot baselines; CI lint/typecheck/catalog/browser gates",
+    "Page-level Text/Color/Effect style management and linked fill/stroke color styles with variable/component/library support",
+    "Bounded revision/scope-pinned MCP export manifests and Unicode-safe file chunks",
+    "Public complex-document import/edit/reopen/export/reimport acceptance and default-slot CSS identity preservation",
+    "Device-published and portable PixlPrfct libraries added to existing projects with linked assets and release updates",
+    "Figma .fig library snapshots with native variants, variables and shared styles; disclosed unsupported metadata",
+    "Bounded live MCP library discovery, publish, add, update and remove",
+    "Stacked-paint style previews and explicit vector stroke initialization",
+    "Shared file viewer/commenter/editor roles, exclusive editing leases, explicit handoff and commit-time membership/policy/lease fencing",
+    "Attributed review threads, replies, resolution and page/layer navigation",
+    "Published author-approved instance text/visibility, size/layout and same-set variant overrides"
   ],
   "remaining": [
-    "Exact Figma inspector and toolbar parity: rotation/flips, aspect lock, compact paint rows, multiple paints, styles and complete variable parity, complete region/type/comment tools and matching popovers",
-    "Figma workflow audit: shared asset libraries, comprehensive context menus and tool discovery; nested instance-swap overrides",
-    "Additional frame layout controls and per-edge stroke weights",
-    "Broader SVG import: compound/even-odd fills, repeating gradients and radial focal circles larger than the outer circle, masks, clipping paths, text, images, external references and rotated/skewed symbol viewports, CSS and transformed strokes; external vector clipboard interoperability",
-    "Rotation, corner smoothing, multiple paints, advanced gradients and background blur",
-    "Boolean operations and slice export",
+    "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
+    "Advanced typography including rich text and links; complete variable/style picker and metadata workflows",
+    "Broader SVG import and external vector clipboard interoperability",
+    "Masks, Boolean operations, advanced corner smoothing and slice workflows require capability-specific acceptance",
     "Direct drag grid track reordering and multi-track selection",
-    "Nested instance-swap overrides, canvas component-set containers, exposed instance-swap properties, reusable styles, shared variable libraries and complete variable integration",
-    "Smart Animate, directional overlay motion, reversible while-hovering/while-pressing states, sequential multiple actions per trigger, drag triggers, scrolling and conditional interactions",
-    "Cloud sharing, team permissions and real-time collaboration",
-    "PDF export, accessibility and performance validation",
-    "Comprehensive workflow parity review against the agreed Figma replacement scope",
+    "Set-label overlap, slot rich descriptions/bulk authoring/native Figma slot metadata import",
+    "Complete prototype parity: Smart Animate, sequential/conditional actions, drag and scroll interactions",
+    "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
+    "PDF export and comprehensive accessibility/performance validation",
+    "Complex-document edit latency, real installed-app OS-sleep acceptance",
     "Cloud storage quotas and cleanup of unreferenced uploads",
-    "Variable extensions: shared libraries, scopes, descriptions/code syntax, RGBA colors, bound component properties and prototype variable actions; inline property pickers, import/export, and full variable metadata/bulk editing"
+    "Complete shared-variable integration, scopes, code syntax, RGBA, component/prototype bindings and bulk metadata editing"
   ],
-  "deferred": [
-    "Desktop application: browser version is the current priority"
-  ]
+  "deferred": [],
+  "statusDate": "2026-10-30",
+  "statusSource": "docs/CAPABILITY_MATRIX.md",
+  "verificationPolicy": "Engine, UI, visual verification, installed builds and published releases are tracked separately. Local passing checks do not establish full Figma parity.",
+  "latestVerification": {
+    "date": "2026-10-30",
+    "rustTests": 3,
+    "javascriptTests": 978,
+    "functionalBrowserTests": 20,
+    "reviewedVisualBaselines": 10,
+    "browserResponsivenessP95Ms": 58.4,
+    "browserBudgetMs": 100,
+    "source": "docs/CAPABILITY_MATRIX.md",
+    "limitations": [
+      "Figma imports are file snapshots; no live account/URL sync",
+      "Real OS sleep/wake and participant pilot unverified",
+      "Full Figma workflow/pixel parity remains open"
+    ],
+    "desktopVersion": "0.1.1-alpha.12",
+    "desktopInstalled": true
+  },
+  "teamAcceptance": {
+    "date": "2026-10-30",
+    "build": "0.1.1-alpha.13",
+    "actors": 5,
+    "browserContexts": 4,
+    "humanParticipants": 0,
+    "report": "docs/TEAM_SIMULATION_2026-10-30.md",
+    "boundaries": [
+      "No simultaneous co-editing",
+      "No mentions/email notifications/activity inbox",
+      "No invented adoption or retention data"
+    ]
+  }
 }

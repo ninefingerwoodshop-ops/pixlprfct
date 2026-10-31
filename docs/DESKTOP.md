@@ -23,6 +23,54 @@ Default packages are for testing: Mac builds use an ad-hoc signature; Windows bu
 
 A development-only `PIXL_DESKTOP_TEST_PROFILE=/absolute/test/folder` environment variable isolates a test run from the normal desktop profile.
 
+## Alpha.12 local installation — 2026-10-30
+
+Both existing `releases/desktop/mac-arm64/PixlPrfct.app` and legacy
+`mac-universal/PixlPrfct.app` paths now contain this Mac's Apple Silicon alpha.12
+build. Native About confirms **0.1.1-alpha.12**; deep/strict signatures pass.
+This is a local ad-hoc-signed update, not a universal/notarized public release.
+
+Includes library import/publication/updates, Figma file snapshots, live MCP
+library operations, Page Styles, bounded exports, explicit vector strokes,
+min/max variable bindings and responsiveness fixes. The browser release gate
+passes at 58.4ms p95; full Figma parity and real OS sleep remain unverified.
+
+A fresh real MCP client automatically discovered the installed offline project.
+The current one-frame Territory Track project (one page, one variable) matches
+its complete pre-update normalized document digest exactly. This is a different
+project from the historical 724-layer Design System proof; that historical
+verification is not being reused as a new comparison. All four offline project
+entries remain visible; the team-server project list also retains its existing
+Design System entries. No source design was modified for this installation check.
+
+Both old app bundles, the complete desktop profile and current project backup
+are retained under `.local/acceptance/libraries-followup-2026-10-30/`. Evidence
+includes `desktop-before-proof.json`, `desktop-after-proof.json` and the native
+About screenshot in this task's visualization folder. No public deployment,
+merge, remote CI or participant pilot is claimed.
+
+## 0.1.1-alpha.11 evaluation update
+
+Installed locally in both existing `mac-arm64` and legacy `mac-universal` bundle
+paths on 2026-10-30. Both paths contain this Mac's Apple Silicon build; this is
+not a newly verified universal or public release. Native About reports alpha.11
+and both bundles pass deep/strict signature verification. App and profile
+backups are retained in `.local/evaluation-fixes/desktop-backup/`.
+
+Includes conflict-safe local saves/recovery, inline Pages, page paint, typography
+and text-style controls, shadow-variable pickers, label collision suppression,
+and indexed component-property pruning. The full production build, 3 Rust +
+958 JavaScript tests and 12 browser scenarios pass. See CAPABILITY_MATRIX.md
+and PERFORMANCE.md for evidence and remaining parity/latency scope.
+
+A real MCP client reconnects automatically and reads the saved 724-layer design.
+The before/after comparison preserves all artwork and metadata after the app's
+existing hidden-device-chrome default migration on seven frames. The real
+40-minute transport-idle test passed earlier; installed-app OS sleep remains
+pending. `npm run test:sleep` waits for manual sleep/wake and verifies actual
+macOS power events, stable session identity, and unchanged document content.
+It does not schedule wakeups or put the computer to sleep.
+
 ## 0.1.1-alpha.7 performance update
 
 This local update reduces redundant color/instance resolution, MCP commits and
@@ -182,3 +230,33 @@ The `Windows prerelease` workflow additionally checks silent installation, creat
 On October 29, 2026 the full development dependency audit reported four high-severity findings in sharp and the Cloudflare local-development dependency tree (miniflare, undici, and ws). These Node dependencies are not included in the desktop app package. Do not expose a development server to the internet. This prerelease is not an independent security audit or a claim that all development dependencies are advisory-free.
 
 Figma `.fig` files can also be opened through **File → Import design** (Cmd/Ctrl+O), the projects page, or drag-and-drop. They use the same local parser and conversion report as the browser. See [Figma import](FIGMA_IMPORT.md).
+
+### Mac update delivery (local implementation, 2026-10-30)
+
+`Help → Check for updates…` uses Electron's signed macOS updater. The HTTPS JSON
+feed is embedded in the app at build time; workspace content cannot change it.
+Unsigned test builds and App Store builds do not use this feed. Downloads are
+verified by Squirrel.Mac against the app's signing identity. The app asks users
+to save and restart after a download; it does not force-quit a working session.
+
+For a standalone release, configure the Developer ID identity and notarization
+credentials described above, then build with `--release`. `PIXL_UPDATE_URL` is
+optional: set it only if the distributor offers automatic updates. Without it,
+users install newer signed versions manually. Team administrators do not need to
+host an update service, and team pages cannot redirect the binary update feed.
+Validate the resulting app with:
+
+```sh
+node scripts/desktop/release-check.mjs /absolute/path/PixlPrfct.app
+node scripts/desktop/update-feed.mjs /absolute/path/signed.zip https://your-host/signed.zip /absolute/path/feed.json release-notes.txt
+```
+
+The feed generator includes ZIP size and SHA-256. Upload the **verified** ZIP
+before atomically replacing the feed. Use a separate feed per architecture or a
+universal ZIP. Roll back code by shipping a higher version containing the reverted
+code, retaining compatibility with the current additive database schema. Keep the
+previous installer available. Publishing and a real signed update/rollback drill
+remain release acceptance steps, not implied by local updater tests.
+
+Reference: [Electron autoUpdater](https://www.electronjs.org/docs/latest/api/auto-updater)
+and [Squirrel.Mac feed format](https://github.com/Squirrel/Squirrel.Mac#update-file-json-format).

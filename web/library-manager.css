@@ -60,3 +60,15 @@ dialog#library-manager #library-manager-nav .library-nav-item[aria-current=page]
 dialog#library-manager :is(#library-manager-header,#library-manager-content) :is(.library-action,button.primary,.library-icon){height:24px!important;min-height:24px!important;padding-top:0!important;padding-bottom:0!important}
 #assets-panel .assets-browser-toolbar>.inspector-select-trigger{width:100%!important;max-width:none!important;min-width:0!important}
 .library-selection-notice button{display:block;margin-top:8px}
+#assets-panel #add-more-libraries{flex:none;margin:0 16px 16px;width:calc(100% - 32px);height:24px;min-height:24px;padding:0 8px;font-size:11px;border:1px solid #444;background:transparent;border-radius:5px}
+.library-manager-nav .library-import{margin:16px 4px 0}
+dialog.library-manager .library-detail-heading{display:flex;align-items:center;gap:12px;margin:-16px -16px 20px;padding:16px;border-bottom:1px solid #444;min-height:64px;box-sizing:border-box}
+dialog.library-manager .library-detail-heading button.primary{background:#0d99ff;border-color:#0d99ff}
+.library-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:20px 12px;margin:0 0 24px}
+.library-preview-card{min-width:0;font-size:11px;line-height:16px}
+.library-preview-card>span{display:block;margin-top:6px;overflow-wrap:anywhere}
+.library-component-preview{width:64px;height:64px;border-radius:5px;background:#383838;display:grid;place-items:center}
+.library-style-list{margin:0 0 24px;padding:0;list-style:none}
+.library-style-list li{min-height:32px;display:flex;align-items:center;gap:8px;font-size:11px}
+
+.library-release-dialog{width:480px;max-width:calc(100vw - 32px);max-height:80vh;padding:0!important;border:1px solid #444;border-radius:12px;background:#2c2c2c;color:#fff;font:12px Inter,Arial,sans-serif;box-shadow:0 12px 40px #0008}.library-release-dialog header{height:40px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #444}.library-release-dialog section{padding:8px 16px;max-height:60vh;overflow:auto}.library-release-dialog input,.library-release-dialog textarea{width:100%;background:#383838;color:#fff;border:0;border-radius:4px;padding:8px;font:12px Inter,Arial,sans-serif;margin-bottom:8px}.library-release-dialog textarea{height:48px;resize:vertical}.library-release-dialog footer{min-height:48px;border-top:1px solid #444;padding:8px 16px;display:flex;gap:8px;justify-content:flex-end;align-items:center}.library-release-dialog button{min-height:24px;font-size:12px}.library-release-dialog .primary{background:#0d99ff!important;color:#fff!important}.library-change-list p{padding:8px;margin:0;border-bottom:1px solid #383838}.library-change-list small{display:block;color:#aaa;margin-top:4px}.library-release-error{color:#ffaca8;margin:8px 16px}.library-release-row{display:block;padding:12px 0;border-bottom:1px solid #444;color:#ddd}.library-release-row p{color:#aaa}
