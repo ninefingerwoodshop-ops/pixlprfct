@@ -8,7 +8,7 @@
 
 ## Desktop downloads
 
-The first Windows desktop build is an unsigned early-testing prerelease. Get the installer, ZIP, checksums, and build details from [GitHub Releases](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases). It includes local projects, drawing and text tools, Flexbox/CSS Grid layout, custom CSS, Figma Design file import, and optional self-hosted team connections. Back up designs as `.pixl` files; this is not a production-stability promise or full Figma compatibility.
+The Windows **v0.1.1-alpha.15** preview includes the SVG animator, grouped keyframe editing, motion paths, morphing, and interactive SVG export, alongside the design editor and optional self-hosted team connections. Get the installer, ZIP, checksums, and build details from [the release page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.15) or the [product website](https://ninefingerwoodshop-ops.github.io/pixlprfct/#downloads). This is an unsigned early-testing prerelease under the [Community License](LICENSE). Back up designs as `.pixl` files; this is not a production-stability promise or full Figma compatibility.
 
 **Code signing policy:** [Signing status, maintainers, and release approvals](CODE_SIGNING.md). SignPath enrollment is pending; this prerelease has no Windows publisher signature. **Privacy:** [Data handling and network controls](PRIVACY.md). Online fonts are off by default in local desktop designs.
 
@@ -18,7 +18,7 @@ AI agents can build and edit live or saved designs through the [PixlPrfct MCP se
 
 Self-hosted accounts, organizations, teams, and database setup: see [Self-hosting PixlPrfct](docs/SELF_HOSTING.md). Start with `npm run selfhost:setup`.
 
-A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor now follows the structure and interaction conventions of the current Figma Design UI, while retaining the PixlPrfct name. It supports local drafts and self-hosted account and team workspaces. The development source also supports optional simultaneous editing and explicit conflict recovery for team documents; the published Windows alpha predates these additions.
+A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor now follows the structure and interaction conventions of the current Figma Design UI, while retaining the PixlPrfct name. It supports local drafts and self-hosted account and team workspaces. The current editor also supports optional simultaneous editing and explicit conflict recovery for team documents; those workflows require a compatible self-hosted server.
 
 The app opens at **All projects** (`/`). Create a design, import a `.pixl` project, or open an existing project from its card. Search, sorting, and grid/list views help find saved work. Each project opens in a separate editor route; **All projects** in the editor saves changes and returns home. Local projects stay in this browser, while the Cloud projects collection uses your signed-in account.
 
@@ -26,7 +26,7 @@ The app opens at **All projects** (`/`). Create a design, import a `.pixl` proje
 property keyframes, path morphing, motion paths, custom Bézier easing, a docked timeline,
 playback, click/hover triggers, and animated SVG export with a live preview.
 Editable timelines save as `.pixl` projects. See the [SVG animator walkthrough](https://ninefingerwoodshop-ops.github.io/pixlprfct/#svg-animator)
-and [SVG Animation guide](docs/SVG_ANIMATION.md) for the workflow, verification, and current limitations. This addition is in the development source and is not yet included in desktop releases.
+and [SVG Animation guide](docs/SVG_ANIMATION.md) for the workflow, verification, and current limitations. It is included in the Windows v0.1.1-alpha.15 preview. Select, move, copy/paste, or delete multiple timeline keys together; each group edit is one undo step.
 
 The contextual inspector includes 18 blend modes, persistent aspect-ratio locking, text resizing and horizontal/vertical alignment buttons, arrow endpoint swapping, and selection-specific vector/image actions. These properties participate in Rust validation, undo, saved documents, and component overrides. Blend modes render in Canvas, SVG, and HTML/CSS; Plus darker is not yet supported. The selection-by-selection reference survey and remaining gaps are tracked in `inspector-parity.json`.
 

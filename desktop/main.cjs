@@ -1,7 +1,7 @@
 const {app,autoUpdater,BrowserWindow,Menu,dialog,ipcMain,protocol,session,shell,nativeTheme}=require('electron');
 const {readFile,realpath}=require('node:fs/promises');
 const path=require('node:path');
-const {APP_URL,CSP,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor}=require('./policy.cjs');
+const {APP_URL,contentSecurityPolicy,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor}=require('./policy.cjs');
 const {readDesign,designExtensions,designFilters}=require('./design-files.cjs');
 const {discoverBridges}=require('./mcp-discovery.cjs');
 const {readPreferences,writePreferences,isOnlineFontURL}=require('./preferences.cjs');
@@ -35,7 +35,7 @@ function configureSession(base){
  if(configured.has(partition))return ses;configured.add(partition);
  if(isLocalURL(base))ses.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!preferences.onlineFonts&&isOnlineFontURL(details.url)}));
  if(isLocalURL(base))ses.protocol.handle('pixlprfct',async request=>{
-  const headers={'Content-Security-Policy':CSP,'X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'};
+  const headers={'Content-Security-Policy':contentSecurityPolicy(request.url),'X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'};
   if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405,headers});
   const url=new URL(request.url);
   if(isLocalURL(request.url)&&url.pathname==='/api/installation')return Response.json({mode:'desktop'},{headers});

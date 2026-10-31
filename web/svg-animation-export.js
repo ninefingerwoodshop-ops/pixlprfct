@@ -7,14 +7,17 @@ export function installSvgExport({read,save,editable,download,dropdowns,report,s
  const dialog=el('dialog','svg-export-dialog');dialog.id='svg-export-dialog';dialog.setAttribute('aria-label','Export SVG');
  const title=el('h2','','Export SVG'),layout=el('div','svg-export-layout'),preview=el('section','svg-export-preview'),frame=el('iframe'),hint=el('p','svg-export-preview-hint'),refresh=el('button','','Restart preview'),controls=el('section','svg-export-controls'),actions=el('div','svg-dialog-actions'),cancel=el('button','','Cancel'),store=el('button','','Save settings'),exportButton=el('button','primary','Download SVG');
  frame.title='Export preview';frame.setAttribute('sandbox','allow-scripts');refresh.type=cancel.type=store.type=exportButton.type='button';preview.append(frame,hint,refresh);layout.append(preview,controls);actions.append(cancel,store,exportButton);dialog.append(title,layout,actions);document.body.append(dialog);
- let pending,format,source;
+ let pending,format,source,previewPayload=null;
+ window.addEventListener('message',event=>{if(event.source===frame.contentWindow&&event.data?.type==='pxl-svg-preview-ready'&&dialog.open&&previewPayload)frame.contentWindow.postMessage(previewPayload,'*');});
  const documentWithSettings=()=>({...source,svg_animation:{...source.svg_animation,interaction:{...pending.interaction},loop:pending.loop}});
  const changed=()=>JSON.stringify(pending)!==JSON.stringify({interaction:interactionSettings(read().svg_animation),loop:read().svg_animation.loop});
  const safely=fn=>()=>{try{fn();}catch(error){report(error.message);}};
  function updatePreview(){
   const animated=format==='animated',trigger=pending.interaction.trigger,svg=animatedSvg(documentWithSettings(),{animated});
-  // The same exported SVG runs in an isolated frame, with no storage or network.
-  frame.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}body{display:grid;place-items:center}body>svg{width:100%;height:100%;display:block}svg:focus-visible{outline:2px solid #0d99ff;outline-offset:-3px}</style></head><body>${svg}</body></html>`;
+  // Use an opaque sandbox and the bundled controller; srcdoc would inherit the
+  // desktop policy that correctly blocks inline scripts in the editor.
+  previewPayload={type:'pxl-svg-preview',svg,interaction:animated&&trigger!=='load'?{...pending.interaction,duration:source.svg_animation.duration,loop:pending.loop}:null};
+  frame.src=new URL('./svg-animation-preview.html',import.meta.url).href;
   hint.textContent=!animated?'First frame · static SVG':trigger==='hover'?'Move your pointer over the preview, then away. Keyboard focus also starts playback.':trigger==='click'?'Click the preview to play. Click again to test the response. Enter and Space also work.':'Plays automatically. Restart the preview to watch from the beginning.';
   store.disabled=!editable()||!changed();
  }
@@ -35,6 +38,6 @@ export function installSvgExport({read,save,editable,download,dropdowns,report,s
  refresh.onclick=safely(updatePreview);cancel.onclick=()=>dialog.close();
  store.onclick=safely(()=>{if(!editable())return;persist();dialog.close();});
  exportButton.onclick=safely(()=>{const output=animatedSvg(documentWithSettings(),{animated:format==='animated'});persist();download(source.name.replace(/[<>:"/\\|?*]/g,'-')+'.svg',output,'image/svg+xml');dialog.close();report('SVG exported.');});
- dialog.addEventListener('close',()=>{frame.srcdoc='';});
+ dialog.addEventListener('close',()=>{previewPayload=null;frame.src='about:blank';});
  return {show(){stop();source=structuredClone(read());pending={interaction:interactionSettings(source.svg_animation),loop:source.svg_animation.loop};format=source.svg_animation.tracks.length?'animated':'static';renderControls();dialog.showModal();updatePreview();},dialog};
 }

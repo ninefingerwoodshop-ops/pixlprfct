@@ -1,10 +1,11 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source. It does not replace Design or its existing
-Motion mode. The public Windows alpha download predates this workspace. The
-grouped timeline editing described below is verified locally on 2026-10-31 and
-pending merge; it has not been packaged in a desktop release.
+Animation** in the repository source and the [Windows v0.1.1-alpha.15
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.15).
+It does not replace Design or its existing Motion mode. Grouped timeline editing
+was merged in PR #37 and is included in that preview. The older Windows
+v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
 
@@ -123,7 +124,10 @@ CSS backgrounds. Static exports contain neither animation nor scripts.
 Changes in this dialog are temporary until **Save settings** or **Download SVG**.
 Cancel discards them. Settings are saved in `.pixl` files and support undo/redo.
 Read-only shared documents can preview and download temporary export settings
-without changing the saved project. Preview runs in a sandboxed frame.
+without changing the saved project. Preview runs in an opaque sandboxed frame
+with the exported geometry and the same trusted player used by downloads. The
+player is loaded from a bundled file so the desktop editor continues to block
+inline scripts. Preview cannot access the parent document, storage or network.
 
 ## Persistence and boundaries
 
@@ -207,8 +211,12 @@ and [selection tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-
 Coverage includes cross-track selection, marquee, group movement, relative-time
 copy/paste, collisions, duration boundaries, one-step undo/redo, persistence,
 source replacement, restored motion/morph tracks and read-only cloud gates.
+The desktop-policy regressions cover secure and loopback origins, interactive
+preview playback and isolation
+from the parent editor; native Mac runtime inspection confirms the same workflow
+through the application protocol.
 
-Local verification on 2026-10-31: 25 SVG browser cases and 17 SVG model/controller
+Local verification on 2026-10-31: 27 SVG browser cases and 17 SVG model/controller
 cases pass. Changed-code lint has zero errors and one existing navigation warning.
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

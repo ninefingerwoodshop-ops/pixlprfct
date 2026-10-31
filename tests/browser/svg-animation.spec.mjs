@@ -1,5 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {newSvgAnimation} from '../../web/svg-animation-model.js';
+import desktopPolicy from '../../desktop/policy.cjs';
+import {readFile} from 'node:fs/promises';
 const storageKey='pixlprfct.drafts.v1';
 const svg='<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><defs><linearGradient id="paint"><stop stop-color="#0d99ff"/><stop offset="1" stop-color="#b28cff"/></linearGradient><clipPath id="clip"><rect width="240" height="240"/></clipPath></defs><g id="Artwork" clip-path="url(#clip)"><rect id="Tile" x="40" y="40" width="80" height="80" fill="url(#paint)"/><circle id="Dot" cx="160" cy="160" r="20" fill="#ff0000"/></g></svg>';
 test.beforeEach(async({page})=>{await page.route(/https?:\/\//,r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());});
@@ -220,4 +222,22 @@ test('read-only shared timelines allow grouped selection and copy without changi
  await timeline.press('Shift+F10');const menu=page.getByRole('menu',{name:'Keyframe actions'});await expect(menu.getByRole('menuitem',{name:'Copy keyframes',exact:false})).toBeEnabled();await expect(menu.getByRole('menuitem',{name:'Paste keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Delete keyframes',exact:false})).toBeDisabled();await menu.press('Escape');
  const key=page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}),bounds=await key.boundingBox();await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+100,bounds.y+bounds.height/2,{steps:5});await page.mouse.up();
  expect(await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))).toEqual(names);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();expect(writes).toBe(0);
+});
+
+for(const origin of ['https://desktop-preview.test','http://127.0.0.1:4197'])test.describe('desktop policy at '+origin,()=>{
+ // An intercepted HTTPS origin models the secure desktop protocol without
+ // Chromium's separate localhost/private-network permission rules.
+ test.use({baseURL:origin});
+ test('interactive export preview works under the packaged desktop content security policy',async({page})=>{
+ await page.route(origin+'/**',async route=>{
+  const pathname=new URL(route.request().url()).pathname,types={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',woff2:'font/woff2'};
+  if(!pathname.startsWith('/editor/'))return route.fulfill({status:404,body:''});
+  try{const body=await readFile(new URL('../../web/'+pathname.slice(8),import.meta.url));await route.fulfill({body,contentType:types[pathname.split('.').at(-1)]??'application/octet-stream',headers:{'content-security-policy':desktopPolicy.contentSecurityPolicy('pixlprfct://app'+pathname)}});}catch{return route.fulfill({status:404,body:''});}
+ });
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();await page.getByRole('button',{name:'Export',exact:true}).click();await chooseExport(page,'Animation start','On click');
+ const preview=page.frameLocator('iframe[title="Export preview"]'),root=preview.locator('svg[role="button"]');await expect(root).toBeVisible();
+ await expect.poll(()=>root.evaluate(svg=>svg.animationsPaused())).toBe(true);expect(await root.evaluate(svg=>svg.getCurrentTime())).toBe(0);
+ await root.press('Enter');await expect.poll(()=>root.evaluate(svg=>svg.getCurrentTime())).toBeGreaterThan(.1);
+ expect(await page.locator('iframe[title="Export preview"]').getAttribute('sandbox')).toBe('allow-scripts');expect(await root.evaluate(()=>{try{return !!parent.document;}catch{return false;}})).toBe(false);
+ });
 });

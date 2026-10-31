@@ -2,7 +2,7 @@
 
 ## Current status
 
-The first Windows desktop prerelease is **unsigned** and intended for early testing. It is not represented as signed, independently audited, or production-ready. Download from this repository's [Releases page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases), inspect the source commit and build run, and compare SHA-256 checksums. Checksums detect changed files; they do not authenticate a publisher like a trusted signature does.
+The Windows desktop previews are **unsigned** and intended for early testing. They are not represented as signed, independently audited, or production-ready. Download from this repository's [Releases page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases), inspect the source commit and build run, and compare SHA-256 checksums. Checksums detect changed files; they do not authenticate a publisher like a trusted signature does.
 
 The earlier MIT / Apache 2.0 project applied to the SignPath Foundation
 open-source program. Approval has not been granted and Windows signing is not

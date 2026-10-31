@@ -90,6 +90,7 @@ public/editor/
 # Bundled local Figma import worker
 /web/vendor/figma-import-worker.js
 /web/vendor/figma-import-LICENSES.txt
+/web/vendor/svg-animation-preview.js
 
 /test-results/
 /playwright-report/
