@@ -15,3 +15,17 @@ for (const link of document.querySelectorAll('[data-lightbox]')) {
 dialog.querySelector('button').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 dialog.addEventListener('close', () => sourceLink?.focus());
+
+const iconPreview = document.querySelector('.icon-preview-grid');
+const iconWeights = document.querySelector('.icon-weight-controls');
+if (iconPreview && iconWeights) {
+  iconWeights.hidden = false;
+  for (const button of iconWeights.querySelectorAll('button')) {
+    button.addEventListener('click', () => {
+      iconPreview.dataset.weight = button.dataset.iconWeight;
+      for (const option of iconWeights.querySelectorAll('button')) {
+        option.setAttribute('aria-pressed', String(option === button));
+      }
+    });
+  }
+}
