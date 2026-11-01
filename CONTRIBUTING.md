@@ -46,3 +46,19 @@ visible version, release notes, structured metadata, and platform/signing status
 together. Screenshots must come from the actual app with sample artwork and must
 distinguish development features from released downloads. Do not publish private
 user designs or screenshots of reference products.
+
+## Public writing and assets
+
+Website, wiki, release and roadmap copy should describe PixlPrfct’s actual
+capabilities in its own terms. Avoid marketing promises of cloning, identical
+appearance, complete equivalence or affiliation with another product. Use
+third-party names when needed to identify a file format, dependency or factual
+limitation, and retain required copyright, license and attribution notices.
+
+Support feature, performance, compatibility and security claims with recorded
+evidence and state its limits. Label proposals separately from shipped work.
+Publish only artwork and screenshots cleared for public use; do not publish
+private designs, competitor screenshots, credentials or personal information.
+Do not make unverified claims that assets are original, infringement-free or
+legally cleared. Copy review is not legal clearance of the product, interface,
+name or underlying assets; unresolved rights questions require qualified review.

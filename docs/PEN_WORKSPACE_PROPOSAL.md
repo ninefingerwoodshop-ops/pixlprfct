@@ -23,9 +23,9 @@ also ships in Design in the first release remains a scope decision.
   right inspector continues to control both. Every edit must immediately agree
   across the toolbar, inspector and canvas, with one shared selection and undo
   history. Use the application's shared color/input controls.
-- Provide an Illustrator-style Pen/Pencil tool set with working vector editing,
+- Provide a complete Pen/Pencil tool set with working vector editing,
   rather than a single path creation button. Preserve PixlPrfct branding and the
-  Figma dark interface foundation. Document paint remains independent of theme.
+  existing dark interface foundation. Document paint remains independent of theme.
 
 ## Proposed tool inventory
 

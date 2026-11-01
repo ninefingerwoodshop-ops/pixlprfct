@@ -106,8 +106,8 @@ The owner accepted Pen, Direct Selection/anchor editing, Pathfinder/Shape Builde
 Pencil/Brush, clipping masks, text on a path, gradients and alignment/snapping as
 roadmap candidates. The movable tool palette and icon cursor are explicit
 requirements. Release grouping, dates, Brush behavior and print/prepress scope
-are not approved. Future equivalent controls must follow live Figma references;
-Illustrator-style capabilities do not authorize unrelated interface redesign.
+are not approved. Future controls must follow the project’s interface requirements
+and use shared components; added capabilities do not authorize unrelated redesign.
 
 ## Verification performed
 
