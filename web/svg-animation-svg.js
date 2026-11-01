@@ -65,10 +65,11 @@ export function baseValue(node,property){
 }
 const group=()=>document.createElementNS(NS,'g');
 export function animationScene(animation){
- const {root}=sanitizeSvg(animation.svg),bindings=[],motionGuides=[];
+ const {root}=sanitizeSvg(animation.svg),bindings=[],motionGuides=[],frames=new Map();
  // Transform wrappers retain the imported transforms, groups, masks and paint.
  for(const id of new Set(animation.tracks.map(t=>t.element))){
   let node=root.querySelector('#'+id);if(!node)throw new Error('An animation refers to a missing SVG element.');
+  frames.set(id,node.parentElement);
   const tracks=animation.tracks.filter(t=>t.element===id),origin=animation.origins[id]??[0,0];
   if(tracks.some(t=>t.property==='morph')){if(!pathKinds.has(node.localName))throw new Error('Morph tracks require a path or geometric shape.');if(node.localName!=='path'){const path=document.createElementNS(NS,'path');for(const a of node.attributes)if(!['x','y','width','height','rx','ry','cx','cy','r','x1','y1','x2','y2','points'].includes(a.name))path.setAttribute(a.name,a.value);path.append(...node.childNodes);node.replaceWith(path);node=path;}}
   let outer=node;
@@ -81,11 +82,12 @@ export function animationScene(animation){
   for(const track of tracks.filter(t=>properties[t.property].attribute)){const attribute=properties[track.property].attribute;node.style.removeProperty(attribute);bindings.push({node,track,attribute,value:properties[track.property].morph?morphData:v=>String(v)});}
   const motion=tracks.find(t=>t.property==='motionProgress');
   if(motion){const pivot=group(),wrap=group(),sample=pathSampler(motion.motion.d);pivot.setAttribute('transform',`translate(${-origin[0]} ${-origin[1]})`);outer.replaceWith(wrap);wrap.append(pivot);pivot.append(outer);motionGuides.push({element:id,parent:wrap.parentElement,d:motion.motion.d});
+   frames.set(id,pivot);
    bindings.push({node:wrap,track:motion,attribute:'transform',motion:true,value:v=>{const p=sample(v/100),angle=motion.motion.rotate==='none'?0:p.angle+(motion.motion.rotate==='auto-reverse'?180:0);return `translate(${p.x} ${p.y}) rotate(${angle})`;}});
   }
  }
- const seek=time=>{for(const b of bindings){const value=b.value(trackValue(b.track,time));b.node.setAttribute(b.attribute,b.type?`${b.type}(${value})`:value);}};seek(0);
- return {root,bindings,motionGuides,seek};
+ const seek=(time,overrides={})=>{for(const b of bindings){const value=b.value(overrides[b.track.element]?.[b.track.property]??trackValue(b.track,time));b.node.setAttribute(b.attribute,b.type?`${b.type}(${value})`:value);}};seek(0);
+ return {root,bindings,motionGuides,frames,seek};
 }
 export function animatedSvg(doc,{animated=true}={}){
  validateAnimation(doc);const a=doc.svg_animation,{root,bindings}=animationScene(a),settings=interactionSettings(a),interactive=animated&&bindings.length>0&&settings.trigger!=='load';

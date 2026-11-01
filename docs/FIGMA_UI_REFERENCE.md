@@ -720,3 +720,41 @@ Pause repair. The product site uses the actual navigation-menu screenshot and
 describes pause/resume. Application layout and controls are unchanged in this
 packaging pass. See [Desktop](DESKTOP.md) and the release notes for availability
 and verification scope; the earlier checkpoints remain historical evidence.
+
+
+### 2026-11-01 — SVG canvas stretching and rotation handles (local source)
+
+Inspected the live **Capwah Components** file in native Figma, Motion mode,
+selecting Rectangle 1 from Layers without changing the document. At 100% zoom,
+its 38 × 38 rectangle has a thin blue selection outline, four white square
+corner handles with blue borders (approximately 7 logical pixels), and a small
+blue dimensions badge below the box. Transform properties remain in the right
+inspector and Motion remains a full-width dock. The native coordinate-input
+surface was unavailable; selection through the accessibility layer succeeded.
+No live resize/rotation gesture or exact cursor parity is claimed. Reference:
+`.local/svg-animation/figma-transform-handles.png`.
+
+Figma's official [alignment, rotation, position and dimensions guide](https://help.figma.com/hc/en-us/articles/360039956914-Adjust-alignment-rotation-position-and-dimensions)
+confirms edge/corner resizing, rotation outside the corners, and Shift constraints;
+its [vector editing guide](https://help.figma.com/hc/en-us/articles/360039957634-Edit-vector-layers)
+confirms center resizing with Alt/Option and 15° rotation increments with Shift.
+
+The SVG animator now uses a 1px accent outline, four 7px white square corner
+handles, full-edge stretch targets, outside-corner rotation targets/cursor, and
+an 11px size label below the box. Hit targets and glyphs retain their screen size
+at canvas zoom. Keyboard focus has a visible outline. A gesture previews existing
+transform properties and commits one undo step at the playhead; Shift constrains,
+Alt/Option centers scaling, and Escape cancels. Read-only and editing-lease states
+are enforced. Imported rotated/skewed geometry uses bounds in the animation's
+parent axes, so exact oriented-box parity for arbitrary SVGs is not claimed.
+
+All 51 SVG browser cases and 36 model/controller cases pass; editor build and
+changed-code lint pass (the pre-existing Next.js navigation rule is inapplicable
+to this standalone editor and excluded for lint). Screenshots inspected:
+`.local/svg-animation/transform-workspace.png`, `transform-resize.png`,
+`transform-rotation.png`. No TT gap is marked resolved by this separate animator
+feature. Handles are local source work after the published Windows alpha.19.
+
+PR #50's alpha.19 release is now published and its website deployed, with source
+and packaged tests recorded in `docs/SVG_ANIMATION.md`. It includes PRs #48/#49;
+it does not include the canvas handles above.
