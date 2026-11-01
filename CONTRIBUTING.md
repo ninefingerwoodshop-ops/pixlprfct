@@ -51,9 +51,12 @@ user designs or screenshots of reference products.
 
 Website, wiki, release and roadmap copy should describe PixlPrfct’s actual
 capabilities in its own terms. Avoid marketing promises of cloning, identical
-appearance, complete equivalence or affiliation with another product. Use
-third-party names when needed to identify a file format, dependency or factual
-limitation, and retain required copyright, license and attribution notices.
+appearance, complete equivalence or affiliation with another product. Public
+product descriptions should name only PixlPrfct and describe concrete
+features, supported file extensions and limits; do not name or compare competing
+design software, including in footers and disclaimers. Preserve accurate source
+identifiers in engineering documentation and retain required copyright, license
+and attribution notices.
 
 Support feature, performance, compatibility and security claims with recorded
 evidence and state its limits. Label proposals separately from shipped work.
