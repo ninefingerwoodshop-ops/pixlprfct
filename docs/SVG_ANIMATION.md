@@ -1,12 +1,13 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source and the [Windows v0.1.1-alpha.17
-preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.17).
+Animation** in the repository source and the [Windows v0.1.1-alpha.18
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.18).
 It does not replace Design or its existing Motion mode. Grouped timeline editing
 was merged in PR #37; group easing and precise selection timing followed in
 PRs #39 and #40. Animation reuse and reversal followed in PRs #42 and #43.
-All are included in alpha.17. The older Windows
+Duplication and playhead/keyframe snapping followed in PRs #45 and #46.
+All are included in alpha.18. The older Windows
 v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
@@ -57,8 +58,8 @@ on its own track. Releasing a free or grid move on an occupied time still reject
 the whole move. Escape cancels the drag without adding an undo step.
 Double-clicking empty space on a property row still adds a key there.
 
-Playhead/keyframe snapping is a source update and is not included in Windows
-v0.1.1-alpha.17, which uses only the 100 ms Shift grid.
+Playhead/keyframe snapping is included in Windows v0.1.1-alpha.18. The earlier
+alpha.17 download uses only the 100 ms Shift grid.
 
 Cmd/Ctrl+C copies the selection. Move the playhead with the ruler or **Current
 time**, then Cmd/Ctrl+V pastes the earliest copied key at that time, preserving
@@ -77,7 +78,8 @@ copying but block moves, pastes and deletions.
 
 ## Duplicating at the playhead
 
-This source update is not included in the Windows v0.1.1-alpha.17 download.
+Included in Windows v0.1.1-alpha.18. The earlier alpha.17 download does not
+include this command.
 
 Select keys on one or more tracks, then move **Current time** to the start of
 the new sequence. Right-click the timeline and choose **Duplicate keyframes**,

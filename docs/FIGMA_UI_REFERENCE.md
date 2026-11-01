@@ -652,3 +652,8 @@ Changed-code lint has zero errors or warnings; the editor build and diff checks
 pass. Coverage includes Shift held before grabbing an existing selection,
 cross-track and playhead alignment, zoom tolerance, collision/range rejection,
 ties, Alt bypass, free movement, grid fallback, Escape, undo/redo and persistence.
+
+Merge update, 2026-10-31: keyframe snapping was merged in PR #46. Its earlier
+paragraph records the local checkpoint. Windows alpha.18 release preparation
+includes duplication and snapping; see [Desktop](DESKTOP.md) for package
+availability and platform verification limits.
