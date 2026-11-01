@@ -1,13 +1,14 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source and the [Windows v0.1.1-alpha.18
-preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.18).
+Animation** in the repository source and the [Windows v0.1.1-alpha.19
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.19).
 It does not replace Design or its existing Motion mode. Grouped timeline editing
 was merged in PR #37; group easing and precise selection timing followed in
 PRs #39 and #40. Animation reuse and reversal followed in PRs #42 and #43.
 Duplication and playhead/keyframe snapping followed in PRs #45 and #46.
-All are included in alpha.18. The older Windows
+All are included in alpha.18; alpha.19 adds keyframe navigation and the Pause
+repair from PRs #48 and #49. The older Windows
 v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
@@ -40,6 +41,42 @@ The timeline's Play/Pause button pauses at the current time; Play resumes from
 that position. **Go to start** stops playback and returns to 0 ms. Windows
 alpha.19 keeps Pause reliably clickable across animation frames and updates
 its tooltip with the playback state. Earlier alpha.18 packages lack this fix.
+
+## Canvas resize and rotation handles (source update)
+
+Select an element on the canvas or in Elements to show its blue selection box.
+Four square corner handles resize both dimensions; dragging any edge stretches
+just that dimension. Drag just outside a corner, where the rotation cursor
+appears, to rotate around the current selection center. The size label updates
+while dragging.
+
+- **Shift + resize** keeps the current proportions.
+- **Alt/Option + resize** keeps the center fixed. Combine with Shift for uniform
+  scaling from the center.
+- **Shift + rotate** snaps the animation rotation to 15° increments.
+- Focus a resize handle and use arrow keys to resize by one SVG unit; Shift uses
+  ten. Focus a rotation handle and use arrows for 1°; Shift uses 15°.
+- **Escape**, pointer cancellation, loss of pointer capture, or leaving the
+  window cancels a drag. Seeking, changing selection, or losing the editing
+  lease also cancels it. Clicking without moving creates no keyframe.
+
+Dragging pauses playback. Releasing a changed handle writes the affected scale,
+position and/or rotation keys at the current playhead as one undo step; position
+keys keep the opposite edge/corner or center anchored. Existing key easing is
+preserved. Previewing a drag does not save intermediate document states. Handles
+hide while editing morph nodes and are disabled in read-only shared files.
+
+These controls use the animator's existing parent-space transform properties,
+including imported groups, nested transforms, motion paths and zoom. Imported
+geometry, hierarchy and stored animation origins remain intact. For an element
+with its own imported rotation or skew, the box encloses that geometry in the
+animation's parent axes; it is not an exact oriented-box reconstruction of every
+SVG affine transform. Scales retain the current positive range, 0.001–100;
+dragging past an opposite edge stops at the minimum rather than flipping.
+
+Canvas transform handles are a **source update after alpha.19**. The public
+Windows alpha.19 download contains navigation and the Pause repair, but not these
+handles yet.
 
 ## Selecting, moving and copying keyframes
 
@@ -475,3 +512,25 @@ Cloud browser tests use a mocked API; they do not certify a deployed server or
 multi-user environment. Visual inspection verifies the dock and inspector layout,
 not exhaustive pixel parity or SVGator feature parity. Local screenshots are in
 `.local/svg-animation/`.
+
+
+## 2026-11-01 — alpha.19 publication and canvas transform verification
+
+- PR #50 merged with the owner's explicit override approval. Windows alpha.19
+  is published from `ea20b140ebd97e929b1dc23a258c4c7af431f88c`; merge
+  `e97e25e8cb275df424062c2db12957e8c3313edb` has the identical tree.
+  Manual Windows build `41312336745` passed 26 desktop/import checks and
+  install/startup/uninstall. The downloaded packages passed SHA-256, provenance
+  and source comparison; 41 SVG workflows passed against extracted package
+  assets. Both public package URLs return HTTP 200. Pages run `41313246085`
+  published the verified website. Automatic CI remains disabled and repository
+  approval protections remain active.
+- Canvas stretching/rotation is verified locally, separately from that release:
+  all 51 SVG browser cases pass (43 existing plus eight handle workflows), as do
+  36 model/controller cases. Coverage includes opposite anchors, modifiers,
+  cancellation, zoom, key easing, one-step undo, persistence, nested transforms,
+  native SVG export, motion-path groups, read-only files and editing-lease changes.
+- Visual evidence: `.local/svg-animation/transform-workspace.png`,
+  `transform-resize.png`, `transform-rotation.png`, and
+  `figma-transform-handles.png`. Live Figma selection was inspected before
+  implementation. Full visual or feature parity is not claimed.
