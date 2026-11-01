@@ -547,3 +547,34 @@ existing navigation warning. The editor build passes.
 This pass is local pending merge and is not in Windows alpha.16. Cross-element
 morph and motion-path copying remain unsupported. No TT design-system gap is
 closed by this pass.
+
+Merge update, 2026-10-31: animation reuse was merged in PR #42. Its earlier
+paragraph records the local checkpoint; it remains outside Windows alpha.16.
+
+### SVG keyframe reversal — 2026-10-31
+
+Rechecked live native Figma Motion in Capwah Components before implementation.
+The 1800 × 1003 logical view retains the 200 px full-width timeline and 241 px
+right inspector. The file has no animation tracks and reports a saving connection
+issue; selected-key reversal behavior could not be inspected there. No document
+content was edited. Capture: `.local/svg-animation/figma-reverse-reference.png`.
+
+The separate SVG workspace adds **Reverse keyframes** to its existing shared
+dark context menu, between paste and delete actions. At 1280 × 720, the menu
+fits within the viewport and retains the same width, rows and typography. The
+timeline dock and right inspector are unchanged. This is a working SVG extension,
+not a claim of exact Figma action parity. SVGator's official
+[reversal tutorial](https://www.svgator.com/tutorials/how-to-reverse-a-sequence-of-keyframes)
+is the workflow reference.
+
+Manual inspection reversed the Satellite rotation in an isolated orbit example:
+the start value became 360 degrees, and the first segment changed from Ease in
+to Ease out. Proofs: `.local/svg-animation/reverse-menu.png` and
+`reverse-workspace.png`. Automated checks cover mirrored easing, staggered tracks,
+morph/path values, atomic rejection, selection, undo/redo, exported playback,
+reopening and read-only gates. This pass is local pending merge and is not in
+Windows alpha.16. No TT design-system gap is closed by it.
+
+Verification: all 36 SVG browser cases and 31 model/controller cases pass.
+Changed-code lint has zero errors or warnings; the editor build and diff checks
+pass.

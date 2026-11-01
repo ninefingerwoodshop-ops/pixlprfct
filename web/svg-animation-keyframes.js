@@ -1,4 +1,4 @@
-import {newSvgAnimation,validateAnimation,validEasing,easingPoints} from './svg-animation-model.js';
+import {newSvgAnimation,validateAnimation,validEasing,easingPoints,easings} from './svg-animation-model.js';
 
 export const keyframeId=key=>JSON.stringify([key.element,key.property,key.time]);
 const trackId=track=>JSON.stringify([track.element,track.property]);
@@ -81,6 +81,28 @@ export function deleteKeyframes(animation,selection){
  const ids=new Set(selection.map(keyframeId)),next=structuredClone(animation);
  next.tracks=next.tracks.map(track=>({...track,keys:track.keys.filter(key=>!ids.has(keyframeId({...track,time:key.time})))})).filter(track=>track.keys.length);
  return checked(next);
+}
+
+function reversedEasing(value){
+ const [x1,y1,x2,y2]=easingPoints(value),points=[1-x2,1-y2,1-x1,1-y1];
+ return Object.keys(easings).find(name=>easings[name].every((n,i)=>Math.abs(n-points[i])<1e-12))??points;
+}
+
+export function reverseKeyframes(animation,selection){
+ const {start,duration}=keyframeTiming(animation,selection);
+ if(!duration)throw new Error('Select keyframes at different times to reverse.');
+ const end=start+duration,at=time=>start+end-time,ids=new Set(selection.map(keyframeId)),next=structuredClone(animation);
+ for(const track of next.tracks){
+  const chosen=track.keys.filter(key=>ids.has(keyframeId({...track,time:key.time})));
+  if(!chosen.length)continue;
+  if(track.keys.some(key=>key.time>=start&&key.time<=end&&!chosen.includes(key)))throw new Error('Select every key on the affected tracks within this time range before reversing. Nothing was changed.');
+  // Easing belongs to the outgoing segment, so it moves to the other end of
+  // that segment on reversal. Preserve the outgoing curve at the range's end.
+  const curves=chosen.map(key=>structuredClone(key.easing));
+  chosen.forEach((key,index)=>{key.time=at(key.time);key.easing=index?reversedEasing(curves[index-1]):curves.at(-1);});
+  track.keys.sort((a,b)=>a.time-b.time);
+ }
+ return {animation:checked(next),selection:selection.map(key=>({...key,time:at(key.time)}))};
 }
 
 export function copyKeyframes(animation,selection){

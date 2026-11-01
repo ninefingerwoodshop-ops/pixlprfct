@@ -134,6 +134,30 @@ active key. Read-only files disable both fields. Timing persists in `.pixl` save
 and exported SVG. Selection timing does not add timeline stretch handles or
 change the existing group-drag gesture.
 
+## Reversing keyframes
+
+This source update is not included in the Windows v0.1.1-alpha.16 download.
+
+Select a sequence in the timeline, right-click, and choose **Reverse keyframes**.
+Shift+F10 opens the same menu with the keyboard. The command mirrors every
+selected time between the selection's earliest and latest key, using one shared
+range across all selected tracks. For example, values at 0, 900 and 3000 ms move
+to 3000, 2100 and 0 ms. Overall animation duration stays unchanged.
+
+Values stay with their keys. Each reversed segment also gets the reversed easing
+curve: Ease in becomes Ease out, and custom Bézier curves are reflected in both
+axes. The curve remains attached to the segment it controls, rather than simply
+moving with the old starting key. The outgoing curve at the end of the selected
+range is retained. The new keys remain selected, the playhead follows the active
+key, and the whole edit is one undo step.
+
+Transforms, appearance, morph geometry, and motion-path progress are supported.
+Origins, routes, unselected tracks, and keys outside the selected range remain
+unchanged. Include every key within that range on each affected track; if an
+interior key is omitted, the entire reversal is rejected without overwriting it.
+The command is disabled for read-only files and selections at a single time.
+Reversed animation persists in `.pixl` saves and exported SVG.
+
 ## Motion paths
 
 Select the element to animate, then choose an existing shape in the inspector's
@@ -311,6 +335,18 @@ undo/redo, actual exported SVG playback, reopening, and read-only controls.
 Changed-code lint has zero errors and one existing navigation warning. Manual
 menu verification copied the Core's Scale X keys onto the circle in an isolated
 orbit example. Proof: `.local/svg-animation/paste-element-workspace.png`.
+
+Reversal follows SVGator's official
+[Reverse keyframes workflow](https://www.svgator.com/tutorials/how-to-reverse-a-sequence-of-keyframes).
+It adds mirrored easing for the reversed segments. Local verification on
+2026-10-31 covers numeric interpolation at mirrored times, asymmetric custom
+curves, staggered tracks, single-key tracks in a group, boundary curves, morphs,
+motion paths, colors, omitted-key rejection, and source immutability. Browser
+coverage checks selection continuity, undo/redo, native SVG playback, reopening,
+disabled states and read-only files. Proofs: `.local/svg-animation/reverse-menu.png`
+and `reverse-workspace.png`.
+All 36 SVG browser cases and 31 model/controller cases pass. Changed-code lint
+has zero errors or warnings, and the editor build passes.
 
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.
