@@ -28,7 +28,7 @@ playback, click/hover triggers, and animated SVG export with a live preview.
 Editable timelines save as `.pixl` projects. See the [SVG animator walkthrough](https://ninefingerwoodshop-ops.github.io/pixlprfct/#svg-animator)
 and [SVG Animation guide](docs/SVG_ANIMATION.md) for the workflow, verification, and current limitations. It is included in the Windows v0.1.1-alpha.18 preview. Select, move, copy/paste, or delete multiple timeline keys together; apply easing to a selection, or set its exact start and proportional duration. Copy transform and appearance keys onto another element, or reverse a selection with its easing. Duplicate keys at the playhead with Cmd/Ctrl+D, or Shift-drag to align with the playhead and other keys. Each group edit is one undo step.
 
-The next source update adds previous/next-keyframe navigation with Alt/Option+Left/Right or the timeline menu, preserving your selection and revealing the playhead when zoomed. This is not yet included in the Windows alpha.18 download.
+Source builds also include previous/next-keyframe navigation with Alt/Option+Left/Right or the timeline menu, preserving your selection and revealing the playhead when zoomed. This is not yet included in the Windows alpha.18 download.
 
 The contextual inspector includes 18 blend modes, persistent aspect-ratio locking, text resizing and horizontal/vertical alignment buttons, arrow endpoint swapping, and selection-specific vector/image actions. These properties participate in Rust validation, undo, saved documents, and component overrides. Blend modes render in Canvas, SVG, and HTML/CSS; Plus darker is not yet supported. The selection-by-selection reference survey and remaining gaps are tracked in `inspector-parity.json`.
 

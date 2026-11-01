@@ -140,7 +140,14 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   if(selection.length&&['Delete','Backspace'].includes(e.key)){e.preventDefault();e.stopPropagation();safe(remove);}
   if(selection.length&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();e.stopPropagation();safe(()=>move((e.key==='ArrowLeft'?-1:1)*(e.shiftKey?100:10)));}
  });
- function update(){const a=read();if(document.activeElement!==clock)clock.value=Math.round(time());if(document.activeElement!==duration)duration.value=a.duration;head.style.left=16+time()*scale()+'px';ruler.setAttribute('aria-valuenow',String(Math.round(time())));ruler.setAttribute('aria-valuemax',String(a.duration));toggle.setAttribute('aria-label',playing()?'Pause':'Play');toggle.innerHTML=icon(playing()?'pause':'play');toggle.disabled=!a.tracks.length;loop.setAttribute('aria-pressed',String(a.loop));}
+ function update(){
+  const a=read(),isPlaying=playing(),label=isPlaying?'Pause':'Play';
+  if(document.activeElement!==clock)clock.value=Math.round(time());if(document.activeElement!==duration)duration.value=a.duration;
+  head.style.left=16+time()*scale()+'px';ruler.setAttribute('aria-valuenow',String(Math.round(time())));ruler.setAttribute('aria-valuemax',String(a.duration));
+  // Keep the icon mounted between pointerdown and pointerup during playback.
+  if(toggle.getAttribute('aria-label')!==label){toggle.setAttribute('aria-label',label);toggle.title=label;toggle.innerHTML=icon(isPlaying?'pause':'play');}
+  toggle.disabled=!a.tracks.length;loop.setAttribute('aria-pressed',String(a.loop));
+ }
  function render(){
   update();if(dragging)return;const a=read(),px=scale();
   if(sourceSvg!==a.svg){clipboard=null;selection=[];active=null;sourceSvg=a.svg;}
