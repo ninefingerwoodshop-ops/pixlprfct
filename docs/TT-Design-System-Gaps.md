@@ -297,7 +297,7 @@ Last updated: 2026-10-30
   history is recorded; the two-user edit/undo/conflict scenario passes. These
   checks do not close the remaining B33 frame-time or B38 visual-parity gaps.
 
-- B33: the 100ms browser release gate is now passing; universal 16.7ms frame time remains unproven.
+- B33: the earlier local serial run passed the 100ms browser release gate; the later cross-environment follow-up below exceeds it. Universal 16.7ms frame time also remains unproven.
 - B38: advanced paint thumbnails now use the actual stacked-paint renderer, including variable/opacity/gradient/pattern resolution. Folder/group operations, other style categories and exhaustive pixel parity remain open.
 
 ---
@@ -405,3 +405,38 @@ database were not replaced or reconfigured by this follow-up.
   open for broader performance.
   Automatic CI workflows and required status checks were removed at the
   owner’s request. This policy change does not resolve the performance gap.
+
+## Product evaluation and roadmap — 2026-11-01 (planning only)
+
+Evaluated Design and SVG Animation against alpha.20 source (`ffbea1a`). See
+[the evaluation](PRODUCT_EVALUATION_2026-11-01.md) and
+[Pen workspace proposal](PEN_WORKSPACE_PROPOSAL.md). No product gap is resolved
+by this planning pass, and no new editor feature was implemented or shipped.
+
+- [ ] **B40 — SVG object-body dragging does not translate artwork.** Reproduced
+  in the sample Core: a body drag leaves X/Y at zero and creates no undo entry.
+  Numeric position controls work; resize/rotation handles are already in
+  alpha.20. Evidence: `.local/product-evaluation-2026-11-01/svg-drag-does-not-move.png`.
+- [ ] **B41 — SVG import replaces artwork and clears tracks without an Add vs
+  Replace choice.** Code-inspected in `web/svg-animation.js` `importSvg`.
+  Same-session Undo is available; no irreversible-loss claim or fix is made.
+- [ ] **B42 — SVG authoring lacks ordinary Pen/Pencil, base-path node editing,
+  multi-object construction and a complete layer organization workflow.**
+  Morph-keyframe editing and imported groups/masks already work. The owner
+  requested a pen-icon cursor and movable right-side toolbar, matching the
+  bottom toolbelt, with Pen/Pencil tools and stroke/fill controls synchronized
+  with the inspector. This is a proposal, not implemented functionality.
+- [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
+  separate document/motion models require manual artwork exchange. SVG also
+  lacks Design's coediting, comments, libraries and MCP access. Scope each
+  integration independently; do not remove existing safety or lease boundaries.
+
+B33 remains open using the later cross-environment evidence. B31/B35/B38 remain
+partly unresolved. B36/B37 recovery fixes and completed B39 library workflows
+remain credited. Main Design already has Pen, Pencil, anchors and gradients;
+the SVG authoring gap does not reopen those completed capabilities. TerritoryIQ
+and design-file work remain tracked separately.
+
+Verification: full unit suite passed (3 Rust + 1,040 JavaScript); targeted SVG
+model/controller run passed 36 tests. Browser spot checks and source inspection
+support the findings above; no new performance or complete UI parity claim.
