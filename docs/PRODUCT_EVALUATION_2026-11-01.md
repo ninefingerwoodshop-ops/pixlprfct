@@ -45,7 +45,7 @@ remain credited in the running gap tally.
 | First | Import replaces existing artwork and clears its timeline | `importSvg` in `web/svg-animation.js` replaces `svg`, empties `tracks` and `origins`, and resets selection/time. Add vs Replace is not offered. Code-inspected, not a file-upload reproduction. Same-session Undo exists; this is not an irreversible-loss claim. |
 | Next | No complete multi-object construction workflow | Single selected-element state; no workspace authoring controls for multi-select, group/ungroup, duplication, hierarchy reparenting, Boolean operations or masks. Imported groups/masks can render. |
 | Next | No dedicated motion-route drawing tool | Existing artwork can become a route. Pen and ordinary path editing would support creating routes in place. |
-| Explore | Limited output choices | Static export uses the first frame; selected-current-frame, GIF/video and Lottie are not available. Reimporting exported SVG does not restore editable tracks; keep `.pixl`. |
+| Explore | Limited output choices | Static export uses the first frame; selected-current-frame, GIF/video and additional animation formats are not available. Reimporting exported SVG does not restore editable tracks; keep `.pixl`. |
 | Explore | Motion and paint limits | Easing controls are clamped to 0–1; no overshoot/spring/bounce curves, gradient-stop animation or general effect animation. Cross-element morph/motion-path key reuse is excluded. |
 | Explore | Separate automation and team model | SVG documents bypass the Rust design serializer and do not expose engine/MCP editing, comments, libraries or live coediting. Shared SVG files use an exclusive editing lease. |
 
@@ -76,7 +76,7 @@ was not performed.
   placement and exhaustive visual parity remain unverified or incomplete.
 - **Import/prototypes:** `.fig` import is a snapshot conversion with advanced
   mixed-text, mask and nested/external component caveats. Supported styles,
-  variables and variant sets do import. Smart Animate, advanced conditional
+  variables and variant sets do import. interpolated transitions, advanced conditional
   interactions and broader prototype parity remain separate scope.
 - **Delivery and access:** PDF export, broader keyboard/screen-reader and zoom
   verification, real OS sleep/reconnect, real team installation/provider checks,
@@ -84,7 +84,7 @@ was not performed.
   team's deployment responsibility, not a universal publisher release gate.
 
 The existing [gap tally](TT-Design-System-Gaps.md), [capability matrix](CAPABILITY_MATRIX.md),
-[Figma import guide](FIGMA_IMPORT.md), [team release work](TEAM_RELEASE_WORK.md),
+[design-file import guide](DESIGN_FILE_IMPORT.md), [team release work](TEAM_RELEASE_WORK.md),
 and [desktop guide](DESKTOP.md) contain the detailed boundaries and earlier
 verification. TerritoryIQ implementation and private design-file work remain
 separate from these PixlPrfct proposals.
@@ -112,14 +112,14 @@ and use shared components; added capabilities do not authorize unrelated redesig
 ## Verification performed
 
 - Inspected source/docs and exercised separate synthetic Design and SVG projects
-  in the browser. Compared relevant live Figma UI without editing reference
+  in the browser. Compared relevant live reference UI without editing reference
   artwork. Built editor JS assets matched the corresponding source files.
 - Full `npm test`: **3 Rust tests and 1,040 JavaScript tests passed**. A separate
   targeted run passed **36 SVG model/controller tests**. These establish unit
   coverage, not complete feature or visual parity.
 - Local evidence is in `.local/product-evaluation-2026-11-01/`: Design and SVG
   workspace screenshots, the unchanged-position drag result, and a private
-  Figma reference capture. Test output is retained locally. Reference-product
+  interface reference capture. Test output is retained locally. Reference-product
   screenshots and private artwork are not published with this report.
 - No fresh full browser regression suite, performance benchmark, native Windows
   certification, accessibility audit or user study was conducted for this pass.
