@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {newSvgAnimation,putKey,setMotionPath} from '../web/svg-animation-model.js';
+import {newSvgAnimation,putKey,setMotionPath,trackValue,easingPoints} from '../web/svg-animation-model.js';
 import {morphPath,moveMorphPoint} from '../web/svg-animation-morph.js';
-import {keyframeMoveDelta,moveKeyframes,keyframeTiming,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
+import {keyframeMoveDelta,moveKeyframes,keyframeTiming,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
 const ref=(element,property,time)=>({element,property,time});
 function example(){let a=newSvgAnimation().svg_animation;for(const [id,prop,keys] of [['one','x',[[0,0],[1000,40],[2000,80]]],['two','opacity',[[0,1],[500,.5],[2000,0]]]])for(const [time,value] of keys)a=putKey(a,id,prop,time,value,[.2,.7,.7,.9]);return a;}
 
@@ -66,6 +66,48 @@ test('selection timing moves a single instant and rounds proportional times with
  const selection=rich.tracks.flatMap(t=>t.keys.map(k=>ref(t.element,t.property,k.time))),result=retimeKeyframes(rich,selection,500,2000),expected=structuredClone(rich);
  for(const track of expected.tracks){track.keys[0].time=500;track.keys[1].time=2500;}
  assert.deepEqual(result.animation,expected);
+});
+
+test('reversal reflects unequal spacing across tracks and reverses the actual eased motion',()=>{
+ let a=example();a=setKeyframeEasing(a,[ref('one','x',0)],'ease-in');a=setKeyframeEasing(a,[ref('one','x',1000)],'ease');a.origins.one=[10,20];
+ const before=structuredClone(a),keys=a.tracks.flatMap(t=>t.keys.map(k=>ref(t.element,t.property,k.time))),result=reverseKeyframes(a,keys);
+ assert.deepEqual(result.selection.map(k=>k.time),[2000,1000,0,2000,1500,0]);assert.deepEqual(result.animation.tracks[1].keys.map(k=>[k.time,k.value]),[[0,0],[1500,.5],[2000,1]]);
+ assert.equal(result.animation.tracks[0].keys[1].easing,'ease-out');assert.deepEqual(result.animation.tracks[0].keys.at(-1).easing,a.tracks[0].keys.at(-1).easing);
+ for(let i=0;i<a.tracks.length;i++)for(const time of [0,117,500,830,1000,1380,1500,1837,2000])assert.ok(Math.abs(trackValue(result.animation.tracks[i],time)-trackValue(a.tracks[i],2000-time))<1e-5);
+ const twice=reverseKeyframes(result.animation,result.selection).animation;
+ for(let i=0;i<a.tracks.length;i++)for(let j=0;j<a.tracks[i].keys.length;j++){const expected=a.tracks[i].keys[j],actual=twice.tracks[i].keys[j];assert.equal(actual.time,expected.time);assert.equal(actual.value,expected.value);easingPoints(actual.easing).forEach((v,k)=>assert.ok(Math.abs(v-easingPoints(expected.easing)[k])<1e-12));}
+ assert.deepEqual(result.animation.origins,a.origins);assert.deepEqual(a,before);result.animation.tracks[0].keys.at(-1).easing[0]=.9;assert.deepEqual(a,before);
+});
+
+test('reversal preserves unselected tracks, outside keys and the outgoing boundary curve',()=>{
+ let a=putKey(example(),'one','x',3000,120,'ease-out');a=setKeyframeEasing(a,[ref('one','x',1000)],'ease-in');a=setKeyframeEasing(a,[ref('one','x',2000)],'ease-in-out');
+ const before=structuredClone(a),result=reverseKeyframes(a,[ref('one','x',1000),ref('one','x',2000)]);
+ assert.deepEqual(result.animation.tracks[0].keys,[a.tracks[0].keys[0],{time:1000,value:80,easing:'ease-out'},{time:2000,value:40,easing:'ease-in-out'},a.tracks[0].keys[3]]);
+ assert.deepEqual(result.animation.tracks[1],a.tracks[1]);assert.deepEqual(a,before);
+});
+
+test('reversal uses one shared range for staggered tracks and single-key tracks',()=>{
+ const a=example();a.tracks[1].keys=a.tracks[1].keys.slice(1);a.tracks.push({element:'three',property:'rotation',keys:[{time:250,value:90,easing:'ease'}]});
+ const keys=a.tracks.flatMap(t=>t.keys.map(k=>ref(t.element,t.property,k.time))),result=reverseKeyframes(a,keys).animation;
+ assert.deepEqual(result.tracks[1].keys.map(k=>[k.time,k.value]),[[0,0],[1500,.5]]);assert.deepEqual(result.tracks[2].keys,[{time:1750,value:90,easing:'ease'}]);
+ for(const time of [0,300,900,1500,1900,2000])assert.ok(Math.abs(trackValue(result.tracks[1],time)-trackValue(a.tracks[1],2000-time))<1e-6);
+});
+
+test('reversal rejects omitted interior keys, stale selections and zero spans without partial changes',()=>{
+ const a=example(),before=structuredClone(a);
+ assert.throws(()=>reverseKeyframes(a,[ref('one','x',0),ref('one','x',2000)]),/every key/);
+ const first=a.tracks[0].keys.map(k=>ref('one','x',k.time));assert.throws(()=>reverseKeyframes(a,[...first,ref('two','opacity',0),ref('two','opacity',2000)]),/every key/);
+ assert.throws(()=>reverseKeyframes(a,[ref('one','x',999)]),/changed/);assert.throws(()=>reverseKeyframes(a,[]),/Select/);
+ assert.throws(()=>reverseKeyframes(a,[ref('one','x',0),ref('two','opacity',0)]),/different times/);assert.deepEqual(a,before);
+});
+
+test('reversal retains motion routes and morph topology while playing their values backward',()=>{
+ let a=setMotionPath(newSvgAnimation().svg_animation,'one',{d:'M0 0L100 100',name:'Route',rotate:'auto'},[10,10]);
+ const shape=morphPath('M0 0L20 0L20 20Z');a=putKey(a,'two','morph',0,shape);a=putKey(a,'two','morph',3000,moveMorphPoint(shape,0,1,'anchor',40,0));a=putKey(a,'two','fill',0,'#ff0000');a=putKey(a,'two','fill',3000,'#0000ff');
+ const before=structuredClone(a),keys=a.tracks.flatMap(t=>t.keys.map(k=>ref(t.element,t.property,k.time))),result=reverseKeyframes(a,keys).animation;
+ assert.deepEqual(result.tracks[0].motion,a.tracks[0].motion);assert.deepEqual(result.origins,a.origins);
+ for(let i=0;i<a.tracks.length;i++){assert.deepEqual(result.tracks[i].keys.map(k=>k.value),a.tracks[i].keys.map(k=>k.value).reverse());assert.deepEqual(trackValue(result.tracks[i],750),trackValue(a.tracks[i],2250));}
+ assert.deepEqual(a,before);
 });
 
 test('clipboard snapshots paste at the playhead with relative timing and independent values',()=>{

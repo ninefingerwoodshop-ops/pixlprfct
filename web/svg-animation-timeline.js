@@ -1,6 +1,6 @@
 import {icon} from './icons.js';
 import {properties,resizeDuration} from './svg-animation-model.js';
-import {keyframeId,keyframeMoveDelta,moveKeyframes,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
+import {keyframeId,keyframeMoveDelta,moveKeyframes,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
 import {showContextMenu} from './context-menu.js';
 
 export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,destination=()=>null,editable=()=>true}){
@@ -39,6 +39,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  function copy(){clipboard=copyKeyframes(read(),selection);announce(`${selection.length} keyframes copied. Paste on the original tracks, or select another element and use Paste to selected element.`);}
  function paste(){apply(pasteKeyframes(read(),clipboard,time()));}
  function pasteToElement(){if(!canChange())return;const target=destination();apply(pasteKeyframesToElement(read(),clipboard,time(),target?.element,target?.origin));}
+ function reverse(){if(!canChange())return;const index=selection.findIndex(key=>active&&keyframeId(key)===keyframeId(active)),result=reverseKeyframes(read(),selection);apply(result,result.selection[index]);if(active)seek(active.time);}
  function selectAll(){setSelection(allKeys());focus();}
  function menu(event){
   const target=event.target.closest('[data-keyframe]');
@@ -48,6 +49,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
    {label:'Paste keyframes',shortcut:'⌘/Ctrl V',enabled:!!clipboard&&editable(),run:()=>safe(paste)},
    {label:'Paste to selected element',shortcut:'⇧⌘/Ctrl V',enabled:!!clipboard&&!!destination()&&editable(),run:()=>safe(pasteToElement)},
    {separator:true},
+   {label:'Reverse keyframes',enabled:editable()&&new Set(selection.map(key=>key.time)).size>1,run:()=>safe(reverse)},
    {label:'Delete keyframes',shortcut:'Delete',enabled:selection.length>0&&editable(),run:()=>safe(remove)},
    {label:'Select all keyframes',shortcut:'⌘/Ctrl A',enabled:read().tracks.length>0,run:selectAll},
   ],viewport,{label:'Keyframe actions',heading:`${selection.length} keyframe${selection.length===1?'':'s'} selected`,anchor:event.type==='keydown'?document.activeElement:null});
