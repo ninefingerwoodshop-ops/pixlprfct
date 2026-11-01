@@ -110,3 +110,16 @@ export function pasteKeyframes(animation,clipboard,time){
  }
  return {animation:checked(next),selection};
 }
+
+export function pasteKeyframesToElement(animation,clipboard,time,element,origin){
+ if(!clipboard||clipboard.version!==1||!Array.isArray(clipboard.tracks)||!clipboard.tracks.length)throw new Error('Copy timeline keyframes first.');
+ if(typeof element!=='string'||!/^[-\w]+$/.test(element))throw new Error('Select a destination element first.');
+ const sources=new Set(clipboard.tracks.map(track=>track.element));
+ if(sources.size!==1)throw new Error('Copy keyframes from one element to paste onto another element. Nothing was pasted.');
+ if(sources.has(element))return pasteKeyframes(animation,clipboard,time);
+ if(clipboard.tracks.some(track=>['morph','motionProgress'].includes(track.property)))throw new Error('Morph and motion path keys can only be pasted onto their original element. Copy transform or appearance keys to reuse them on another element.');
+ const retargeted={...clipboard,tracks:clipboard.tracks.map(track=>({...track,element}))};
+ const result=pasteKeyframes(animation,retargeted,time);
+ result.animation.origins[element]??=structuredClone(origin);
+ return {...result,animation:checked(result.animation)};
+}

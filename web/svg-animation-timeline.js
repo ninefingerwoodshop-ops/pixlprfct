@@ -1,9 +1,9 @@
 import {icon} from './icons.js';
 import {properties,resizeDuration} from './svg-animation-model.js';
-import {keyframeId,keyframeMoveDelta,moveKeyframes,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes} from './svg-animation-keyframes.js';
+import {keyframeId,keyframeMoveDelta,moveKeyframes,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
 import {showContextMenu} from './context-menu.js';
 
-export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,editable=()=>true}){
+export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,destination=()=>null,editable=()=>true}){
  const el=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls??'';if(text)n.textContent=text;return n;};
  const button=(name,glyph,run)=>{const n=el('button');n.type='button';n.title=name;n.setAttribute('aria-label',name);n.innerHTML=icon(glyph);n.onclick=run;return n;};
  const panel=el('section');panel.id='motion-timeline';panel.setAttribute('aria-label','SVG animation timeline');
@@ -13,7 +13,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  box.append(clock,duration,unit);const loop=button('Loop','repeat',()=>change({...read(),loop:!read().loop})),collapse=button('Collapse Motion timeline','timeline-collapse',()=>{collapsed=!collapsed;layout();});controls.append(toggle,reset,box,loop);
  const labels=el('div','timeline-labels'),viewport=el('div','timeline-viewport'),content=el('div','timeline-content'),ruler=el('div','timeline-ruler'),tracks=el('div','timeline-tracks'),head=el('div','timeline-playhead');head.append(el('div','timeline-playhead-cap'));
  viewport.tabIndex=0;viewport.setAttribute('aria-label','Keyframes timeline');
- viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Copy and paste at the playhead with Cmd/Ctrl+C and V. Arrow keys move the selection. Right-click for actions.';
+ viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element. Arrow keys move the selection. Right-click for actions.';
  const status=el('span','svg-timeline-status');status.id='svg-timeline-status';status.setAttribute('role','status');viewport.setAttribute('aria-describedby',status.id);
  ruler.tabIndex=0;ruler.setAttribute('role','slider');ruler.setAttribute('aria-label','Timeline scrubber');ruler.setAttribute('aria-valuemin','0');content.append(ruler,tracks,head);viewport.append(content);
  const zooms=el('div','timeline-zoom');zooms.append(button('Zoom out on timeline','minus',()=>zoom(1/1.5)),button('Zoom in on timeline','plus',()=>zoom(1.5)));
@@ -36,8 +36,9 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  function apply(result,primary=result.selection.at(-1)??null){if(!canChange()){render();return;}selection=result.selection;active=primary;change(result.animation);notify();render();focus();}
  function move(delta){const index=active?selection.findIndex(key=>keyframeId(key)===keyframeId(active)):-1,result=moveKeyframes(read(),selection,delta);apply(result,result.selection[index]);if(active)seek(active.time);}
  function remove(){if(!selection.length||!canChange())return;const next=deleteKeyframes(read(),selection);selection=[];active=null;change(next);notify();focus();}
- function copy(){clipboard=copyKeyframes(read(),selection);announce(`${selection.length} keyframes copied. Move the playhead and paste on the same tracks.`);}
+ function copy(){clipboard=copyKeyframes(read(),selection);announce(`${selection.length} keyframes copied. Paste on the original tracks, or select another element and use Paste to selected element.`);}
  function paste(){apply(pasteKeyframes(read(),clipboard,time()));}
+ function pasteToElement(){if(!canChange())return;const target=destination();apply(pasteKeyframesToElement(read(),clipboard,time(),target?.element,target?.origin));}
  function selectAll(){setSelection(allKeys());focus();}
  function menu(event){
   const target=event.target.closest('[data-keyframe]');
@@ -45,6 +46,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   showContextMenu(event,[
    {label:'Copy keyframes',shortcut:'⌘/Ctrl C',enabled:selection.length>0,run:()=>safe(copy)},
    {label:'Paste keyframes',shortcut:'⌘/Ctrl V',enabled:!!clipboard&&editable(),run:()=>safe(paste)},
+   {label:'Paste to selected element',shortcut:'⇧⌘/Ctrl V',enabled:!!clipboard&&!!destination()&&editable(),run:()=>safe(pasteToElement)},
    {separator:true},
    {label:'Delete keyframes',shortcut:'Delete',enabled:selection.length>0&&editable(),run:()=>safe(remove)},
    {label:'Select all keyframes',shortcut:'⌘/Ctrl A',enabled:read().tracks.length>0,run:selectAll},
@@ -101,7 +103,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   if(e.target.closest('input')||e.target===ruler||e.target===grip)return;
   if(e.target.closest('.timeline-controls,.timeline-zoom')||e.target===collapse)return;
   const command=e.ctrlKey||e.metaKey,key=e.key.toLowerCase();
-  if(command&&['a','c','v'].includes(key)){e.preventDefault();e.stopPropagation();safe(key==='a'?selectAll:key==='c'?copy:paste);return;}
+  if(command&&['a','c','v'].includes(key)){e.preventDefault();e.stopPropagation();safe(key==='a'?selectAll:key==='c'?copy:e.shiftKey?pasteToElement:paste);return;}
   if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){e.preventDefault();e.stopPropagation();menu(e);return;}
   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setSelection([]);return;}
   if(e.key===' '){e.preventDefault();e.stopPropagation();play();return;}

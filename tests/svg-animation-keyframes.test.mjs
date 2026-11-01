@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newSvgAnimation,putKey,setMotionPath} from '../web/svg-animation-model.js';
 import {morphPath,moveMorphPoint} from '../web/svg-animation-morph.js';
-import {keyframeMoveDelta,moveKeyframes,keyframeTiming,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
+import {keyframeMoveDelta,moveKeyframes,keyframeTiming,retimeKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
 const ref=(element,property,time)=>({element,property,time});
 function example(){let a=newSvgAnimation().svg_animation;for(const [id,prop,keys] of [['one','x',[[0,0],[1000,40],[2000,80]]],['two','opacity',[[0,1],[500,.5],[2000,0]]]])for(const [time,value] of keys)a=putKey(a,id,prop,time,value,[.2,.7,.7,.9]);return a;}
 
@@ -80,6 +80,47 @@ test('paste rejects collisions, out-of-range keys, and limits without partial ed
  assert.throws(()=>pasteKeyframes(a,clip,1500),/already/);assert.throws(()=>pasteKeyframes(a,clip,2800),/duration/);assert.throws(()=>pasteKeyframes(a,clip,-1),/duration/);assert.throws(()=>pasteKeyframes(a,null,0),/Copy/);assert.deepEqual(a,before);
  let dense=newSvgAnimation().svg_animation;for(let i=0;i<200;i++)dense=putKey(dense,'one','x',i,0);
  assert.throws(()=>pasteKeyframes(dense,copyKeyframes(dense,[ref('one','x',0)]),500),/Invalid/);assert.equal(dense.tracks[0].keys.length,200);
+});
+
+test('pasting to another element keeps property types, relative timing and easing without sharing data',()=>{
+ let a=example();a=putKey(a,'one','opacity',500,.8);a=putKey(a,'one','opacity',1500,.2);a.origins.one=[10,20];
+ const before=structuredClone(a),clip=copyKeyframes(a,[ref('one','x',1000),ref('one','x',2000),ref('one','opacity',500),ref('one','opacity',1500)]),origin=[80,60];
+ const result=pasteKeyframesToElement(a,clip,250,'three',origin);
+ assert.deepEqual(result.animation.tracks.slice(0,a.tracks.length),a.tracks);
+ assert.deepEqual(result.animation.tracks.slice(a.tracks.length),clip.tracks.map(track=>({...track,element:'three',keys:track.keys.map(key=>({...key,time:key.time+250}))})));
+ assert.deepEqual(result.selection,[ref('three','x',750),ref('three','x',1750),ref('three','opacity',250),ref('three','opacity',1250)]);
+ assert.deepEqual(result.animation.origins,{one:[10,20],three:[80,60]});assert.deepEqual(a,before);
+ origin[0]=500;result.animation.tracks.at(-2).keys[0].easing[0]=.9;
+ assert.deepEqual(result.animation.origins.three,[80,60]);assert.equal(clip.tracks[0].keys[0].easing[0],.2);assert.deepEqual(a,before);
+});
+
+test('pasting animation retains the destination origin and unrelated keys and properties',()=>{
+ let a=example();a=putKey(a,'two','x',0,5);a.origins.two=[700,800];const before=structuredClone(a),clip=copyKeyframes(a,[ref('one','x',1000),ref('one','x',2000)]);
+ const result=pasteKeyframesToElement(a,clip,500,'two',[80,60]).animation;
+ assert.deepEqual(result.origins,a.origins);assert.deepEqual(result.tracks.slice(0,2),a.tracks.slice(0,2));
+ assert.deepEqual(result.tracks[2].keys.map(key=>[key.time,key.value]),[[0,5],[500,40],[1500,80]]);assert.deepEqual(a,before);
+});
+
+test('destination paste rejects ambiguous selections, collisions, invalid ranges and limits atomically',()=>{
+ let a=example();a=putKey(a,'two','x',1500,5);const before=structuredClone(a),clip=copyKeyframes(a,[ref('one','x',1000),ref('one','x',2000)]),copy=structuredClone(clip);
+ assert.throws(()=>pasteKeyframesToElement(a,null,0,'two',[0,0]),/Copy timeline/);
+ assert.throws(()=>pasteKeyframesToElement(a,clip,0,null,[0,0]),/destination element/);
+ assert.throws(()=>pasteKeyframesToElement(a,copyKeyframes(a,[ref('one','x',1000),ref('two','opacity',500)]),0,'three',[0,0]),/one element/);
+ assert.throws(()=>pasteKeyframesToElement(a,clip,500,'two',[0,0]),/already/);
+ assert.throws(()=>pasteKeyframesToElement(a,clip,2500,'three',[0,0]),/duration/);
+ assert.throws(()=>pasteKeyframesToElement(a,clip,0,'three',[NaN,0]),/origin/);
+ assert.deepEqual(a,before);assert.deepEqual(clip,copy);
+ let dense=newSvgAnimation().svg_animation;for(let i=0;i<200;i++)dense=putKey(dense,'target','x',i,0);dense=putKey(dense,'source','x',0,1);
+ assert.throws(()=>pasteKeyframesToElement(dense,copyKeyframes(dense,[ref('source','x',0)]),500,'target',[0,0]),/Invalid/);assert.equal(dense.tracks[0].keys.length,200);
+});
+
+test('geometry-specific animation stays on its original element with no partial paste of other tracks',()=>{
+ let a=setMotionPath(newSvgAnimation().svg_animation,'one',{d:'M0 0L100 100',name:'Route',rotate:'auto'},[10,10]);
+ a=putKey(a,'one','rotation',0,0);a=putKey(a,'two','morph',0,morphPath('M0 0L20 0L20 20Z'));const before=structuredClone(a);
+ const route=copyKeyframes(a,[ref('one','rotation',0),ref('one','motionProgress',0)]),morph=copyKeyframes(a,[ref('two','morph',0)]);
+ for(const clip of [route,morph])assert.throws(()=>pasteKeyframesToElement(a,clip,500,'three',[0,0]),/original element/);
+ assert.deepEqual(pasteKeyframesToElement(a,route,500,'one',[0,0]),pasteKeyframes(a,route,500));
+ assert.deepEqual(pasteKeyframesToElement(a,morph,500,'two',[0,0]),pasteKeyframes(a,morph,500));assert.deepEqual(a,before);
 });
 
 test('deleting and restoring a copied track retains motion metadata and morph geometry',()=>{
