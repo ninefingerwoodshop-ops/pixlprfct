@@ -657,3 +657,29 @@ Merge update, 2026-10-31: keyframe snapping was merged in PR #46. Its earlier
 paragraph records the local checkpoint. Windows alpha.18 release preparation
 includes duplication and snapping; see [Desktop](DESKTOP.md) for package
 availability and platform verification limits.
+
+### SVG keyframe navigation — 2026-11-01
+
+Re-inspected live Figma's **Capwah Components** Motion view before this pass.
+At 1800 × 1003 logical pixels, it retains the 200 px full-width dock and 241 px
+right inspector. The available file has no animation tracks or keyframes and
+still reports a connection issue. No document was changed. Reference screenshot:
+`.local/svg-animation/figma-navigation-reference.png`. Previous/next-keyframe
+controls or shortcuts could not be verified in this state, so no exact Figma
+navigation parity is claimed.
+
+The SVG extension adds Previous/Next keyframe to the existing shared dark context
+menu, with Alt/Option+Left/Right shortcuts. The dock, inspector, typography and
+270 px menu with 32 px action rows are retained. It jumps between distinct times
+across tracks, keeps the selection, pauses playback, and reveals the playhead
+horizontally when zoomed. Read-only files support navigation. No TT design-system
+gap is closed by this pass.
+
+Verified the rendered menu at 1440 × 1000 and 1280 × 720, and manually exercised
+both shortcuts, menu invocation and navigation with the menu open. Proofs:
+`.local/svg-animation/navigation-menu.png`, `navigation-workspace.png` and
+`navigation-zoom.png`. All 42 SVG browser cases passed; the four affected cases
+passed again after the final menu-shortcut change. Final local checks: 36 SVG
+model/controller cases, two shared menu geometry cases, zero lint errors or
+warnings, editor build and diff check. Local pending merge; not shipped in
+Windows alpha.18.

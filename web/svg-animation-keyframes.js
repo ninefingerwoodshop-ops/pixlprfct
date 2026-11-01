@@ -4,6 +4,16 @@ export const keyframeId=key=>JSON.stringify([key.element,key.property,key.time])
 const trackId=track=>JSON.stringify([track.element,track.property]);
 const checked=animation=>{validateAnimation({...newSvgAnimation(),svg_animation:animation});return animation;};
 
+export function adjacentKeyframeTime(animation,time,direction){
+ if(!Number.isFinite(time)||![1,-1].includes(direction))return null;
+ let nearest=null;
+ for(const track of animation.tracks)for(const key of track.keys){
+  const distance=(key.time-time)*direction;
+  if(distance>0&&(nearest===null||distance<(nearest-time)*direction))nearest=key.time;
+ }
+ return nearest;
+}
+
 function selectedKeys(animation,selection){
  const ids=new Set(selection.map(keyframeId)),found=[];
  for(const track of animation.tracks)for(const key of track.keys){

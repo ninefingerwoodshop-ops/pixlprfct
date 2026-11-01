@@ -1,6 +1,6 @@
 import {icon} from './icons.js';
 import {properties,resizeDuration} from './svg-animation-model.js';
-import {keyframeId,createKeyframeDrag,moveKeyframes,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
+import {keyframeId,adjacentKeyframeTime,createKeyframeDrag,moveKeyframes,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
 import {showContextMenu} from './context-menu.js';
 
 export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,destination=()=>null,editable=()=>true}){
@@ -13,7 +13,8 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  box.append(clock,duration,unit);const loop=button('Loop','repeat',()=>change({...read(),loop:!read().loop})),collapse=button('Collapse Motion timeline','timeline-collapse',()=>{collapsed=!collapsed;layout();});controls.append(toggle,reset,box,loop);
  const labels=el('div','timeline-labels'),viewport=el('div','timeline-viewport'),content=el('div','timeline-content'),ruler=el('div','timeline-ruler'),tracks=el('div','timeline-tracks'),head=el('div','timeline-playhead');head.append(el('div','timeline-playhead-cap'));
  viewport.tabIndex=0;viewport.setAttribute('aria-label','Keyframes timeline');
- viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Shift-drag snaps to the playhead, other keys or 100 ms intervals; Alt bypasses snapping. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element; Cmd/Ctrl+D duplicates at the playhead. Arrow keys move the selection. Right-click for actions.';
+ viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Shift-drag snaps to the playhead, other keys or 100 ms intervals; Alt bypasses snapping. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element; Cmd/Ctrl+D duplicates at the playhead. Arrow keys move the selection. Alt/Option+Left/Right jumps to the previous/next keyframe. Right-click for actions.';
+ for(const target of [viewport,ruler])target.setAttribute('aria-keyshortcuts','Alt+ArrowLeft Alt+ArrowRight');
  const status=el('span','svg-timeline-status');status.id='svg-timeline-status';status.setAttribute('role','status');viewport.setAttribute('aria-describedby',status.id);
  const snapGuide=el('div','svg-timeline-snap-guide');snapGuide.hidden=true;snapGuide.setAttribute('aria-hidden','true');
  ruler.tabIndex=0;ruler.setAttribute('role','slider');ruler.setAttribute('aria-label','Timeline scrubber');ruler.setAttribute('aria-valuemin','0');content.append(ruler,tracks,head,snapGuide);viewport.append(content);
@@ -43,6 +44,20 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  function duplicate(){if(!selection.length||!canChange())return;const animation=read();apply(pasteKeyframes(animation,copyKeyframes(animation,selection),time()));}
  function reverse(){if(!canChange())return;const index=selection.findIndex(key=>active&&keyframeId(key)===keyframeId(active)),result=reverseKeyframes(read(),selection);apply(result,result.selection[index]);if(active)seek(active.time);}
  function selectAll(){setSelection(allKeys());focus();}
+ function navigate(direction){
+  if(dragging)return;
+  const next=adjacentKeyframeTime(read(),time(),direction);
+  if(next===null){announce(`No ${direction<0?'previous':'next'} keyframe.`);return;}
+  seek(next);
+  const x=16+next*scale(),left=viewport.scrollLeft,width=viewport.clientWidth;
+  if(x<left+16)viewport.scrollLeft=x-16;
+  else if(x>left+width-16)viewport.scrollLeft=x-width+16;
+  announce(`Playhead at ${next} ms. ${selection.length} keyframe${selection.length===1?'':'s'} selected.`);
+ }
+ function navigationShortcut(event){
+  if(!event.altKey||event.ctrlKey||event.metaKey||event.shiftKey||!['ArrowLeft','ArrowRight'].includes(event.key))return false;
+  event.preventDefault();event.stopPropagation();navigate(event.key==='ArrowLeft'?-1:1);return true;
+ }
  function menu(event){
   const target=event.target.closest('[data-keyframe]');
   if(target){const key=JSON.parse(target.dataset.keyframe),value={element:key[0],property:key[1],time:key[2]};if(!has(value))setSelection([value]);}
@@ -55,7 +70,10 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
    {label:'Reverse keyframes',enabled:editable()&&new Set(selection.map(key=>key.time)).size>1,run:()=>safe(reverse)},
    {label:'Delete keyframes',shortcut:'Delete',enabled:selection.length>0&&editable(),run:()=>safe(remove)},
    {label:'Select all keyframes',shortcut:'⌘/Ctrl A',enabled:read().tracks.length>0,run:selectAll},
-  ],viewport,{label:'Keyframe actions',heading:`${selection.length} keyframe${selection.length===1?'':'s'} selected`,anchor:event.type==='keydown'?document.activeElement:null});
+   {separator:true},
+   {label:'Previous keyframe',shortcut:'Alt/⌥ ←',enabled:!dragging&&adjacentKeyframeTime(read(),time(),-1)!==null,run:()=>navigate(-1)},
+   {label:'Next keyframe',shortcut:'Alt/⌥ →',enabled:!dragging&&adjacentKeyframeTime(read(),time(),1)!==null,run:()=>navigate(1)},
+  ],viewport,{label:'Keyframe actions',heading:`${selection.length} keyframe${selection.length===1?'':'s'} selected`,anchor:event.type==='keydown'?document.activeElement:null,onShortcut:navigationShortcut});
  }
  function layout(){document.body.style.setProperty('--timeline-height',(collapsed?48:height)+'px');panel.classList.toggle('timeline-collapsed',collapsed);grip.setAttribute('aria-valuenow',String(height));collapse.setAttribute('aria-label',collapsed?'Expand Motion timeline':'Collapse Motion timeline');render();}
  function zoom(factor){magnification=Math.max(1,Math.min(32,magnification*factor));render();}
@@ -70,7 +88,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  grip.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();const start=height,y=e.clientY;pointerDrag(grip,e,ev=>{height=Math.round(Math.max(120,Math.min(innerHeight*.7,start+y-ev.clientY)));layout();},layout,()=>{height=start;layout();});};
  grip.onkeydown=e=>{if(['ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();height=Math.max(120,Math.min(innerHeight*.7,height+(e.key==='ArrowUp'?10:-10)));layout();}};
  ruler.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();const before=time();seek(point(e));pointerDrag(ruler,e,ev=>seek(point(ev)),()=>{},()=>seek(before));};
- ruler.onkeydown=e=>{if(['Home','End','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();seek(e.key==='Home'?0:e.key==='End'?read().duration:time()+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?100:10));}};
+ ruler.onkeydown=e=>{if(navigationShortcut(e))return;if(['Home','End','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();seek(e.key==='Home'?0:e.key==='End'?read().duration:time()+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?100:10));}};
  function choose(track,key,event){
   const value=ref(track,key);
   if(modified(event))setSelection(has(value)?selection.filter(item=>keyframeId(item)!==keyframeId(value)):[...selection,value]);
@@ -112,6 +130,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  panel.addEventListener('keydown',e=>{
   if(e.target.closest('input')||e.target===ruler||e.target===grip)return;
   if(e.target.closest('.timeline-controls,.timeline-zoom')||e.target===collapse)return;
+  if(navigationShortcut(e))return;
   const command=e.ctrlKey||e.metaKey,key=e.key.toLowerCase();
   if(command&&key==='d'&&!e.shiftKey&&!e.altKey){e.preventDefault();e.stopPropagation();safe(duplicate);return;}
   if(command&&['a','c','v'].includes(key)){e.preventDefault();e.stopPropagation();safe(key==='a'?selectAll:key==='c'?copy:e.shiftKey?pasteToElement:paste);return;}
