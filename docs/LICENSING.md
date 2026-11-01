@@ -45,7 +45,8 @@ The existing Windows **v0.1.0-alpha.1** downloads retain their original
 MIT / Apache 2.0 license choice. They have not been rebuilt or relicensed.
 New packages must identify their actual source revision and include its license.
 
-Windows **v0.1.1-alpha.15**, **v0.1.1-alpha.16**, and **v0.1.1-alpha.17** are offered
+Windows **v0.1.1-alpha.15**, **v0.1.1-alpha.16**, **v0.1.1-alpha.17**, and
+**v0.1.1-alpha.18** are offered
 under the Community License, including the SVG animator. The installers and ZIPs
 bundle the license, this guide and the legacy notices. Each release page provides
 its exact source revision and build provenance.
