@@ -1,0 +1,45 @@
+.roadmap-hero{padding:64px 0 0}
+.roadmap-intro{display:grid;grid-template-columns:1.1fr 1fr;gap:80px;align-items:end}
+.roadmap-intro>div{max-width:500px}
+.roadmap-lede{font-size:23px;line-height:1.5;letter-spacing:-.5px;color:var(--text)}
+.roadmap-intro p:last-child{margin-bottom:4px}
+.roadmap-note{display:flex;align-items:center;gap:28px;border:1px solid #514b61;background:#26232e;border-radius:7px;padding:20px 24px;margin-top:44px}
+.roadmap-note p{font-size:13px;line-height:1.7;margin:0;max-width:760px}
+.roadmap-status{display:inline-block;flex-shrink:0;border:1px solid #665c7c;border-radius:4px;padding:6px 9px;font-size:10px;line-height:1.5;letter-spacing:.25px;color:#e0d5ff;white-space:nowrap}
+.roadmap-status.available{border-color:#526843;color:var(--green)}
+.roadmap-jump{flex-wrap:wrap;gap:16px 36px;border-bottom:1px solid var(--line);padding:20px 0;font-size:12px}
+.roadmap-jump span{color:var(--accent);margin-left:8px}
+.roadmap-section{padding-top:88px}
+.roadmap-heading{max-width:740px;margin-bottom:36px}
+.roadmap-heading .eyebrow{margin-bottom:20px}
+.roadmap-heading>p:last-child{max-width:640px;margin:24px 0 0;font-size:15px}
+.roadmap-baseline{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.roadmap-baseline>article{padding:30px;background:#242424;border:1px solid var(--line);border-radius:7px}
+.roadmap-card-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}
+.roadmap-card-top .feature-number{margin:0}
+.roadmap-baseline h3{font-size:26px;margin-bottom:20px}
+.roadmap-baseline p{font-size:14px}
+.roadmap-baseline strong{font-weight:550;color:var(--text)}
+.roadmap-baseline a,.roadmap-evidence a{color:var(--accent)}
+.roadmap-phases{list-style:none;padding:0;margin:0}
+.roadmap-phase{display:grid;grid-template-columns:1fr 2fr;gap:56px;padding:40px 0;border-top:1px solid var(--line);scroll-margin-top:32px}
+.phase-heading h3{font-size:28px;margin:14px 0 18px}
+.phase-number{font:12px/1.5 monospace;color:var(--accent)}
+.phase-heading p{font-size:13px;margin:18px 0 0;max-width:260px}
+.phase-items{display:grid;grid-template-columns:1fr 1fr;gap:28px 34px;align-content:start}
+.phase-items h4{font-size:16px;line-height:1.5;font-weight:550;margin:0 0 9px;letter-spacing:-.2px}
+.phase-items article p{font-size:13px;margin:0;line-height:1.8}
+.phase-items .phase-dependency{grid-column:1/-1;border-left:2px solid #665c7c;padding-left:16px;font-size:11px;line-height:1.8;margin:0}
+.phase-dependency a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.roadmap-quality{display:grid;grid-template-columns:1fr 1fr;gap:32px 48px}
+.roadmap-quality article{border-top:1px solid var(--line);padding-top:24px}
+.roadmap-quality .feature-number{margin-bottom:18px}
+.roadmap-quality h3{margin-bottom:15px}
+.roadmap-quality p{font-size:14px;margin:0}
+.roadmap-evidence{font-size:12px;margin:32px 0 0}
+.roadmap-discussion{display:grid;grid-template-columns:1fr 1fr;gap:72px;margin:88px 0 80px;border-top:1px solid var(--line);padding-top:56px}
+.roadmap-discussion h2{font-size:clamp(36px,4vw,48px)}
+.roadmap-discussion ul{padding-left:18px;margin:0 0 28px;font-size:14px;line-height:1.8;color:var(--muted)}
+.roadmap-discussion li{margin:0 0 12px;padding-left:4px}
+@media(max-width:1000px){.roadmap-intro{gap:40px}.roadmap-phase{gap:32px}.phase-items{gap:26px}.roadmap-note{gap:20px}.roadmap-discussion{gap:40px}}
+@media(max-width:680px){.roadmap-hero{padding-top:38px}.roadmap-intro,.roadmap-baseline,.roadmap-phase,.phase-items,.roadmap-quality,.roadmap-discussion{grid-template-columns:1fr}.roadmap-intro{gap:24px}.roadmap-lede{font-size:21px}.roadmap-intro p:last-child{font-size:14px}.roadmap-note{align-items:flex-start;flex-direction:column;padding:20px;gap:12px;margin-top:28px}.roadmap-jump{gap:0 22px;padding:16px 0;font-size:11px}.roadmap-section{padding-top:60px}.roadmap-heading{margin-bottom:28px}.roadmap-heading>p:last-child{font-size:14px}.roadmap-baseline>article{padding:24px}.roadmap-card-top{margin-bottom:24px}.roadmap-phase{padding:30px 0;gap:26px}.phase-heading h3{font-size:27px}.phase-heading p{max-width:none}.phase-items{gap:22px}.roadmap-quality{gap:28px}.roadmap-discussion{gap:28px;margin:60px 0;padding-top:40px}}
