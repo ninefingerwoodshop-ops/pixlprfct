@@ -2,9 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newSvgAnimation,putKey,setMotionPath,trackValue,easingPoints} from '../web/svg-animation-model.js';
 import {morphPath,moveMorphPoint} from '../web/svg-animation-morph.js';
-import {keyframeMoveDelta,createKeyframeDrag,moveKeyframes,keyframeTiming,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
+import {adjacentKeyframeTime,keyframeMoveDelta,createKeyframeDrag,moveKeyframes,keyframeTiming,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
 const ref=(element,property,time)=>({element,property,time});
 function example(){let a=newSvgAnimation().svg_animation;for(const [id,prop,keys] of [['one','x',[[0,0],[1000,40],[2000,80]]],['two','opacity',[[0,1],[500,.5],[2000,0]]]])for(const [time,value] of keys)a=putKey(a,id,prop,time,value,[.2,.7,.7,.9]);return a;}
+
+test('keyframe navigation visits distinct times across all tracks without wrapping or mutating',()=>{
+ const a=example(),before=structuredClone(a);
+ for(const [time,previous,next] of [[0,null,500],[250,0,500],[500,0,1000],[500.1,500,1000],[1500,1000,2000],[2000,1000,null],[3000,2000,null]]){
+  assert.equal(adjacentKeyframeTime(a,time,-1),previous);
+  assert.equal(adjacentKeyframeTime(a,time,1),next);
+ }
+ assert.deepEqual(a,before);
+ const empty=newSvgAnimation().svg_animation,single=putKey(empty,'one','x',1250,40);single.tracks[0].keys=single.tracks[0].keys.filter(key=>key.time===1250);
+ for(const direction of [-1,1]){assert.equal(adjacentKeyframeTime(empty,0,direction),null);assert.equal(adjacentKeyframeTime(single,1250,direction),null);}
+ assert.equal(adjacentKeyframeTime(single,0,1),1250);assert.equal(adjacentKeyframeTime(single,1500,-1),1250);
+ assert.equal(adjacentKeyframeTime(a,NaN,1),null);assert.equal(adjacentKeyframeTime(a,0,0),null);
+});
 
 test('group easing updates only selected curves, preserves timing and values, and isolates arrays',()=>{
  const a=example(),before=structuredClone(a),keys=[ref('one','x',1000),ref('two','opacity',500)],curve=[.1,.2,.3,.4];

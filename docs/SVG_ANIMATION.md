@@ -76,6 +76,24 @@ The clipboard is cleared on reload or changes to the source SVG; it does not
 support cross-project copying. Read-only shared files allow selection and
 copying but block moves, pastes and deletions.
 
+## Jumping between keyframes
+
+Source update pending merge; not included in Windows v0.1.1-alpha.18.
+
+With the timeline or time ruler focused, press **Alt/Option+Left** for the
+previous keyframe or **Alt/Option+Right** for the next. The same actions appear
+at the bottom of the timeline's right-click menu. The shortcuts also work while
+that menu is open. Navigation visits the nearest distinct time across all tracks,
+skips keys at the current time, and stops at the first or last key without wrapping.
+Unavailable menu actions are disabled, including both actions on an empty timeline.
+
+A successful jump pauses playback and scrolls horizontally to reveal the playhead
+when necessary. It preserves the selected keys, selected element, clipboard and
+undo history, and works in read-only shared files. It does not change the saved
+animation. Shortcuts are scoped to the timeline and do not interrupt text/number
+entry or an active pointer drag. Ordinary arrows still move selected keys, or
+scrub by 10 ms (100 ms with Shift) when the ruler has focus.
+
 ## Duplicating at the playhead
 
 Included in Windows v0.1.1-alpha.18. The earlier alpha.17 download does not
@@ -406,6 +424,20 @@ ordinary free movement, grid fallback, cancellation, one-step undo/redo and
 reopening. Changed-code lint has zero errors or warnings, and the editor build
 passes. Automated screenshots were visually inspected at 1440 × 1000:
 `.local/svg-animation/snapping-playhead.png` and `snapping-keyframes.png`.
+
+Keyframe navigation verification on 2026-11-01: all 42 SVG browser cases passed;
+after adding shortcut handling inside the open menu, all four affected browser
+cases passed again. All 36 SVG model/controller cases and two shared menu geometry
+cases pass on the final code. Changed-code lint has zero errors or warnings, and
+the editor build and diff checks pass. Coverage includes distinct cross-track
+times, boundaries, an empty timeline, single-time tracks, fractional playheads,
+selection/clipboard/history preservation, read-only navigation, zoomed scrolling,
+playback pause, focused inputs, and active-drag protection. Manual browser checks
+confirmed menu actions, both shortcuts, and shortcut use with the menu open.
+The existing 270 px menu fits at 1280 × 720. Proofs:
+`.local/svg-animation/navigation-workspace.png`, `navigation-menu.png`, and
+`navigation-zoom.png`. This remains a source update pending merge, outside the
+Windows alpha.18 download.
 
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

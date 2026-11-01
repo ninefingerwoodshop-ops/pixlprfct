@@ -11,7 +11,7 @@ export function contextMenuBounds(point, size, viewport) {
   };
 }
 
-export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = document.body, anchor = null, onClose = () => {}} = {}) {
+export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = document.body, anchor = null, onClose = () => {}, onShortcut = () => false} = {}) {
   event.preventDefault();
   closeMenu();
   const menu = document.createElement('div');
@@ -81,6 +81,7 @@ export function showContextMenu(event, actions, returnFocus, {label = 'Layer act
   window.visualViewport?.addEventListener('resize', position, {signal:controller.signal});
   window.visualViewport?.addEventListener('scroll', position, {signal:controller.signal});
   menu.onkeydown = e => {
+    if (onShortcut(e)) { close(true); return; }
     if (['Escape','Tab'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); close(true); return; }
     if (['ArrowDown','ArrowUp','Home','End'].includes(e.key)) {
       e.preventDefault(); e.stopPropagation();
