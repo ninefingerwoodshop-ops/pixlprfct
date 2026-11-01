@@ -1,14 +1,15 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source and the [Windows v0.1.1-alpha.19
-preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.19).
+Animation** in the repository source and the [Windows v0.1.1-alpha.20
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.20).
 It does not replace Design or its existing Motion mode. Grouped timeline editing
 was merged in PR #37; group easing and precise selection timing followed in
 PRs #39 and #40. Animation reuse and reversal followed in PRs #42 and #43.
 Duplication and playhead/keyframe snapping followed in PRs #45 and #46.
 All are included in alpha.18; alpha.19 adds keyframe navigation and the Pause
-repair from PRs #48 and #49. The older Windows
+repair from PRs #48 and #49. Alpha.20 adds canvas stretch and rotation handles
+from PR #51. The older Windows
 v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
@@ -42,7 +43,7 @@ that position. **Go to start** stops playback and returns to 0 ms. Windows
 alpha.19 keeps Pause reliably clickable across animation frames and updates
 its tooltip with the playback state. Earlier alpha.18 packages lack this fix.
 
-## Canvas resize and rotation handles (source update)
+## Canvas resize and rotation handles
 
 Select an element on the canvas or in Elements to show its blue selection box.
 Four square corner handles resize both dimensions; dragging any edge stretches
@@ -74,9 +75,8 @@ animation's parent axes; it is not an exact oriented-box reconstruction of every
 SVG affine transform. Scales retain the current positive range, 0.001–100;
 dragging past an opposite edge stops at the minimum rather than flipping.
 
-Canvas transform handles are a **source update after alpha.19**. The public
-Windows alpha.19 download contains navigation and the Pause repair, but not these
-handles yet.
+Canvas transform handles are included in **Windows v0.1.1-alpha.20**. Earlier
+alpha.19 packages contain navigation and the Pause repair, but not these handles.
 
 ## Selecting, moving and copying keyframes
 
@@ -534,3 +534,12 @@ not exhaustive pixel parity or SVGator feature parity. Local screenshots are in
   `transform-resize.png`, `transform-rotation.png`, and
   `figma-transform-handles.png`. Live Figma selection was inspected before
   implementation. Full visual or feature parity is not claimed.
+
+## 2026-11-01 — alpha.20 release preparation
+
+PR #51 merged canvas stretch and rotation handles with explicit owner approval.
+Merge `6f3d74bed07d945ab2b728b9f771dab492cab8d4` matches the verified source tree.
+Alpha.20 packages that work and updates the product website with an actual
+selected-object screenshot. The preceding alpha.19 and local verification entries
+remain historical records; see the alpha.20 release notes for package verification
+and publication status.

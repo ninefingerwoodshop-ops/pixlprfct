@@ -4,14 +4,15 @@ The Electron app packages the existing editor and Rust/WASM engine for macOS and
 
 After a team server loads successfully, Desktop remembers its validated address and opens that workspace on the next launch. **File → All local projects** continues to open your offline projects. If you run the server on this Mac, keep its background service running; the desktop connection address is the local PixlPrfct server address, not the database provider's API URL.
 
-## Windows SVG animator preview — v0.1.1-alpha.19
+## Windows SVG animator preview — v0.1.1-alpha.20
 
-The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.19)
+The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.20)
 packages the separate SVG Animation workspace and grouped timeline editing from
 PR #37, group easing from PR #39, precise selection timing from PR #40,
 animation reuse from PR #42, keyframe reversal from PR #43, duplication from
 PR #45, playhead/keyframe snapping from PR #46, keyframe navigation from PR #48,
-and the Pause-button repair from PR #49.
+the Pause-button repair from PR #49, and canvas stretch/rotation handles from
+PR #51.
 Create an SVG Animation design from Projects, import artwork, animate
 properties, motion paths or shape nodes, and export an on-load, hover or click
 animation. Multi-select keys across tracks to move, copy/paste and delete them
@@ -26,6 +27,10 @@ snapping, and ordinary dragging stays free.
 Use Alt/Option+Left/Right or the timeline menu to jump between keyframes without
 losing your selection. Zoomed timelines reveal the playhead when needed. Pause
 reliably freezes the playhead and artwork; Play resumes from that time.
+Select an element to resize it with corner or edge handles, or drag just outside
+a corner to rotate. Shift preserves proportions when resizing and snaps rotation
+to 15°; Alt/Option resizes from the center. Releasing the handle writes keys at
+the playhead, and Escape cancels a drag.
 Each edit is one undo step. Editable animation projects use `.pixl` files.
 
 Both the x64 installer and ZIP are unsigned early-testing packages. The release
