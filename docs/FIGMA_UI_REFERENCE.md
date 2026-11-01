@@ -583,3 +583,36 @@ Merge update, 2026-10-31: keyframe reversal was merged in PR #43. Its earlier
 paragraph records the local checkpoint. Windows alpha.17 release preparation
 includes animation reuse and reversal; see [Desktop](DESKTOP.md) for package
 availability and platform verification limits.
+
+Release update, 2026-10-31: PR #44 merged and Windows v0.1.1-alpha.17 was
+published with animation reuse and reversal. The preceding paragraph records
+its preparation checkpoint.
+
+### SVG keyframe duplication — 2026-10-31
+
+Rechecked live native Figma Motion in Capwah Components before implementation.
+The 1800 × 1003 logical view retains the 200 px dock, 241 px right inspector,
+and existing dark controls. Its Edit menu lists Duplicate, disabled with the
+current empty selection. The file has no animation tracks and reports a saving
+connection issue, so selected-key duplication could not be verified in Figma.
+No document content was edited. Layout capture:
+`.local/svg-animation/figma-duplicate-reference.png`.
+
+The separate SVG workspace adds **Duplicate keyframes** and Cmd/Ctrl+D to the
+existing timeline context menu. It keeps the shared 270 px dark menu, 32 px rows,
+typography, dock and inspector. The menu fits the inspected 1280 × 720 viewport.
+The workflow follows SVGator's official
+[duplication tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-keyframes):
+the earliest selected key is duplicated at the playhead with relative timing.
+This is an SVG extension, not a claim of exact Figma selected-key parity.
+
+Manual verification duplicated the Satellite rotation from 0–3000 ms to
+3500–6500 ms in an isolated orbit example. The two new keys remain selected and
+the original keys remain intact. Proofs: `.local/svg-animation/duplicate-menu.png`
+and `duplicate-workspace.png`. This pass is local pending merge and is not in
+Windows alpha.17. No TT design-system gap is closed by this pass.
+
+Verification: all 38 SVG browser cases and 31 model/controller cases pass.
+Changed-code lint has zero errors or warnings; the editor build and diff checks
+pass. Coverage includes clipboard preservation, undo/redo, export, persistence,
+atomic rejection and read-only protection.
