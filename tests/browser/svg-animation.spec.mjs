@@ -65,6 +65,20 @@ test('pointer scrubbing and keyframe dragging preserve separate property tracks'
  await page.getByRole('button',{name:'Loop',exact:true}).click();await field(page,'Current time','2990');await page.getByRole('button',{name:'Play',exact:true}).click();await expect(page.getByRole('button',{name:'Play',exact:true})).toBeVisible();await expect(page.getByLabel('Current time',{exact:true})).toHaveValue('3000');
 });
 
+test('Pause clicks freeze the playhead and artwork across animation frames, then resume from that time',async({page})=>{
+ await create(page,'Pause control');await page.getByRole('button',{name:'Try an example'}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);const before=await saved(page),clock=page.getByLabel('Current time',{exact:true});
+ await field(page,'Current time','750');await page.getByRole('button',{name:'Play',exact:true}).click();await expect.poll(async()=>Number(await clock.inputValue())).toBeGreaterThan(800);
+ // A human click spans animation frames; replacing the icon during this hold loses the click.
+ await page.getByRole('button',{name:'Pause',exact:true}).click({delay:150});await expect(page.getByRole('button',{name:'Play',exact:true})).toBeVisible();
+ const paused=await clock.inputValue(),rotation=await page.getByLabel('Rotation',{exact:true}).inputValue(),head=await page.locator('.timeline-playhead').getAttribute('style'),artwork=await page.locator('#svg-art').innerHTML();
+ await page.waitForTimeout(200);await expect(clock).toHaveValue(paused);await expect(page.getByLabel('Rotation',{exact:true})).toHaveValue(rotation);await expect(page.locator('.timeline-playhead')).toHaveAttribute('style',head);expect(await page.locator('#svg-art').innerHTML()).toBe(artwork);await expect(page.getByRole('button',{name:'Play',exact:true})).toHaveAttribute('title','Play');
+ await page.screenshot({path:'.local/svg-animation/pause-control.png'});
+ await page.getByRole('button',{name:'Play',exact:true}).click();await expect(page.getByRole('button',{name:'Pause',exact:true})).toHaveAttribute('title','Pause');await expect.poll(async()=>Number(await clock.inputValue())).toBeGreaterThan(Number(paused));
+ await page.getByRole('button',{name:'Pause',exact:true}).click({delay:150});await expect(page.getByRole('button',{name:'Play',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Play',exact:true}).press('Enter');await expect(page.getByRole('button',{name:'Pause',exact:true})).toBeVisible();await page.getByRole('button',{name:'Pause',exact:true}).press('Space');await expect(page.getByRole('button',{name:'Play',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Go to start',exact:true}).click();await expect(clock).toHaveValue('0');expect(await saved(page)).toEqual(before);
+});
+
 test('shared SVG files acquire and release the existing editing lease before cloud writes',async({page})=>{
  await create(page,'Shared SVG');const id='00000000-0000-4000-8000-000000000002';let body=JSON.stringify(await saved(page)),revision=1,lease=null,writes=0;
  const editing=()=>({editingMode:'handoff',documentRevision:revision,canEdit:true,serverNow:Date.now(),lease});

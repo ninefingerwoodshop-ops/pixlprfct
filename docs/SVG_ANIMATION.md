@@ -36,6 +36,11 @@ an offset from imported geometry; scales multiply the imported geometry. The
 original transforms and hierarchy remain inside animation wrappers. Canvas fit,
 zoom, timeline zoom, timeline resize/collapse, and loop/once playback work.
 
+The timeline's Play/Pause button pauses at the current time; Play resumes from
+that position. **Go to start** stops playback and returns to 0 ms. A source fix
+pending merge keeps Pause reliably clickable across animation frames and updates
+its tooltip with the playback state. This fix is not in Windows alpha.18.
+
 ## Selecting, moving and copying keyframes
 
 Click a diamond to select it. Shift, Cmd or Ctrl-click toggles other diamonds in
@@ -78,7 +83,7 @@ copying but block moves, pastes and deletions.
 
 ## Jumping between keyframes
 
-Source update pending merge; not included in Windows v0.1.1-alpha.18.
+Merged in PR #48; not included in Windows v0.1.1-alpha.18.
 
 With the timeline or time ruler focused, press **Alt/Option+Left** for the
 previous keyframe or **Alt/Option+Right** for the next. The same actions appear
@@ -438,6 +443,21 @@ The existing 270 px menu fits at 1280 × 720. Proofs:
 `.local/svg-animation/navigation-workspace.png`, `navigation-menu.png`, and
 `navigation-zoom.png`. This remains a source update pending merge, outside the
 Windows alpha.18 download.
+
+Merge update, 2026-11-01: navigation merged in PR #48. The preceding paragraph
+records the local checkpoint; Windows alpha.18 remains unchanged.
+
+Pause-button verification on 2026-11-01: reproduced the reported mouse-click
+failure in the live local browser and in a new regression test before the fix.
+The timeline replaced the icon on every animation frame, detaching the pointer
+target before the click completed. The icon now changes only when playback
+changes state. All 43 SVG browser cases pass, including a 150 ms mouse press,
+frozen playhead and rendered artwork, resume from the paused time, repeated
+pause/resume, Enter/Space activation, Go to start, and unchanged saved content.
+Changed-code lint has zero errors or warnings; editor build and diff checks pass.
+Manual confirmation left the user's preview paused at 1624 ms. Proofs:
+`.local/svg-animation/pause-workspace.png` and `pause-control.png`. This fix is
+local pending merge and is not included in Windows alpha.18.
 
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

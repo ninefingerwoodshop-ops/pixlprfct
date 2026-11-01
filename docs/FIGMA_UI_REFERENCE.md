@@ -683,3 +683,30 @@ passed again after the final menu-shortcut change. Final local checks: 36 SVG
 model/controller cases, two shared menu geometry cases, zero lint errors or
 warnings, editor build and diff check. Local pending merge; not shipped in
 Windows alpha.18.
+
+Merge update, 2026-11-01: keyframe navigation was merged in PR #48 at
+`e7495026d7ec677c34789e5a0e80b2df67b4fd72`. The preceding paragraph records
+its local checkpoint. Local main matched the tested source tree and no automatic
+CI ran. Windows alpha.18 still does not include navigation.
+
+### SVG Pause-button repair — 2026-11-01
+
+Re-inspected the live Figma Motion dock before this repair. The same empty
+Capwah Components file shows Play in the 200 px dock and still reports a
+connection issue; no document content was changed. Reference:
+`.local/svg-animation/figma-pause-reference.png`. The repair preserves the
+existing control's dimensions, placement and icons, and updates its tooltip to
+match Play/Pause. Playback-state visual parity with a populated Figma timeline
+remains unverified.
+
+Reproduced the user's Pause click failing in the local preview. The button's
+icon was replaced on every frame, losing a click held across those frames.
+Keeping the icon mounted until playback changes state repairs the control.
+The new regression test failed before the fix, then all 43 SVG browser cases
+passed with the fix. Coverage includes holding the mouse down for 150 ms,
+frozen time and artwork, resume, repeated mouse clicks, keyboard activation,
+Go to start and unchanged saved content. Lint has zero errors or warnings;
+editor build and diff checks pass. Manual proof:
+`.local/svg-animation/pause-workspace.png` (paused at 1624 ms), with automated
+proof in `pause-control.png`. Local pending merge; not in Windows alpha.18.
+No TT design-system gap is closed by this repair.
