@@ -1,11 +1,12 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source and the [Windows v0.1.1-alpha.16
-preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.16).
+Animation** in the repository source and the [Windows v0.1.1-alpha.17
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.17).
 It does not replace Design or its existing Motion mode. Grouped timeline editing
 was merged in PR #37; group easing and precise selection timing followed in
-PRs #39 and #40. All are included in alpha.16. The older Windows
+PRs #39 and #40. Animation reuse and reversal followed in PRs #42 and #43.
+All are included in alpha.17. The older Windows
 v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
@@ -65,7 +66,8 @@ copying but block moves, pastes and deletions.
 
 ## Reusing animation on another element
 
-This source update is not included in the Windows v0.1.1-alpha.16 download.
+Included in Windows v0.1.1-alpha.17. The earlier alpha.16 download does not
+include this command.
 
 Select keys from one element and copy them. Select a destination in the Elements
 list or canvas, set **Current time**, then right-click the timeline and choose
@@ -136,7 +138,8 @@ change the existing group-drag gesture.
 
 ## Reversing keyframes
 
-This source update is not included in the Windows v0.1.1-alpha.16 download.
+Included in Windows v0.1.1-alpha.17. The earlier alpha.16 download does not
+include this command.
 
 Select a sequence in the timeline, right-click, and choose **Reverse keyframes**.
 Shift+F10 opens the same menu with the keyboard. The command mirrors every
