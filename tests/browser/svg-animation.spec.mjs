@@ -189,6 +189,37 @@ test('timeline group dragging preserves spacing, cancels on Escape, and clamps a
  await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(0);await expect(page.locator('#svg-notice')).toContainText('changed during the drag');
 });
 
+test('Shift-drag snaps a selected group to the existing playhead and cancels without history',async({page})=>{
+ await create(page,'Snapped animation');await page.getByRole('button',{name:'Try an example'}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);
+ const timeline=page.getByLabel('Keyframes timeline',{exact:true}),guide=page.locator('.svg-timeline-snap-guide'),selected=page.locator('.timeline-keyframe[aria-pressed=true]');
+ await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).click();await page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true}).click({modifiers:['Shift']});await field(page,'Current time','413');const before=await saved(page);
+ const key=page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}),bounds=await key.boundingBox(),scale=((await page.getByRole('slider',{name:'Timeline scrubber'}).boundingBox()).width-32)/3000;
+ await page.keyboard.down('Shift');await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width/2+413*scale-3,bounds.y+bounds.height/2,{steps:6});
+ await expect(guide).toBeVisible();await expect(guide).toHaveAttribute('data-time','413');await expect(page.getByLabel('Current time',{exact:true})).toHaveValue('413');await expect(selected).toHaveCount(2);expect(await saved(page)).toEqual(before);
+ expect(Math.abs((await guide.boundingBox()).x-(await page.locator('.timeline-playhead').boundingBox()).x)).toBeLessThan(1);
+ await page.screenshot({path:test.info().outputPath('snapping-playhead.png')});
+ await page.mouse.up();await page.keyboard.up('Shift');await expect(guide).toBeHidden();
+ const expected=structuredClone(before);expected.svg_animation.tracks[0].keys[0].time=413;expected.svg_animation.tracks[1].keys[1].time=1913;await expect.poll(()=>saved(page)).toEqual(expected);await expect(selected).toHaveCount(2);
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await page.getByRole('button',{name:'Redo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(expected);
+ await page.getByRole('button',{name:'Satellite Rotation keyframe at 413 ms',exact:true}).click();await field(page,'Current time','777');const next=await page.getByRole('button',{name:'Satellite Rotation keyframe at 413 ms',exact:true}).boundingBox();
+ await page.keyboard.down('Shift');await page.mouse.move(next.x+next.width/2,next.y+next.height/2);await page.mouse.down();await page.mouse.move(next.x+next.width/2+(777-413)*scale-3,next.y+next.height/2,{steps:6});await expect(guide).toHaveAttribute('data-time','777');await page.keyboard.press('Escape');await page.mouse.up();await page.keyboard.up('Shift');await expect(guide).toBeHidden();expect(await saved(page)).toEqual(expected);
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await page.getByRole('button',{name:'Redo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(expected);
+ await page.reload();await expect(page.getByRole('button',{name:'Core Scale X keyframe at 1913 ms',exact:true})).toBeVisible();expect(await saved(page)).toEqual(expected);await expect(guide).toBeHidden();await timeline.press('Escape');
+});
+
+test('Shift-drag aligns other tracks when zoomed and scrolled while Alt and ordinary drags stay free',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);const before=await saved(page),guide=page.locator('.svg-timeline-snap-guide');
+ await page.getByRole('button',{name:'Zoom in on timeline',exact:true}).click();
+ async function drag({shift=false,alt=false,target=1500}={}){
+  const key=page.getByRole('button',{name:'Satellite Rotation keyframe at 3000 ms',exact:true});await key.scrollIntoViewIfNeeded();const bounds=await key.boundingBox(),scale=((await page.getByRole('slider',{name:'Timeline scrubber'}).boundingBox()).width-32)/3000;
+  if(shift)await page.keyboard.down('Shift');if(alt)await page.keyboard.down('Alt');await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width/2+(target-3000)*scale+3,bounds.y+bounds.height/2,{steps:6});
+  return async()=>{await page.mouse.up();if(alt)await page.keyboard.up('Alt');if(shift)await page.keyboard.up('Shift');return Math.round(target+3/scale);};
+ }
+ const release=await drag({shift:true});await expect(guide).toHaveAttribute('data-time','1500');await page.screenshot({path:test.info().outputPath('snapping-keyframes.png')});await release();await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys[1].time).toBe(1500);expect((await saved(page)).svg_animation.tracks[1]).toEqual(before.svg_animation.tracks[1]);await expect(guide).toBeHidden();await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);
+ for(const modifiers of [{shift:true,alt:true},{}]){const release=await drag(modifiers);await expect(guide).toBeHidden();const time=await release();expect(time).not.toBe(1500);await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys[1].time).toBe(time);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);}
+ const gridRelease=await drag({shift:true,target:1038});await expect(guide).toBeHidden();await gridRelease();await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys[1].time).toBe(1000);
+});
+
 test('timeline drag selection, modifier toggles, and select-all leave artwork unchanged',async({page})=>{
  await create(page);await page.getByRole('button',{name:'Try an example'}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);const before=await saved(page),selected=page.locator('.timeline-keyframe[aria-pressed=true]');
  const a=await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).boundingBox(),b=await page.getByRole('button',{name:'Core Scale X keyframe at 0 ms',exact:true}).boundingBox();

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newSvgAnimation,putKey,setMotionPath,trackValue,easingPoints} from '../web/svg-animation-model.js';
 import {morphPath,moveMorphPoint} from '../web/svg-animation-morph.js';
-import {keyframeMoveDelta,moveKeyframes,keyframeTiming,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
+import {keyframeMoveDelta,createKeyframeDrag,moveKeyframes,keyframeTiming,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement,keyframeEasing,setKeyframeEasing} from '../web/svg-animation-keyframes.js';
 const ref=(element,property,time)=>({element,property,time});
 function example(){let a=newSvgAnimation().svg_animation;for(const [id,prop,keys] of [['one','x',[[0,0],[1000,40],[2000,80]]],['two','opacity',[[0,1],[500,.5],[2000,0]]]])for(const [time,value] of keys)a=putKey(a,id,prop,time,value,[.2,.7,.7,.9]);return a;}
 
@@ -34,6 +34,52 @@ test('group moves allow vacated selected times but reject collisions atomically'
  const moved=moveKeyframes(a,[ref('one','x',0),ref('one','x',1000),ref('one','x',2000)],500);assert.deepEqual(moved.animation.tracks[0].keys.map(k=>k.time),[500,1500,2500]);
  assert.throws(()=>moveKeyframes(a,[ref('one','x',1000),ref('two','opacity',500)],1000),/already/);assert.deepEqual(a,before);
  assert.throws(()=>moveKeyframes(a,[ref('one','x',123)],10),/changed/);assert.throws(()=>keyframeMoveDelta(a,[],NaN),/valid/);
+});
+
+test('drag snapping aligns the grabbed key to playhead and other tracks with a screen-space tolerance',()=>{
+ const a=example(),before=structuredClone(a),key=ref('one','x',1000),drag=createKeyframeDrag(a,[key],key,1373);
+ assert.deepEqual(drag(370,1,{snap:true}),{delta:373,snapTime:1373});
+ assert.deepEqual(drag(-496,1,{snap:true}),{delta:-500,snapTime:500});
+ assert.deepEqual(drag(383,1,{snap:true}),{delta:400,snapTime:null});
+ assert.deepEqual(drag(383,.5,{snap:true}),{delta:373,snapTime:1373});
+ assert.deepEqual(drag(370,1),{delta:370,snapTime:null});
+ assert.deepEqual(drag(370,1,{snap:true,free:true}),{delta:370,snapTime:null});
+ assert.deepEqual(a,before);
+});
+
+test('drag snapping keeps group offsets and bounds and ignores selected keys as alignment targets',()=>{
+ const a=example(),keys=[ref('one','x',1000),ref('two','opacity',500)],drag=createKeyframeDrag(a,keys,keys[0],1500);
+ const snap=drag(497,1,{snap:true});assert.deepEqual(snap,{delta:500,snapTime:1500});
+ const moved=moveKeyframes(a,keys,snap.delta);assert.deepEqual(moved.selection.map(k=>k.time),[1500,1000]);
+ assert.deepEqual(drag(-496,1,{snap:true}),{delta:-500,snapTime:null});
+ assert.deepEqual(drag(-5000,1),{delta:-500,snapTime:null});
+ assert.deepEqual(drag(5000,1),{delta:2000,snapTime:null});
+ const end=ref('one','x',2000),endDrag=createKeyframeDrag(a,[end],end,NaN);
+ assert.deepEqual(endDrag(996,1,{snap:true}),{delta:1000,snapTime:3000});
+ const edgeKeys=[ref('one','x',1000),ref('two','opacity',2000)],edge=createKeyframeDrag(a,edgeKeys,edgeKeys[0],2500);
+ assert.deepEqual(edge(1498,1,{snap:true}),{delta:1000,snapTime:null});
+});
+
+test('drag snapping skips targets that collide on any moving track and uses deterministic nearest targets',()=>{
+ let a=example();a=putKey(a,'three','rotation',1498,10);const keys=[ref('one','x',1000),ref('two','opacity',500)];
+ const drag=createKeyframeDrag(a,keys,keys[0],1502);
+ assert.deepEqual(drag(500,1,{snap:true}),{delta:502,snapTime:1502});
+ assert.deepEqual(createKeyframeDrag(a,keys,keys[0],1502.4)(500,1,{snap:true}),{delta:502,snapTime:1502});
+ const blocked=createKeyframeDrag(a,keys,keys[0],2500);
+ // Aligning the grabbed key to 2500 would collide with the other track's 2000 key.
+ assert.deepEqual(blocked(1497,1,{snap:true}),{delta:1500,snapTime:null});
+ assert.throws(()=>moveKeyframes(a,keys,1500),/already/);
+ const selected=[ref('one','x',0),ref('one','x',1000),ref('one','x',2000)];
+ assert.deepEqual(createKeyframeDrag(a,selected,selected[0],1000)(998,1,{snap:true}),{delta:1000,snapTime:1000});
+});
+
+test('drag snapping validates stale selections and invalid inputs without changing source data',()=>{
+ const a=example(),before=structuredClone(a),key=ref('one','x',1000);
+ assert.throws(()=>createKeyframeDrag(a,[],key,0),/Select/);assert.throws(()=>createKeyframeDrag(a,[ref('one','x',123)],key,0),/changed/);
+ assert.throws(()=>createKeyframeDrag(a,[key],ref('one','x',0),0),/Select/);
+ const drag=createKeyframeDrag(a,[key],key,0);
+ for(const [offset,scale] of [[NaN,1],[Infinity,1],[10,0],[10,-1],[10,NaN]])assert.throws(()=>drag(offset,scale,{snap:true}),/valid/);
+ assert.deepEqual(a,before);
 });
 
 test('selection timing scales across tracks, preserving key values, curves and unselected keys',()=>{

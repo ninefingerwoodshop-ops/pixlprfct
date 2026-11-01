@@ -1,6 +1,6 @@
 import {icon} from './icons.js';
 import {properties,resizeDuration} from './svg-animation-model.js';
-import {keyframeId,keyframeMoveDelta,moveKeyframes,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
+import {keyframeId,createKeyframeDrag,moveKeyframes,retimeKeyframes,reverseKeyframes,deleteKeyframes,copyKeyframes,pasteKeyframes,pasteKeyframesToElement} from './svg-animation-keyframes.js';
 import {showContextMenu} from './context-menu.js';
 
 export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,destination=()=>null,editable=()=>true}){
@@ -13,9 +13,10 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  box.append(clock,duration,unit);const loop=button('Loop','repeat',()=>change({...read(),loop:!read().loop})),collapse=button('Collapse Motion timeline','timeline-collapse',()=>{collapsed=!collapsed;layout();});controls.append(toggle,reset,box,loop);
  const labels=el('div','timeline-labels'),viewport=el('div','timeline-viewport'),content=el('div','timeline-content'),ruler=el('div','timeline-ruler'),tracks=el('div','timeline-tracks'),head=el('div','timeline-playhead');head.append(el('div','timeline-playhead-cap'));
  viewport.tabIndex=0;viewport.setAttribute('aria-label','Keyframes timeline');
- viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element; Cmd/Ctrl+D duplicates at the playhead. Arrow keys move the selection. Right-click for actions.';
+ viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Shift-drag snaps to the playhead, other keys or 100 ms intervals; Alt bypasses snapping. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element; Cmd/Ctrl+D duplicates at the playhead. Arrow keys move the selection. Right-click for actions.';
  const status=el('span','svg-timeline-status');status.id='svg-timeline-status';status.setAttribute('role','status');viewport.setAttribute('aria-describedby',status.id);
- ruler.tabIndex=0;ruler.setAttribute('role','slider');ruler.setAttribute('aria-label','Timeline scrubber');ruler.setAttribute('aria-valuemin','0');content.append(ruler,tracks,head);viewport.append(content);
+ const snapGuide=el('div','svg-timeline-snap-guide');snapGuide.hidden=true;snapGuide.setAttribute('aria-hidden','true');
+ ruler.tabIndex=0;ruler.setAttribute('role','slider');ruler.setAttribute('aria-label','Timeline scrubber');ruler.setAttribute('aria-valuemin','0');content.append(ruler,tracks,head,snapGuide);viewport.append(content);
  const zooms=el('div','timeline-zoom');zooms.append(button('Zoom out on timeline','minus',()=>zoom(1/1.5)),button('Zoom in on timeline','plus',()=>zoom(1.5)));
  panel.append(grip,controls,collapse,labels,viewport,zooms,status);document.body.append(panel);
  let height=200,collapsed=false,magnification=1,selection=[],active=null,dragging=false,clipboard=null,sourceSvg=read().svg;
@@ -77,16 +78,21 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   seek(key.time);
  }
  function keyDrag(e,track,key){
-  if(e.button!==0)return;e.preventDefault();e.stopPropagation();const target=e.currentTarget,x=e.clientX,original=read(),px=scale();let delta=0,moved=false;
+  if(e.button!==0)return;e.preventDefault();e.stopPropagation();const target=e.currentTarget,x=e.clientX,original=read(),px=scale(),playhead=time(),toggleSelected=modified(e)&&has(ref(track,key));let delta=0,moved=false;
   // Keep the captured key mounted, including when choosing another element.
-  dragging=true;choose(track,key,e);dragging=false;target.focus();if(!has(ref(track,key)))return;
-  const before=structuredClone(selection),buttons=[...tracks.querySelectorAll('[data-keyframe]')].filter(button=>button.getAttribute('aria-pressed')==='true');
+  // A modifier-click toggles selection on release; modifier-drag keeps the group.
+  dragging=true;if(toggleSelected){active=ref(track,key);notify();seek(key.time);}else choose(track,key,e);dragging=false;target.focus();
+  const before=structuredClone(selection),resolve=createKeyframeDrag(original,before,ref(track,key),playhead),buttons=[...tracks.querySelectorAll('[data-keyframe]')].filter(button=>button.getAttribute('aria-pressed')==='true');
+  const clearGuide=()=>{snapGuide.hidden=true;delete snapGuide.dataset.time;};
   pointerDrag(target,e,ev=>{
-   if(!moved&&Math.abs(ev.clientX-x)<3)return;moved=true;
-   let offset=(ev.clientX-x)/px;if(ev.shiftKey)offset=Math.round((key.time+offset)/100)*100-key.time;
-   delta=keyframeMoveDelta(original,before,offset);
+   if(!moved){if(Math.abs(ev.clientX-x)<3)return;moved=true;seek(playhead);}
+   const result=resolve((ev.clientX-x)/px,px,{snap:ev.shiftKey,free:ev.altKey});delta=result.delta;
+   if(result.snapTime===null)clearGuide();else{
+    const at=String(result.snapTime);if(snapGuide.dataset.time!==at)announce(`Snapped to ${at} ms.`);
+    snapGuide.hidden=false;snapGuide.dataset.time=at;snapGuide.style.left=16+result.snapTime*px+'px';
+   }
    for(const button of buttons)button.style.left=12+(JSON.parse(button.dataset.keyframe)[2]+delta)*px+'px';
-  },()=>safe(()=>{if(moved&&delta){if(read()!==original)throw new Error('The animation changed during the drag. Select the keyframes again.');const result=moveKeyframes(original,before,delta);apply(result,result.selection.find(value=>value.element===track.element&&value.property===track.property&&value.time===key.time+delta));if(active)seek(active.time);}else render();focus();}),()=>{render();focus();});
+  },()=>safe(()=>{clearGuide();if(moved&&delta){if(read()!==original)throw new Error('The animation changed during the drag. Select the keyframes again.');const result=moveKeyframes(original,before,delta);apply(result,result.selection.find(value=>value.element===track.element&&value.property===track.property&&value.time===key.time+delta));if(active)seek(active.time);}else{if(!moved&&toggleSelected)setSelection(selection.filter(value=>keyframeId(value)!==keyframeId(ref(track,key))));render();}focus();}),()=>{clearGuide();render();focus();});
  }
  const coordinates=e=>{const bounds=viewport.getBoundingClientRect();return {x:e.clientX-bounds.left+viewport.scrollLeft,y:e.clientY-bounds.top+viewport.scrollTop};};
  content.onpointerdown=e=>{

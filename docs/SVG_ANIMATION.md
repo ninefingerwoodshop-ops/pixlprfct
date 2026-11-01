@@ -45,10 +45,20 @@ its tracks. Cmd/Ctrl+A selects every key while the timeline has focus. Escape
 clears the selection, or cancels an active drag.
 
 Drag any selected diamond to move the whole group. Arrow keys move it by 10 ms,
-or 100 ms with Shift. Shift-drag snaps the dragged diamond to 100 ms intervals.
+or 100 ms with Shift. Hold Shift while dragging to align the grabbed diamond
+with the playhead, unselected keys on any track, or the animation endpoints.
+A dashed blue guide marks the target within 6 screen pixels at any timeline zoom.
+Away from a valid target, Shift uses 100 ms intervals. Hold Alt to bypass snapping;
+ordinary dragging stays free. Set the playhead before dragging to align to it.
+Holding Shift before grabbing an already selected diamond keeps the whole group.
 The group keeps its relative spacing and stops together at the beginning/end of
-the animation. A collision with an unselected key on the same track rejects the
-whole move. Double-clicking empty space on a property row still adds a key there.
+the animation. Snapping skips targets that would cause any selected key to collide
+on its own track. Releasing a free or grid move on an occupied time still rejects
+the whole move. Escape cancels the drag without adding an undo step.
+Double-clicking empty space on a property row still adds a key there.
+
+Playhead/keyframe snapping is a source update and is not included in Windows
+v0.1.1-alpha.17, which uses only the 100 ms Shift grid.
 
 Cmd/Ctrl+C copies the selection. Move the playhead with the ruler or **Current
 time**, then Cmd/Ctrl+V pastes the earliest copied key at that time, preserving
@@ -383,6 +393,17 @@ read-only controls. The existing grouped-paste test now waits for the debounced
 save before comparing persisted keys. Changed-code lint has zero errors or
 warnings, and the editor build passes. Manual proofs:
 `.local/svg-animation/duplicate-menu.png` and `duplicate-workspace.png`.
+
+Snapping follows Figma's documented
+[Shift-drag keyframe workflow](https://help.figma.com/hc/en-us/articles/41307938657559-Add-select-and-delete-keyframes).
+Local verification on 2026-10-31: all 40 SVG browser cases and 35 model/controller
+cases pass. Coverage includes group spacing, the original playhead, cross-track
+alignment, zoom and scrolling, screen-space tolerance, collision and range
+rejection, deterministic ties (including a fractional playhead), Alt bypass,
+ordinary free movement, grid fallback, cancellation, one-step undo/redo and
+reopening. Changed-code lint has zero errors or warnings, and the editor build
+passes. Automated screenshots were visually inspected at 1440 × 1000:
+`.local/svg-animation/snapping-playhead.png` and `snapping-keyframes.png`.
 
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.
