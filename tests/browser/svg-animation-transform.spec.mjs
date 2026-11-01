@@ -57,7 +57,9 @@ test('transform handles pause playback before edits and stay separate from morph
 test('group handles follow a motion path and preserve its route, children and origin',async({page})=>{
  await create(page,'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400"><path id="Route" d="M80 100 Q240 30 380 220" fill="none" stroke="#777"/><g id="Tile" transform="translate(10 5)"><rect x="140" y="130" width="80" height="60" fill="#b8a3ff"/><circle cx="240" cy="160" r="20" fill="#0d99ff"/></g></svg>');
  await page.getByRole('button',{name:'Motion path: No motion path',exact:true}).click();await page.getByRole('option',{name:'Route',exact:true}).click();await page.getByRole('button',{name:'Path orientation: Keep orientation',exact:true}).click();await page.getByRole('option',{name:'Auto rotate',exact:true}).click();await field(page,'Current time',1000);
- const before=await saved(page),anchor=await at(page,'nw');await drag(page,'se',35,20);expect(distance(await at(page,'nw'),anchor)).toBeLessThan(.02);const after=await saved(page);expect(after.svg_animation.tracks.find(t=>t.property==='motionProgress')).toEqual(before.svg_animation.tracks[0]);expect(after.svg_animation.origins).toEqual(before.svg_animation.origins);expect(after.svg_animation.svg).toBe(before.svg_animation.svg);
+ // Draft writes acquire an asynchronous lock; capture the baseline after orientation saves.
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks.find(t=>t.property==='motionProgress')?.motion.rotate).toBe('auto');
+ const before=await saved(page),anchor=await at(page,'nw');await drag(page,'se',35,20);expect(distance(await at(page,'nw'),anchor)).toBeLessThan(.02);await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(5);const after=await saved(page);expect(after.svg_animation.tracks.find(t=>t.property==='motionProgress')).toEqual(before.svg_animation.tracks[0]);expect(after.svg_animation.origins).toEqual(before.svg_animation.origins);expect(after.svg_animation.svg).toBe(before.svg_animation.svg);
  await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);
 });
 
