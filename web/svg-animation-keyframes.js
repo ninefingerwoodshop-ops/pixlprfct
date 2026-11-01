@@ -36,6 +36,40 @@ export function keyframeMoveDelta(animation,selection,delta){
  return Math.max(-first,Math.min(animation.duration-last,Math.round(delta)));
 }
 
+export function createKeyframeDrag(animation,selection,anchor,playhead){
+ const keys=selectedKeys(animation,selection),ids=new Set(selection.map(keyframeId));
+ if(!keys.length||!ids.has(keyframeId(anchor)))throw new Error('Select a keyframe to drag.');
+ const first=keys.reduce((time,{key})=>Math.min(time,key.time),Infinity),last=keys.reduce((time,{key})=>Math.max(time,key.time),0);
+ const clamp=delta=>Math.max(-first,Math.min(animation.duration-last,Math.round(delta)));
+ const moving=new Map(),occupied=new Map(),points=new Set([0,animation.duration]);
+ for(const {track,key} of keys){const id=trackId(track);if(!moving.has(id))moving.set(id,[]);moving.get(id).push(key.time);}
+ const playheadTarget=Number.isFinite(playhead)&&playhead>=0&&playhead<=animation.duration?Math.round(playhead):null;
+ if(playheadTarget!==null)points.add(playheadTarget);
+ for(const track of animation.tracks){
+  const stationary=track.keys.filter(key=>!ids.has(keyframeId({...track,time:key.time}))).map(key=>key.time);
+  for(const time of stationary)points.add(time);
+  if(moving.has(trackId(track)))occupied.set(trackId(track),new Set(stationary));
+ }
+ const targets=[...points].sort((a,b)=>a-b),origin=anchor.time;
+ // Capture geometry once per drag; pointer updates inspect only nearby targets.
+ return (offset,scale,{snap=false,free=false}={})=>{
+  if(!Number.isFinite(offset)||!Number.isFinite(scale)||scale<=0)throw new Error('Enter a valid keyframe drag offset and scale.');
+  const delta=clamp(offset);if(!snap||free)return {delta,snapTime:null};
+  const time=origin+delta,radius=6/scale;let low=0,high=targets.length;
+  while(low<high){const mid=Math.floor((low+high)/2);if(targets[mid]<time-radius)low=mid+1;else high=mid;}
+  const candidates=[];
+  for(let i=low;i<targets.length&&targets[i]<=time+radius;i++)candidates.push(targets[i]);
+  candidates.sort((a,b)=>Math.abs(a-time)-Math.abs(b-time)||(a===playheadTarget?-1:b===playheadTarget?1:a-b));
+  for(const target of candidates){
+   const shift=target-origin;
+   if(clamp(shift)!==shift)continue;
+   if([...moving].some(([id,times])=>times.some(time=>occupied.get(id).has(time+shift))))continue;
+   return {delta:shift,snapTime:target};
+  }
+  return {delta:clamp(Math.round((origin+offset)/100)*100-origin),snapTime:null};
+ };
+}
+
 export function moveKeyframes(animation,selection,delta){
  delta=keyframeMoveDelta(animation,selection,delta);
  if(!delta)return {animation,selection:structuredClone(selection)};

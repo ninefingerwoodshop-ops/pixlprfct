@@ -616,3 +616,39 @@ Verification: all 38 SVG browser cases and 31 model/controller cases pass.
 Changed-code lint has zero errors or warnings; the editor build and diff checks
 pass. Coverage includes clipboard preservation, undo/redo, export, persistence,
 atomic rejection and read-only protection.
+
+Merge update, 2026-10-31: keyframe duplication was merged in PR #45. The preceding
+paragraph records its local checkpoint. It remains a source update and is not
+included in the public Windows alpha.17 download.
+
+### SVG keyframe snapping — 2026-10-31
+
+Rechecked live native Figma Motion in Capwah Components before implementation.
+The 1800 × 1003 logical view retains the 200 px dock, 241 px right inspector and
+existing dark controls. The file still has no animation tracks and reports a
+saving connection issue; no document content was edited. Layout capture:
+`.local/svg-animation/figma-snapping-reference.png`. Selected-key snapping could
+not be inspected in that file, so its exact visual parity is unverified.
+
+The gesture follows Figma's official
+[keyframe guide](https://help.figma.com/hc/en-us/articles/41307938657559-Add-select-and-delete-keyframes):
+set the playhead, then Shift-drag one or more selected keys to align with the
+playhead or other keyframes. Ordinary dragging remains free. The SVG workspace
+retains its existing dock and inspector, with a dashed blue alignment guide
+using the shared accent color. The guide is an SVG extension, not a claim of
+exact Figma selected-key visual parity. It spans the tracks without covering
+the ruler or labels. Snapping also supports animation endpoints, a 100 ms grid
+fallback and Alt bypass, while preserving group spacing and avoiding collisions.
+
+Automated interaction screenshots were visually inspected at 1440 × 1000:
+`.local/svg-animation/snapping-playhead.png` shows a two-key group moved so the
+grabbed key aligns with the original 413 ms playhead; `snapping-keyframes.png` shows a grabbed rotation
+key aligned to the 1500 ms scale key in a zoomed and scrolled timeline. This pass
+is local pending merge and is not in Windows alpha.17. No TT design-system gap
+is closed by this pass.
+
+Verification: all 40 SVG browser cases and 35 model/controller cases pass.
+Changed-code lint has zero errors or warnings; the editor build and diff checks
+pass. Coverage includes Shift held before grabbing an existing selection,
+cross-track and playhead alignment, zoom tolerance, collision/range rejection,
+ties, Alt bypass, free movement, grid fallback, Escape, undo/redo and persistence.
