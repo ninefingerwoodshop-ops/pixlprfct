@@ -4,14 +4,17 @@ The Electron app packages the existing editor and Rust/WASM engine for macOS and
 
 After a team server loads successfully, Desktop remembers its validated address and opens that workspace on the next launch. **File → All local projects** continues to open your offline projects. If you run the server on this Mac, keep its background service running; the desktop connection address is the local PixlPrfct server address, not the database provider's API URL.
 
-## Windows SVG animator preview — v0.1.1-alpha.15
+## Windows SVG animator preview — v0.1.1-alpha.16
 
-The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.15)
+The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.16)
 packages the separate SVG Animation workspace and grouped timeline editing from
-PR #37. Create an SVG Animation design from Projects, import artwork, animate
+PR #37, group easing from PR #39, and precise selection timing from PR #40.
+Create an SVG Animation design from Projects, import artwork, animate
 properties, motion paths or shape nodes, and export an on-load, hover or click
 animation. Multi-select keys across tracks to move, copy/paste and delete them
-with undo/redo. Editable animation projects use `.pixl` files.
+with undo/redo. Apply a preset or custom easing curve to the selected keys, or
+set their exact start and proportional duration without changing values.
+Editable animation projects use `.pixl` files.
 
 Both the x64 installer and ZIP are unsigned early-testing packages. The release
 page includes checksums, the exact source commit and the Windows build record.
@@ -33,8 +36,8 @@ fixes the inline-player restriction found during release preparation. The main
 editor retains its existing content security policy; only the preview document
 can be framed by the app. Its policy blocks network requests and inline scripts,
 and the sandbox denies access to the parent document and application storage.
-Click playback was also inspected through the actual `pixlprfct://app` desktop
-protocol in an isolated Mac test profile. This is source-runtime verification,
+During alpha.15 preparation, click playback was also inspected through the actual
+`pixlprfct://app` desktop protocol in an isolated Mac test profile. This is source-runtime verification,
 not a claim of a notarized Mac download.
 
 ## Run and build

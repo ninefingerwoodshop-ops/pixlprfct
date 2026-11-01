@@ -508,3 +508,8 @@ design-system gap is closed by it.
 Verification: all 32 SVG browser cases and 22 model/controller cases pass.
 Changed-code lint has zero errors and two existing warnings; editor asset
 preparation and the browser editor build pass.
+
+Merge update, 2026-10-31: group easing and selection timing were merged in
+PRs #39 and #40. The earlier paragraphs retain their pre-merge checkpoints.
+Windows alpha.16 release preparation includes both updates; see
+[Desktop](DESKTOP.md) for package availability and platform verification limits.

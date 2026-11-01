@@ -1,10 +1,11 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source and the [Windows v0.1.1-alpha.15
-preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.15).
+Animation** in the repository source and the [Windows v0.1.1-alpha.16
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.16).
 It does not replace Design or its existing Motion mode. Grouped timeline editing
-was merged in PR #37 and is included in that preview. The older Windows
+was merged in PR #37; group easing and precise selection timing followed in
+PRs #39 and #40. All are included in alpha.16. The older Windows
 v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
@@ -63,8 +64,8 @@ selection and copying but block moves, pastes and deletions.
 
 ## Easing a selection
 
-This is a source update after Windows v0.1.1-alpha.15; that download still edits
-one key's easing at a time.
+Included in Windows v0.1.1-alpha.16. The earlier alpha.15 download edits one
+key's easing at a time.
 
 Select keys across one or more tracks, then use **Keyframe easing** in the right
 inspector. A preset, numeric Bézier edit, or handle edit applies to every selected
@@ -84,7 +85,7 @@ selection and returns the inspector to that single key.
 
 ## Timing a selection
 
-This is a source update after Windows v0.1.1-alpha.15; that download does not
+Included in Windows v0.1.1-alpha.16. The earlier alpha.15 download does not
 include selection timing controls.
 
 Select timeline keys and use **Keyframe timing** in the right inspector.
