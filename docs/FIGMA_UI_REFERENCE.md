@@ -513,3 +513,37 @@ Merge update, 2026-10-31: group easing and selection timing were merged in
 PRs #39 and #40. The earlier paragraphs retain their pre-merge checkpoints.
 Windows alpha.16 release preparation includes both updates; see
 [Desktop](DESKTOP.md) for package availability and platform verification limits.
+
+Release update, 2026-10-31: PR #41 merged and Windows v0.1.1-alpha.16 was
+published with group easing and selection timing. The preceding paragraph
+records its preparation checkpoint.
+
+### SVG animation reuse — 2026-10-31
+
+Re-inspected live native Figma Motion in Capwah Components before this pass.
+The 1800 × 1006 logical window retains the full-width, approximately 200 px
+dock, 241 px right inspector, and toolbelt above the dock. The document has no
+animation tracks. Its native Edit menu includes Copy, Paste, and Paste Over
+Selection. No document content was changed. A later screenshot-save attempt
+was unavailable, so this observation has no additional local reference PNG.
+
+The SVG workspace adds **Paste to selected element** to the existing shared
+dark context menu and Cmd/Ctrl+Shift+V to the timeline. It retains the existing
+dock, inspector and controls. The 270 px menu accommodates the command and
+shortcut without clipping at a 1280 × 720 viewport. This is an SVG-workspace
+extension, not a claim of exact parity with Figma's paste behavior. SVGator's
+official [copy/paste tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-keyframes)
+provides the reference for reusing keys on the same property of another element.
+
+Manual menu verification copied Core's three Scale X keys onto the circle in
+an isolated orbit example. Source and destination tracks remain independent;
+the circle retains its own center and the pasted keys stay selected. Proof:
+`.local/svg-animation/paste-element-workspace.png`. Browser tests additionally
+verify both shortcuts, native SVG output, undo/redo, reopening, collisions,
+ambiguous source selections, and read-only protection. All 34 SVG browser cases
+and 26 model/controller cases pass; changed-code lint has zero errors and one
+existing navigation warning. The editor build passes.
+
+This pass is local pending merge and is not in Windows alpha.16. Cross-element
+morph and motion-path copying remain unsupported. No TT design-system gap is
+closed by this pass.

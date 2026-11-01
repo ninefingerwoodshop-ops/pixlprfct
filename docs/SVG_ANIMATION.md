@@ -57,10 +57,37 @@ incompatible morph geometry and document limits without partial changes.
 Delete/Backspace removes the selected keys. Each group edit is one undo step.
 Right-click the timeline (or Shift+F10) for Copy, Paste, Delete and Select all.
 
-The clipboard belongs to this open project tab and pastes onto the original
-elements/properties. It is cleared on reload or changes to the source SVG. It
-does not support cross-project or cross-element copying. Read-only shared files allow
-selection and copying but block moves, pastes and deletions.
+The clipboard belongs to this open project tab. Ordinary Paste targets the
+original elements/properties, including selections across multiple elements.
+The clipboard is cleared on reload or changes to the source SVG; it does not
+support cross-project copying. Read-only shared files allow selection and
+copying but block moves, pastes and deletions.
+
+## Reusing animation on another element
+
+This source update is not included in the Windows v0.1.1-alpha.16 download.
+
+Select keys from one element and copy them. Select a destination in the Elements
+list or canvas, set **Current time**, then right-click the timeline and choose
+**Paste to selected element**. With the timeline focused, Cmd/Ctrl+Shift+V does
+the same thing. Ordinary Cmd/Ctrl+V continues to paste onto the original tracks.
+
+Several property tracks from the same source element can be copied together.
+The earliest copied key lands at the playhead; all other timing offsets, values,
+and easing are retained. Missing property tracks are created on the destination,
+and the new keys remain selected. The whole paste is one undo step.
+
+The source animation and destination's existing keys stay intact. Paste retains
+the destination's own transform origin, or initializes it to the center of its
+source geometry if it has none. Values are copied literally: position remains an
+offset from the destination's imported geometry, and scale remains a multiplier.
+The command does not match the source element's size or position automatically.
+
+An occupied time on a destination property, a key beyond the animation duration,
+or a document limit rejects the entire paste. Copying from several source
+elements is ambiguous for this command and is rejected. Morph and motion-path
+keys can be pasted only onto their original element; copy transform or appearance
+keys to reuse animation on a different element. No geometry or route is copied.
 
 ## Easing a selection
 
@@ -274,6 +301,17 @@ covers queued scroll events in shared inspector menus. Timing proof:
 `.local/svg-animation/selection-timing-workspace.png`.
 Changed-code lint has zero errors and two existing warnings (navigation and a
 dropdown expression).
+
+Animation reuse follows the same-property workflow in SVGator's official
+[copy/paste tutorial](https://www.svgator.com/tutorials/add-delete-duplicate-keyframes).
+Local verification on 2026-10-31: all 34 SVG browser cases and 26 model/controller
+cases pass. Added coverage checks destination origins, multiple properties,
+relative timing and easing, unchanged source tracks, atomic rejection, one-step
+undo/redo, actual exported SVG playback, reopening, and read-only controls.
+Changed-code lint has zero errors and one existing navigation warning. Manual
+menu verification copied the Core's Scale X keys onto the circle in an isolated
+orbit example. Proof: `.local/svg-animation/paste-element-workspace.png`.
+
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.
 Demo proofs: `.local/svg-animation/motion-path-workspace.png` and
