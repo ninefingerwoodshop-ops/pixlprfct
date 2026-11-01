@@ -578,3 +578,8 @@ Windows alpha.16. No TT design-system gap is closed by it.
 Verification: all 36 SVG browser cases and 31 model/controller cases pass.
 Changed-code lint has zero errors or warnings; the editor build and diff checks
 pass.
+
+Merge update, 2026-10-31: keyframe reversal was merged in PR #43. Its earlier
+paragraph records the local checkpoint. Windows alpha.17 release preparation
+includes animation reuse and reversal; see [Desktop](DESKTOP.md) for package
+availability and platform verification limits.
