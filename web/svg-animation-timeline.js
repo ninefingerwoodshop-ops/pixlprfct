@@ -13,7 +13,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  box.append(clock,duration,unit);const loop=button('Loop','repeat',()=>change({...read(),loop:!read().loop})),collapse=button('Collapse Motion timeline','timeline-collapse',()=>{collapsed=!collapsed;layout();});controls.append(toggle,reset,box,loop);
  const labels=el('div','timeline-labels'),viewport=el('div','timeline-viewport'),content=el('div','timeline-content'),ruler=el('div','timeline-ruler'),tracks=el('div','timeline-tracks'),head=el('div','timeline-playhead');head.append(el('div','timeline-playhead-cap'));
  viewport.tabIndex=0;viewport.setAttribute('aria-label','Keyframes timeline');
- viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element. Arrow keys move the selection. Right-click for actions.';
+ viewport.title='Shift/Cmd/Ctrl-click or drag to select keyframes. Cmd/Ctrl+C copies; Cmd/Ctrl+V pastes on the original tracks; Cmd/Ctrl+Shift+V pastes to the selected element; Cmd/Ctrl+D duplicates at the playhead. Arrow keys move the selection. Right-click for actions.';
  const status=el('span','svg-timeline-status');status.id='svg-timeline-status';status.setAttribute('role','status');viewport.setAttribute('aria-describedby',status.id);
  ruler.tabIndex=0;ruler.setAttribute('role','slider');ruler.setAttribute('aria-label','Timeline scrubber');ruler.setAttribute('aria-valuemin','0');content.append(ruler,tracks,head);viewport.append(content);
  const zooms=el('div','timeline-zoom');zooms.append(button('Zoom out on timeline','minus',()=>zoom(1/1.5)),button('Zoom in on timeline','plus',()=>zoom(1.5)));
@@ -39,6 +39,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  function copy(){clipboard=copyKeyframes(read(),selection);announce(`${selection.length} keyframes copied. Paste on the original tracks, or select another element and use Paste to selected element.`);}
  function paste(){apply(pasteKeyframes(read(),clipboard,time()));}
  function pasteToElement(){if(!canChange())return;const target=destination();apply(pasteKeyframesToElement(read(),clipboard,time(),target?.element,target?.origin));}
+ function duplicate(){if(!selection.length||!canChange())return;const animation=read();apply(pasteKeyframes(animation,copyKeyframes(animation,selection),time()));}
  function reverse(){if(!canChange())return;const index=selection.findIndex(key=>active&&keyframeId(key)===keyframeId(active)),result=reverseKeyframes(read(),selection);apply(result,result.selection[index]);if(active)seek(active.time);}
  function selectAll(){setSelection(allKeys());focus();}
  function menu(event){
@@ -49,6 +50,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
    {label:'Paste keyframes',shortcut:'⌘/Ctrl V',enabled:!!clipboard&&editable(),run:()=>safe(paste)},
    {label:'Paste to selected element',shortcut:'⇧⌘/Ctrl V',enabled:!!clipboard&&!!destination()&&editable(),run:()=>safe(pasteToElement)},
    {separator:true},
+   {label:'Duplicate keyframes',shortcut:'⌘/Ctrl D',enabled:selection.length>0&&editable(),run:()=>safe(duplicate)},
    {label:'Reverse keyframes',enabled:editable()&&new Set(selection.map(key=>key.time)).size>1,run:()=>safe(reverse)},
    {label:'Delete keyframes',shortcut:'Delete',enabled:selection.length>0&&editable(),run:()=>safe(remove)},
    {label:'Select all keyframes',shortcut:'⌘/Ctrl A',enabled:read().tracks.length>0,run:selectAll},
@@ -105,6 +107,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   if(e.target.closest('input')||e.target===ruler||e.target===grip)return;
   if(e.target.closest('.timeline-controls,.timeline-zoom')||e.target===collapse)return;
   const command=e.ctrlKey||e.metaKey,key=e.key.toLowerCase();
+  if(command&&key==='d'&&!e.shiftKey&&!e.altKey){e.preventDefault();e.stopPropagation();safe(duplicate);return;}
   if(command&&['a','c','v'].includes(key)){e.preventDefault();e.stopPropagation();safe(key==='a'?selectAll:key==='c'?copy:e.shiftKey?pasteToElement:paste);return;}
   if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')){e.preventDefault();e.stopPropagation();menu(e);return;}
   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setSelection([]);return;}

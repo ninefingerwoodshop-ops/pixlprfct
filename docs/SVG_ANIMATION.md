@@ -56,13 +56,35 @@ all offsets, values and easing. Paste restores a deleted track and its motion
 path metadata when needed. It rejects occupied times, out-of-range keys,
 incompatible morph geometry and document limits without partial changes.
 Delete/Backspace removes the selected keys. Each group edit is one undo step.
-Right-click the timeline (or Shift+F10) for Copy, Paste, Delete and Select all.
+Right-click the timeline (or Shift+F10) for Copy, Paste, Duplicate, Reverse,
+Delete and Select all.
 
 The clipboard belongs to this open project tab. Ordinary Paste targets the
 original elements/properties, including selections across multiple elements.
 The clipboard is cleared on reload or changes to the source SVG; it does not
 support cross-project copying. Read-only shared files allow selection and
 copying but block moves, pastes and deletions.
+
+## Duplicating at the playhead
+
+This source update is not included in the Windows v0.1.1-alpha.17 download.
+
+Select keys on one or more tracks, then move **Current time** to the start of
+the new sequence. Right-click the timeline and choose **Duplicate keyframes**,
+or press Cmd/Ctrl+D while the timeline has focus. The earliest selected key
+lands at the playhead; the other keys retain their relative offsets, values and
+easing on their original tracks. A single key can be duplicated too.
+
+The new keys remain selected, the playhead stays at the chosen time, and the
+whole duplication is one undo step. Existing keys, origins and motion routes
+stay intact. Duplicate does not replace the timeline clipboard, so a previously
+copied selection remains available for Paste or Paste to selected element.
+
+An occupied time on any affected track, a key beyond the animation duration,
+or a document limit rejects the entire operation. Move the playhead or extend
+the animation first; the command does not overwrite existing keys or extend
+the duration automatically. Empty selections and read-only files disable it.
+Duplicated animation persists in native `.pixl` files and SVG exports.
 
 ## Reusing animation on another element
 
@@ -350,6 +372,17 @@ disabled states and read-only files. Proofs: `.local/svg-animation/reverse-menu.
 and `reverse-workspace.png`.
 All 36 SVG browser cases and 31 model/controller cases pass. Changed-code lint
 has zero errors or warnings, and the editor build passes.
+
+Duplication follows SVGator's official
+[duplicate-at-playhead workflow](https://www.svgator.com/tutorials/add-delete-duplicate-keyframes).
+Local verification on 2026-10-31: all 38 SVG browser cases and 31 model/controller
+cases pass. Coverage checks menu and shortcut invocation, multiple tracks and
+single keys, timing/easing preservation, unchanged clipboard, one-step undo/redo,
+collision and duration rejection, actual exported playback, reopening and
+read-only controls. The existing grouped-paste test now waits for the debounced
+save before comparing persisted keys. Changed-code lint has zero errors or
+warnings, and the editor build passes. Manual proofs:
+`.local/svg-animation/duplicate-menu.png` and `duplicate-workspace.png`.
 
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.

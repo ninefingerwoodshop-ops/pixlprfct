@@ -169,8 +169,9 @@ test('timeline multi-selection copies relative timing, moves together and undoes
  const key=name=>page.getByRole('button',{name,exact:true}),timeline=page.getByLabel('Keyframes timeline',{exact:true}),selected=page.locator('.timeline-keyframe[aria-pressed=true]');
  await key('Satellite Rotation keyframe at 0 ms').click();await key('Core Scale X keyframe at 1500 ms').click({modifiers:['ControlOrMeta']});await expect(selected).toHaveCount(2);
  await timeline.press('Shift+ArrowRight');await expect(key('Satellite Rotation keyframe at 100 ms')).toBeVisible();await expect(key('Core Scale X keyframe at 1600 ms')).toBeVisible();await expect(selected).toHaveCount(2);
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks[1].keys.find(k=>k.time===1600)?.easing).toBe('ease-in-out');
  const before=await saved(page);await timeline.press('ControlOrMeta+c');await field(page,'Current time','500');await timeline.press('ControlOrMeta+v');await expect(key('Satellite Rotation keyframe at 500 ms')).toBeVisible();await expect(key('Core Scale X keyframe at 2000 ms')).toBeVisible();await expect(selected).toHaveCount(2);
- const pasted=await saved(page);expect(pasted.svg_animation.tracks[1].keys.find(k=>k.time===2000).easing).toBe('ease-in-out');
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks[1].keys.find(k=>k.time===2000)?.easing).toBe('ease-in-out');const pasted=await saved(page);
  await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(before);await key('Redo').click();await expect.poll(()=>saved(page)).toEqual(pasted);
  await key('Satellite Rotation keyframe at 500 ms').click();await key('Core Scale X keyframe at 2000 ms').click({modifiers:['Shift']});await timeline.press('Delete');await expect(key('Satellite Rotation keyframe at 500 ms')).toHaveCount(0);await expect(key('Core Scale X keyframe at 2000 ms')).toHaveCount(0);await key('Undo').click();await expect.poll(()=>saved(page)).toEqual(pasted);
  await page.reload();await expect(page.getByLabel('Document name',{exact:true})).toHaveValue('Grouped keyframes');expect(await saved(page)).toEqual(pasted);
@@ -203,6 +204,38 @@ test('timeline context menu restores deleted tracks and rejects conflicting or o
  await timeline.press('ControlOrMeta+v');await expect(page.locator('#svg-notice')).toContainText('already a keyframe');expect(await saved(page)).toEqual(before);
  await field(page,'Current time','1');await timeline.press('ControlOrMeta+v');await expect(page.locator('#svg-notice')).toContainText('duration');expect(await saved(page)).toEqual(before);
  await field(page,'Duration','7000');await field(page,'Current time','3500');await timeline.press('ControlOrMeta+v');await expect.poll(async()=>(await saved(page)).svg_animation.tracks[1].keys.map(k=>k.time)).toEqual([0,1500,3000,3500,5000,6500]);
+});
+
+test('duplicate at the playhead preserves timing, easing and clipboard through undo, export and reopening',async({page,context})=>{
+ await create(page,'Duplicate animation');await page.getByRole('button',{name:'Try an example'}).click();await field(page,'Duration','10000');
+ const timeline=page.getByLabel('Keyframes timeline',{exact:true}),selected=page.locator('.timeline-keyframe[aria-pressed=true]');
+ await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).click();await timeline.press('ControlOrMeta+c');
+ await page.getByRole('button',{name:'Keyframe easing: Linear',exact:true}).click();await page.getByRole('option',{name:'Ease in',exact:true}).click();
+ await timeline.press('ControlOrMeta+a');await field(page,'Current time','3500');const before=await saved(page);await timeline.press('ControlOrMeta+d');
+ await expect(selected).toHaveCount(5);await expect(page.getByLabel('Current time',{exact:true})).toHaveValue('3500');
+ const expected=structuredClone(before);for(const track of expected.svg_animation.tracks)track.keys.push(...track.keys.map(key=>({...key,time:key.time+3500})));
+ await expect.poll(()=>saved(page)).toEqual(expected);
+ await expect(page.getByRole('button',{name:'Core Scale X keyframe at 5000 ms',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await page.getByRole('button',{name:'Redo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(expected);
+ // Duplicating reads the current selection without replacing the earlier clipboard.
+ await field(page,'Current time','8000');await timeline.press('ControlOrMeta+v');await expect(selected).toHaveCount(1);
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys.at(-1)).toEqual({time:8000,value:0,easing:'linear'});
+ expect((await saved(page)).svg_animation.tracks[1]).toEqual(expected.svg_animation.tracks[1]);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(expected);
+ await page.getByRole('button',{name:'Export',exact:true}).click();const output=await downloadSvg(page),exported=await context.newPage();await exported.setContent(output);
+ const actual=await exported.evaluate(()=>{const svg=document.querySelector('svg');svg.pauseAnimations();svg.setCurrentTime(4.25);const m=svg.querySelector('animateTransform[type="rotate"]').parentElement.transform.animVal.getItem(0).matrix;return {a:m.a,b:m.b};}),angle=trackValue(before.svg_animation.tracks[0],750)*Math.PI/180;
+ expect(actual.a).toBeCloseTo(Math.cos(angle),3);expect(actual.b).toBeCloseTo(Math.sin(angle),3);await exported.close();
+ await page.reload();expect((await saved(page)).svg_animation).toEqual(expected.svg_animation);await select(page,'Satellite');await field(page,'Current time','4250');expect(Number(await page.getByLabel('Rotation',{exact:true}).inputValue())).toBeCloseTo(angle*180/Math.PI,2);
+});
+
+test('duplicate menu rejects collisions and out-of-range groups atomically and supports a single key',async({page})=>{
+ await create(page);await page.getByRole('button',{name:'Try an example'}).click();const timeline=page.getByLabel('Keyframes timeline',{exact:true}),menu=page.getByRole('menu',{name:'Keyframe actions'}),duplicate=menu.getByRole('menuitem',{name:'Duplicate keyframes',exact:false});
+ await timeline.press('Shift+F10');await expect(duplicate).toBeDisabled();await menu.press('Escape');const before=await saved(page);await timeline.press('ControlOrMeta+d');expect(await saved(page)).toEqual(before);
+ await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).click();await page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true}).click({modifiers:['Shift']});await timeline.press('Shift+F10');await expect(duplicate).toBeEnabled();await duplicate.click();
+ await expect(page.locator('#svg-notice')).toContainText('already a keyframe');expect(await saved(page)).toEqual(before);await expect(page.locator('.timeline-keyframe[aria-pressed=true]')).toHaveCount(2);
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(page.locator('.timeline-keyframe')).toHaveCount(0);await page.getByRole('button',{name:'Redo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);
+ await timeline.press('ControlOrMeta+a');await field(page,'Current time','1');await timeline.press('ControlOrMeta+d');await expect(page.locator('#svg-notice')).toContainText('duration');expect(await saved(page)).toEqual(before);
+ await timeline.press('Escape');await page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}).click();await field(page,'Current time','500');await timeline.press('Shift+F10');await duplicate.click();await expect(page.getByRole('button',{name:'Satellite Rotation keyframe at 500 ms',exact:true})).toHaveAttribute('aria-pressed','true');await expect(page.locator('.timeline-keyframe[aria-pressed=true]')).toHaveCount(1);
+ await expect.poll(async()=>(await saved(page)).svg_animation.tracks[0].keys.map(key=>key.time)).toEqual([0,500,3000]);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);
 });
 
 test('paste to another element retains timing, easing and its own origin through undo, export and reopening',async({page,context})=>{
@@ -271,7 +304,8 @@ test('read-only shared timelines allow grouped selection and copy without changi
  await expect(page.getByRole('button',{name:'Keyframe easing: Mixed',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'Delete selected keyframes',exact:true})).toBeDisabled();
  await expect(page.getByLabel('Selection start',{exact:true})).toBeDisabled();await expect(page.getByLabel('Selection duration',{exact:true})).toBeDisabled();
  await timeline.press('ArrowRight');await expect(page.locator('#svg-notice')).toContainText('read-only');await timeline.press('Delete');await timeline.press('ControlOrMeta+v');await timeline.press('ControlOrMeta+Shift+v');await expect(page.locator('#svg-notice')).toContainText('read-only');
- await timeline.press('Shift+F10');const menu=page.getByRole('menu',{name:'Keyframe actions'});await expect(menu.getByRole('menuitem',{name:'Copy keyframes',exact:false})).toBeEnabled();await expect(menu.getByRole('menuitem',{name:'Paste keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Paste to selected element',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Delete keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Reverse keyframes',exact:true})).toBeDisabled();await menu.press('Escape');
+ await timeline.press('ControlOrMeta+d');await expect(page.locator('#svg-notice')).toContainText('read-only');
+ await timeline.press('Shift+F10');const menu=page.getByRole('menu',{name:'Keyframe actions'});await expect(menu.getByRole('menuitem',{name:'Copy keyframes',exact:false})).toBeEnabled();await expect(menu.getByRole('menuitem',{name:'Paste keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Paste to selected element',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Delete keyframes',exact:false})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Reverse keyframes',exact:true})).toBeDisabled();await expect(menu.getByRole('menuitem',{name:'Duplicate keyframes',exact:false})).toBeDisabled();await menu.press('Escape');
  const key=page.getByRole('button',{name:'Satellite Rotation keyframe at 0 ms',exact:true}),bounds=await key.boundingBox();await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+100,bounds.y+bounds.height/2,{steps:5});await page.mouse.up();
  expect(await keys.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')))).toEqual(names);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();expect(writes).toBe(0);
  await timeline.press('Escape');await page.getByRole('button',{name:'Core Scale X keyframe at 0 ms',exact:true}).click();await page.getByRole('button',{name:'Core Scale X keyframe at 1500 ms',exact:true}).click({modifiers:['Shift']});await expect(page.getByLabel('Easing X1',{exact:true})).toBeDisabled();await expect(page.getByRole('slider',{name:'Easing handle 1',exact:true})).toHaveAttribute('aria-disabled','true');expect(writes).toBe(0);
