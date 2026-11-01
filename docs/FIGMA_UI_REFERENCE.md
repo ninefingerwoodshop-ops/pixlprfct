@@ -710,3 +710,13 @@ editor build and diff checks pass. Manual proof:
 `.local/svg-animation/pause-workspace.png` (paused at 1624 ms), with automated
 proof in `pause-control.png`. Local pending merge; not in Windows alpha.18.
 No TT design-system gap is closed by this repair.
+
+Merge update, 2026-11-01: the Pause repair merged in PR #49 at
+`c41fc90285c90384ed29ad8958cd00a89e848927`. The prior paragraph records the
+local checkpoint. Main matched the tested tree, with no automatic CI runs.
+
+Release preparation, 2026-11-01: Windows alpha.19 packages navigation and the
+Pause repair. The product site uses the actual navigation-menu screenshot and
+describes pause/resume. Application layout and controls are unchanged in this
+packaging pass. See [Desktop](DESKTOP.md) and the release notes for availability
+and verification scope; the earlier checkpoints remain historical evidence.

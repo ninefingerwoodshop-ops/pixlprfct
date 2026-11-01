@@ -37,9 +37,9 @@ original transforms and hierarchy remain inside animation wrappers. Canvas fit,
 zoom, timeline zoom, timeline resize/collapse, and loop/once playback work.
 
 The timeline's Play/Pause button pauses at the current time; Play resumes from
-that position. **Go to start** stops playback and returns to 0 ms. A source fix
-pending merge keeps Pause reliably clickable across animation frames and updates
-its tooltip with the playback state. This fix is not in Windows alpha.18.
+that position. **Go to start** stops playback and returns to 0 ms. Windows
+alpha.19 keeps Pause reliably clickable across animation frames and updates
+its tooltip with the playback state. Earlier alpha.18 packages lack this fix.
 
 ## Selecting, moving and copying keyframes
 
@@ -83,7 +83,8 @@ copying but block moves, pastes and deletions.
 
 ## Jumping between keyframes
 
-Merged in PR #48; not included in Windows v0.1.1-alpha.18.
+Included in Windows v0.1.1-alpha.19, following the PR #48 merge. Earlier alpha.18
+packages do not include keyframe navigation.
 
 With the timeline or time ruler focused, press **Alt/Option+Left** for the
 previous keyframe or **Alt/Option+Right** for the next. The same actions appear
@@ -458,6 +459,11 @@ Changed-code lint has zero errors or warnings; editor build and diff checks pass
 Manual confirmation left the user's preview paused at 1624 ms. Proofs:
 `.local/svg-animation/pause-workspace.png` and `pause-control.png`. This fix is
 local pending merge and is not included in Windows alpha.18.
+
+Release preparation, 2026-11-01: PR #49 merged the Pause fix. Windows alpha.19
+packages it together with PR #48 navigation. The preceding local checkpoints
+record pre-merge verification. See [Desktop](DESKTOP.md) and the alpha.19 release
+notes for package availability and the native Windows verification scope.
 
 Editor asset preparation and the browser editor build pass. Timeline proof:
 `.local/svg-animation/timeline-multiselect.png` and `timeline-multiselect-menu.png`.
