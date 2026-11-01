@@ -18,7 +18,7 @@ AI agents can build and edit live or saved designs through the [PixlPrfct MCP se
 
 Self-hosted accounts, organizations, teams, and database setup: see [Self-hosting PixlPrfct](docs/SELF_HOSTING.md). Start with `npm run selfhost:setup`.
 
-A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor now follows the structure and interaction conventions of the current Figma Design UI, while retaining the PixlPrfct name. It supports local drafts and self-hosted account and team workspaces. The current editor also supports optional simultaneous editing and explicit conflict recovery for team documents; those workflows require a compatible self-hosted server.
+A browser-first design editor with a reusable Rust document engine compiled to WebAssembly. The editor provides a canvas, layers, a contextual inspector, and shared controls for design and animation workflows. It supports local drafts and self-hosted account and team workspaces. The current editor also supports optional simultaneous editing and explicit conflict recovery for team documents; those workflows require a compatible self-hosted server.
 
 The app opens at **All projects** (`/`). Create a design, import a `.pixl` project, or open an existing project from its card. Search, sorting, and grid/list views help find saved work. Each project opens in a separate editor route; **All projects** in the editor saves changes and returns home. Local projects stay in this browser, while the Cloud projects collection uses your signed-in account.
 
