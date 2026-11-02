@@ -263,3 +263,25 @@ Evidence: `.local/svg-lasso/{tracing,live-preview,figma-lasso-control}.png`.
 This completes the earlier lasso remainder locally, not in alpha.21 downloads.
 Next bounded vector step: bulk handle mirroring. Bulk insertion, whole-subpath
 removal and multi-object editing remain open.
+
+
+## 2026-11-02 — Bulk handle mirroring (local source)
+
+The existing Path inspector Mirroring control now applies independent, angle-only
+or angle-and-length modes to selected curved interior anchors across subpaths.
+Mixed modes leave all three segments unselected, with a keyboard entry point on
+No mirroring. Group edits keep the selected anchors and make one Undo entry.
+Each anchor's outgoing handle drives group alignment; a collapsed outgoing handle
+falls back to its incoming handle. Single-anchor edits retain the selected-handle
+behavior. Angle-only keeps the opposite length; independent mode preserves the
+curve. Any ineligible anchor or out-of-range result rejects the entire action.
+
+The 184 × 24px inspector control and icon arrangement are unchanged. Live Figma
+multi-anchor inspector layout was inspected read-only; automatic approval review
+blocked applying a reference mode because it could alter persisted artwork.
+Reference group geometry and mixed-state equivalence therefore remain unverified.
+Five browser workflows and three model tests cover local behavior, including
+native reopening, export, animation isolation, keyboard/focus and detached panels.
+Evidence: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+This completes bulk mirroring locally, not in alpha.21. Next bounded vector step:
+bulk midpoint insertion. Whole-subpath removal and multi-object editing remain open.

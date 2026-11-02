@@ -1163,3 +1163,46 @@ In-app activation, non-area clearing and Shift anchor selection were checked,
 and the refreshed preview remains open. Full freeform loops were exercised in
 Chromium browser tests. Local and unreleased; cross-browser and full reference
 visual/interaction parity remain unverified.
+
+
+## 2026-11-02 — Bulk handle mirroring (local source)
+
+Select curved interior anchors with Shift-click, box selection or Lasso, then
+choose **No mirroring**, **Mirror angle** or **Mirror angle and length** in the
+Path inspector. The same three-segment control applies to the group across
+subpaths of one base-path element. Different modes leave all segments unselected;
+the group announces that the selected anchors have different mirroring modes.
+Tab enters the first option when mixed; arrows, Home/End, Space and Enter choose
+modes and retain focus after the inspector refreshes, including when detached.
+
+Each group operation uses the outgoing handle at each anchor, or its incoming
+handle if outgoing is collapsed. Angle mirroring preserves the opposite length;
+angle-and-length mirrors that handle exactly. No mirroring removes the constraint
+without moving handles. Single-anchor editing still follows the selected handle.
+Selection is preserved, unrelated anchors/animation stay unchanged, and one Undo
+restores the entire group. Reapplying an unchanged mode creates no history entry.
+Mirroring metadata survives native reopening and is stripped from SVG exports
+while the resulting curves are retained.
+
+Every selected anchor must be curved and interior (closed subpaths include their
+first/last anchor). Empty selections, corners without handles and open endpoints
+disable the control. Use Smooth first on corners; open endpoints remain excluded.
+Invalid/stale selections and any out-of-range result reject the whole operation.
+Queued actions during anchor or selection drags, Join mode, read-only leases and
+timed Morph editing cannot change artwork. These are base-path operations only.
+
+Five browser workflows and three model tests cover mixed/uniform state, cross-
+subpath geometry, opposite lengths, collapsed-handle fallback, duplicate/stale
+selections, coordinate bounds, atomic Undo/Redo, reopening/export, input/focus,
+box/lasso selection, detached inspectors and editing guards. Evidence:
+`.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+Local source only, not alpha.21. This supersedes the earlier bulk-mirroring
+remainder; bulk insertion, whole-subpath removal and multi-object editing stay open.
+
+Bulk-mirroring verification (2026-11-02): all 156 SVG Chromium browser scenarios,
+70 SVG model tests and four responsive website checks pass. Targeted ESLint,
+TypeScript, editor asset build and diff checks pass. The visible in-app sample
+applied symmetric handles to both selected anchors; one Undo restored the mixed
+modes and both original handle positions, and Redo restored the group edit.
+The editor and updated Dev Log previews remain open. Not released; other browsers
+and full reference group geometry/mixed-state equivalence remain unverified.

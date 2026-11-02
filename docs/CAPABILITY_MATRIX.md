@@ -233,3 +233,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Screen-space region selection with boundary inclusion, concave/crossing loops and degenerate-line rejection | Lasso in Pen tools, live anchor highlights, Shift extension, Escape restore, A returns to box with group retained | Six browser workflows and three geometry tests; transformed/zoomed subpaths, group edits/Undo, cancellation, tool switching and edit guards | One base-path element; no timed Morph or multi-object selection. Transient reference fill and Shift parity unverified. Local only, not alpha.21 |
+
+
+### SVG bulk handle mirroring — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Atomic independent/angle/symmetric modes across selected curved interior anchors; outgoing-handle driver with incoming fallback | Existing Path inspector segments, mixed state, keyboard/focus and detached inspector | Five browser workflows and three model tests: open/closed subpaths, validation, Undo/Redo, persistence/export, selection gestures and edit guards | All anchors must be eligible; no open endpoints, handle-free corners or timed Morph editing. Reference group geometry/mixed-state parity unverified. Not alpha.21 |

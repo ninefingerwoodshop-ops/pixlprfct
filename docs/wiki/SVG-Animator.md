@@ -460,3 +460,20 @@ Lasso selection adds no Undo entry. It is unavailable for timed Morph paths,
 read-only documents or while choosing a Join target. This completes the lasso
 remainder noted above; bulk insertion/mirroring and multi-object editing remain
 open. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--lasso-anchor-selection-local-source).
+
+
+### Mirror handles on selected anchors (local source, not alpha.21)
+
+Select curved interior anchors in **Edit base path**, then choose a Mirroring
+mode in the Path inspector. **Mirror angle** aligns the opposite handle while
+keeping its length; **Mirror angle and length** matches both. **No mirroring**
+keeps the current curve and makes future handle edits independent. Different
+selected modes leave all three options unselected. Keyboard arrows or Home/End
+choose a mode; the selected group stays selected, and one Undo restores it.
+
+Group changes use each anchor's outgoing handle, falling back to incoming when
+outgoing is collapsed. All selected anchors must be eligible: smooth corners
+first, and exclude open endpoints. No partial changes occur if a result exceeds
+coordinate limits. Saved reopening and SVG export preserve the resulting curves.
+This closes the earlier bulk-mirroring remainder; bulk insertion stays open.
+See the [delivery record](../SVG_ANIMATION.md#2026-11-02--bulk-handle-mirroring-local-source).

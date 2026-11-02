@@ -566,6 +566,17 @@ by this planning pass, and no new editor feature was implemented or shipped.
     This resolves the lasso remainder in earlier B42 entries. Bulk insertion and
     mirroring, full subpath removal, multi-object editing and full visual parity
     remain open. Local only, not alpha.21; no TerritoryIQ issue is resolved.
+  - [x] ~~B42o — Bulk handle mirroring for selected curved interior anchors.~~
+    Local resolution (2026-11-02): existing inspector segments apply independent,
+    angle-only or angle-and-length modes across subpaths, with mixed state,
+    retained group selection, keyboard focus and one Undo. The whole request
+    rejects if any anchor is ineligible or any result exceeds coordinate bounds.
+    Five browser workflows and three model tests cover geometry, validation,
+    native reopening/export, detached inspector, box/lasso and editing guards.
+    Evidence: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+    This closes the bulk-mirroring remainder above. Bulk insertion, whole-subpath
+    removal, multi-object editing and reference group behavior/parity remain open.
+    Local only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -774,3 +785,11 @@ lint, types, editor asset build and diff checks pass. In-app Lasso activation,
 empty-region clearing and Shift anchor selection verified; refreshed preview
 kept open. `.local/svg-lasso/live-preview.png` records the final control.
 Not released; full reference parity and TerritoryIQ work remain open.
+
+
+B42o final verification (2026-11-02, local source): 156 SVG Chromium browser
+scenarios, 70 SVG model tests and four responsive website checks pass, plus
+TypeScript, targeted lint, editor asset build and diff checks. In-app group
+mirroring, one-step Undo and Redo verified on the new sample; editor and Dev Log
+previews remain open. Evidence: `.local/svg-bulk-mirroring/live-preview.png`.
+Not released; full reference equivalence and TerritoryIQ work remain open.

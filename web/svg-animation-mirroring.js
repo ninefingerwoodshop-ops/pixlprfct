@@ -27,12 +27,26 @@ function reflect(point,offset,mode,oppositeLength){
  else if(distance){point[other]=point[0]-dx/distance*oppositeLength;point[other+1]=point[1]-dy/distance*oppositeLength;}
 }
 export function setHandleMirroring(value,pathIndex,index,mode,handle='out'){
+ return setPathHandleMirroring(value,[[pathIndex,index]],mode,handle);
+}
+// Resolve all selected anchors before cloning or editing. Group changes either
+// succeed together or reject without changing any path or its mirroring metadata.
+export function setPathHandleMirroring(value,selection,mode,handle='out'){
  if(!['n','a','s'].includes(mode))throw new Error('Choose a handle mirroring mode.');
- const next=structuredClone(value),path=next[pathIndex];if(!canMirror(path,index))throw new Error('Select a curved interior anchor, or use Smooth anchor first.');
- const point=path.points[index];path.mirroring??=path.points.map(()=>'n');path.mirroring[index]=mode;
- if(mode!=='n'){
-  let offset=handle==='in'?2:4;if(!length(point,offset))offset=offset===2?4:2;
-  reflect(point,offset,mode,length(point,offset===2?4:2));
+ if(!selection.length)throw new Error('Select anchors first.');
+ const unique=new Map();
+ for(const [path,index] of selection){
+  if(!Number.isInteger(path)||!Number.isInteger(index)||!value[path]?.points[index])throw new Error('The selected anchor is no longer available.');
+  if(!canMirror(value[path],index))throw new Error('Select curved interior anchors, or use Smooth anchor first.');
+  unique.set(path+':'+index,[path,index]);
+ }
+ const next=structuredClone(value);
+ for(const [pathIndex,index] of unique.values()){
+  const path=next[pathIndex],point=path.points[index];path.mirroring??=path.points.map(()=>'n');path.mirroring[index]=mode;
+  if(mode!=='n'){
+   let offset=handle==='in'?2:4;if(!length(point,offset))offset=offset===2?4:2;
+   reflect(point,offset,mode,length(point,offset===2?4:2));
+  }
  }
  if(!validMorph(next))throw new Error('Mirrored handle coordinates are out of range.');return next;
 }

@@ -46,5 +46,5 @@ export function installPathMarquee({host,workspace,read,select,report=()=>{}}){
   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();drag.cancel();}
   else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Delete','Backspace','Enter',' '].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}
  },true);
- return {cancel(){drag?.cancel();}};
+ return {get dragging(){return !!drag;},cancel(){drag?.cancel();}};
 }
