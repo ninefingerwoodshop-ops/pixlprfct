@@ -1132,3 +1132,21 @@ PixlPrfct retains its existing measured inspector control and curved-interior
 anchor boundary, extending the local geometry semantics atomically to groups.
 Its mixed state shows no selected segment and exposes an accessible description.
 Local screenshots: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+
+
+## 2026-11-02 — Bulk midpoint insertion reference boundary
+
+Read-only inspection of live Figma desktop in Capwah Components found the Vector
+menu’s Join Selection, Smooth Join Selection, Delete and Heal Selection, Split
+Vector, Simplify Vector and Offset Vector commands. No equivalent bulk midpoint
+command appeared in this menu or the visible vector toolbar. No geometry command
+was executed on the reference artwork. The rendered toolbar retains Move, Lasso,
+Paint, Bend, Cut, Erase and More; its Move/Lasso controls are approximately 62 ×
+24 CSS px at the 2× capture scale. The Mirroring row remains 184 × 24 CSS px.
+Screenshot: `.local/svg-bulk-insertion/figma-vector-controls.png`.
+
+PixlPrfct extends its existing midpoint action without changing layout, dimensions
+or icon; the accessible label/tooltip becomes plural for a group. This is an
+additional tool capability; equivalent bulk subdivision semantics and complete
+reference pixel parity remain unverified. Local evidence:
+`.local/svg-bulk-insertion/{inserted,live-preview}.png`.

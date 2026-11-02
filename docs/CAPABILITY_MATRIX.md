@@ -240,3 +240,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Atomic independent/angle/symmetric modes across selected curved interior anchors; outgoing-handle driver with incoming fallback | Existing Path inspector segments, mixed state, keyboard/focus and detached inspector | Five browser workflows and three model tests: open/closed subpaths, validation, Undo/Redo, persistence/export, selection gestures and edit guards | All anchors must be eligible; no open endpoints, handle-free corners or timed Morph editing. Reference group geometry/mixed-state parity unverified. Not alpha.21 |
+
+
+### SVG bulk midpoint insertion — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Atomic cubic subdivision at t=0.5 after selected original anchors, including adjacent segments and closed seams; metadata index remapping | Existing midpoint button enables for groups with a plural label; new midpoints selected, one Undo | Four model tests and four browser workflows: curve preservation, selection ordering, limits, gestures, history, reopening and animated export; existing Join/lease/Morph checks extended | One base-path element; exclude open final endpoints, maximum 512 total anchors. No reference bulk-insert equivalent verified. Local only, not alpha.21 |

@@ -1206,3 +1206,30 @@ applied symmetric handles to both selected anchors; one Undo restored the mixed
 modes and both original handle positions, and Redo restored the group edit.
 The editor and updated Dev Log previews remain open. Not released; other browsers
 and full reference group geometry/mixed-state equivalence remain unverified.
+
+
+### Bulk midpoint insertion — November 2 local source
+
+1. Select a path and choose **Edit base path**.
+2. Select anchors with Shift-click, a box or Lasso. Each anchor must have a
+   following segment; an open path’s last anchor cannot be included.
+3. Choose **Add midpoints after selected anchors** in Pen tools. Each following
+   segment is divided at its cubic parameter midpoint, including closed seams.
+   The visible curves stay the same and the new midpoints are selected.
+4. Undo restores the entire insertion in one step; Redo reapplies it.
+
+Adjacent selections use their original segments. The edit is atomic across
+subpaths: an invalid endpoint/address or more than 512 total anchors changes
+nothing and creates no history. Paints, transforms and animation stay intact;
+inserted points and mirroring metadata survive native reopening, and SVG export
+retains the curves without editor-only metadata. Timed Morph paths must retain
+matching topology, so base-path insertion remains unavailable for them.
+
+Four model tests and four new browser workflows cover subdivision, ordering,
+limits, selection, gesture guards, history, native reopening and animated export.
+After Undo removes an inserted point, anchor controls follow the surviving
+selection rather than a stale active address.
+Existing tests also verify Join, read-only and Morph restrictions. Evidence:
+`.local/svg-bulk-insertion/{inserted,live-preview}.png`. This closes the previous
+bulk-insertion remainder locally; alpha.21 downloads do not include it.
+Whole-subpath removal is next; multi-object editing remains open.

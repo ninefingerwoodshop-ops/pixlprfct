@@ -285,3 +285,30 @@ native reopening, export, animation isolation, keyboard/focus and detached panel
 Evidence: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
 This completes bulk mirroring locally, not in alpha.21. Next bounded vector step:
 bulk midpoint insertion. Whole-subpath removal and multi-object editing remain open.
+
+
+## 2026-11-02 — Bulk midpoint insertion (local source)
+
+Add midpoints after selected anchors extends the existing midpoint action to a
+group within one base-path element. It subdivides each selected anchor’s following
+segment at t=0.5, including adjacent segments and closed seams, without changing
+the cubic curves. Original indexes are resolved before insertion; new midpoints
+become the selection, with a single Undo entry. Other subpaths, transforms,
+appearance and animation tracks stay intact. Any open final endpoint, stale
+address or result over 512 total anchors rejects the entire operation. Active
+node/selection drags, Join, timed Morph and read-only editing remain guarded.
+
+Four model tests verify all original curves, selection ordering/deduplication,
+mirroring metadata and atomic endpoint/limit rejection. Four browser workflows
+verify group insertion, persistence/export, Undo/Redo, selection and gesture guards;
+existing group tests cover Join, leases and Morph. Undo also repairs the active
+anchor when a newly inserted point disappears, so Split/Continue/Join address the
+surviving selection. Live Figma’s vector toolbar and
+Vector menu were inspected read-only; no equivalent bulk midpoint command was
+identified. The existing local control retains its layout and icon with a plural
+label. This is a PixlPrfct extension, not a claim of reference workflow parity.
+Evidence: `.local/svg-bulk-insertion/{inserted,live-preview}.png`.
+
+This closes the earlier bulk-insertion remainder locally, not in alpha.21.
+Next bounded vector step: whole-subpath removal. Multi-object editing and
+joining independently animated or referenced paths remain open.

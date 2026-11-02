@@ -577,6 +577,18 @@ by this planning pass, and no new editor feature was implemented or shipped.
     This closes the bulk-mirroring remainder above. Bulk insertion, whole-subpath
     removal, multi-object editing and reference group behavior/parity remain open.
     Local only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42p — Bulk midpoint insertion after selected base-path anchors.~~
+    Local resolution (2026-11-02): existing midpoint control subdivides original
+    following segments across subpaths, including adjacent segments and closed
+    seams, with exact curve preservation, new-midpoint selection and one Undo.
+    Invalid open endpoints, addresses or anchor-limit overflow reject atomically.
+    Four model tests and four browser workflows cover geometry, ordering,
+    metadata, selection, gestures, history, native reopening and animated export;
+    existing Join/read-only/Morph checks also cover insertion.
+    Evidence: `.local/svg-bulk-insertion/{inserted,live-preview}.png`.
+    This closes the earlier bulk-insertion remainder. Whole-subpath removal is
+    next; multi-object editing and full reference parity remain open.
+    Local only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -793,3 +805,14 @@ TypeScript, targeted lint, editor asset build and diff checks. In-app group
 mirroring, one-step Undo and Redo verified on the new sample; editor and Dev Log
 previews remain open. Evidence: `.local/svg-bulk-mirroring/live-preview.png`.
 Not released; full reference equivalence and TerritoryIQ work remain open.
+
+
+B42p final verification (2026-11-02, local source): all 160 SVG Chromium browser
+scenarios, 74 SVG model tests and four responsive website checks pass, plus
+TypeScript, targeted lint, editor build and diff checks. The final browser run
+includes repaired active-anchor selection after topology Undo and a stage test
+that waits for imported artwork to persist before creating its read-only fixture.
+In-app adjacent/closed-seam insertion, one-step Undo and Redo verified; editor
+and updated Dev Log previews remain open. Evidence:
+`.local/svg-bulk-insertion/live-preview.png`. Not released; full reference parity
+and TerritoryIQ code/design-file work remain open.

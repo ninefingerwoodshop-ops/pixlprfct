@@ -477,3 +477,18 @@ first, and exclude open endpoints. No partial changes occur if a result exceeds
 coordinate limits. Saved reopening and SVG export preserve the resulting curves.
 This closes the earlier bulk-mirroring remainder; bulk insertion stays open.
 See the [delivery record](../SVG_ANIMATION.md#2026-11-02--bulk-handle-mirroring-local-source).
+
+
+### Add midpoints to selected segments (November 2 local source)
+
+In **Edit base path**, select anchors with Shift-click, a box or Lasso and choose
+**Add midpoints after selected anchors** in Pen tools. This subdivides the segment
+after each anchor without changing its curve, including adjacent segments and
+closed seams. The new midpoints stay selected; one Undo restores the whole edit.
+
+Exclude the last anchor of an open path, which has no following segment. If any
+selected anchor is invalid or the result exceeds 512 total anchors, no segment
+changes. Existing animation and appearance stay intact; native reopening and
+animated SVG export preserve the result. Read-only and timed Morph paths retain
+their editing restrictions. This resolves the earlier bulk-insertion remainder
+in local source only, not alpha.21. Whole-subpath removal is the next vector step.

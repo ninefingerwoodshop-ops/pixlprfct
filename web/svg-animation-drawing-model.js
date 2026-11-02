@@ -70,9 +70,9 @@ function changeAnchor(path,index,operation,t=.5){
  if(path.mirroring&&['corner','smooth'].includes(operation))path.mirroring[index]=operation==='corner'?'n':'a';
 }
 // Validate the entire selection before editing; indexes always refer to the
-// original path. Deleting one subpath must not partially edit another on failure.
+// original path. A topology change must not partially edit another on failure.
 export function editPathAnchors(value,selection,operation){
- if(!['delete','smooth','corner'].includes(operation))throw new Error('Choose Delete, Smooth or Corner for selected anchors.');
+ if(!['insert','delete','smooth','corner'].includes(operation))throw new Error('Choose Insert, Delete, Smooth or Corner for selected anchors.');
  if(!selection.length)throw new Error('Select anchors first.');
  const groups=new Map(),unique=[];
  for(const [path,index] of selection){
@@ -81,15 +81,21 @@ export function editPathAnchors(value,selection,operation){
   if(groups.get(path).has(index))continue;groups.get(path).add(index);unique.push([path,index]);
  }
  if(operation==='delete')for(const [path,indexes] of groups)if(value[path].points.length-indexes.size<2)throw new Error('Keep at least two anchors in each subpath, or delete the whole path.');
- const next=structuredClone(value),selected=[];
+ if(operation==='insert')for(const [path,indexes] of groups)if(!value[path].closed&&indexes.has(value[path].points.length-1))throw new Error('Select anchors with following segments; an open path’s last anchor has none.');
+ const next=structuredClone(value),selected=[],inserted=new Map();
  for(const [path,indexes] of groups){
   if(operation==='delete'){
    const part=next[path],first=Math.min(...indexes);part.points=part.points.filter((_,i)=>!indexes.has(i));
    if(part.mirroring)part.mirroring=part.mirroring.filter((_,i)=>!indexes.has(i));
    selected.push([path,Math.min(first,part.points.length-1)]);
+  }else if(operation==='insert'){
+   // Subdivide from the end so adjacent selections still address original segments.
+   const ordered=[...indexes].sort((a,b)=>a-b);
+   for(let i=ordered.length-1;i>=0;i--)changeAnchor(next[path],ordered[i],operation);
+   ordered.forEach((index,offset)=>inserted.set(`${path}:${index}`,[path,index+offset+1]));
   }else for(const index of indexes)changeAnchor(next[path],index,operation);
  }
- return {value:checkedPath(next),selections:operation==='delete'?selected:unique};
+ return {value:checkedPath(next),selections:operation==='delete'?selected:operation==='insert'?unique.map(([path,index])=>inserted.get(`${path}:${index}`)):unique};
 }
 export function continuePath(value,pathIndex,index){
  const next=structuredClone(value),path=next[pathIndex];
