@@ -218,3 +218,27 @@ opacity and Shift-box equivalence were not independently measured. Evidence:
 `.local/svg-marquee/{marquee,live-preview,figma-anchor-selection}.png`.
 Not in alpha.21 downloads. Next bounded vector scope: bulk anchor operations;
 lasso selection and multi-object editing remain open.
+
+
+## 2026-11-02 — Bulk Smooth, Corner and Delete (local source)
+
+The existing Pen tools now apply Smooth, Corner and Delete to all selected
+anchors across subpaths in one base-path element. Tooltips/accessibility labels
+identify a group selection. Each successful action is one document history entry;
+selected groups remain selected after Smooth/Corner. Deletion uses original
+indexes, preserves surviving handles/mirroring metadata and selects a nearby
+survivor in each affected subpath. Every subpath must retain two anchors; an
+invalid request rejects the entire action without changing selection or history.
+Delete/Backspace acts on anchors while Direct Selection owns canvas focus; fields,
+read-only documents, Join mode, active drags and timed Morph paths are guarded.
+
+Five new browser workflows and three model tests cover open/closed subpaths,
+metadata, atomic validation, shortcuts, Undo/Redo, animation isolation, native
+reopening and SVG export. Evidence: `.local/svg-bulk-anchors/smoothed.png` and
+`live-preview.png`. Live Figma selected-anchor controls and Vector commands were
+inspected; its destructive operations were not executed on user artwork. This
+extends the existing local Smooth/Corner/Delete semantics, not a verified match
+to every reference deletion/healing behavior. Local only, not alpha.21.
+
+Next bounded vector scope: lasso anchor selection. Bulk insertion/mirroring,
+removing entire subpaths, and multi-object editing remain open.

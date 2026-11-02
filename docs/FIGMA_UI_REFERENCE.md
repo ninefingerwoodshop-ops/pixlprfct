@@ -1074,3 +1074,23 @@ Shift-marquee semantics were not independently measured; do not claim pixel or
 interaction parity for those details. Local Shift-box extends selection, with
 Shift-click retained for toggling. Implementation evidence:
 `.local/svg-marquee/marquee.png` and `live-preview.png`. Lasso remains open.
+
+
+## 2026-11-02 — Selected-anchor operations
+
+Inspected live Figma desktop with the two top anchors of Rectangle 4 selected in
+Capwah Components. The Vector inspector retains the existing alignment, position
+and Mirroring layout; X reads Mixed and the shared Y reads 248. Selected anchors
+keep their blue fill and white border. The native Vector menu exposes Join
+Selection, Smooth Join Selection and Delete and Heal Selection, with Split Vector
+disabled for this selection. The bottom More popover contains Shape builder and
+Variable width. These observations do not establish that Smooth Join is the same
+operation as smoothing individual anchors. No destructive reference action was
+executed. Screenshot: `.local/svg-bulk-anchors/figma-selected-anchors.png`.
+
+PixlPrfct extends the already implemented Smooth/Corner/Delete controls to group
+selection without changing their layout or icons. Labels become plural; current
+single-anchor geometry semantics are retained, with atomic validation and one
+Undo for the group. This is functional progress, not a claim of equivalent vector
+networks, deletion/healing algorithms, menus or full pixel parity. Evidence:
+`.local/svg-bulk-anchors/smoothed.png` and `live-preview.png`.

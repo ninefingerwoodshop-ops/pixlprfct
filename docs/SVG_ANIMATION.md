@@ -1090,3 +1090,39 @@ Marquee verification (2026-11-02): all 140 SVG Chromium browser scenarios and
 checking, editor asset build and diff checks pass. The in-app browser also
 selected both endpoints of the sample curve with a box. Local/unreleased;
 cross-browser and complete visual parity remain unverified.
+
+
+## 2026-11-02 — Bulk anchor actions (local source)
+
+After marquee or Shift-click selection in **Edit base path**, the existing
+**Smooth**, **Corner** and **Delete** controls apply to every selected anchor in
+that path element, including selections spanning multiple subpaths. Labels change
+to “selected anchors” for a group. Smooth/Corner preserve the selected group;
+Delete selects a nearby surviving anchor per affected subpath. Each successful
+change is one Undo/Redo step, preserves other elements and existing animation,
+and survives native reopening and SVG export.
+
+Delete/Backspace also removes selected anchors when canvas/anchor focus belongs
+to Direct Selection. It does not delete the whole element when no anchors are
+selected. Text/number fields retain their normal keyboard behavior. Join mode,
+active anchor drags, read-only leases and timed Morph paths reject these actions.
+
+Every subpath must retain at least two anchors. If any selected deletion violates
+that rule, nothing changes: no partial deletion, selection change or history entry.
+Surviving cubic handles remain unchanged; bulk deletion does not claim to preserve
+the original curve through removed points. Smooth creates tangents using adjacent
+anchors; Corner collapses the selected handles. Mirroring metadata follows those
+operations and stays aligned after deletion.
+
+Five new browser scenarios and three model tests cover transformed open/closed
+subpaths, original-index deletion, metadata, invalid/empty/stale selections,
+coordinate bounds, keyboard focus, animation and lease isolation, Undo/Redo,
+reopening and clean export. Screenshots: `.local/svg-bulk-anchors/smoothed.png`
+and `live-preview.png`. Local source only, not alpha.21. Lasso, bulk insertion and
+mirroring, entire-subpath removal and multi-object editing remain open.
+
+Bulk-action verification (2026-11-02): all 145 SVG Chromium browser scenarios,
+64 SVG model tests and four responsive website checks pass. Targeted lint, type
+checking, editor asset build and diff checks pass. In-app preview Smooth updated
+both selected endpoints and one Undo restored their original handles. Local and
+unreleased; cross-browser and complete reference parity remain unverified.

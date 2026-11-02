@@ -431,3 +431,16 @@ current element. Drag the selected points or use arrow keys to move them togethe
 Escape cancels a box and restores the previous selection. Box selection adds no
 Undo entry and does not edit timed Morph keys. Lasso and bulk anchor actions
 remain open. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--marquee-anchor-selection-local-source).
+
+
+### Edit selected anchor groups (local source, not alpha.21)
+
+After selecting anchors, use **Smooth selected anchors**, **Corner selected
+anchors**, or **Delete selected anchors** in Pen tools. Each action is one Undo
+step across the selected subpaths. Delete/Backspace works when an anchor or the
+canvas has focus; input fields keep their normal editing behavior. Deletion must
+leave at least two anchors in every subpath or the entire request is rejected.
+Surviving handles remain unchanged, so deleting anchors can change the curve.
+After deletion a nearby survivor in each affected subpath becomes selected.
+Bulk insertion/mirroring and removing entire subpaths remain open. See the
+[delivery record](../SVG_ANIMATION.md#2026-11-02--bulk-anchor-actions-local-source).

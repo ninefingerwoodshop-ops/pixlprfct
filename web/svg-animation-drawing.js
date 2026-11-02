@@ -4,7 +4,7 @@ import {morphPath,morphData} from './svg-animation-morph.js';
 import {installMorphNodes} from './svg-animation-nodes.js';
 import {installPathJoinTargets,joinPathElements} from './svg-animation-join.js';
 import {installPathMarquee} from './svg-animation-marquee.js';
-import {checkedPath,editAnchor,continuePath,pencilPath,splitPath,joinEndpoints,isEndpoint,nearestPathSegment,movePathAnchors} from './svg-animation-drawing-model.js';
+import {checkedPath,editAnchor,editPathAnchors,continuePath,pencilPath,splitPath,joinEndpoints,isEndpoint,nearestPathSegment,movePathAnchors} from './svg-animation-drawing-model.js';
 import {mirroringAttribute,readMirroring,writeMirroring,mirroringMode,canMirror,setHandleMirroring,movePathPoint} from './svg-animation-mirroring.js';
 
 const NS='http://www.w3.org/2000/svg';
@@ -23,7 +23,7 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  dockButton.className='svg-pen-dock';grip.className='svg-pen-grip';heading.append(grip,el('strong','','Pen tools'),dockButton,close);palette.append(heading);
  const tools=el('div','svg-pen-tools'),pen=button('Pen (P)','pen',()=>setMode('pen')),pencil=button('Pencil (Shift+P)','pencil',()=>setMode('pencil')),direct=button('Direct Selection (A)','select',()=>setMode('direct'));
  const actions=[['Add midpoint after anchor','plus','insert'],['Delete anchor','minus','delete'],['Smooth anchor','vector-smooth','smooth'],['Corner anchor','vector-corner','corner']].map(([name,glyph,op])=>{
-  const b=button(name,glyph,attempt(()=>{const state=nodeState();if(!state?.enabled||selections.length!==1)return;const value=editAnchor(state.value,...selection,op);if(op==='insert')selection[1]++;else if(op==='delete')selection[1]=Math.min(selection[1],value[selection[0]].points.length-1);selections=[[...selection]];savePath(value); }));tools.append(b);return b;
+  const b=button(name,glyph,attempt(()=>applyAnchorAction(op)));b.dataset.anchorAction=op;tools.append(b);return b;
  });
  tools.prepend(pen,pencil,direct);const resume=button('Continue selected endpoint','pen',attempt(()=>{
   const state=nodeState();if(!state?.enabled||selections.length!==1)return;const value=continuePath(state.value,...selection);nodes.cancel();start();mode='pen';draft={value,path:selection[0],id:read().selected};update();refresh();
@@ -51,6 +51,12 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  }
  function savePath(value){
   checkedPath(value);const s=read();if(!s.enabled)return;const root=s.source.cloneNode(true),node=root.querySelector('#'+s.selected);node.setAttribute('d',morphData(value));const modes=writeMirroring(value);if(modes)node.setAttribute(mirroringAttribute,modes);else node.removeAttribute(mirroringAttribute);change(root,s.selected);
+ }
+ function applyAnchorAction(operation,focus=false){
+  const state=nodeState();if(!state?.enabled||joinFrom||!selections.length||nodes.dragging||operation==='insert'&&selections.length!==1)return;
+  const next=operation==='insert'?{value:editAnchor(state.value,...selection,'insert'),selections:[[selection[0],selection[1]+1]]}:editPathAnchors(state.value,selections,operation);
+  selections=next.selections;selection=selections.at(-1);savePath(next.value);
+  if(focus)host.querySelector(`[data-morph-point="${selection[0]}-${selection[1]}-anchor"]`)?.focus({preventScroll:true});
  }
  const nodes=installMorphNodes({host,label:'Path anchors',nodeLabel:'Anchor',anchorShape:'circle',overlayClass:'svg-path-nodes',movePoint:(value,path,index,kind,x,y)=>kind==='anchor'?movePathAnchors(value,selections,x-value[path].points[index][0],y-value[path].points[index][1]):movePathPoint(value,path,index,kind,x,y),read:nodeState,select:(path,index,kind,{toggle=false,preserve=false}={})=>{
   const selected=selections.some(pair=>pair[0]===path&&pair[1]===index);
@@ -95,7 +101,7 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   }));
   function dot(p,r){const n=document.createElementNS(NS,'circle');n.setAttribute('cx',p.x-box.left);n.setAttribute('cy',p.y-box.top);n.setAttribute('r',r);n.setAttribute('class','svg-morph-glyph');overlay.append(n);}
  }
- function updateActions(){const state=nodeState(),endpoint=state&&isEndpoint(state.value[selection[0]],selection[1]);actions.forEach(b=>b.disabled=!state?.enabled||!!joinFrom||selections.length!==1);resume.disabled=!state?.enabled||!endpoint||!!joinFrom||selections.length!==1;finish.disabled=!draft||draft.pencil||draft.value[draft.path].points.length<2||!read().enabled;
+ function updateActions(){const state=nodeState(),endpoint=state&&isEndpoint(state.value[selection[0]],selection[1]);actions.forEach(b=>{b.disabled=!state?.enabled||!!joinFrom||!selections.length||b.dataset.anchorAction==='insert'&&selections.length!==1;const names={insert:'Add midpoint after anchor',delete:selections.length>1?'Delete selected anchors':'Delete anchor',smooth:selections.length>1?'Smooth selected anchors':'Smooth anchor',corner:selections.length>1?'Corner selected anchors':'Corner anchor'},name=names[b.dataset.anchorAction];b.title=name;b.setAttribute('aria-label',name);});resume.disabled=!state?.enabled||!endpoint||!!joinFrom||selections.length!==1;finish.disabled=!draft||draft.pencil||draft.value[draft.path].points.length<2||!read().enabled;
   split.disabled=!state?.enabled||!!joinFrom||endpoint||selections.length!==1;join.disabled=!state?.enabled||!endpoint||selections.length!==1;join.setAttribute('aria-pressed',String(!!joinFrom));joinHint.hidden=!joinFrom;
   penHint.hidden=mode!=='pen';directHint.hidden=!state||!!joinFrom;discard.disabled=!draft;deletePath.disabled=!read().enabled||!pathSource()||!!draft;
   mirrorSync=mirrorSync.filter(({host})=>host.isConnected);mirrorSync.forEach(({sync})=>sync());
@@ -196,7 +202,8 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   if(document.documentElement.dataset.panelDragging||e.target.closest('.toolbelt-grip'))return;
   if(e.target.closest('input,textarea,select,[role=listbox],[role=menu],[popover],dialog,[contenteditable=true]')||e.ctrlKey||e.metaKey||e.altKey)return;
   if(e.key==='Escape'&&nodes.dragging)return;
-  if(e.key==='Escape'&&mode!=='select'){e.preventDefault();e.stopImmediatePropagation();if(gesture){gesture.cancel();update();}else if(draft&&!draft.pencil&&draft.value[draft.path].points.length>=2){finishPath(false);setMode('select');}else if(draft||joinFrom){cancel();update();}else setMode('select');}
+  if(['Delete','Backspace'].includes(e.key)&&mode==='direct'&&(e.target===document.body||e.target===host||e.target.closest('.svg-path-nodes'))){e.preventDefault();e.stopImmediatePropagation();applyAnchorAction('delete',true);}
+  else if(e.key==='Escape'&&mode!=='select'){e.preventDefault();e.stopImmediatePropagation();if(gesture){gesture.cancel();update();}else if(draft&&!draft.pencil&&draft.value[draft.path].points.length>=2){finishPath(false);setMode('select');}else if(draft||joinFrom){cancel();update();}else setMode('select');}
   else if(e.key==='Enter'&&draft&&!draft.pencil){e.preventDefault();e.stopImmediatePropagation();gesture?.cancel();finishPath(false);}
   else if(['p','a','v'].includes(e.key.toLowerCase())){e.preventDefault();e.stopImmediatePropagation();setMode(e.key.toLowerCase()==='p'&&e.shiftKey?'pencil':({p:'pen',a:'direct',v:'select'})[e.key.toLowerCase()]);}
  });

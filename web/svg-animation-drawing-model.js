@@ -43,7 +43,10 @@ export function nearestPathSegment(value,point,matrix,tolerance=8){
  return best;
 }
 export function editAnchor(value,pathIndex,index,operation,t=.5){
- const next=structuredClone(value),path=next[pathIndex],point=path?.points[index];
+ const next=structuredClone(value);changeAnchor(next[pathIndex],index,operation,t);return checkedPath(next);
+}
+function changeAnchor(path,index,operation,t=.5){
+ const point=path?.points[index];
  if(!point)throw new Error('Select an anchor first.');
  const points=path.points,previous=points[(index+points.length-1)%points.length],following=points[(index+1)%points.length];
  if(operation==='insert'){
@@ -65,7 +68,28 @@ export function editAnchor(value,pathIndex,index,operation,t=.5){
   point.splice(2,4,point[0]-dx/length*incoming,point[1]-dy/length*incoming,point[0]+dx/length*outgoing,point[1]+dy/length*outgoing);
  }else throw new Error('Unknown anchor operation.');
  if(path.mirroring&&['corner','smooth'].includes(operation))path.mirroring[index]=operation==='corner'?'n':'a';
- return checkedPath(next);
+}
+// Validate the entire selection before editing; indexes always refer to the
+// original path. Deleting one subpath must not partially edit another on failure.
+export function editPathAnchors(value,selection,operation){
+ if(!['delete','smooth','corner'].includes(operation))throw new Error('Choose Delete, Smooth or Corner for selected anchors.');
+ if(!selection.length)throw new Error('Select anchors first.');
+ const groups=new Map(),unique=[];
+ for(const [path,index] of selection){
+  if(!Number.isInteger(path)||!Number.isInteger(index)||!value[path]?.points[index])throw new Error('The selected anchor is no longer available.');
+  if(!groups.has(path))groups.set(path,new Set());
+  if(groups.get(path).has(index))continue;groups.get(path).add(index);unique.push([path,index]);
+ }
+ if(operation==='delete')for(const [path,indexes] of groups)if(value[path].points.length-indexes.size<2)throw new Error('Keep at least two anchors in each subpath, or delete the whole path.');
+ const next=structuredClone(value),selected=[];
+ for(const [path,indexes] of groups){
+  if(operation==='delete'){
+   const part=next[path],first=Math.min(...indexes);part.points=part.points.filter((_,i)=>!indexes.has(i));
+   if(part.mirroring)part.mirroring=part.mirroring.filter((_,i)=>!indexes.has(i));
+   selected.push([path,Math.min(first,part.points.length-1)]);
+  }else for(const index of indexes)changeAnchor(next[path],index,operation);
+ }
+ return {value:checkedPath(next),selections:operation==='delete'?selected:unique};
 }
 export function continuePath(value,pathIndex,index){
  const next=structuredClone(value),path=next[pathIndex];
