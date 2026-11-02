@@ -1,9 +1,10 @@
+import {editorDOM} from './editor-dom.js';
 import {editorRole} from './canvas-tools.js';
 import {icon} from './icons.js';
 export function installToolInspector({current,change,remove,exportSlice}){
- const host=document.createElement('section');host.className='property-section canvas-tool-inspector';host.hidden=true;document.getElementById('design-inspector').prepend(host);let signature='';
+ const host=document.createElement('section');host.className='property-section canvas-tool-inspector';host.hidden=true;editorDOM.getElementById('design-inspector').prepend(host);let signature='';
  const el=(tag,text,attrs={})=>{const e=document.createElement(tag);if(text)e.textContent=text;for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
- function render(){const shape=current(),meta=shape?.editor_meta,role=editorRole(shape),key=JSON.stringify([shape?.id,meta]);host.hidden=!meta||!role&&!meta.text_path;if(host.hidden)return;if(signature===key)return;if(host.contains(document.activeElement)&&document.activeElement.matches('textarea,input')&&signature.startsWith('['+shape.id+','))return;signature=key;host.replaceChildren();
+ function render(){const shape=current(),meta=shape?.editor_meta,role=editorRole(shape),key=JSON.stringify([shape?.id,meta]);host.hidden=!meta||!role&&!meta.text_path;if(host.hidden)return;if(signature===key)return;if(host.contains(editorDOM.activeElement)&&editorDOM.activeElement.matches('textarea,input')&&signature.startsWith('['+shape.id+','))return;signature=key;host.replaceChildren();
   const title=el('h3',meta.text_path?'Text on path':role[0].toUpperCase()+role.slice(1));host.append(title);
   const save=patch=>{const s=current();if(s?.id===shape.id)change({...s,editor_meta:{...s.editor_meta,...patch}});};
   if(['comment','annotation','spec'].includes(role)){

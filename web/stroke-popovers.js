@@ -1,9 +1,10 @@
+import {editorDOM} from './editor-dom.js';
 import {trackPopover} from './popover-position.js';
 import {icon} from './icons.js';
 import {hasPaint} from './paint-state.js';
 
 export function installStrokePopovers(current){
- const $=id=>document.getElementById(id),host=$('stroke-section'),dimensions=host.querySelector('.stroke-dimensions'),advanced=$('stroke-dash').closest('details'),border=$('border-width-values'),borderLabel=border.closest('label');
+ const $=id=>editorDOM.getElementById(id),host=$('stroke-section'),dimensions=host.querySelector('.stroke-dimensions'),advanced=$('stroke-dash').closest('details'),border=$('border-width-values'),borderLabel=border.closest('label');
  const make=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
  const popover=(title,glyph)=>{
   const panel=make('div','paint-popover stroke-popover');panel.setAttribute('popover','auto');panel.setAttribute('role','dialog');panel.setAttribute('aria-label',title);
@@ -11,7 +12,7 @@ export function installStrokePopovers(current){
   const close=make('button','inspector-icon');close.type='button';close.setAttribute('aria-label','Close '+title.toLowerCase());close.innerHTML=icon('close');close.onclick=()=>panel.hidePopover();header.append(close);
   const body=make('div','stroke-popover-body');panel.append(header,body);document.body.append(panel);
   const button=make('button','inspector-icon');button.type='button';button.title=title;button.setAttribute('aria-label',title);button.setAttribute('aria-haspopup','dialog');button.innerHTML=icon(glyph);dimensions.append(button);
-  const position=trackPopover(panel,()=>button);button.onclick=()=>{panel.showPopover();position();};
+  const position=trackPopover(panel,()=>button);button.onclick=()=>{position.prepare();panel.showPopover();position();};
   return {panel,body,button};
  };
  const settings=popover('Advanced stroke settings','settings-sliders');advanced.open=true;advanced.querySelector('summary').hidden=true;settings.body.append(advanced);

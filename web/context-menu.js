@@ -11,7 +11,9 @@ export function contextMenuBounds(point, size, viewport) {
   };
 }
 
-export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = document.body, anchor = null, onClose = () => {}, onShortcut = () => false} = {}) {
+export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = null, anchor = null, onClose = () => {}, onShortcut = () => false} = {}) {
+  container??=(returnFocus?.ownerDocument??anchor?.ownerDocument??event.target?.ownerDocument??globalThis.document).body;
+  const document=container.ownerDocument,window=document.defaultView;
   event.preventDefault();
   closeMenu();
   const menu = document.createElement('div');
@@ -63,7 +65,7 @@ export function showContextMenu(event, actions, returnFocus, {label = 'Layer act
   const position = () => {
     const visual = window.visualViewport;
     const viewport = {left: visual?.offsetLeft ?? 0, top: visual?.offsetTop ?? 0,
-      width: visual?.width ?? innerWidth, height: visual?.height ?? innerHeight};
+      width: visual?.width ?? window.innerWidth, height: visual?.height ?? window.innerHeight};
     const rect = anchor?.getBoundingClientRect();
     const point = rect ? {x: rect.left, y: rect.bottom + 5} : {x: event.clientX, y: event.clientY};
     const limits = contextMenuBounds(point, {width: 0, height: 0}, viewport);

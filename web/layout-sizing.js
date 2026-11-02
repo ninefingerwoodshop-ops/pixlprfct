@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {textStyle} from './typography.js';
 import {hasHugControlHeight} from './control-sizing.js';
 import {disclosureButton,setDisclosureExpanded} from './inspector-disclosure.js';
@@ -15,7 +16,7 @@ export function limitPatch(s,axis,bound,value){
  return {...s,layout_item:item};
 }
 export function installLayoutSizing({selection,all,change}){
- const $=id=>document.getElementById(id),make=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
+ const $=id=>editorDOM.getElementById(id),make=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
  const host=make('div','layout-sizing-controls'),axes={},expanded={width:false,height:false},previousLimits={};let selectionKey='';
  const multi=make('section','property-section');multi.append(make('h3','','Layout'));$('multi-properties').children[0].after(multi);
  const legacy=$('limit-min_width').closest('details');legacy.hidden=true;

@@ -758,3 +758,187 @@ feature. Handles are local source work after the published Windows alpha.19.
 PR #50's alpha.19 release is now published and its website deployed, with source
 and packaged tests recorded in `docs/SVG_ANIMATION.md`. It includes PRs #48/#49;
 it does not include the canvas handles above.
+
+## SVG Pen and vector editing — live reference 2026-11-01
+
+Inspected native Figma's Capwah Components file in Design mode, the Creation tools
+menu, selected Pen, and Edit object on Rectangle 1. No artwork edits were made;
+exited vector editing afterward. Capture: `.local/svg-pen/figma-vector.png`,
+3600 × 2006 physical pixels at 2× (1800 × 1003 CSS pixels).
+
+Observed: Pen/Pencil share Creation tools; Pen uses the nib icon and blue selected
+background. The bottom toolbelt is about 48 CSS px tall, with 32px tool buttons,
+8px inset and rounded dark surface. Vector editing adds a compact secondary
+floating strip above it with Move, Lasso, Paint, Bend, Cut, Erase, More and Close.
+Canvas anchors are small white circles with blue strokes; selected geometry and
+handle lines are blue. The inspector contains Position and Mirroring, followed
+by normal Fill/Stroke sections. No separate right-side Pen palette exists in this
+reference; that placement and synchronized paints are the owner's explicit
+extension in the roadmap proposal.
+
+The SVG implementation reuses the current bottom toolbelt's dark surface,
+32px buttons, 8px padding, 12px corners and shadow for its 240px movable palette.
+It uses the same nib path for its icon and cursor, six-pixel circular anchors,
+blue geometry, and shared color/input controls. The existing SVG bottom toolbelt
+retains its one-pixel border (50px total height); the screenshot is not an
+exhaustive same-state pixel-parity certification. Figma's vector networks, lasso,
+paint regions, handle mirroring and full Cut/Erase semantics are still separate
+work. The new palette exposes only the supported path operations.
+
+Browser evidence covers creation, continuation, anchor/handle editing, palette
+movement and paint synchronization. The result capture at the reference’s
+1800 × 1003 CSS viewport is `.local/svg-pen/verified-reference-size.png`; geometry
+assertions verify the 240px palette, 32px buttons and #2c2c2c surface. See
+[SVG Animation](SVG_ANIMATION.md).
+
+## SVG object movement and import — live reference 2026-11-01
+
+After unlock, inspected the native Capwah Components file in Design mode with
+Rectangle 1 selected: 38×38, X −164, Y 94, blue outline, small square handles and
+dimensions label, with position controls in the right inspector. The File menu
+offers Place image/video; no Add/Replace choice was present in the inspected
+menu. The read-only Share modal provides the chrome reference: approximately
+480 logical pixels wide, 40px header, 16px content inset and 12px corners on the
+dark surface. Captures: `.local/svg-editing/figma-selection.png`,
+`figma-file-menu.png`, and `figma-modal.png` (3600×2006 physical at 2×).
+
+Automatic approval review rejected a body-drag trial because it would modify the
+live Figma document. No edit was performed; continued with read-only inspection.
+The Figma drag gesture itself is not certified. No sharing settings were saved.
+
+PixlPrfct body movement retains the existing selection/inspector chrome and
+updates the animator's X/Y tracks. Add/Replace is an explicit PixlPrfct workflow
+extension. Its modal uses the measured header/width/inset, shared custom dropdown
+and dark palette. Browser assertions check outer padding, actual edge-to-content
+inset, title size, header height, width, surface color and absence of a visible
+native select. Rendered screenshots were inspected and a shared-padding override
+was corrected. Full Figma visual/workflow parity is not claimed.
+
+## SVG Pencil — live reference 2026-11-01
+
+Inspected native Figma's Creation tools menu and active Pencil in Capwah
+Components. Capture: `.local/svg-pencil/figma-pencil.png`, 3600×2006 physical
+pixels at 2×. Pencil uses Shift+P and a blue selected 32px bottom-toolbelt button;
+the toolbelt retains its 8px inset and dark rounded surface. The right inspector
+shows Stroke, a 24px color/opacity row, Weight 2, and three end-cap buttons with
+Round selected. A visible hint says “Hold Shift to draw straight lines.” The
+inspector is approximately 240 logical pixels wide with 16px content insets.
+
+The first accessibility click had a delayed state update; a subsequent coordinate
+click unintentionally created a line. It was immediately undone, and the next
+screenshot confirmed both the line and its Vector 1 layer were gone. No reference
+artwork changes were retained. No further drawing trials were performed.
+
+No adjustable smoothing control was visible in this Pencil state. PixlPrfct's
+0–100% smoothing field is the requested roadmap extension in the existing movable
+palette, using the shared 24px input. The implementation retains shared toolbelt
+icons, dark styling, round stroke ends and Shift constraint. Exact icon/gesture
+parity with all Figma Pencil states is not certified.
+
+Rendered comparison: `.local/svg-pencil/verified.png` at 1800×1003 was inspected.
+Browser assertions confirm the 240px palette, 32px buttons, 24px smoothing input
+and #2c2c2c surface. The full-width timeline and right animation inspector remain
+in place. All six Pencil interaction cases and the full 77-case SVG browser
+regression suite pass.
+
+## SVG split/join — live reference 2026-11-01
+
+Inspected native Figma's Vector menu and entered vector editing on the existing
+Rectangle 1 in Capwah Components. No artwork edits were made. The menu exposes
+Join Selection, Smooth Join Selection, Delete and Heal Selection, Split Vector,
+Simplify Vector and Offset Vector. These commands were disabled without an
+eligible selection; their complete behaviors were not exercised.
+
+The in-object toolbar is a second bottom strip, approximately 40 logical pixels
+high, with an 8px inset, 32px buttons and 12px outer corners on a dark surface.
+Visible controls: Move, Lasso, Paint, Bend, Cut (scissors), Erase, More and Close.
+More exposes Shape builder and Variable width. The right inspector retains
+Position, a Mirroring control (No mirroring, Mirror angle, Mirror angle and
+length), Fill and Stroke. The read-only capture is
+`.local/svg-topology/figma-vector-toolbar.png`.
+
+PixlPrfct adds scissors and endpoint-link actions to the owner-requested movable
+palette using the existing 32px controls and dark theme. Its split operation is
+at a selected anchor; joining is limited to endpoints within one SVG element.
+This is not full Figma Cut/Erase, vector-network or mirroring parity. The visible
+Finish path label, open-path guidance and accessible trash actions address the
+owner's live-preview feedback. The full-width timeline and right animation
+inspector remain in place. Rendered result: `.local/svg-topology/verified.png`.
+
+## Stage selection, open Pen strokes and independent panels — 2026-11-01
+
+Inspected native Figma in Capwah Components before this batch. Closed vector
+editing, clicked Rectangle 2 on the canvas and verified the selected layer and
+right inspector updated (X −650, Y 371, 38×38). Inspected Creation → Pen and its
+blue selected state, then returned to Move. No artwork was edited. Screenshot:
+`.local/svg-stage/figma-selection.png` (3600×2006 physical pixels at 2×).
+
+Figma's [vector-network guide](https://help.figma.com/hc/en-us/articles/360040450213-Vector-networks)
+also documents Escape leaving a Pen path open. PixlPrfct now paints the actual
+stroke while drawing, previews the next segment and finishes an open path with
+Escape, Enter, Finish path, or a switch to Select. The explicit Discard action
+cancels it. Escape during an active drag still cancels that gesture.
+
+The owner explicitly requested independent windows outside PixlPrfct for panels,
+relaxing fixed placement for this extension. Every SVG inspector section,
+Elements, Timeline and Pen tools can detach. Existing dark controls are retained;
+this extension is not represented as a Figma or Illustrator facsimile. Design's
+separate inspector integration remains on the roadmap. Native window behavior is
+validated separately from browser popups and visual matching.
+
+Verification: eight panel browser workflows and isolated Electron native-window
+acceptance pass. Reviewed Transform, Pen tools and Timeline window screenshots;
+the time ruler refits when resized. Evidence is in `.local/svg-stage/` and the
+[SVG guide](SVG_ANIMATION.md#2026-11-01--live-strokes-stage-selection-and-separate-panels-local-source).
+
+
+## 2026-11-01 — Panel workspace continuation
+
+Inspected live Figma again before changing Design panels: Capwah Components,
+Rectangle 2 selected; 3600×2006 screenshot at 2×, approximately 241 logical px
+right inspector and 377 px left sidebar. Position, Layout, Appearance, Fill,
+Stroke, Effects and Export use the existing dark interface; the lower toolbelt
+contains Move, frame/shape, Pen, type and mode controls. Existing components and
+styles are retained in the panel portals. The independent-window behavior,
+right-docked SVG Pen palette, and 48 px SVG icon rail are explicit owner extensions.
+They are not described as verified Figma/Illustrator parity. See
+[panel delivery](DETACHABLE_PANELS.md) for local verification and remaining scope.
+
+
+## SVG gradient extension reference — 2026-11-01
+
+Inspected live Figma Capwah Components, Rectangle 4 → Primary Button paint →
+Custom. Captured `.local/design-panels/figma-gradient-reference.png` (3600×2006
+physical at 2×). The existing linear gradient shows a 240 logical px picker,
+40 px tab header, 24 px paint mode actions, a Linear selector with Flip and
+Rotate actions, 32 px ramp, Stops heading/add, and percentage/color/delete rows.
+The gradient has on-canvas handles; object Rotation remains in Position.
+Inspection changed selection and opened the picker only; no paint was edited.
+
+SVG Animation uses the shared picker glyphs, custom dropdowns, number/color
+inputs and dark palette. Independent gradient keyframes and parent icon flyouts
+are requested product extensions, not a claim of Figma's animation or Adobe UI
+parity. On-canvas gradient handles in SVG Animation remain separate future work.
+
+Re-inspected the live Capwah Components panel chrome before the final icon
+refinement (2026-11-01). The owner explicitly requires controls to depict their
+next action: left/right/bottom collapse and expand glyphs now point in opposite
+directions toward the destination state. These icon docks remain an extension.
+
+Parent icon audit (2026-11-01): inspected live Capwah Components again with
+Rectangle 4 selected before changing compact panel controls. Figma retains its
+241 px dark inspector, icon actions and lower toolbelt. The confirmed owner
+extension keeps child sections in the parent and gives all parent tear-outs
+matching window/dock icons. Compact return/save actions reuse the shared glyphs,
+fields and tooltips; sidebar tooltip placement is adjusted to preserve hit areas.
+
+Top-toggle follow-up (2026-11-01): re-inspected live Capwah Components with
+Rectangle 4 selected. The owner explicitly places the left drawer logo first,
+then the collapse/expand toggle in both states, above document/project actions.
+This dock ordering extends the reference; existing dark controls and the
+next-action glyphs are retained.
+
+Inline-header refinement (2026-11-01): re-inspected the same live Figma file.
+The owner's updated extension places SVG's expanded toggle beside its logo and
+Design's beside the document-title dropdown, retaining Design's single existing
+navigation logo. Compact docks retain their top controls.

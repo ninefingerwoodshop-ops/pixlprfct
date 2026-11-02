@@ -1,5 +1,6 @@
 // SVG animation projects use their own versioned document payload. They never
 // pass through the regular design engine's shape serializer.
+import {validGradientStops,mixGradientStops} from './svg-animation-gradient-model.js';
 import {parsePath} from './svg-path.js';
 import {validMorph,sameMorphTopology,interpolateMorph} from './svg-animation-morph.js';
 import {validInteraction} from './svg-animation-interactions.js';
@@ -10,6 +11,10 @@ export const properties={
  opacity:{label:'Opacity',initial:1,min:0,max:1,attribute:'opacity'},fill:{label:'Fill color',initial:'#000000',color:true,attribute:'fill'},
  stroke:{label:'Stroke color',initial:'#000000',color:true,attribute:'stroke'},strokeWidth:{label:'Stroke width',initial:1,min:0,max:10000,attribute:'stroke-width'},
  strokeOffset:{label:'Stroke offset',initial:0,min:-100000,max:100000,attribute:'stroke-dashoffset'},
+ fillGradientRotation:{label:'Fill gradient rotation',initial:0,min:-36000,max:36000,gradientRotation:true,channel:'fill'},
+ strokeGradientRotation:{label:'Stroke gradient rotation',initial:0,min:-36000,max:36000,gradientRotation:true,channel:'stroke'},
+ fillGradient:{label:'Fill gradient stops',initial:null,gradient:true,channel:'fill'},
+ strokeGradient:{label:'Stroke gradient stops',initial:null,gradient:true,channel:'stroke'},
  motionProgress:{label:'Path progress (%)',initial:0,min:0,max:100,motion:true},
  morph:{label:'Morph',initial:null,morph:true,attribute:'d'},
 };
@@ -31,13 +36,14 @@ export function validateAnimation(doc){
   const id=t.element+':'+t.property;if(seen.has(id))throw new Error('Duplicate animation track.');seen.add(id);
   let previous=-1;
   for(const k of t.keys){if(!k||!Number.isInteger(k.time)||k.time<=previous||k.time>a.duration||!validValue(t.property,k.value)||!validEasing(k.easing))throw new Error('Invalid animation keyframe.');previous=k.time;}
+  if(properties[t.property].gradient&&t.keys.some(k=>k.value.length!==t.keys[0].value.length))throw new Error('Gradient keyframes must have the same number of stops.');
   if(t.property==='morph'&&t.keys.some(k=>!sameMorphTopology(t.keys[0].value,k.value)))throw new Error('Morph keyframes must have the same nodes and open or closed paths.');
   if(t.property==='motionProgress')validateMotionPath(t.motion);
  }
  if(!a.origins||typeof a.origins!=='object'||Array.isArray(a.origins)||Object.keys(a.origins).length>5000||Object.entries(a.origins).some(([id,v])=>!/^[-\w]+$/.test(id)||!Array.isArray(v)||v.length!==2||v.some(n=>!Number.isFinite(n)||Math.abs(n)>100000)))throw new Error('Invalid animation origin.');
  return doc;
 }
-export function validValue(property,value){const p=properties[property];return !!p&&(p.morph?validMorph(value):p.color?typeof value==='string'&&/^#[\da-f]{6}$/i.test(value):Number.isFinite(value)&&value>=p.min&&value<=p.max);}
+export function validValue(property,value){const p=properties[property];return !!p&&(p.gradient?validGradientStops(value):p.morph?validMorph(value):p.color?typeof value==='string'&&/^#[\da-f]{6}$/i.test(value):Number.isFinite(value)&&value>=p.min&&value<=p.max);}
 export function eased(progress,name='linear'){
  const [x1,y1,x2,y2]=easingPoints(name),t=Math.max(0,Math.min(1,progress));
  if(name==='linear'||t===0||t===1)return t;
@@ -47,6 +53,7 @@ export function eased(progress,name='linear'){
 export function trackValue(track,time){
  const keys=track.keys;if(time<=keys[0].time)return keys[0].value;if(time>=keys.at(-1).time)return keys.at(-1).value;
  const next=keys.findIndex(k=>k.time>time),a=keys[next-1],b=keys[next],t=eased((time-a.time)/(b.time-a.time),a.easing);
+ if(properties[track.property].gradient)return mixGradientStops(a.value,b.value,t);
  if(properties[track.property].morph)return interpolateMorph(a.value,b.value,t);
  if(properties[track.property].color){const rgb=[1,3,5].map(i=>Math.round(parseInt(a.value.slice(i,i+2),16)*(1-t)+parseInt(b.value.slice(i,i+2),16)*t));return '#'+rgb.map(n=>n.toString(16).padStart(2,'0')).join('');}
  return a.value+(b.value-a.value)*t;
@@ -59,6 +66,7 @@ export function putKey(animation,element,property,time,value,easing='linear',ini
  if(property==='morph'&&track&&!sameMorphTopology(track.keys[0].value,value))throw new Error('Morph keyframes must have the same nodes and open or closed paths.');
  if(!track){track={element,property,keys:[]};if(time>0)track.keys.push({time:0,value:structuredClone(validValue(property,initial)?initial:value),easing:'linear'});next.tracks.push(track);}
  if(property==='morph'&&track.keys.length&&!sameMorphTopology(track.keys[0].value,value))throw new Error('Morph keyframes must have the same nodes and open or closed paths.');
+ if(properties[property].gradient&&track.keys.some(k=>k.value.length!==value.length))throw new Error('Gradient keyframes must have the same number of stops.');
  value=structuredClone(value);easing=structuredClone(easing);const key=track.keys.find(k=>k.time===time);if(key)Object.assign(key,{value,easing});else track.keys.push({time,value,easing});track.keys.sort((a,b)=>a.time-b.time);
  if(track.keys.length>200)throw new Error('A property can contain up to 200 keyframes.');return next;
 }

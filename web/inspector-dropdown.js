@@ -2,6 +2,7 @@ import {positionPopover} from './popover-position.js';
 import {icon} from './icons.js';
 // Shared editor dropdown: retain selects as the value/event API for every panel.
 export function installInspectorDropdowns(root){
+ const document=root.ownerDocument??root,window=document.defaultView;
  const roots=[root],controller=new AbortController(),signal=controller.signal;let destroyed=false;
  const chrome='.left-panel,.right-panel,.paint-popover,.workspace-window,.variables-workspace,dialog,#project-home,#admin-app,.account-app';
  const selects=()=>[...root.querySelectorAll('select:not([multiple])')].filter(select=>select.closest(chrome)&&!select.closest('#workspace,.prototype-player')); 
@@ -23,15 +24,16 @@ export function installInspectorDropdowns(root){
   }
   (button.closest('[popover],dialog')??document.body).append(menu);menu.showPopover();position();const selected=menu.querySelector('[aria-selected="true"]:not(:disabled)')??optionButtons()[0];selected?.focus();selected?.scrollIntoView({block:'nearest'});
  };
+ function removeEntry(select,entry){if(active===entry)close();entry.button.remove();select.removeEventListener('change',sync);delete select.dataset.customDropdown;select.removeAttribute('aria-hidden');select.removeAttribute('tabindex');entries.delete(select);}
  function sync(){
   if(destroyed)return;
-  for(const [select,entry] of entries)if(!roots.some(host=>host.contains(select))){if(active===entry)close();entry.button.remove();entries.delete(select);}
+  for(const [select,entry] of entries)if(!roots.some(host=>host.contains(select)))removeEntry(select,entry);
   for(const select of selects()){
    let entry=entries.get(select);
    if(!entry){const button=document.createElement('button'),label=document.createElement('span'),chevron=document.createElementNS('http://www.w3.org/2000/svg','svg');button.type='button';button.className='inspector-select-trigger';button.dataset.selectId=select.id;button.id='inspector-select-'+(++sequence);button.setAttribute('aria-haspopup','listbox');button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls',menu.id);chevron.setAttribute('class','app-icon');chevron.setAttribute('viewBox','0 0 16 16');chevron.setAttribute('aria-hidden','true');chevron.innerHTML='<path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>';button.append(label,chevron);
     const nativeLabel=select.labels?.[0],caption=select.getAttribute('aria-label')||nativeLabel?.textContent.replace(select.textContent,'').trim()||select.title||select.id||'Choose an option';button.setAttribute('aria-label',caption);select.dataset.customDropdown='true';select.tabIndex=-1;select.setAttribute('aria-hidden','true');select.after(button);entry={select,button,label,caption};entries.set(select,entry);
     if(select.dataset.triggerIcon){button.classList.add('inspector-select-icon');label.hidden=true;chevron.remove();const glyph=document.createElement('span');glyph.className='inspector-select-glyph';glyph.innerHTML=icon(select.dataset.triggerIcon);button.append(glyph);button.title=caption;}
-    button.onclick=e=>{e.preventDefault();active===entry?close(true):open(entry);};button.onkeydown=e=>{if(e.ctrlKey||e.metaKey)return;e.stopPropagation();if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();open(entry);if(e.key==='Home')optionButtons()[0]?.focus();if(e.key==='End')optionButtons().at(-1)?.focus();}};
+    button.onclick=e=>{e.preventDefault();if(active===entry)close(true);else open(entry);};button.onkeydown=e=>{if(e.ctrlKey||e.metaKey)return;e.stopPropagation();if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();open(entry);if(e.key==='Home')optionButtons()[0]?.focus();if(e.key==='End')optionButtons().at(-1)?.focus();}};
     select.addEventListener('change',sync,{signal});
    }
    const text=select.selectedOptions[0]?.dataset.shortLabel||select.selectedOptions[0]?.label||'Choose…';if(entry.label.textContent!==text){entry.label.textContent=text;entry.button.setAttribute('aria-label',entry.caption+': '+text);}
@@ -55,6 +57,7 @@ export function installInspectorDropdowns(root){
  window.addEventListener('resize',()=>close(),{signal});
  const observer=new MutationObserver(records=>{if(!records.some(record=>record.target===root||record.target.closest?.(chrome)))return;if(!pending){pending=true;queueMicrotask(()=>{pending=false;sync();});}});
  for(const host of roots)observer.observe(host,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','disabled','label','value','selected','open','class']});
+ sync.release=node=>{for(const [select,entry] of entries)if(node?.contains(select))removeEntry(select,entry);};
  sync.destroy=()=>{destroyed=true;close();controller.abort();observer.disconnect();menu.remove();for(const [select,entry] of entries){entry.button.remove();delete select.dataset.customDropdown;select.removeAttribute('aria-hidden');select.removeAttribute('tabindex');}entries.clear();};
  sync();return sync;
 }

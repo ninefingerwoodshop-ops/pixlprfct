@@ -183,7 +183,7 @@ export function pasteKeyframesToElement(animation,clipboard,time,element,origin)
  const sources=new Set(clipboard.tracks.map(track=>track.element));
  if(sources.size!==1)throw new Error('Copy keyframes from one element to paste onto another element. Nothing was pasted.');
  if(sources.has(element))return pasteKeyframes(animation,clipboard,time);
- if(clipboard.tracks.some(track=>['morph','motionProgress'].includes(track.property)))throw new Error('Morph and motion path keys can only be pasted onto their original element. Copy transform or appearance keys to reuse them on another element.');
+ if(clipboard.tracks.some(track=>['morph','motionProgress','fillGradient','strokeGradient','fillGradientRotation','strokeGradientRotation'].includes(track.property)))throw new Error('Morph, motion path and gradient keys can only be pasted onto their original element. Copy transform or appearance keys to reuse them on another element.');
  const retargeted={...clipboard,tracks:clipboard.tracks.map(track=>({...track,element}))};
  const result=pasteKeyframes(animation,retargeted,time);
  result.animation.origins[element]??=structuredClone(origin);

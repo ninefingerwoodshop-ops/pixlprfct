@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {createBreakpointPreview,restoreAllBreakpointWidths} from './breakpoint-preview.js';
 import {layoutMediaState,layoutMediaSource} from './layout-css.js';
 import {icon} from './icons.js';
@@ -37,7 +38,7 @@ export function installLayerCssInspector(parent,{current,shapes,change,changeMan
  input.addEventListener('change',commit);
  input.addEventListener('input',clear);
  input.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'){event.preventDefault();commit();}if(event.key==='Escape'){event.preventDefault();input.value=layoutClass(current());clear();}});
- const render=()=>{renderAll();const shape=current();section.hidden=!shape;if(!shape){selectedId=null;return;}if(selectedId!==shape.id||document.activeElement!==input){input.value=layoutClass(shape);clear();}selectedId=shape.id;render.responsive(shapes());};
+ const render=()=>{renderAll();const shape=current();section.hidden=!shape;if(!shape){selectedId=null;return;}if(selectedId!==shape.id||editorDOM.activeElement!==input){input.value=layoutClass(shape);clear();}selectedId=shape.id;render.responsive(shapes());};
  render.responsive=scene=>{
   const selected=current(),shape=layoutMediaSource(scene.find(s=>s.id===selected?.id),scene);
   media.hidden=!shape;if(media.hidden)return;

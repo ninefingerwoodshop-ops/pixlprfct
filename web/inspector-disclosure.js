@@ -1,3 +1,4 @@
+import {editorDOM,queryPanel} from './editor-dom.js';
 // Accordions reveal controls; switches enable or disable optional properties.
 export function setDisclosureExpanded(button, expanded) {
  if(button.getAttribute('role')==='switch')button.setAttribute('aria-checked', String(expanded));
@@ -66,8 +67,8 @@ export function disclosureState() {
 }
 
 export function installOptionalInspector(current,change) {
- const panel=document.querySelector('.right-panel'),states=new Map(),predicates=new WeakMap(),features=new WeakMap();let serial=0;
- const $=id=>document.getElementById(id),bound=(shape,...paths)=>paths.some(path=>!!shape?.variable_bindings?.[path]);
+ const panel=editorDOM.querySelector('.right-panel'),states=new Map(),predicates=new WeakMap(),features=new WeakMap();let serial=0;
+ const $=id=>editorDOM.getElementById(id),bound=(shape,...paths)=>paths.some(path=>!!shape?.variable_bindings?.[path]);
  const group=(title,nodes,active,defaults,bindingPaths)=>{
   const details=document.createElement('details'),summary=document.createElement('summary');
   details.className='inspector-optional';summary.textContent=title;nodes[0].before(details);details.append(summary,...nodes);predicates.set(details,active);if(defaults)features.set(details,optionalProperty(defaults,bindingPaths));return details;
@@ -95,7 +96,7 @@ export function installOptionalInspector(current,change) {
  };
  const sync=()=>{
   const shape=current();
-  for(const details of panel.querySelectorAll('details:not(.effect-add-menu)')){
+  for(const details of queryPanel(panel,'details:not(.effect-add-menu)')){
    const summary=details.querySelector(':scope > summary');if(!summary)continue;
    // Menus and popovers are actions, not field disclosure.
    if(summary.hasAttribute('aria-haspopup')||details.closest('dialog'))continue;

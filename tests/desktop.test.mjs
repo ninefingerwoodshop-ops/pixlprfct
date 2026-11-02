@@ -39,3 +39,10 @@ test('external navigation never invokes local programs or embedded credentials',
  for(const input of ['file:///etc/passwd','javascript:alert(1)','data:text/html,test','smb://share','https://me:secret@example.com'])assert.equal(externalURL(input),null);
  assert.match(CSP,/script-src 'self' 'wasm-unsafe-eval'/);assert.match(CSP,/object-src 'none'/);
 });
+
+test('only named same-workspace panel shells can create connected native windows',()=>{
+ const {isPanelWindow}=require('../desktop/policy.cjs'),name='pixl-panel-00000000-0000-4000-8000-000000000001';
+ for(const base of [APP_URL,'https://team.example.com/','http://127.0.0.1:5173/'])assert.ok(isPanelWindow(new URL('/editor/panel.html',base).href,base,name));
+ for(const url of ['https://other.example.com/editor/panel.html',APP_URL+'editor/index.html',APP_URL+'editor/panel.html?source=other',APP_URL+'editor/panel.html#other','about:blank','data:text/html,test','file:///editor/panel.html',APP_URL+'editor/%70anel.html'])assert.equal(isPanelWindow(url,APP_URL,name),false);
+ for(const name of ['','panel','pixl-panel-other',null])assert.equal(isPanelWindow(APP_URL+'editor/panel.html',APP_URL,name),false);
+});

@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {textStyle} from './typography.js';
 import {icon} from './icons.js';
 import {showContextMenu} from './context-menu.js';
@@ -6,9 +7,9 @@ import {trackPopover} from './popover-position.js';
 // Reuse the existing controls and their handlers. The standard inspector follows
 // the measured Figma chrome; product-specific settings remain available below it.
 export function installFigmaInspector({current,change}){
- const $=id=>document.getElementById(id),make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n;};
+ const $=id=>editorDOM.getElementById(id),make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n;};
  const button=(title,glyph,click)=>{const b=make('button','inspector-icon');b.type='button';b.title=title;b.setAttribute('aria-label',title);b.innerHTML=icon(glyph);b.onclick=click;return b;};
- const panel=document.querySelector('.right-panel');panel.classList.add('figma-inspector');
+ const panel=editorDOM.querySelector('.right-panel');panel.classList.add('figma-inspector');
  const position=$('x').closest('section'),dimensions=$('dimensions-section'),appearance=$('appearance-section'),text=$('text-section');
  for(const section of [position,dimensions,appearance,text,$('grid-layout-section'),$('shadow-section'),$('layout-guides-panel'),$('prototype-panel')])section.classList.add('figma-core-section');
  position.id='position-section';
@@ -16,7 +17,7 @@ export function installFigmaInspector({current,change}){
  const rotationRow=make('div','rotation-row');rotation.firstChild.textContent='';rotation.classList.add('inline-number');
  const rotationMark=make('span','field-prefix');rotationMark.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M3 3v10h10M3 8a5 5 0 0 1 5 5"/></svg>';rotation.prepend(rotationMark);
  rotationRow.append(rotation,tools);transforms.replaceChildren(make('div','inspector-field-caption','Rotation'),rotationRow);
- const header=document.querySelector('.inspector-selection'),caption=$('selection-caption');
+ const header=editorDOM.querySelector('.inspector-selection'),caption=$('selection-caption');
  const placeCaption=mode=>{caption.hidden=mode==='prototype'||mode==='motion';caption.classList.toggle('development-caption',mode!=='design');if(mode==='design')header.prepend(caption);else panel.querySelector('.inspector-tabs').after(caption);};placeCaption('design');window.addEventListener('inspector-mode-change',e=>placeCaption(e.detail));
  const zoom=panel.querySelector('.zoom-control');panel.querySelector('.inspector-tabs').append(zoom);
  const zoomMenu=button('Zoom and view options','chevron-down',event=>{const r=zoomMenu.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:r.right,clientY:r.bottom},[['zoom-in','Zoom in'],['zoom-out','Zoom out'],['zoom-fit','Fit document']].map(([id,label])=>({label,run:()=>$(id).click()})),zoomMenu,{label:'Zoom and view options'});});zoomMenu.classList.add('zoom-menu');zoom.append(zoomMenu);
@@ -69,7 +70,7 @@ export function installFigmaInspector({current,change}){
  // click, and remain in the viewport while scrolling or resizing the drawer.
  modesBody.setAttribute('popover','auto');modesBody.setAttribute('role','dialog');modesBody.setAttribute('aria-label','Apply variable mode');modesBody.id='variable-mode-menu';modes.after(modesBody);modesSummary.setAttribute('aria-controls',modesBody.id);modesSummary.setAttribute('aria-expanded','false');
  const positionModes=trackPopover(modesBody,()=>modesSummary,{placement:'left',width:224});
- modesSummary.onclick=e=>{e.preventDefault();if(modesBody.matches(':popover-open'))modesBody.hidePopover();else{modesBody.showPopover();positionModes();}};
+ modesSummary.onclick=e=>{e.preventDefault();if(modesBody.matches(':popover-open'))modesBody.hidePopover();else{positionModes.prepare();modesBody.showPopover();positionModes();}};
  modesBody.addEventListener('toggle',()=>modesSummary.setAttribute('aria-expanded',String(modesBody.matches(':popover-open'))));
  $('opacity').setAttribute('aria-label','Opacity');$('corner-radius').setAttribute('aria-label','Corner radius');
  // Typography uses the same order as the reference. Extra text editing controls

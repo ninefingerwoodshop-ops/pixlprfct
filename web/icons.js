@@ -680,8 +680,14 @@ export const iconPaths = {
   "wizard": "m12 2 7 13H5ZM3 15h18M6 17l3 5h6l3-5M11 8h.01M9 12h.01"
 };
 export const filledIcons = ["pixlprfct","territory-track","apple-logo","facebook-logo","google-logo"];
+// Interface-only directional variants; keep the vendored font catalog unchanged.
+const interfaceIconPaths = {
+  "panel-right": "M3 4h18v16H3ZM15 4v16",
+  "chevrons-up": "M5 12l7-7 7 7M5 19l7-7 7 7",
+  "chevrons-down": "M5 5l7 7 7-7M5 12l7 7 7-7",
+};
 export const iconWeights={light:1,regular:1.5,bold:2.5};
-export function icon(name,weight='regular') { return `<svg class="app-icon" viewBox="0 0 24 24" fill="${filledIcons.includes(name)?'currentColor':'none'}" stroke="${filledIcons.includes(name)?'none':'currentColor'}" stroke-width="${iconWeights[weight]??1.5}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${iconPaths[name] || iconPaths.rectangle}"/></svg>`; }
+export function icon(name,weight='regular') { return `<svg class="app-icon" viewBox="0 0 24 24" fill="${filledIcons.includes(name)?'currentColor':'none'}" stroke="${filledIcons.includes(name)?'none':'currentColor'}" stroke-width="${iconWeights[weight]??1.5}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${interfaceIconPaths[name] || iconPaths[name] || iconPaths.rectangle}"/></svg>`; }
 export function installIcons() { document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon)); document.querySelectorAll('[data-tool]').forEach(el => el.innerHTML = icon(el.dataset.tool)+(el.dataset.label ? `<span>${el.dataset.label}</span><kbd>${el.querySelector('kbd')?.textContent||''}</kbd>` : '')); for (const id of ['undo','redo']) document.getElementById(id).innerHTML = icon(id); }
 
 // Starters use component identity while remaining freely editable controls.

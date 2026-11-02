@@ -1,0 +1,21 @@
+.dev-log-main .roadmap-intro{align-items:center}
+.dev-log-main .roadmap-intro .text-link{color:var(--accent)}
+.dev-log-main .roadmap-jump{margin-top:44px}
+.release-journal{margin-top:64px}
+.journal-entry{display:grid;grid-template-columns:220px minmax(0,1fr);gap:64px;padding:0 0 64px;scroll-margin-top:32px}
+.journal-entry+.journal-entry{padding-top:64px;border-top:1px solid var(--line)}
+.journal-meta{display:flex;align-items:flex-start;flex-direction:column;gap:16px;font-size:13px;color:var(--muted)}
+.journal-meta time{color:var(--text)}
+.journal-version{font:11px/1.6 monospace}
+.journal-body{max-width:720px}
+.journal-body h2{font-size:clamp(32px,4vw,48px);margin-bottom:24px}
+.journal-body .journal-lede{font-size:20px;line-height:1.6;color:var(--text);margin-bottom:32px}
+.journal-body h3{font-size:22px;letter-spacing:-.6px;margin:30px 0 14px}
+.journal-body p{font-size:15px}
+.journal-body .journal-limit{font-size:12px;line-height:1.8;padding:18px 20px;background:var(--panel);border-left:2px solid var(--accent);margin-top:30px}
+.journal-links{display:flex;align-items:center;flex-wrap:wrap;gap:20px 26px;margin-top:30px;font-size:12px;color:var(--accent)}
+.journal-note{border-top:1px solid var(--line);padding:32px 0 64px}
+.journal-note p{max-width:790px;font-size:13px}
+.journal-note a{color:var(--accent)}
+@media(max-width:1000px){.journal-entry{grid-template-columns:180px minmax(0,1fr);gap:36px}}
+@media(max-width:680px){.journal-entry{grid-template-columns:1fr;gap:26px;padding-bottom:44px}.journal-entry+.journal-entry{padding-top:40px}.journal-meta{flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px 18px}.journal-version{width:100%}.release-journal{margin-top:40px}.journal-body .journal-lede{font-size:18px}.journal-body p{font-size:14px}.journal-links{align-items:flex-start;flex-direction:column}.journal-note{padding-bottom:44px}}

@@ -17,7 +17,7 @@ export function numberField(label,value,change,{min=-100000,max=100000,step='any
  input.onchange=()=>{if(input.checkValidity())change(Number(input.value));else input.reportValidity();};input.onkeydown=e=>{if(e.key==='Escape'){input.value=input.dataset.saved??String(value);input.setCustomValidity('');}};return box;
 }
 export function settingRow(label,field){const r=element('div','setting-row');r.append(element('span','setting-label',label),field);return r;}
-export function syncInput(input,value){if(document.activeElement!==input)input.value=value;input.dataset.saved=String(value);}
+export function syncInput(input,value){if(input.ownerDocument.activeElement!==input)input.value=value;input.dataset.saved=String(value);}
 
 // One persistent popup per inspector section. Rerendering the document must not
 // replace the open form (or lose its focused field, nested dropdown, or drag).
@@ -26,8 +26,8 @@ export function settingsPopover(host,label,{width=240}={}){
  const header=element('div','setting-heading'),title=element('div','setting-heading-title'),body=element('div','setting-body');const close=action('Close '+label,'close',()=>api.close(true));header.append(title,close);panel.append(header,body);(host.closest('[popover]')??document.body).append(panel);
  let anchor=null,key=null,signature=null;const position=trackPopover(panel,()=>anchor,{width,gap:0,margin:16,pinTop:true,fitHeight:true});dragPopover(panel,header,position);header.setAttribute('aria-label','Move '+label);
  const api={panel,header,title,body,get key(){return key;},get open(){return panel.matches(':popover-open');},
-  show(nextKey,node){if(key!==nextKey){api.close();signature=null;}key=nextKey;anchor=node;node.querySelector('[aria-haspopup="dialog"]')?.setAttribute('aria-expanded','true');if(!api.open)panel.showPopover();panel.focus({preventScroll:true});},
-  update(nextSignature,build,sync){if(!api.open)return;if(signature!==nextSignature){const focused=panel.contains(document.activeElement);title.replaceChildren();body.replaceChildren();build(title,body);signature=nextSignature;if(focused&&!panel.contains(document.activeElement))body.querySelector('input:not(:disabled)')?.focus({preventScroll:true});}sync?.(title,body);position();},
+  show(nextKey,node){if(key!==nextKey){api.close();signature=null;}key=nextKey;anchor=node;node.querySelector('[aria-haspopup="dialog"]')?.setAttribute('aria-expanded','true');position.prepare();if(!api.open)panel.showPopover();panel.focus({preventScroll:true});},
+  update(nextSignature,build,sync){if(!api.open)return;if(signature!==nextSignature){const focused=panel.contains(panel.ownerDocument.activeElement);title.replaceChildren();body.replaceChildren();build(title,body);signature=nextSignature;if(focused&&!panel.contains(panel.ownerDocument.activeElement))body.querySelector('input:not(:disabled)')?.focus({preventScroll:true});}sync?.(title,body);position();},
   anchor(node){anchor=node;},
   retarget(nextKey){key=nextKey;signature=null;},
   close(restore=false){if(api.open)panel.hidePopover();anchor?.querySelector('[aria-haspopup="dialog"]')?.setAttribute('aria-expanded','false');if(restore)anchor?.querySelector('button')?.focus({preventScroll:true});key=null;signature=null;},
@@ -40,7 +40,7 @@ export function settingsMenu(host,label){
  const menu=element('div','setting-menu');menu.setAttribute('popover','auto');menu.setAttribute('role','menu');menu.setAttribute('aria-label',label);host.append(menu);let anchor;
  const close=()=>{if(menu.matches(':popover-open'))menu.hidePopover();anchor?.setAttribute('aria-expanded','false');};
  menu.addEventListener('toggle',()=>anchor?.setAttribute('aria-expanded',String(menu.matches(':popover-open'))));
- menu.onkeydown=e=>{if(e.ctrlKey||e.metaKey){close();return;}e.stopPropagation();const items=[...menu.querySelectorAll('button:not(:disabled)')],index=items.indexOf(document.activeElement);if(e.key==='Escape'){e.preventDefault();close();anchor?.focus();}else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();items[e.key==='Home'?0:e.key==='End'?items.length-1:(index+(e.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();}};
+ menu.onkeydown=e=>{if(e.ctrlKey||e.metaKey){close();return;}e.stopPropagation();const items=[...menu.querySelectorAll('button:not(:disabled)')],index=items.indexOf(menu.ownerDocument.activeElement);if(e.key==='Escape'){e.preventDefault();close();anchor?.focus();}else if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();items[e.key==='Home'?0:e.key==='End'?items.length-1:(index+(e.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();}};
  return{show(button,items){anchor=button;if(menu.matches(':popover-open')){close();return;}menu.replaceChildren();for(const {label,glyph,run,disabled} of items){const b=element('button');b.type='button';b.setAttribute('role','menuitem');b.disabled=!!disabled;b.innerHTML=settingIcon(glyph);b.append(element('span','',label));b.onclick=()=>{close();run();};menu.append(b);}button.setAttribute('aria-expanded','true');menu.showPopover();positionPopover(menu,button.getBoundingClientRect(),{placement:'left',width:184,gap:8});menu.querySelector('button:not(:disabled)')?.focus();},close};
 }
 export function colorField(parent,label,get,change,variables){

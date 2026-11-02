@@ -1,13 +1,16 @@
+import {editorDOM,queryPanel,panelRoots} from './editor-dom.js';
 import {disclosureButton,setDisclosureExpanded,installOptionalInspector} from './inspector-disclosure.js';
 // Keep existing sections and control nodes intact: inspector renderers own them.
 export function installCollapsibleInspector(current,change){
  const syncOptional=installOptionalInspector(current,change);
- const panel=document.querySelector('.right-panel'),storageKey='pixlprfct.inspector.collapsed';
+ const panel=editorDOM.querySelector('.right-panel'),storageKey='pixlprfct.inspector.collapsed';
  let saved={};try{saved=JSON.parse(localStorage.getItem(storageKey)??'{}')??{};}catch{}
  const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch{}};
  const isCollapsed=key=>saved[key]??saved['*']??false;
+ const observed=new WeakSet();
  const sync=()=>{
-  for(const section of panel.querySelectorAll('.property-section')){
+  for(const node of panelRoots(panel))if(!observed.has(node)){observer.observe(node,{childList:true,subtree:true});observed.add(node);}
+  for(const section of queryPanel(panel,'.property-section')){
    const heading=[...section.querySelectorAll('h3')].find(h=>h.closest('.property-section')===section);
    // Embedded layout settings share the visible parent section's disclosure.
    // Their legacy heading is hidden, so a separate collapsed state is unreachable.
@@ -27,7 +30,7 @@ export function installCollapsibleInspector(current,change){
     toggle=disclosureButton(title,expanded=>{
      section.classList.toggle('inspector-collapsed',!expanded);saved[key]=!expanded;
      persist();
-    });toggle.classList.add('inspector-section-toggle');heading.replaceChildren(toggle);
+    });toggle.classList.add('inspector-section-toggle');heading.replaceChildren(toggle,...heading.querySelectorAll('.panel-popout'));
    }
    setDisclosureExpanded(toggle,isCollapsed(key)!==true);
   }
@@ -44,14 +47,14 @@ export function installCollapsibleInspector(current,change){
   button.onclick=()=>{
    for(const key of Object.keys(saved))saved[key]=collapsed;
    saved['*']=collapsed;
-   for(const section of panel.querySelectorAll('[data-collapse-key]'))saved[section.dataset.collapseKey]=collapsed;
+   for(const section of queryPanel(panel,'[data-collapse-key]'))saved[section.dataset.collapseKey]=collapsed;
    persist();sync();
    // Expand/collapse only accordions. Optional properties keep their enabled state.
-   for(const toggle of panel.querySelectorAll('.inspector-accordion-toggle:not(.inspector-section-toggle)'))if(toggle.isConnected&&toggle.getAttribute('aria-expanded')===String(collapsed))toggle.click();
+   for(const toggle of queryPanel(panel,'.inspector-accordion-toggle:not(.inspector-section-toggle)'))if(toggle.isConnected&&toggle.getAttribute('aria-expanded')===String(collapsed))toggle.click();
   };
   toolbar.append(button);
  }
- document.getElementById('inspector-layer-actions').append(toolbar);
+ editorDOM.getElementById('inspector-layer-actions').append(toolbar);
  // Sections such as effects, variables and prototype interactions are rebuilt.
- const observer=new MutationObserver(sync);observer.observe(panel,{childList:true,subtree:true});sync();
+ const observer=new MutationObserver(sync);observer.observe(panel,{childList:true,subtree:true});sync();return sync;
 }

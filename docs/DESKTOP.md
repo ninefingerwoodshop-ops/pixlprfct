@@ -4,15 +4,17 @@ The Electron app packages the existing editor and Rust/WASM engine for macOS and
 
 After a team server loads successfully, Desktop remembers its validated address and opens that workspace on the next launch. **File → All local projects** continues to open your offline projects. If you run the server on this Mac, keep its background service running; the desktop connection address is the local PixlPrfct server address, not the database provider's API URL.
 
-## Windows SVG animator preview — v0.1.1-alpha.20
+## Windows SVG animator preview — v0.1.1-alpha.21
 
-The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.20)
+The [Windows preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21)
 packages the separate SVG Animation workspace and grouped timeline editing from
 PR #37, group easing from PR #39, precise selection timing from PR #40,
 animation reuse from PR #42, keyframe reversal from PR #43, duplication from
 PR #45, playhead/keyframe snapping from PR #46, keyframe navigation from PR #48,
 the Pause-button repair from PR #49, and canvas stretch/rotation handles from
-PR #51.
+PR #51. Alpha.21 adds SVG Pen/Pencil drawing, path editing and stage selection,
+Add/Replace import, animated gradients, and independent parent panel windows
+with persistent positions and icon flyouts in both editors.
 Create an SVG Animation design from Projects, import artwork, animate
 properties, motion paths or shape nodes, and export an on-load, hover or click
 animation. Multi-select keys across tracks to move, copy/paste and delete them

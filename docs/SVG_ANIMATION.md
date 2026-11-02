@@ -1,15 +1,18 @@
 # SVG Animation
 
 This separate design type is available from **Projects → New design → SVG
-Animation** in the repository source and the [Windows v0.1.1-alpha.20
-preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.20).
+Animation** in the repository source and the [Windows v0.1.1-alpha.21
+preview](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21).
 It does not replace Design or its existing Motion mode. Grouped timeline editing
 was merged in PR #37; group easing and precise selection timing followed in
 PRs #39 and #40. Animation reuse and reversal followed in PRs #42 and #43.
 Duplication and playhead/keyframe snapping followed in PRs #45 and #46.
 All are included in alpha.18; alpha.19 adds keyframe navigation and the Pause
 repair from PRs #48 and #49. Alpha.20 adds canvas stretch and rotation handles
-from PR #51. The older Windows
+from PR #51. Alpha.21 includes Pen/Pencil drawing, open strokes, anchor editing,
+stage selection, Add/Replace import, detachable parent panels and independent
+fill/stroke gradient animation. The dated local-source notes below record their
+development; the alpha.21 release notes record package verification. The older Windows
 v0.1.0-alpha.1 download does not include this workspace.
 
 ## Core workflow
@@ -543,3 +546,328 @@ Alpha.20 packages that work and updates the product website with an actual
 selected-object screenshot. The preceding alpha.19 and local verification entries
 remain historical records; see the alpha.20 release notes for package verification
 and publication status.
+
+## 2026-11-01 — Pen and base-path editing (local source)
+
+The first roadmap implementation adds ordinary drawing to SVG Animation. This
+work is local source only, not an installed build or the published alpha.20 release.
+
+- Choose **Pen (P)**. Click for corner anchors, drag for cubic handles, press
+  **Enter** or **Done** to finish an open path, or click the first anchor to close
+  it. Shift constrains placement and handles to 45° increments. Escape cancels
+  an unfinished path; each finished path is one undo step.
+- Choose **Direct Selection (A)** or **Edit base path** for a path. Drag anchors
+  or handles, or focus one and use arrows (Shift: 10 SVG units). **Add midpoint
+  after anchor** subdivides the following cubic without changing its shape.
+  Delete, Smooth and Corner act on the selected anchor. **Continue selected
+  endpoint** resumes either end of an open subpath. These operations edit base
+  geometry and do not create morph keyframes.
+- Pen opens the right-side **Pen tools** palette. Drag its grip, use arrows on the
+  grip, or press Home to reset it. It stays inside the canvas workspace after
+  resizing. Position is session-only and never changes document history. Select
+  element, V, Close, playback or timeline/morph editing exits drawing mode.
+- Palette and inspector share fill/stroke color, none, opacity and stroke weight,
+  using the existing custom color picker and number fields. With no selection,
+  they edit new-path defaults. Without a paint animator, edits change the source
+  artwork; with an existing animator, color/weight edits change the current key.
+  Use Add animator or the diamond explicitly to start paint animation. Choosing
+  a solid color replaces an imported gradient on that paint.
+
+Base-path edits preserve transforms, existing animation tracks and origins.
+A path with a Morph animator uses **Morph → Edit nodes**; remove that animator
+before changing base geometry. Assigned motion routes remain captured snapshots
+and need reassignment to reflect later source-path edits. Ordinary editing is
+currently limited to path elements with 2–512 anchors across up to 64 subpaths,
+coordinates within ±100,000, and the existing SVG import size limits.
+
+Split/join, arbitrary segment-click insertion, multi-node selection, handle
+mirroring, Pencil/whole-path smoothing and Brush remain open. Object-body dragging,
+multi-object organization and explicit Add/Replace import are separate roadmap
+items. Unsupported tools are not shown as completed buttons.
+
+Verification: **3 Rust and 1,043 JavaScript tests pass**. Production build,
+typecheck, generated API and diff checks pass. Changed-file lint has zero errors
+and one existing internal-navigation warning. **57 SVG Chromium scenarios pass**, including six new drawing
+workflows and the 51 existing animation/transform workflows. New cases cover
+cubic/closed drawing, both endpoint continuation behavior and mathematical
+reversal, transformed/zoomed anchor editing, handle cancellation, shared color
+picker edits, palette drag/keyboard/reset/resize, one-step undo, save/reopen,
+SVG export, unchanged animation tracks/origins, read-only files and lease
+acquisition/release. Mathematical tests verify exact cubic subdivision, reversed
+handles, validation and separate subpath preservation. Cloud tests use a mocked
+API; no deployed team server or installed app is certified here.
+
+Live Figma Pen and vector-edit UI were inspected before implementation. Reference
+and result captures are in `.local/svg-pen/figma-vector.png` and `verified.png`.
+The palette is the owner's requested extension of the bottom toolbelt. Full
+Figma visual/workflow parity is not claimed. See the [reference record](FIGMA_UI_REFERENCE.md)
+and [Pen scope](PEN_WORKSPACE_PROPOSAL.md).
+
+## 2026-11-01 — Add/Replace import foundation (in progress)
+
+`web/svg-animation-import.js` adds isolated, synchronous preparation for an
+explicit Add or Replace operation. **Historical checkpoint, superseded by the
+delivery below:** it was not connected to the editor at this point, so Import SVG
+still replaced the artwork as described in B41. No shipped fix was claimed.
+
+Add preserves the destination canvas, original element IDs, animation tracks,
+origins and timing settings. Incoming IDs and local paint/clip/mask/use references
+are remapped together. A named group contains the incoming SVG viewport, centered
+at its intrinsic dimensions; its default inherited paints are isolated from the
+destination root. Destination root effects still apply to its descendants.
+Replace prepares new artwork with empty tracks/origins and retains animation
+settings. Both operations pass through the existing sanitizer and combined
+document limits. Preparation never mutates the current animation and requires an
+explicit mode, allowing the UI to commit the result as one undoable edit later.
+
+Verification: **4 new Chromium cases pass**, including duplicate-ID/reference
+isolation, viewport placement/default paints, active-content removal, combined
+element limits, immutable preparation, track/origin preservation, save/reopen
+normalization and matching animated-export transforms. Editor build and lint on
+the new module/tests pass. Tests are in
+`tests/browser/svg-animation-import.spec.mjs`.
+
+The live Figma check for the next interaction/UI work could not run because the
+Mac is locked. Unlock was requested. Add/Replace controls, complete import undo
+and permission workflows, and object-body dragging remain pending. B40/B41 stay
+unchecked; the first delivered Pen batch remains complete locally.
+
+## 2026-11-01 — Object movement and Add/Replace import (local source)
+
+After the Mac was unlocked, live Figma selection, File menu and modal chrome were
+inspected. B40 and B41 are now resolved in local source; this work is not in the
+published alpha.20 or an installed build.
+
+- In Select mode, drag an object's body to move it. A selected group's children
+  move that group. Shift constrains translation to its parent X or Y axis. The
+  focused canvas also accepts arrows (Shift: 10 units). Movement writes X/Y
+  tracks at the playhead through the same transform path as resize/rotation;
+  later playhead positions seed the starting value at time zero. Imported source
+  geometry, existing easing, origins and motion-path settings remain intact.
+- The gesture previews without saving and commits one undo entry on release.
+  Escape, pointer cancellation/capture loss, window blur, seeking, document
+  changes and loss of the edit lease cancel the preview. Clicks without movement
+  create no history entry. Coordinate mapping accounts for zoom, transformed
+  ancestors and animated motion frames. Pen, base nodes and Morph editing retain
+  their own canvas interactions.
+- Importing into a nonempty SVG opens **Import SVG**, with **Add to canvas** as
+  the default, **Replace artwork**, and Cancel. Add preserves existing artwork,
+  animation, playhead and canvas size; the incoming SVG becomes a named group
+  centered at its intrinsic size. Replace clears old tracks/origins, uses the
+  imported canvas size, and resets the playhead. Empty files import directly.
+  Both commit one undoable change, and Add/Replace apply to file upload, drop
+  and desktop SVG file-open. `.pixl` project import is unchanged.
+- Imported IDs and local gradient/clip/mask/use references are remapped together.
+  The existing sanitizer and combined document limits apply. Invalid input,
+  canceled choices, a document changed while reading/choosing, and a missing or
+  expired edit lease cannot overwrite the document. Multi-object selection,
+  duplication and group creation remain separate roadmap work.
+
+Four merge/model and ten interaction cases pass in Chromium. They verify geometry,
+history, persistence, animated export, custom dropdown keyboard use, cancellation,
+stale-document protection and mocked shared-file leases. Screenshots reviewed:
+`.local/svg-editing/body-drag.png` and `import-choice.png`. The dialog uses 480px
+width, a 40px header, 16px content inset, 28px custom dropdown, and #2c2c2c surface.
+See the [reference record](FIGMA_UI_REFERENCE.md) for comparison limits.
+
+Final verification: **3 Rust / 1,043 JavaScript tests, production build, typecheck,
+generated API and diff checks pass**. Changed-file lint has zero errors and one
+existing internal-navigation warning. The 71-case SVG browser run passed 70 and
+exposed an immediate cancel/reopen race; dialog cleanup was made synchronous,
+and all ten movement/import UI cases passed on the final rerun, including the
+failed case and strengthened visual measurements. Four merge cases and all 57
+existing SVG cases passed in the broader run. Logs: `.local/svg-editing/browser-tests.log`,
+`browser-final.log`, `unit-tests.log`, and `build.log`.
+
+## 2026-11-01 — Pencil and freehand smoothing (local source)
+
+The third drawing batch adds **Pencil (Shift+P)** to the existing bottom toolbelt
+and movable palette. This is local source work, not an installed build or the
+published alpha.20. Whole-path smoothing and Brush remain separate roadmap work.
+
+- Drag to preview a stroke in the shared fill/stroke/opacity/weight defaults;
+  release to save one editable open path and one undo entry. Pencil remains
+  active for subsequent strokes. Round stroke ends and joins are retained in SVG.
+- The shared **Smoothing %** input accepts 0–100 (default 50) and is session-only.
+  Design's existing point-reduction and Bézier smoothing model runs in screen
+  space, then maps anchors and handles into SVG coordinates. Endpoints and sharp
+  corners are retained; zoom and nonuniform SVG scaling do not change the visible
+  smoothing tolerance. Hold Shift to constrain the stroke to a straight line at
+  45-degree increments.
+- Resulting paths use ordinary Direct Selection and paint controls. Creation
+  leaves existing tracks and origins intact, including at a nonzero playhead.
+  Saving/reopening and SVG export preserve the resulting cubic geometry.
+- Taps create no artwork. Escape, pointer cancellation/capture loss, window blur,
+  tool changes, seeking, document changes and lost edit leases discard unfinished
+  strokes. Read-only files cannot draw. No partial path enters history on failure.
+- A stroke is bounded to 4,096 pointer samples and 512 resulting anchors, with
+  the existing ±100,000 SVG coordinate limit. Over-limit strokes are rejected
+  with a message to increase smoothing or shorten the stroke; endpoints are not
+  silently truncated. This is fixed-width freehand drawing, without pressure or
+  variable-width Brush behavior.
+
+Live Figma Pencil was inspected before implementation. The roadmap's movable
+palette and smoothing control are PixlPrfct extensions; exact full Figma parity
+is not claimed. Reference and rendered captures are in `.local/svg-pencil/`.
+See [UI observations](FIGMA_UI_REFERENCE.md#svg-pencil--live-reference-2026-11-01).
+
+Verification: **all 77 SVG browser cases pass**, including six new Pencil cases;
+**3 Rust and 1,045 JavaScript tests pass**, including two new model cases.
+Typecheck, changed-file lint, generated API and diff checks pass. The final browser
+run includes the initial-preview correction and a corrected test message selector.
+The rendered 1800×1003 capture was inspected; geometry assertions cover the 240px
+palette, 32px buttons, 24px smoothing input and #2c2c2c surface. Logs:
+`.local/svg-pencil/browser-final.log` and `unit-tests.log`. The production build
+also passes; see `.local/svg-pencil/build.log`.
+
+## 2026-11-01 — Split/join and open-path workflows (local source)
+
+The fourth drawing batch adds **Split path at anchor** and **Join endpoints** to
+the existing movable Pen palette. All operations stay inside one SVG path
+element, preserving its identity, transforms, paints, animation tracks and
+origins. This is local source work, not an installed build or published alpha.20.
+
+- In **Edit base path**, select an interior anchor and use the scissors action
+  to split an open path into two subpaths. On a closed path, any anchor can open
+  the loop. Existing cubic segments and their direction are preserved; the cut
+  anchor becomes two open endpoints.
+- Select an open endpoint, choose **Join endpoints**, then click another endpoint
+  or focus it and press Enter. Opposite ends of one subpath close it. Ends of two
+  subpaths join in the required direction; coincident endpoints merge, while
+  separate endpoints get a straight bridge. Handles and interior anchors are
+  rejected with guidance. Escape cancels endpoint picking without editing.
+- A split or join is one undo step. Save/reopen and SVG export retain the new
+  topology. Paint attributes stay intact, but a split can change filled regions
+  and stroke end-cap appearance because SVG fills and caps each subpath.
+- Existing limits still apply: 512 total anchors, 64 subpaths and coordinates
+  within ±100,000. Invalid operations are rejected atomically. Morph animators
+  continue to protect the base topology; use their timed-node editor instead.
+  Read-only files disable these controls, and losing the editing lease cancels
+  endpoint picking.
+
+The owner's live-preview feedback clarified open-path and deletion workflows:
+
+- **Enter** or **Finish path** finishes an open Pen path; clicking its first
+  anchor closes it. The palette now displays that instruction. The open path
+  can be selected as another object's **Motion path** and followed in playback.
+- A selected path can be removed with **Delete/Backspace** from the canvas or
+  layer list, the trash action beside **Edit base path**, or **Delete selected
+  path** in the palette. Deleting removes the path's own tracks and transform
+  origin as one undoable edit. Text fields and timeline keys keep their existing
+  keyboard behavior; an unfinished Pen draft is not deleted by these shortcuts.
+- Assigned motion routes remain captured snapshots, as before. Changing or
+  deleting the original artwork does not rewrite another object's saved route.
+
+Live Figma's Vector menu and in-object editing toolbar were inspected before
+implementation; see [reference observations](FIGMA_UI_REFERENCE.md#svg-splitjoin--live-reference-2026-11-01).
+Joining separate SVG elements, multi-object selection, whole-path smoothing,
+arbitrary segment cuts and Figma vector-network parity remain open.
+
+Verification: all **83 SVG browser cases** pass across the broad regression run
+and the final six-case topology run. The broad run passed 82 cases; its remaining
+case used a stale autosave snapshot after undo. After waiting for persistence,
+the six new cases pass, including additional canvas-deletion and drawn-route
+deletion coverage. The initial Delete-button disabled-state issue was fixed and
+its lease acquire/release states are covered. **3 Rust and 1,050 JavaScript tests
+pass**, including five new topology model cases. Typecheck, changed-file lint
+(zero errors; existing internal-navigation warning), generated API and diff
+checks pass. Logs: `.local/svg-topology/browser-all.log`, `browser-final.log`,
+`unit-tests.log`, `typecheck.log` and `lint.log`. Rendered captures `verified.png`
+and `open-path.png` were inspected.
+
+The production build passes (`.local/svg-topology/build.log`), and the refreshed
+preview assets match the verified source files.
+
+The development preview is running on `http://127.0.0.1:5173/`; editor assets are
+copied from `web/` by `scripts/prepare-editor.mjs`. Refresh after finishing the
+current drawing gesture to load updated controls. The live project was left
+untouched during this verification.
+
+## 2026-11-01 — Live strokes, stage selection and separate panels (local source)
+
+The owner's live-preview feedback exposed two remaining drawing problems:
+Escape discarded an unfinished Pen path, and the draft showed only an editing
+outline. Both are corrected. This supersedes earlier Escape-cancels-draft notes.
+
+- The placed path immediately uses its stroke color, width and opacity. Moving
+  the pointer previews the next segment, including after the first anchor.
+- **Escape**, **Enter**, **Finish path**, or switching to **Select (V)** preserves
+  a path with at least two anchors as an open path. The hover preview is never
+  saved as an extra anchor. Click the first anchor to close a path deliberately.
+- **Discard unfinished path** cancels the draft. Escape during a handle/Pencil
+  drag cancels that gesture. Single-point drafts create no artwork or undo entry.
+- Click artwork directly on the stage to select it. Thin painted strokes accept
+  clicks within six screen pixels, including transformed/zoomed paths over
+  another shape. Paint order and native clipping are respected. Selection itself
+  does not edit the document. Path deletion retains the keyboard, inspector and
+  palette actions delivered in the preceding batch.
+
+The owner also chose **independent windows outside PixlPrfct**, rather than panels
+confined to the editor. This batch integrates the SVG Animation workspace:
+
+- Drag a section heading, or click its **Open … in separate window** icon. Each
+  inspector section, Elements, Timeline, and Pen tools has its own window.
+  Move/resize the window using the operating system's window controls.
+- Controls stay connected to the current selection, timeline, saves and undo
+  history. Changing selection updates open inspector panels. A section that is
+  unavailable shows a selection prompt instead of stale controls.
+- Click **Dock panel**, the dock action in the original slot, or close the window
+  to return it. The original slot can also bring its window forward. Leaving the
+  editor closes its panel windows. Panel arrangement is not document history.
+- Custom dropdowns, color popovers, keyboard shortcuts and timeline context
+  menus operate inside their owning window. Editing leases remain enforced.
+- Browser popups require the browser to allow them; a blocked popup leaves the
+  controls docked and gives a retry instruction. The browser/host ultimately
+  controls popup presentation. The desktop integration creates small, resizable
+  native windows rather than another full editor.
+- This does not yet detach the separate **Design** workspace inspector. Panel
+  positions are session-only; saved layouts and cross-window docking groups are
+  not implemented. No Illustrator/Figma-wide parity or public release is claimed.
+
+Verification: **109 distinct browser cases pass** across the full 108-case SVG /
+Design regression run and the added easing/timing case. The final seven-panel
+run also passes after the cross-window resize correction. **3 Rust and 1,051
+JavaScript tests pass**; production build, typecheck, generated API check and changed-file lint pass
+(zero errors; one existing Next navigation warning). An isolated Electron profile
+verified a 280px native panel, live edits, native-menu undo/redo, dock and close
+restoration, with sandbox/context isolation retained and no Node or native IPC
+bridge exposed. No installed app was replaced.
+
+Evidence: `.local/svg-stage/full-browser.log`, `panels-final.log`,
+`panel-easing.log`, `unit.log`, `native-panels.json`, and screenshots
+`live-stroke.png`, `selection.png`, `transform-window.png`, `pen-window.png`,
+`timeline-window.png`, `native-transform-window.png`. Browser and native evidence
+are separate; no public deployment or complete interface parity is claimed.
+
+
+## 2026-11-01 — Persistent panel workspace and compact sidebar (local source)
+
+The owner clarified that an independent panel must stay connected to the cursor
+through the held drag and remember its position across refresh/application restart.
+That workflow is implemented and verified with real Electron windows. The SVG Pen
+palette can dock on the right and retain that placement. Detaching Elements leaves
+a 48 px rail with five icon actions and shared tooltips. Design now uses the same
+panel system. See [delivery, controls, boundaries and evidence](DETACHABLE_PANELS.md).
+This supersedes the earlier remaining-work notes for Design and saved positions;
+grouped docking remains open. No installed or published update is claimed.
+
+
+## 2026-11-01 — Gradient motion and parent icon docks (local source)
+
+Fill and Stroke now open a 240 px gradient picker with Linear/Radial, flip,
+90° rotation, a stop ramp and editable colors/positions/opacity. **Rotation**
+inside Fill/Stroke has its own named gradient track; **Transform → Rotation**
+continues to rotate the object. Set the playhead and change gradient rotation,
+or use Add animator to create its track. **Animate gradient stops** creates
+stop keyframes; subsequent stop edits apply at the playhead. Stop count stays
+fixed while animated; remove that animator before adding/deleting stops.
+
+Shared imported definitions and inherited gradient stops are copied per animated
+paint, so another shape using the original gradient does not change. Existing
+SVG gradient transforms and units are retained. Animated exports use native SVG
+stop animations and additive gradient transforms; static exports retain the
+first frame. Color, offset and opacity interpolate together with track easing.
+
+Parent-only tear-outs and icon-strip side flyouts supersede the earlier section
+tear-outs. See [panel behavior](DETACHABLE_PANELS.md). No installed or published
+release change is claimed.

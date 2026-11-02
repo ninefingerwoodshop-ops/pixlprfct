@@ -4,11 +4,11 @@
 
 **[pxlprfct icons](https://ninefingerwoodshop-ops.github.io/pixlprfct/#icons)** — preview the separate MIT-licensed collection, browse all 679 icons, and download SVGs or the complete font pack.
 
-[Contribution guide](CONTRIBUTING.md) · [GitHub Releases](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases)
+[Wiki](https://github.com/ninefingerwoodshop-ops/pixlprfct/wiki) · [Dev log](https://ninefingerwoodshop-ops.github.io/pixlprfct/dev-log.html) · [Contribution guide](CONTRIBUTING.md) · [GitHub Releases](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases)
 
 ## Desktop downloads
 
-The Windows **v0.1.1-alpha.20** preview includes the SVG animator, grouped keyframe editing and easing, precise selection timing, animation reuse and reversal, keyframe duplication, snapping and navigation, reliable Pause controls, canvas stretch and rotation handles, motion paths, morphing, and interactive SVG export, alongside the design editor and optional self-hosted team connections. Get the installer, ZIP, checksums, and build details from [the release page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.20) or the [product website](https://ninefingerwoodshop-ops.github.io/pixlprfct/#downloads). This is an unsigned early-testing prerelease under the [Community License](LICENSE). Back up designs as `.pixl` files; this is not a production-stability promise or complete import compatibility.
+The Windows **v0.1.1-alpha.21** preview adds open-path Pen and Pencil drawing, direct path editing, independent gradient animation, and detachable parent panels in both editors. It also includes the SVG animator, grouped keyframe editing and easing, precise selection timing, animation reuse and reversal, keyframe duplication, snapping and navigation, reliable Pause controls, canvas stretch and rotation handles, motion paths, morphing, and interactive SVG export, alongside the design editor and optional self-hosted team connections. Get the installer, ZIP, checksums, and build details from [the release page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21) or the [product website](https://ninefingerwoodshop-ops.github.io/pixlprfct/#downloads). This is an unsigned early-testing prerelease under the [Community License](LICENSE). Back up designs as `.pixl` files; this is not a production-stability promise or complete import compatibility.
 
 **Code signing policy:** [Signing status, maintainers, and release approvals](CODE_SIGNING.md). SignPath enrollment is pending; this prerelease has no Windows publisher signature. **Privacy:** [Data handling and network controls](PRIVACY.md). Online fonts are off by default in local desktop designs.
 
@@ -26,9 +26,33 @@ The app opens at **All projects** (`/`). Create a design, import a `.pixl` proje
 property keyframes, path morphing, motion paths, custom Bézier easing, a docked timeline,
 playback, click/hover triggers, and animated SVG export with a live preview.
 Editable timelines save as `.pixl` projects. See the [SVG animator walkthrough](https://ninefingerwoodshop-ops.github.io/pixlprfct/#svg-animator)
-and [SVG Animation guide](docs/SVG_ANIMATION.md) for the workflow, verification, and current limitations. It is included in the Windows v0.1.1-alpha.20 preview. Select, move, copy/paste, or delete multiple timeline keys together; apply easing to a selection, or set its exact start and proportional duration. Copy transform and appearance keys onto another element, or reverse a selection with its easing. Duplicate keys at the playhead with Cmd/Ctrl+D, or Shift-drag to align with the playhead and other keys. Each group edit is one undo step.
+and [SVG Animation guide](docs/SVG_ANIMATION.md) for the workflow, verification, and current limitations. It is included in the Windows v0.1.1-alpha.21 preview. Select, move, copy/paste, or delete multiple timeline keys together; apply easing to a selection, or set its exact start and proportional duration. Copy transform and appearance keys onto another element, or reverse a selection with its easing. Duplicate keys at the playhead with Cmd/Ctrl+D, or Shift-drag to align with the playhead and other keys. Each group edit is one undo step.
 
 The preview includes previous/next-keyframe navigation with Alt/Option+Left/Right or the timeline menu, preserving your selection and revealing the playhead when zoomed. It also fixes Pause clicks during playback; Play resumes from the paused time. Alpha.20 adds canvas handles for stretching and rotating objects: drag a corner or edge to resize, or just outside a corner to rotate. Shift preserves proportions or snaps rotation; Alt/Option resizes from the center. Each completed gesture writes keys at the playhead as one undo step.
+
+## Arrange your workspace
+
+Parent panels in Design and SVG Animation can move into separate windows. Drag a
+panel heading to tear it out; it follows the cursor until you release. Window
+positions and sizes restore across refresh and desktop restart. Collapse a panel
+to icons, then click its icon to open an adjacent flyout inside the editor. Show
+and Dock actions have tooltips. Fill, Stroke and Transform stay in their parent
+Inspector. SVG Pen tools can dock on the right. See [Panel workspace](docs/DETACHABLE_PANELS.md).
+
+## Draw and animate SVG paths and gradients
+
+Pen shows a painted stroke immediately and supports open paths: finish with
+Escape, Enter, Finish path or Select. Pick artwork directly on the stage and
+delete selected paths with Delete/Backspace or the inspector. Pencil creates
+editable curves with adjustable smoothing. Direct Selection edits anchors and
+handles, splits paths, and joins endpoints within one path. Add SVG preserves
+existing animation; Replace explicitly replaces the artwork.
+
+Animate linear or radial fill/stroke gradients with independent gradient
+rotation and stop color, position and opacity tracks. Object Rotation remains
+separate. Undo, `.pixl` persistence and native animated SVG export retain these
+changes. Gradient keyframes require a consistent number of stops; joining
+separate objects and multi-node selection remain future work.
 
 The contextual inspector includes 18 blend modes, persistent aspect-ratio locking, text resizing and horizontal/vertical alignment buttons, arrow endpoint swapping, and selection-specific vector/image actions. These properties participate in Rust validation, undo, saved documents, and component overrides. Blend modes render in Canvas, SVG, and HTML/CSS; Plus darker is not yet supported. The selection-by-selection reference survey and remaining gaps are tracked in `inspector-parity.json`.
 

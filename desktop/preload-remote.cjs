@@ -11,3 +11,6 @@ ipcRenderer.on('desktop:command',(_event,command)=>{
 
 // Only bridge credentials scoped to this workspace origin are discoverable.
 contextBridge.exposeInMainWorld('pixlMcp',Object.freeze({connections:()=>ipcRenderer.invoke('desktop:mcp-connections')}));
+
+// Layout state survives an owning window/app shutdown. Child panels receive no bridge.
+contextBridge.exposeInMainWorld('pixlPanels',Object.freeze({onClosing:callback=>{const listener=(_event,closing)=>callback(closing===true);ipcRenderer.on('desktop:closing',listener);return ()=>ipcRenderer.removeListener('desktop:closing',listener);}}));
