@@ -1233,3 +1233,44 @@ Existing tests also verify Join, read-only and Morph restrictions. Evidence:
 `.local/svg-bulk-insertion/{inserted,live-preview}.png`. This closes the previous
 bulk-insertion remainder locally; alpha.21 downloads do not include it.
 Whole-subpath removal is next; multi-object editing remains open.
+
+
+### Whole-subpath removal — November 2 local source
+
+1. Choose a path and **Edit base path**.
+2. Select every anchor of the subpath to remove, using Shift-click, a box or Lasso.
+3. Choose **Delete selected anchors**, or press **Delete** / **Backspace** on the
+   canvas. You can remove several subpaths and partially edit others together.
+4. **Undo** restores the entire edit in one step; **Redo** reapplies it.
+
+Partial deletions must leave two or more anchors. A one-anchor remainder rejects
+all changes, even if another whole subpath was selected. Surviving subpaths keep
+all unremoved cubic coordinates, open/closed state and mirroring metadata. Paint
+and transform attributes, element identity, animation tracks and origins persist.
+Selection follows remapped surviving anchors, or a nearby subpath after complete
+removals, so keyboard movement remains usable.
+
+If no subpaths remain, the element and its own tracks/origin are deleted together.
+Other elements/animation remain untouched. No empty path data is saved. Native
+reopening and animated SVG export retain the result, and editor mirroring metadata
+stays out of SVG exports. Read-only, Join, active anchor/selection gestures and
+timed Morph guards remain enforced. Text-field Delete/Backspace keep their normal
+behavior. This uses existing controls; no panel or menu is added.
+
+Five browser workflows and four model tests cover complete/mixed/invalid removal,
+open/closed geometry, selection remapping, gesture protection, animation cleanup,
+one-step history, reopening and exports. Existing group tests cover field edits,
+Join, leases and Morph. Evidence: `.local/svg-subpath-removal/live-preview.png`.
+This closes the previously recorded whole-subpath gap locally, not in alpha.21.
+Next: smoothing existing paths; multi-object editing remains open.
+
+
+Whole-subpath-removal verification (2026-11-02, local source): all 165 SVG
+Chromium browser scenarios, 78 SVG model tests and four responsive website checks
+pass. Targeted ESLint, TypeScript, editor asset build and diff checks pass. The
+visible in-app sample removes the complete closed subpath, keeps the open curve
+and other artwork, restores everything with one Undo, and reapplies with Redo.
+Editor and updated Dev Log previews remain open. Evidence:
+`.local/svg-subpath-removal/{selected-subpath,live-preview,dev-log}.png`.
+Not released; full reference parity and TerritoryIQ code/design-file work remain
+open. Next bounded vector step: smoothing existing paths.

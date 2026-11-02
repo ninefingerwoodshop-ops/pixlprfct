@@ -492,3 +492,18 @@ changes. Existing animation and appearance stay intact; native reopening and
 animated SVG export preserve the result. Read-only and timed Morph paths retain
 their editing restrictions. This resolves the earlier bulk-insertion remainder
 in local source only, not alpha.21. Whole-subpath removal is the next vector step.
+
+
+### Remove whole subpaths (November 2 local source)
+
+In **Edit base path**, select every anchor of a subpath with a box, Lasso or
+Shift-click. Use **Delete selected anchors**, **Delete** or **Backspace**. The
+remaining subpaths keep their curves, paint settings and animation. Partial
+anchor deletion can be included in the same edit, but each surviving subpath
+must retain at least two anchors; an invalid group changes nothing.
+
+Removing every subpath deletes the element and its own animation tracks/origin.
+Other artwork is retained. One Undo restores everything; Redo, native reopening
+and SVG export preserve the result. Base editing remains unavailable for timed
+Morph paths and read-only documents. This completes the earlier whole-subpath
+removal remainder locally, not in alpha.21. Smoothing existing paths is next.
