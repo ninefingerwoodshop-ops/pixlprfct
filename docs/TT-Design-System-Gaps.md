@@ -513,6 +513,15 @@ by this planning pass, and no new editor feature was implemented or shipped.
     46 related browser regressions. Evidence: `.local/svg-mirroring/inspector.png`
     and `figma-reference.png`. Local source only, not installed or released;
     remaining B42 scope and exhaustive visual parity stay open.
+  - [x] ~~B42j — Select and move multiple anchors within one base-path element.~~
+    Local resolution (2026-11-02): Shift-click/Shift+Enter toggles anchors;
+    dragging or arrow nudging moves their handles together through SVG transforms.
+    Escape, atomic Undo/Redo, native reopening, SVG export, metadata preservation
+    and selection isolation are covered by three browser scenarios and two model
+    tests. Single-anchor actions are disabled for groups. Marquee/lasso selection,
+    bulk anchor actions and multi-object editing remain open. Evidence:
+    `.local/roadmap-pr/multi-anchor.png` and `figma-multi-anchor.png`.
+    Local source only, not released; no TerritoryIQ issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -690,3 +699,8 @@ capturing an unchanged-document baseline. Typecheck, editor asset build, targete
 ESLint (zero errors, one existing navigation warning) and diff checks pass. The
 running Design draft was inspected after a real drag; its dropdown opens below
 the moved toolbar. Screenshot: `.local/toolbelt-drag/live-preview.png`.
+
+B42j final verification (2026-11-02, local source): 128 SVG browser regressions,
+seven final anchor/site cases and all 58 SVG model tests pass. Types, targeted
+lint, build and diff checks pass. The follow-up to PR #58 contains the local implementation and
+updated roadmap/Dev Log; installation, release and full vector parity remain open.

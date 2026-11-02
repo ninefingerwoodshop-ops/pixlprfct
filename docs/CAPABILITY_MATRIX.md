@@ -200,3 +200,9 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | --- | --- | --- | --- |
 | Independent, angle-only and symmetric base-path handles; bounded native mode metadata, topology preservation and metadata-free SVG export | Three-option right Path inspector control for curved interior/closed anchors; detached Inspector supported | Five new browser scenarios, 46 related regressions, 18 model checks, types, targeted lint and editor build | Local preview only; not in alpha.21 downloads. Multi-node selection, separate-element joins and full vector-editor parity remain open |
 | Saved toolbar collapse/window state migrates; placement persists per editor | Main toolbar drags within the workspace and stays expanded, with no tear-out. Design dropdown buttons follow inspected Figma dimensions/states | Pointer/keyboard, cancellation, reload, resize, unchanged artwork and dropdown browser checks | Local preview only; not in alpha.21 downloads; supersedes earlier toolbar window behavior |
+
+### SVG group anchor movement — 2026-11-02 (local source)
+
+| Model | Interface | Verification | Limitations |
+| --- | --- | --- | --- |
+| Atomic translation of selected anchors and handles across subpaths; preserved mirroring metadata | Shift-click/Shift+Enter toggle, transformed drag, arrow/Shift-arrow nudges, Escape cancellation and isolated single-anchor controls | Three new browser scenarios and two model tests; undo/redo, native persistence, export, bounds and selection isolation | One base-path element; no marquee/lasso, bulk anchor operations or multi-object editing. Local only, not alpha.21 |

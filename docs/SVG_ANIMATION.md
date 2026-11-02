@@ -994,3 +994,34 @@ focused grip, arrows move it, Shift makes larger steps, and Home resets it.
 Escape cancels a drag. Older saved toolbar windows are removed; other panel
 windows retain their behavior. This supersedes the preceding main-toolbar
 tear-out/dock statement. Local preview only, not included in alpha.21 downloads.
+
+## 2026-11-02 — Group anchor movement (local source)
+
+Direct Selection now supports Shift-click and Shift+Enter to add/remove anchors
+within one SVG base-path element, including its subpaths. Dragging any selected
+anchor moves the group; arrows nudge by one local unit, or ten with Shift. Both
+handles follow each anchor, retaining their relative directions/lengths and
+mirroring modes. Movement uses the element's inverse screen transform and commits
+one undo operation. Escape restores all geometry during a drag.
+
+Selection is editor state, not saved artwork. Clicking an unselected anchor or a
+handle replaces the group; changing the selected element also resets it. Clicking
+a selected anchor without dragging selects it alone. Single-anchor actions
+(insert/delete, smooth/corner, split/join/continue and mirroring) are disabled for
+multiple or zero selected anchors. Morph animation retains its separate timed
+node editor. Marquee/lasso, bulk anchor actions and multi-object selection remain
+open; this is not complete vector-editor parity.
+
+Three browser cases verify toggle/keyboard selection, transformed group dragging,
+cancellation, carried handles, unchanged animation and modes, single undo/redo,
+native reopening, clean SVG export and isolation when selecting a handle or
+another element. Two model tests cover multiple subpaths, duplicate selections,
+immutability and atomic coordinate-limit rejection. Evidence is under
+`.local/roadmap-pr/`. Source and website updates build on merged PR #58; they are not in alpha.21.
+
+Final local verification for the group-anchor follow-up: 128 SVG browser scenarios passed after group
+selection, plus seven final anchor/site checks covering focus styling and the
+website at 390/768/1280 px. All 58 SVG model tests, typecheck, targeted ESLint and
+editor build passed. The preceding batch also passed 143 combined SVG, panel,
+toolbar and website scenarios. These are local Chromium results, not packaged or
+cross-browser release verification.

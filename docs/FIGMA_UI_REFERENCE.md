@@ -1026,3 +1026,17 @@ its pop-out action and excludes it from saved window restoration. This is not a
 claim that Figma itself supports the same placement behavior. Screenshots:
 `.local/toolbelt-drag/dropdown.png` and `live-preview.png`. Local only, not shipped;
 complete toolbar/menu pixel parity remains unverified.
+
+## Multiple selected vector anchors — 2026-11-02
+
+Inspected live Figma's Rectangle 4 in vector-edit mode. Shift-click added the
+second anchor and Shift-clicking it again removed it. Two selected nodes displayed
+solid blue circular centers with white borders (approximately 8 px diameter at
+100%); unselected anchors remained hollow. The right inspector showed Mixed for
+X and a shared Y value. Captured `.local/roadmap-pr/figma-multi-anchor.png`.
+
+SVG base-path Direct Selection now uses additive/toggle selection and the same
+blue/white selected-point treatment. Existing dark inspector/palette controls are
+retained. This batch implements group movement, not Figma's entire vector toolbar,
+alignment, mixed-coordinate inspector, lasso or bulk operations. Local rendered
+proof: `.local/roadmap-pr/multi-anchor.png`; exact overall parity remains open.

@@ -168,7 +168,7 @@
   "svgAnimationRoadmap": {
     "updated": "2026-11-02",
     "source": "docs/PEN_WORKSPACE_PROPOSAL.md",
-    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, handle mirroring, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
+    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, group anchor movement, handle mirroring, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
     "completedLocally": [
       "Pen tool and nib cursor, corner/cubic anchors, open/closed paths, endpoint continuation",
       "Direct Selection for base paths, anchor/handle drag and nudge, curve-preserving midpoint insertion, deletion, smooth/corner conversion",
@@ -189,10 +189,11 @@
       "Static SVG export at the current playhead, with matching preview, preserved transforms/morphs/motion paths/gradient animation, and no document writes for read-only exports (2026-11-02, local source only)",
       "Reduced-motion animated SVG exports with a script-free first-frame fallback for image embeds, preference-aware interactive playback and matching sandboxed preview (2026-11-02, local source only; Chromium verified)",
       "Base-path handle mirroring: independent, angle-only and angle-and-length modes; pointer/keyboard editing, topology preservation, native reopening and clean SVG export (2026-11-02, local source only)",
-      "Main Drawing tools drags within Design and SVG Animator, stays expanded and remembers placement; old collapsed/window layouts migrate; Design dropdown triggers follow the live Figma reference (2026-11-02, local source only)"
+      "Main Drawing tools drags within Design and SVG Animator, stays expanded and remembers placement; old collapsed/window layouts migrate; Design dropdown triggers follow the live Figma reference (2026-11-02, local source only)",
+      "Shift-click and Shift+Enter anchor selection within one base-path element; transformed group dragging, keyboard nudging, carried handles, cancellation, atomic history, native persistence and clean SVG export (2026-11-02, local source only)"
     ],
     "remaining": [
-      "Joining separate path elements and multi-node selection",
+      "Joining separate path elements, marquee/lasso anchor selection and bulk anchor operations",
       "Whole-path smoothing for existing artwork, Brush",
       "Multi-object selection, duplication and grouping",
       "Precision/construction, expressive artwork and cross-workspace handoff phases",
