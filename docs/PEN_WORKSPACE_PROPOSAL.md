@@ -171,6 +171,15 @@ within each editor instead of opening a separate window. This supersedes the
 previous tear-out statement for that bar. Other parent panels retain their
 window behavior; see [the current toolbar record](DETACHABLE_PANELS.md#main-toolbar-moves-within-the-editor--2026-11-02-local-correction).
 
-Next implementation: select and move multiple anchors within one SVG base-path
-element, preserving each anchor's handles, transforms and existing animation.
-This is separate from selecting multiple SVG objects and joining separate paths.
+## Group anchor movement — 2026-11-02 (local source)
+
+Completed the next bounded step: Shift-click or Shift+Enter adds/removes anchors
+within one base-path element; drag any selected anchor or use arrows (Shift for
+10 units) to move the group and its handles. Transforms, mirroring metadata,
+existing animation, Undo/Redo, native reopening and SVG export are preserved.
+Escape cancels a drag. Selecting a handle or another element clears the group.
+Single-anchor operations are disabled for groups; marquee/lasso selection, bulk
+anchor operations, multi-object selection and joining separate elements remain
+open. Verified with three browser scenarios and two model tests; see
+[the delivery record](SVG_ANIMATION.md#2026-11-02--group-anchor-movement-local-source).
+Not in the alpha.21 download. Next vector scope: joining separate path elements.

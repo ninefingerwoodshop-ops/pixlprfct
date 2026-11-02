@@ -18,6 +18,18 @@ export function checkedPath(value){
  if(!validMorph(value))throw new Error('Paths need 2–512 anchors, up to 64 subpaths, and coordinates within ±100,000.');
  return value;
 }
+// Move a selection atomically, carrying each anchor's handles and metadata.
+export function movePathAnchors(value,selection,dx,dy){
+ const next=structuredClone(value),seen=new Set();
+ if(!selection.length||!Number.isFinite(dx)||!Number.isFinite(dy))throw new Error('Select anchors and a finite offset.');
+ for(const [path,index] of selection){
+  const point=next[path]?.points[index],key=`${path}:${index}`;
+  if(!point)throw new Error('The selected anchor is no longer available.');
+  if(seen.has(key))continue;seen.add(key);
+  for(let offset=0;offset<6;offset+=2){point[offset]+=dx;point[offset+1]+=dy;}
+ }
+ return checkedPath(next);
+}
 // Measure hit tolerance in screen pixels, including nonuniform/rotated SVGs.
 export function nearestPathSegment(value,point,matrix,tolerance=8){
  const transform=p=>[matrix.a*p[0]+matrix.c*p[1]+matrix.e,matrix.b*p[0]+matrix.d*p[1]+matrix.f];

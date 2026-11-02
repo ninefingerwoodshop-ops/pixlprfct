@@ -400,3 +400,13 @@ npx playwright test tests/browser/svg-animation.spec.mjs   # builds the editor a
 
 - Code: `web/svg-animation*.js`, `web/svg-animation*.html`, `web/svg-animation.css`, `scripts/build.mjs` (preview bundle), `desktop/policy.cjs` and `server/index.mjs` (preview headers), `web/project-navigation.js` (routing)
 - Docs: [docs/SVG_ANIMATION.md](../SVG_ANIMATION.md). It is a dated, changelog-style user guide that maps each feature to PR #37–#49 and alpha.15–alpha.21, records verification, and lists reference screenshots under `.local/svg-animation/`.
+
+### Local November 2 addition: group anchor movement
+
+In Edit base path, Shift-click anchors to select several, then drag any selected
+anchor or use arrows (Shift for ten units). Shift+Enter toggles a focused anchor.
+Their handles move with them; Escape cancels a drag and Undo restores the group.
+Single-anchor actions are disabled until one anchor is selected. Selection stays
+inside one path element; marquee/lasso and bulk anchor actions remain open.
+See the [dated delivery record](../SVG_ANIMATION.md#2026-11-02--group-anchor-movement-local-source).
+This builds on merged PR #58 and is not in the alpha.21 download.
