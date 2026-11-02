@@ -554,3 +554,23 @@ playback, drawing, timed Morph and active gestures block duplication. Timeline
 keyframe duplication and text fields keep their existing shortcuts. Grouping is
 next; batch edits, Alt/Option-drag and repeated-transform duplication remain open.
 Local source only, not alpha.21.
+
+
+### Group objects — local development, November 2
+
+Select sibling objects in the same SVG/group parent and press **Command/Ctrl+G**,
+or right-click and choose **Group selection**. The group becomes selected; its
+children keep their geometry, paints and animation. It occupies the frontmost
+selected position, so grouping nonconsecutive objects can change their overlap
+with intervening artwork. One Undo restores the operation.
+
+Click grouped artwork to select the group. Command/Ctrl-click, double-click or an
+Elements row selects a child. The existing group controls move and animate its
+members together. Detached Elements supports the same commands and focus.
+
+Use **Command/Ctrl+Shift+G** or **Ungroup** to remove a neutral wrapper and select
+its children. Groups with their own paint, transforms, animation or references
+remain guarded, as does grouping across different parents. Saving, reopening,
+Undo/Redo and SVG export retain the result. Local only, not alpha.21.
+Batch object transforms are next; broader grouping/Ungroup and batch paint edits
+and deletion remain open.

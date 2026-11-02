@@ -275,3 +275,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Clone source subtrees once; remap all copied IDs and internal/cross-selection references; preserve external resources, animation tracks and origins; atomic budgets/history | Command/Ctrl+D and compact shared Duplicate context action, keyboard menu/focus, new-copy selection, detached Elements | Seven UI workflows and three DOM/model cases: nested geometry, every animation value kind, independent edits, leases/gestures/stale actions, Undo/Redo, reopening/export and limits | Same-position copies; Alt/Option-drag and repeated transforms open. Grouping next; batch editing separate. Context action is an SVG extension; full Figma parity unverified. Local only, not alpha.21 |
+
+
+### SVG sibling grouping — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+| --- | --- | --- | --- |
+| Wrap sibling source roots once; preserve child geometry, paint, IDs/references, tracks and origins; neutral Ungroup with child selection; atomic budgets/history | Command/Ctrl+G, Command/Ctrl+Shift+G and shared menu; group-first/deep canvas picking, existing group transforms, search reveal, detached Elements and focus | Five DOM/model and seven UI cases: sampled animated/raster equality, stacking, nested SVG ancestry, references, safe rejection, leases/stale gestures, history, reopening and export | Same actual parent only; group occupies frontmost selected position and can change overlaps. Ungroup rejects styled/transformed/animated/referenced wrappers. Batch transforms next; full Figma parity open. Local only, not alpha.21 |

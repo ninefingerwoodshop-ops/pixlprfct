@@ -3,7 +3,14 @@ import {selectionRoots,layerRange} from './selection.js';
 // SVG layer order is preorder, including nested groups. Keep ancestor/child
 // selections exclusive so future batch actions cannot affect a child twice.
 export function elementTree(layers){
- const stack=[];return layers.map(layer=>{while(stack.length&&stack.at(-1).depth>=layer.depth)stack.pop();const item={...layer,parent_id:stack.at(-1)?.id??null};stack.push(layer);return item;});
+ const stack=[],known=new Set(layers.map(layer=>layer.id));return layers.map(layer=>{
+  while(stack.length&&stack.at(-1).depth>=layer.depth)stack.pop();
+  let parentId=stack.at(-1)?.id??null;
+  // Nested SVG viewports are not editable layers. Their indentation must not
+  // make an unrelated preceding sibling look like an ancestor.
+  if(layer.node){let parent=layer.node.parentElement;while(parent&&!known.has(parent.id))parent=parent.parentElement;parentId=parent?.id??null;}
+  const item={...layer,parent_id:parentId};stack.push(layer);return item;
+ });
 }
 export function normalizeElementSelection(layers,ids){
  const roots=new Set(selectionRoots(elementTree(layers),ids));return layers.filter(layer=>roots.has(layer.id)).map(layer=>layer.id);

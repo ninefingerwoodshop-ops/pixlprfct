@@ -1424,3 +1424,62 @@ only after duplication to make the result visible. The Dev Log preview records
 local completion and grouping next. Evidence:
 `.local/svg-duplication/{final-browser,models,types,lint,build}.log` and
 `{live-menu,live-preview,dev-log}.png`. Not included in Windows alpha.21.
+
+
+## 2026-11-02 — Sibling grouping and neutral Ungroup (local source)
+
+Select one or more objects with the same SVG/group parent, then press
+**Command/Ctrl+G** or right-click and choose **Group selection**. The new Group N
+becomes selected and focused; Elements search clears to reveal it. Source child
+IDs, coordinates, paints, transforms, references, animation tracks and origins
+stay intact. Nested groups and ancestor/descendant selections are normalized so
+an object is wrapped once. The group occupies the frontmost selected position,
+retaining selected siblings' paint order. Nonconsecutive selections may change
+overlap with unselected objects between them.
+
+Click grouped artwork to select the group. Command/Ctrl-click or double-click
+reaches a child, and Elements rows remain directly selectable. Existing group
+transform and animation controls move or animate members together. Adding a group
+transform track makes the wrapper ineligible for the current bounded Ungroup.
+
+**Command/Ctrl+Shift+G** or **Ungroup** removes neutral structural group wrappers,
+preserving child order, nested definitions, references and child animation. The
+exposed editable child roots become selected and the last row receives focus.
+Groups with their own appearance/transform attributes, animation tracks or
+artwork references cannot yet be ungrouped safely; the disabled menu explains
+why. Cross-parent Group and mixed invalid Ungroup selections reject atomically.
+
+Each action is one Undo step and supports Redo, native saving/reopening, SVG
+export and detached Elements. Stale IDs, source/element budgets, leases, playback,
+drawing/Morph, active gestures, held shortcuts and queued menu changes are
+validated. Fields and timeline keys retain their separate shortcut scope.
+
+Five DOM/model cases cover sampled animated geometry and matching raster output,
+nested parent transforms, nonconsecutive order, unique names/IDs, child references,
+multiple neutral wrappers, nested SVG viewports, rejected operations and budgets.
+Seven UI cases cover commands, menu measurements/navigation, history, reopening,
+export, group/deep picking, movement, search, permissions, stale actions, gesture
+cancellation and detached Elements. The nested-SVG cases also verify that a hidden
+viewport in the layer list does not make its preceding sibling a false ancestor.
+
+This is local source, not Windows alpha.21 or a claim of complete Figma parity.
+Next: batch object transforms. Cross-parent grouping, general Ungroup, batch
+paint/deletion, Alt/Option-drag and repeated transforms remain open.
+
+### Final verification — sibling grouping, 2026-11-02
+
+All **217 Chromium checks pass**: 199 SVG scenarios, 14 Design/panel/toolbar
+checks and four responsive website scenarios. The **93 model/helper tests**
+(88 SVG, three shared selection, two context-menu) pass. TypeScript, editor build
+and diff checks pass; targeted ESLint has no errors and the existing navigation
+warning. The browser-tested editor files match the current source.
+
+The visible local sample verifies native Command-G, menu Ungroup and exposed
+child selection, one-step Undo, saved reopening and moving both children through
+the group's Position X control. Ungroup becomes unavailable after that animation
+track is added; undoing it restores the neutral wrapper. The final preview leaves
+the saved group selected with its menu available. Website previews show grouping
+as local development with batch object transforms next. Evidence:
+`.local/svg-grouping/{final-browser,models,types,lint,build}.log` and
+`{live-menu,live-preview,dev-log}.png`. Private Figma reference captures remain
+ignored. No desktop package or public release was produced.

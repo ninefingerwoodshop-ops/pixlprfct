@@ -1,7 +1,7 @@
 # Pen workspace proposal
 
 Updated November 2, 2026. **Drawing foundation shipped in alpha.21; arbitrary
-segment insertion, group anchor actions, whole-subpath removal, smoothing, multi-object selection and duplication are verified
+segment insertion, group anchor actions, whole-subpath removal, smoothing, multi-object selection, duplication and sibling grouping are verified
 in local source only.**
 
 The owner authorized roadmap development after the planning pass. Pen, core
@@ -429,3 +429,36 @@ and compact context-menu styling were inspected read-only; see the reference
 record for measurements and the command-placement boundary. Local source only,
 not alpha.21. Grouping is next; batch object editing, Alt/Option-drag and repeated-
 transform duplication remain open.
+
+## 2026-11-02 — Sibling grouping and neutral Ungroup
+
+Select sibling roots under the same actual SVG/group parent and use
+Command/Ctrl+G or **Group selection**. A uniquely named group wraps the source
+nodes, preserving their IDs, geometry, own transforms/paint, references, animation
+tracks and origins. Children retain their relative paint order; the group goes
+at the frontmost selected position. Nonconsecutive selections can consequently
+change overlap with intervening unselected objects.
+
+The group becomes selected and uses the existing move/resize/rotate and animation
+controls. Canvas clicks select groups as units; Command/Ctrl-click or double-click
+reaches a child, and Elements rows remain directly selectable. Selection search
+clears to reveal the resulting group or children. Shared context actions and
+shortcuts also work in detached Elements with focus restoration.
+
+Command/Ctrl+Shift+G or **Ungroup** removes neutral structural wrappers and selects
+their exposed children. Groups with their own paint, transforms, animation or
+external artwork references are guarded because simply removing them would
+change rendering. Mixed invalid selections reject atomically. Both commands are
+one undo step, preserve saving/reopening/export, and recheck edit leases, active
+gestures, playback, drawing/Morph state and stale context actions.
+
+Local source only, not alpha.21. Cross-parent grouping and broader Ungroup remain
+open. Next bounded step: batch object transforms; batch paint/deletion,
+Alt/Option-drag and repeated-transform duplication remain separate work.
+
+
+Verification for this delivery: 217 Chromium checks (including 12 new grouping
+cases), 93 model/helper tests, TypeScript and the editor build pass. Targeted lint
+has no errors and one existing warning. The visible preview confirms native
+shortcuts, menu Ungroup, one-step Undo, reopening and group movement; evidence and
+boundaries are recorded in the [SVG guide](SVG_ANIMATION.md#final-verification--sibling-grouping-2026-11-02).

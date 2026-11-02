@@ -643,6 +643,21 @@ by this planning pass, and no new editor feature was implemented or shipped.
     Grouping is next; batch transforms/paints/deletion, Alt/Option-drag, repeated
     transforms and full Figma parity remain open. Local only, not alpha.21.
 
+  - [x] ~~B42u — Group selected sibling SVG objects and ungroup neutral wrappers.~~
+    Local resolution (2026-11-02): Command/Ctrl+G, Command/Ctrl+Shift+G and shared
+    context actions, group-first canvas picking and deep child clicks, resulting
+    selection/focus, search reveal and detached Elements. Child source geometry,
+    paint, IDs/references, animation and origins survive; one Undo restores each
+    action. Five DOM/model and seven UI cases cover sampled animated/raster
+    equality, stacking, nested SVG ancestry, references, budgets, permissions,
+    gestures/stale actions, history, reopening and export. Live Figma menus were
+    inspected read-only; evidence in `.local/svg-grouping/`. Same-parent grouping
+    only; nonconsecutive selection can change overlaps at the frontmost selected
+    position. Styled/transformed/animated/referenced wrappers remain guarded from
+    Ungroup. Batch transforms are next; general reparenting/Ungroup, batch paints
+    and deletion, Alt/Option-drag, repeated transforms and full Figma parity remain
+    open. Local only, not alpha.21; no TerritoryIQ issue is resolved.
+
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -919,3 +934,17 @@ independent copy movement. Evidence: `.local/svg-duplication/` logs plus
 `{live-menu,live-preview,dev-log}.png`. Roadmap and Dev Log mark grouping next.
 Alt/Option-drag, repeated transforms, batch editing and full reference parity
 remain open. Local source only; not an alpha.21 release or TerritoryIQ resolution.
+
+
+### Verification update — 2026-11-02, SVG sibling grouping
+
+B42u passes all **217 Chromium checks** (199 SVG, 14 Design/panel/toolbar and four
+responsive website cases) and **93 model/helper tests**. TypeScript, editor build
+and diff checks pass; targeted lint reports zero errors and one existing
+navigation warning. The visible preview verifies native Command-G, menu Ungroup,
+child selection, Undo, reopening and group movement, including the guard once a
+group owns an animation track. Evidence: `.local/svg-grouping/` logs and
+`{live-menu,live-preview,dev-log}.png`. Roadmap and Dev Log now mark batch object
+transforms next. This is local source, not alpha.21 or complete Figma parity.
+Cross-parent grouping, general Ungroup and the other unresolved entries remain
+open; no TerritoryIQ code or design-file gap is closed by this work.
