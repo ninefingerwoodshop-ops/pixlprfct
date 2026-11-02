@@ -60,3 +60,38 @@ test('palette drag is undo-neutral and a new lease enables drawing without reloa
  const palette=page.getByRole('toolbar',{name:'Pen tools'}),grip=page.getByRole('button',{name:/^Move Pen toolbar/}),box=await grip.boundingBox(),before=body,left=(await palette.boundingBox()).x;await page.mouse.move(box.x+12,box.y+12);await page.mouse.down();await page.mouse.move(box.x-48,box.y+52,{steps:4});await page.mouse.up();expect((await palette.boundingBox()).x).toBe(left-60);expect(body).toBe(before);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();await grip.press('Home');
  await clickPoint(page,80,100);await clickPoint(page,200,180);await page.keyboard.press('Enter');await expect.poll(()=>JSON.parse(body).svg_animation.svg).toContain('data-layer-name="Path"');await page.getByRole('button',{name:'Finish editing',exact:true}).click();await expect(page.getByLabel('Pen Stroke hex',{exact:true})).toBeDisabled();await expect(anchor(page,1)).toHaveAttribute('aria-disabled','true');
 });
+
+async function curvePoint(page,t,offset=0){
+ return page.locator('#svg-art [data-layer-name="Curve"]').evaluate((node,{t,offset})=>{
+  const u=1-t,x=u*u*u*100+3*u*u*t*130+3*u*t*t*180+t*t*t*220,y=u*u*u*100+3*u*u*t*40+3*u*t*t*180+t*t*t*100;
+  const p=new DOMPoint(x,y).matrixTransform(node.getScreenCTM());return {x:p.x,y:p.y+offset};
+ },{t,offset});
+}
+
+test('double-click inserts a curve anchor at any position through zoom and transforms with atomic history and export',async({page})=>{
+ await create(page,art);await page.getByRole('button',{name:'Select Curve',exact:true}).click();await field(page,'Current time',1000);await field(page,'Position X',30);await page.getByRole('button',{name:'Edit base path',exact:true}).click();await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+ const before=await saved(page),at=await curvePoint(page,.27,3);await page.mouse.dblclick(at.x,at.y);
+ await expect(anchor(page,4)).toBeVisible();await expect(anchor(page,2)).toBeFocused();await expect(anchor(page,2)).toHaveAttribute('aria-pressed','true');
+ const after=await saved(page);expect(after.svg_animation.svg).not.toBe(before.svg_animation.svg);expect(after.svg_animation.tracks).toEqual(before.svg_animation.tracks);expect(after.svg_animation.origins).toEqual(before.svg_animation.origins);
+ await page.screenshot({path:'.local/svg-anchor-insertion/curve.png'});
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await expect(anchor(page,4)).toHaveCount(0);
+ await page.getByRole('button',{name:'Redo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(after);await page.reload();await page.getByRole('button',{name:'Select Curve',exact:true}).click();await page.getByRole('button',{name:'Edit base path',exact:true}).click();await expect(anchor(page,4)).toBeVisible();expect(await saved(page)).toEqual(after);
+ await page.getByRole('button',{name:'Export',exact:true}).click();const ready=page.waitForEvent('download');await page.getByRole('button',{name:'Download SVG',exact:true}).click();const stream=await(await ready).createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);const exported=Buffer.concat(chunks).toString();
+ const geometry=await page.evaluate(({source,exported})=>[source,exported].map(text=>new DOMParser().parseFromString(text,'image/svg+xml').querySelector('path').getAttribute('d')),{source:after.svg_animation.svg,exported});expect(geometry[0]).toEqual(geometry[1]);expect(exported).toContain('animateTransform');
+});
+
+test('insertion handles a closing segment without duplicating nearby anchors or editing empty space',async({page})=>{
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path id="Loop" d="M60 80L240 80L240 300Z M60 360L240 360" stroke="white" fill="none"/></svg>';
+ await create(page,svg);await page.getByRole('button',{name:'Select Loop',exact:true}).click();await page.getByRole('button',{name:'Edit base path',exact:true}).click();const before=await saved(page);
+ const p=await point(page,150,190);await page.mouse.dblclick(p.x,p.y);await expect(anchor(page,4)).toBeVisible();await expect(anchor(page,4)).toHaveAttribute('aria-label',/X 150, Y 190/);await expect.poll(async()=>(await saved(page)).svg_animation.svg).not.toBe(before.svg_animation.svg);const after=await saved(page);
+ await anchor(page,4).dblclick();expect(await saved(page)).toEqual(after);await expect(anchor(page,5)).toHaveCount(0);
+ const blank=await point(page,70,220);await page.mouse.dblclick(blank.x,blank.y);expect(await saved(page)).toEqual(after);
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);
+});
+
+test('read-only base paths and morph topology reject double-click insertion',async({page})=>{
+ await create(page,art);await page.getByRole('button',{name:'Select Curve',exact:true}).click();const body=JSON.stringify(await saved(page)),id='00000000-0000-4000-8000-000000000088';let writes=0;
+ await page.route('**/api/documents/'+id+'**',r=>{if(r.request().method()!=='GET')writes++;return r.fulfill({json:new URL(r.request().url()).pathname.endsWith('/editing')?{editingMode:'handoff',documentRevision:1,canEdit:false,serverNow:Date.now(),lease:null}:{id,body,revision:1,collaboration:true,can_edit:false}});});
+ await page.goto('/editor/svg-animation.html?cloud='+id+'&workspace=team%3Asvg');await page.getByRole('button',{name:'Select Curve',exact:true}).click();await page.getByRole('button',{name:'Edit base path',exact:true}).click();const at=await curvePoint(page,.27);await page.mouse.dblclick(at.x,at.y);await expect(anchor(page,4)).toHaveCount(0);expect(writes).toBe(0);
+ await create(page,art);await page.getByRole('button',{name:'Select Curve',exact:true}).click();await page.getByRole('button',{name:'Edit nodes',exact:true}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.some(t=>t.property==='morph')).toBe(true);const before=await saved(page);await page.getByRole('button',{name:'Edit base path',exact:true}).click();const morph=await curvePoint(page,.27);await page.mouse.dblclick(morph.x,morph.y);expect(await saved(page)).toEqual(before);await expect(anchor(page,4)).toHaveCount(0);
+});

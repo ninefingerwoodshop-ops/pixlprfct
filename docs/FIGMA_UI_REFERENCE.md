@@ -942,3 +942,87 @@ Inline-header refinement (2026-11-01): re-inspected the same live Figma file.
 The owner's updated extension places SVG's expanded toggle beside its logo and
 Design's beside the document-title dropdown, retaining Design's single existing
 navigation logo. Compact docks retain their top controls.
+
+SVG branding refinement (2026-11-02): inspected live Capwah Components before
+updating the sidebar. The reference retains a compact dark file header, dropdown
+and top toggle (377 px left sidebar, 241 px inspector). Per the owner's branding
+extension, “SVG Animator” now sits beside the PixlPrfct logo in the existing
+40 px header, with an 8 px gap. The redundant “SVG Animation” row and motion
+icon are removed; the 48 px compact rail hides the brand text. Verified expanded
+and collapsed states live; two focused Elements tear-out/flyout browser checks
+pass. Screenshot: `.local/svg-branding/after.png`. Local source only.
+
+Arbitrary anchor insertion (2026-11-02): inspected live Capwah Components and
+entered vector-edit mode. The accessible Vector inspector exposes Position,
+Mirroring (none, angle, angle and length), Corner radius, Fill and Stroke; the
+vector toolbelt exposes Move, Lasso, Paint, Bend, Cut, Erase and More. No deliberate
+geometry or paint edit was made. This batch reuses the existing SVG node glyphs,
+palette and dark styling, and the Design editor's double-click segment-insertion
+gesture. The new guidance uses the existing 10 px palette caption. Exact Figma
+insertion-gesture parity was not verified. Curve preservation and the rendered
+result are verified separately in the SVG drawing tests.
+
+Current-frame SVG export (2026-11-02): inspected the live Capwah Components
+Export section after leaving vector-edit mode. At the observed 1800 × 1003
+logical window size, the inspector remains 241 px wide; Export uses compact
+24 px control rows, approximately 16 px side insets, a format dropdown, an
+outlined export button and a separate Preview disclosure on the dark surface.
+This delivery adds one option to SVG Animator's existing shared custom export
+dropdown and a time caption; no new panel or native select is introduced.
+The current-frame option is a PixlPrfct extension, not a claim that the SVG export
+dialog exactly matches Figma's inspector. Browser preview/download geometry is
+verified in `svg-animation-static-frame.spec.mjs`; local screenshot:
+`.local/static-frame/current-frame.png`.
+
+Reduced-motion SVG export (2026-11-02): re-inspected live Capwah Components with
+the Export inspector open before this change. The reference still uses the
+241 px dark inspector, compact 24 px fields, format dropdown, export button and
+Preview disclosure at the observed 1800 × 1003 logical window size. This feature
+extends PixlPrfct's existing export dialog with a preference caption and a short
+explanatory paragraph using existing styles. No new panel or native select was
+introduced. Rendered evidence: `.local/reduced-motion/preview.png`. This verifies
+the bounded extension; it does not certify complete Figma interface parity.
+
+## Handle mirroring and the bottom toolbar — 2026-11-02 (local source)
+
+Inspected live Figma's vector-edit UI in the Capwah Components file before
+implementation. At 1800 × 1003 logical pixels, the right inspector is about
+241 px wide. Its Mirroring label precedes a 184 × 24 px three-option segmented
+control: No mirroring, Mirror angle, and Mirror angle and length. The glyphs
+occupy 24 px boxes; the group is #383838 and the selected segment is #2c2c2c with
+an approximately #444 border. It sits above Corner radius. The bottom toolbelt
+remains visible and expanded. Reference: `.local/svg-mirroring/figma-reference.png`.
+
+The SVG base-path inspector now uses those measured dimensions, labels and dark
+states. Angle mode keeps the opposite handle length; symmetric mode mirrors both
+angle and length. See [Figma's vector-edit guidance](https://help.figma.com/hc/en-us/articles/360039957634-Edit-vector-layers)
+and [HandleMirroring definitions](https://developers.figma.com/docs/plugins/api/HandleMirroring/).
+Pointer/keyboard input, undo, saved reopening, transformed geometry and detached
+Inspector behavior pass five focused browser scenarios. The measured local
+control is 184 × 24 px. Result: `.local/svg-mirroring/inspector.png`.
+
+The owner's explicit bottom-toolbar requirement removes collapse from Drawing
+tools in both editors, including older saved layouts; detach/dock remains.
+Both migration cases and existing panel workflows pass. Visible preview:
+`.local/svg-mirroring/live-preview.png`. These are bounded visual and functional
+checks, not certification of complete Figma vector-edit parity. Corner mirroring,
+open endpoints, vector networks and multi-node editing are not implemented by
+this batch. Source/browser preview only; no new release is claimed.
+
+## Toolbar movement and dropdown triggers — 2026-11-02 (local correction)
+
+Inspected live Figma's main toolbar and opened Creation tools. The bottom bar
+retains its dark rounded container. Tool buttons measure approximately 32 × 32 px
+with 24 px icon frames; adjacent dropdown targets are about 16 × 32 px, with a
+small downward chevron (roughly 6 × 3 px). The arrow stays neutral when the main
+tool is selected; hover/open uses a dark gray fill instead of the tool's blue
+selection. Reference: `.local/toolbelt-drag/figma-dropdown.png`.
+
+Design's existing custom split controls now use these dimensions and states,
+retaining keyboard access and tool selection. Dropdown menus follow the toolbar
+and choose space above or below. The owner's explicit requested extension adds
+an in-editor drag grip to the main toolbar in Design and SVG Animator, removes
+its pop-out action and excludes it from saved window restoration. This is not a
+claim that Figma itself supports the same placement behavior. Screenshots:
+`.local/toolbelt-drag/dropdown.png` and `live-preview.png`. Local only, not shipped;
+complete toolbar/menu pixel parity remains unverified.

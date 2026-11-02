@@ -31,14 +31,17 @@ export function mountSvgInteraction(root,options,createClock){
  root.querySelectorAll('[data-pixl-motion]').forEach(node=>{node.removeAttribute('transform');node.removeAttribute('data-pixl-motion');});
  root.querySelectorAll('animate,animateTransform,animateMotion').forEach(node=>node.beginElement());
  const player=createClock(options,time=>root.setCurrentTime(time/1000),{now:()=>performance.now(),request:fn=>requestAnimationFrame(fn),cancel:id=>cancelAnimationFrame(id)});
+ const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
  let pointer=false,focus=false,active=false;
- const hover=()=>{const next=pointer||focus;if(next===active)return;active=next;if(active)player.enter();else player.leave();};
+ const preference=()=>{pointer=false;focus=false;active=false;player.reset();if(motion.matches){root.setAttribute('role','img');root.removeAttribute('tabindex');}else{root.setAttribute('role','button');root.setAttribute('tabindex','0');}};
+ preference();motion.addEventListener('change',preference);
+ const hover=()=>{if(motion.matches)return;const next=pointer||focus;if(next===active)return;active=next;if(active)player.enter();else player.leave();};
  if(options.trigger==='hover'){
   root.addEventListener('pointerenter',()=>{pointer=true;hover();});root.addEventListener('pointerleave',()=>{pointer=false;hover();});
   root.addEventListener('focusin',()=>{focus=root.matches(':focus-visible');hover();});root.addEventListener('focusout',event=>{if(!root.contains(event.relatedTarget)){focus=false;hover();}});
- }else root.addEventListener('click',()=>player.activate());
- root.addEventListener('keydown',event=>{if(event.repeat||!['Enter',' '].includes(event.key))return;event.preventDefault();if(options.trigger==='click')player.activate();else player.enter();});
- window.addEventListener('pagehide',()=>player.destroy(),{once:true});
+ }else root.addEventListener('click',()=>{if(!motion.matches)player.activate();});
+ root.addEventListener('keydown',event=>{if(motion.matches||event.repeat||!['Enter',' '].includes(event.key))return;event.preventDefault();if(options.trigger==='click')player.activate();else player.enter();});
+ window.addEventListener('pagehide',()=>{player.destroy();motion.removeEventListener('change',preference);},{once:true});
 }
 
 export function interactionScript(settings,duration,loop){

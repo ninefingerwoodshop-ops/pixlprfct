@@ -9,16 +9,23 @@ Both Design and SVG Animation support parent panel windows and compact icon dock
 | Layers (including Pages) | Elements |
 | Assets | Inspector |
 | Inspector | Pen tools |
-| Drawing tools | Drawing tools |
 | Timeline | Timeline |
 
-Each parent has an icon, collapse/expand controls, and a tear-out control. Fill, Stroke, Transform and other sections stay inside their parent.
+Each listed parent has an icon, collapse/expand controls and a tear-out control.
+Fill, Stroke, Transform and other sections stay inside their parent.
+
+**Local November 2 update:** the main Drawing tools toolbar stays inside the
+canvas workspace and always remains expanded. Drag its small left grip to move
+it; focus the grip and use arrows (Shift for larger steps), or Home to reset.
+Its position persists separately for each editor and stays within the workspace
+when resized. Old collapsed/window layouts migrate automatically. This supersedes
+Drawing tools' alpha.21 panel behavior and is not yet in the download.
 
 ## Arrange the workspace
 
 - **Separate window:** drag the parent heading. After 4 px of movement the window opens and follows the cursor while the mouse button remains down. Release to place it; Escape cancels. The heading’s tear-out button opens it without a drag.
 - **Dock again:** close the separate window, click its **Dock panel** control, or use the Dock icon in the original slot.
-- **Icon dock:** click **Collapse**. Click the panel icon to show the live panel beside the dock inside the editor. Click again, click outside, or press Escape to close the flyout. **Expand** restores the dock. Clicking an icon does not create a window.
+- **Icon dock:** for a collapsible panel, click **Collapse**. Click the panel icon to show the live panel beside the dock inside the editor. Click again, click outside, or press Escape to close the flyout. **Expand** restores the dock. Clicking an icon does not create a window. The main Drawing tools toolbar remains expanded.
 - **Pen tools:** SVG Pen tools can dock on the right or return to a floating palette. Its side is saved.
 - **Saved layout:** detached state, window position/size, and collapsed state persist on this device separately for each editor. Refreshing or reopening the editor after an app restart restores the layout. Explicit closing/docking removes that saved window. Browser pop-up permissions may be needed; a blocked restore retains the saved layout and offers reopening.
 
@@ -27,6 +34,8 @@ Collapse/expand arrows depict the next action and follow the dock side. The SVG 
 Detaching Elements leaves a single column of icons: Projects, Import SVG, Download, Show Elements and Dock Elements, with tooltips. Other remaining sidebar actions, including save recovery, also retain accessible icons. All controls use the same selection and Undo history as their owner editor.
 
 ## Implementation
+
+[movable-toolbox.js](../../web/movable-toolbox.js) manages in-editor toolbar dragging, keyboard placement and saved bounds independently of detachable panels.
 
 [detachable-panels.js](../../web/detachable-panels.js) moves the original controls between documents. [panel-docks.js](../../web/panel-docks.js) manages compact rails and adjacent flyouts; [panel-icons.js](../../web/panel-icons.js) provides icons. [editor-dom.js](../../web/editor-dom.js) resolves adopted live controls for inspector modules. [design-panels.js](../../web/design-panels.js) registers Design’s parent panels. [panel.html](../../web/panel.html) is the separate window shell.
 

@@ -154,3 +154,40 @@ and `inline-toggle-design-recheck.log`. ESLint and diff checks also pass.
 Fresh release checks passed: 3 Rust and 1,053 JavaScript tests; all 143 browser scenarios; and 25 final panel/site cases after the interface-only icon catalog correction. Production build, typecheck, generated API validation, Rust formatting/Clippy and lint passed (57 existing lint warnings, no errors). Native cursor-following, release, refresh, full-restart bounds restoration and explicit docking acceptance passed with a temporary Electron profile. Evidence is in `.local/release-alpha21/`.
 
 The release notes and `BUILD-PROVENANCE.json` identify the exact Windows package source and build run. This delivery does not close the real OS sleep/wake or human-pilot gaps, and does not install a new app on the development Mac.
+
+## Drawing tools stays expanded — 2026-11-02 (local source)
+
+At the owner's request, the main bottom Drawing tools toolbar no longer has a
+collapse action in Design or SVG Animator. Existing saved collapsed layouts
+remove only the Drawing tools entry. Other panels keep their saved state, and
+the main toolbar can still be torn out and docked. This supersedes earlier
+all-parent collapse descriptions for local source; alpha.21 remains unchanged.
+
+All 23 Design/SVG panel browser scenarios pass across the broad and focused runs,
+including two new migration/reload cases and the existing detached-window cases.
+The detached Inspector easing test now waits for persistence before recording its
+saved-document baseline. The running SVG preview was refreshed and inspected;
+screenshot: `.local/svg-mirroring/live-preview.png`. Not installed or published.
+
+## Main toolbar moves within the editor — 2026-11-02 (local correction)
+
+The owner clarified that Drawing tools is not a tear-out panel. In Design and
+SVG Animator its left grip now drags the toolbar within the canvas workspace,
+with no collapse or pop-out action. Pointer release stops movement; Escape
+restores the starting placement. Arrow keys move the focused grip by 10 px
+(Shift: 50 px), and Home restores the default bottom position. Placement persists
+per editor and clamps after resize without entering document history.
+
+Saved toolbar windows are discarded before the legacy parent-panel migration;
+other parent windows continue to restore normally. This supersedes the earlier
+Drawing tools tear-out/dock descriptions above. Design toolbar dropdowns also
+use the inspected Figma trigger geometry and reposition their menus as the bar
+moves. This is local source/browser preview work, not an alpha.21 release change.
+
+Verification for the toolbar correction: all 28 Design/SVG panel and toolbar
+browser scenarios pass across the broad and focused runs, including 800 × 600
+resize checks and restoring placement after collapsed sidebars initialize. Two SVG fixtures now wait for their initial artwork to save before
+capturing an unchanged-document baseline. Typecheck, editor asset build, targeted
+ESLint (zero errors, one existing navigation warning) and diff checks pass. The
+running Design draft was inspected after a real drag; its dropdown opens below
+the moved toolbar. Screenshot: `.local/toolbelt-drag/live-preview.png`.

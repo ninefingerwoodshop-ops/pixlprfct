@@ -2,6 +2,7 @@ import {installDetachablePanels} from './detachable-panels.js';
 import {installPanelDocks} from './panel-docks.js';
 import {editorDOM} from './editor-dom.js';
 import {icon} from './icons.js';
+import {installMovableToolbox} from './movable-toolbox.js';
 
 // Only workspace parent panels move. Their sections remain a single live tree.
 export function installDesignPanels(options){
@@ -11,10 +12,9 @@ export function installDesignPanels(options){
  mark(editorDOM.getElementById('file-panel'),'layers','Layers','left');
  mark(editorDOM.getElementById('assets-panel'),'assets','Assets','left');
  mark(editorDOM.querySelector('.right-panel'),'inspector','Inspector','right');
- mark(editorDOM.querySelector('.toolbox'),'tools','Drawing tools','bottom');
  mark(editorDOM.getElementById('motion-timeline'),'timeline','Timeline','bottom');
  let docks;const changed=()=>{docks?.sync();options.changed?.();};
- const panels=installDetachablePanels({...options,changed,contexts:true,parentKeys:['layers','assets','inspector','tools','timeline']});
+ const panels=installDetachablePanels({...options,changed,contexts:true,parentKeys:['layers','assets','inspector','timeline'],excludedKeys:['tools']});
  docks=installPanelDocks({panels,changed:()=>{options.changed?.();}});
- const sync=()=>{panels.sync();docks.sync();};sync();return {...panels,sync};
+ const sync=()=>{panels.sync();docks.sync();};sync();installMovableToolbox(editorDOM.querySelector('.toolbox'),editorDOM.getElementById('workspace'));return {...panels,sync};
 }

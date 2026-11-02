@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {morphPath,morphData} from '../web/svg-animation-morph.js';
-import {editAnchor,continuePath,checkedPath,pencilPath} from '../web/svg-animation-drawing-model.js';
+import {editAnchor,continuePath,checkedPath,pencilPath,nearestPathSegment} from '../web/svg-animation-drawing-model.js';
 const cubic=(p,q,t)=>{const u=1-t;return [0,1].map(i=>u*u*u*p[i]+3*u*u*t*p[4+i]+3*u*t*t*q[2+i]+t*t*t*q[i]);};
 test('midpoint insertion exactly preserves a cubic, including the closing segment',()=>{
  for(const data of ['M0 0C20 80 80 -20 100 50','M0 0L100 0C60 100 20 60 0 0Z']){
@@ -29,4 +29,34 @@ test('pencil rejects oversized strokes atomically and treats duplicate-only samp
  assert.equal(pencilPath([{x:1,y:1},{x:1,y:1}]),null);assert.throws(()=>pencilPath([{x:NaN,y:0}]),/finite/);
  const raw=Array.from({length:4096},(_,i)=>({x:i,y:i%2?10:0}));assert.throws(()=>pencilPath(raw,100),/512 anchors/);assert.throws(()=>pencilPath([...raw,{x:4096,y:0}]),/4,096 samples/);
  assert.equal(pencilPath(raw.map(p=>({...p,y:0})),100)[0].points.length,2);
+});
+
+test('arbitrary insertion preserves open and closing cubics, other subpaths and its input',()=>{
+ for(const data of ['M0 0C20 80 80 -20 100 50M200 0L300 0','M0 0L100 0C60 100 20 60 0 0Z'])for(const t of [.07,.23,.68,.94]){
+  const original=morphPath(data),before=structuredClone(original),i=original[0].closed?original[0].points.length-1:0,points=original[0].points;
+  const after=editAnchor(original,0,i,'insert',t),next=after[0].points;
+  for(let step=0;step<=100;step++){
+   const u=step/100,expected=cubic(points[i],points[(i+1)%points.length],u),actual=u<=t?cubic(next[i],next[i+1],u/t):cubic(next[i+1],next[(i+2)%next.length],(u-t)/(1-t));
+   actual.forEach((n,k)=>assert.ok(Math.abs(n-expected[k])<1e-8));
+  }
+  assert.deepEqual(original,before);assert.deepEqual(after.slice(1),original.slice(1));assert.equal(after[0].closed,original[0].closed);
+ }
+});
+test('arbitrary insertion rejects invalid positions and anchor limits without mutation',()=>{
+ const original=morphPath('M0 0L100 0'),before=structuredClone(original);
+ for(const t of [0,1,-.1,1.1,NaN,Infinity])assert.throws(()=>editAnchor(original,0,0,'insert',t),/inside a path/);
+ const full=[{closed:false,points:Array.from({length:512},(_,x)=>[x,0,x,0,x,0])}],copy=structuredClone(full);
+ assert.throws(()=>editAnchor(full,0,8,'insert',.3),/512/);assert.deepEqual(full,copy);assert.deepEqual(original,before);
+});
+test('segment picking uses screen distance across transformed subpaths and avoids anchors',()=>{
+ const value=morphPath('M0 0C20 80 80 -20 100 50M200 0L300 0L300 100Z');
+ const matrices=[{a:1,b:0,c:0,d:1,e:0,f:0},{a:2,b:.8,c:.4,d:-1.2,e:300,f:200},{a:.2,b:0,c:0,d:3,e:-20,f:60}];
+ for(const matrix of matrices){
+  const local=cubic(value[0].points[0],value[0].points[1],.27),point={x:matrix.a*local[0]+matrix.c*local[1]+matrix.e,y:matrix.b*local[0]+matrix.d*local[1]+matrix.f};
+  const hit=nearestPathSegment(value,point,matrix);assert.equal(hit.path,0);assert.equal(hit.segment,0);assert.ok(Math.abs(hit.t-.27)<1e-5);assert.ok(hit.distance<.001);
+  assert.equal(nearestPathSegment(value,{x:matrix.e,y:matrix.f},matrix),null);
+ }
+ const identity=matrices[0],hit=nearestPathSegment(value,{x:250,y:50},identity);assert.equal(hit.path,1);assert.equal(hit.segment,2);
+ assert.ok(nearestPathSegment(value,{x:250,y:7},identity));assert.equal(nearestPathSegment(value,{x:250,y:-9},identity),null);
+ assert.equal(nearestPathSegment(value,{x:600,y:600},identity),null);
 });

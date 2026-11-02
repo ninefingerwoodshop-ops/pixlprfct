@@ -1,5 +1,6 @@
 import {validMorph} from './svg-animation-morph.js';
 import {smoothPencil} from './pencil.js';
+import {nearestSegment} from './vector-edit.js';
 
 // Sample and smooth in screen space so zoom and nonuniform SVG scaling do not
 // change the visible smoothing tolerance. The caller maps handles to SVG space.
@@ -17,18 +18,33 @@ export function checkedPath(value){
  if(!validMorph(value))throw new Error('Paths need 2–512 anchors, up to 64 subpaths, and coordinates within ±100,000.');
  return value;
 }
-export function editAnchor(value,pathIndex,index,operation){
+// Measure hit tolerance in screen pixels, including nonuniform/rotated SVGs.
+export function nearestPathSegment(value,point,matrix,tolerance=8){
+ const transform=p=>[matrix.a*p[0]+matrix.c*p[1]+matrix.e,matrix.b*p[0]+matrix.d*p[1]+matrix.f];
+ const paths=value.map(path=>({...path,points:path.points.map(p=>[...transform(p),...transform(p.slice(2,4)),...transform(p.slice(4))])}));
+ if(paths.some(path=>path.points.some(p=>Math.hypot(p[0]-point.x,p[1]-point.y)<=8)))return null;
+ let best=null;
+ paths.forEach((path,pathIndex)=>{
+  const hit=nearestSegment({x:0,y:0,width:1,height:1,closed:path.closed,points:path.points.map(p=>p.slice(0,2)),handles:path.points.map(p=>[p.slice(2,4),p.slice(4)])},point);
+  if(hit&&hit.distance<=tolerance&&hit.t>0&&hit.t<1&&(!best||hit.distance<best.distance))best={...hit,path:pathIndex};
+ });
+ return best;
+}
+export function editAnchor(value,pathIndex,index,operation,t=.5){
  const next=structuredClone(value),path=next[pathIndex],point=path?.points[index];
  if(!point)throw new Error('Select an anchor first.');
  const points=path.points,previous=points[(index+points.length-1)%points.length],following=points[(index+1)%points.length];
  if(operation==='insert'){
   if(!path.closed&&index===points.length-1)throw new Error('Select an anchor with a following segment.');
-  const mix=(a,b)=>a.map((n,i)=>(n+b[i])/2),a=point.slice(0,2),b=point.slice(4),c=following.slice(2,4),d=following.slice(0,2);
+  if(!Number.isFinite(t)||t<=0||t>=1)throw new Error('Choose a point inside a path segment.');
+  const mix=(a,b)=>a.map((n,i)=>n+(b[i]-n)*t),a=point.slice(0,2),b=point.slice(4),c=following.slice(2,4),d=following.slice(0,2);
   const ab=mix(a,b),bc=mix(b,c),cd=mix(c,d),abc=mix(ab,bc),bcd=mix(bc,cd),mid=mix(abc,bcd);
   point.splice(4,2,...ab);following.splice(2,2,...cd);points.splice(index+1,0,[...mid,...abc,...bcd]);
+  path.mirroring?.splice(index+1,0,'a');
  }else if(operation==='delete'){
   if(points.length<=2)throw new Error('Keep at least two anchors, or delete the element.');
   points.splice(index,1);
+  path.mirroring?.splice(index,1);
  }else if(operation==='corner')point.splice(2,4,...point.slice(0,2),...point.slice(0,2));
  else if(operation==='smooth'){
   const first=!path.closed&&index===0,last=!path.closed&&index===points.length-1;
@@ -36,12 +52,13 @@ export function editAnchor(value,pathIndex,index,operation){
   const incoming=first?0:Math.hypot(point[0]-previous[0],point[1]-previous[1])/3,outgoing=last?0:Math.hypot(following[0]-point[0],following[1]-point[1])/3;
   point.splice(2,4,point[0]-dx/length*incoming,point[1]-dy/length*incoming,point[0]+dx/length*outgoing,point[1]+dy/length*outgoing);
  }else throw new Error('Unknown anchor operation.');
+ if(path.mirroring&&['corner','smooth'].includes(operation))path.mirroring[index]=operation==='corner'?'n':'a';
  return checkedPath(next);
 }
 export function continuePath(value,pathIndex,index){
  const next=structuredClone(value),path=next[pathIndex];
  if(!path||path.closed||!([0,path.points.length-1].includes(index)))throw new Error('Select the first or last anchor of an open path.');
- if(index===0)path.points.reverse().forEach(p=>{const incoming=p.slice(2,4);p.splice(2,4,...p.slice(4),...incoming);});
+ if(index===0){path.points.reverse().forEach(p=>{const incoming=p.slice(2,4);p.splice(2,4,...p.slice(4),...incoming);});path.mirroring?.reverse();}
  return checkedPath(next);
 }
 
@@ -57,7 +74,8 @@ export function splitPath(value,pathIndex,index){
  if(!points?.[index]||!path.closed&&isEndpoint(path,index))throw new Error('Select an interior anchor, or any anchor on a closed path.');
  const sections=path.closed?[Array.from({length:points.length+1},(_,i)=>structuredClone(points[(index+i)%points.length]))]:[points.slice(0,index+1),structuredClone(points.slice(index))];
  for(const part of sections){collapse(part[0],2);collapse(part.at(-1),4);}
- next.splice(pathIndex,1,...sections.map(points=>({closed:false,points})));
+ const modes=path.mirroring?(path.closed?[Array.from({length:points.length+1},(_,i)=>path.mirroring[(index+i)%points.length])]:[path.mirroring.slice(0,index+1),path.mirroring.slice(index)]):null;
+ next.splice(pathIndex,1,...sections.map((points,i)=>({closed:false,points,...(modes?{mirroring:modes[i]}:{})})));
  return {value:checkedPath(next),selection:[pathIndex,path.closed?0:index]};
 }
 
@@ -69,14 +87,17 @@ export function joinEndpoints(value,from,to){
   const points=left.points;
   // Opening a closed path duplicates its cut anchor. Reclosing restores the
   // original cubic seam; distinct ends get a straight closing segment.
-  if(points.length>2&&coincident(points[0],points.at(-1))){points[0].splice(2,2,...points.at(-1).slice(2,4));points.pop();}
+  if(points.length>2&&coincident(points[0],points.at(-1))){points[0].splice(2,2,...points.at(-1).slice(2,4));points.pop();left.mirroring?.pop();}
   else{collapse(points[0],2);collapse(points.at(-1),4);}
+  if(left.mirroring)left.mirroring[0]='n';
   left.closed=true;return {value:checkedPath(next),selection:[a,0]};
  }
- if(ai===0)reverse(left.points);if(bi===right.points.length-1)reverse(right.points);
+ if(ai===0){reverse(left.points);left.mirroring?.reverse();}if(bi===right.points.length-1){reverse(right.points);right.mirroring?.reverse();}
  const end=left.points.at(-1),start=right.points[0],seam=left.points.length-1;
+ const modes=left.mirroring||right.mirroring?[...(left.mirroring??left.points.map(()=>'n')),...(right.mirroring??right.points.map(()=>'n')).slice(coincident(end,start)?1:0)]:null;
  if(coincident(end,start)){end.splice(4,2,...start.slice(4));left.points.push(...right.points.slice(1));}
  else{collapse(end,4);collapse(start,2);left.points.push(...right.points);}
  collapse(left.points[0],2);collapse(left.points.at(-1),4);next.splice(b,1);
+ if(modes){modes[seam]='n';left.mirroring=modes;}
  return {value:checkedPath(next),selection:[a-(b<a?1:0),seam]};
 }

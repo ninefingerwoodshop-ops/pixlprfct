@@ -7,6 +7,8 @@ export function installPanelDocks({panels,changed=()=>{},storageKey='pixlprfct.p
  const records=new Map();let collapsed=new Set(),open=null;
  try{const saved=JSON.parse(localStorage.getItem(storageKey)??'[]');if(Array.isArray(saved))collapsed=new Set(saved.filter(k=>typeof k==='string'));}catch{}
  const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify([...collapsed]));}catch{}};
+ // The main drawing toolbelt is always expanded, including saved old layouts.
+ if(collapsed.delete('tools'))persist();
  const glyphs=panelGlyphs;
  const button=(label,glyph,fn)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.innerHTML=icon(glyph);b.onclick=e=>{e.preventDefault();e.stopPropagation();fn();};return b;};
  const setGlyph=(button,glyph)=>{if(button.dataset.actionIcon!==glyph){button.dataset.actionIcon=glyph;button.innerHTML=icon(glyph);}};
@@ -16,7 +18,9 @@ export function installPanelDocks({panels,changed=()=>{},storageKey='pixlprfct.p
  function setCollapsed(r,value){close();if(value){const box=r.node.getBoundingClientRect();if(box.width>48)r.width=box.width;if(box.height>48)r.height=Math.max(240,box.height);collapsed.add(r.key);}else collapsed.delete(r.key);persist();sync();(value?r.expand:r.collapse)?.focus({preventScroll:true});changed();}
  function sync(){
   for(const entry of panels.entries()){
-   const node=entry.node;if(!node)continue;const key=entry.key,label=entry.label,heading=entry.heading;if(!heading)continue;let r=records.get(key);
+   const node=entry.node;if(!node)continue;const key=entry.key,label=entry.label,heading=entry.heading;if(!heading)continue;
+   if(!heading.querySelector('.panel-type-icon')){const glyph=document.createElement('span');glyph.className='panel-type-icon';glyph.innerHTML=icon(glyphs[key]??'panel-left');glyph.setAttribute('aria-hidden','true');heading.prepend(glyph);}
+   let r=records.get(key);
    if(!r){
     const rail=document.createElement('div');rail.className='panel-icon-rail';rail.dataset.panelRail=key;rail.setAttribute('role','toolbar');rail.setAttribute('aria-label',label+' dock');
     r={key,label,node,rail,width:key==='timeline'?900:280,height:key==='timeline'?320:600,side:panelSide(key,node)};
@@ -25,7 +29,6 @@ export function installPanelDocks({panels,changed=()=>{},storageKey='pixlprfct.p
    if(!r.observer){r.observer=new MutationObserver(sync);r.observer.observe(node,{attributes:true,attributeFilter:['hidden']});}
    if(node.hidden&&open===r)close();
    r.node=node;r.side=node.dataset.panelSide??r.side;
-   if(!heading.querySelector('.panel-type-icon')){const glyph=document.createElement('span');glyph.className='panel-type-icon';glyph.innerHTML=icon(glyphs[key]??'panel-left');glyph.setAttribute('aria-hidden','true');heading.prepend(glyph);}
    if(r.heading!==heading){r.collapse?.remove();r.heading=heading;r.collapse=button('Collapse '+label+' panel','chevrons-left',()=>setCollapsed(r,true));r.collapse.className='panel-collapse';heading.append(r.collapse);}
    // Point toward the next state: outward to collapse, inward to expand.
    const collapseIcon=r.side==='right'?'chevrons-right':r.side==='bottom'?'chevrons-down':'chevrons-left',expandIcon=r.side==='right'?'chevrons-left':r.side==='bottom'?'chevrons-up':'chevrons-right';

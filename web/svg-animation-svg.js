@@ -3,6 +3,8 @@ import {properties,easingPoints,trackValue,exportKeys,validateAnimation} from '.
 import {pathSampler,pathKinds,pathGeometry} from './svg-animation-path.js';
 import {morphPath,morphData} from './svg-animation-morph.js';
 import {interactionSettings,interactionScript} from './svg-animation-interactions.js';
+import {reducedMotionFallback} from './svg-animation-reduced-motion.js';
+import {mirroringAttribute,validMirroring} from './svg-animation-mirroring.js';
 const NS='http://www.w3.org/2000/svg';
 const tags=new Set('svg g defs path rect circle ellipse line polyline polygon text tspan use symbol linearGradient radialGradient stop clipPath mask title desc image pattern marker filter feGaussianBlur feOffset feFlood feComposite feMerge feMergeNode feColorMatrix feBlend'.split(' '));
 const drawable=new Set('g path rect circle ellipse line polyline polygon text use image'.split(' '));
@@ -17,6 +19,12 @@ export function sanitizeSvg(source){
  if(parsed.querySelector('parsererror')||original.localName!=='svg'||original.namespaceURI!==NS)throw new Error('Choose a valid SVG file.');
  if(original.querySelectorAll('*').length>5000)throw new Error('SVGs can contain up to 5,000 elements.');
  const warnings=new Set();
+ // Reimport our exports as one static artwork scene, without a second hidden
+ // set of editable layers from the reduced-motion fallback.
+ if(original.hasAttribute('data-pixl-reduced-motion')){
+  const animated=original.querySelector(':scope > g[data-pixl-animated]'),still=original.querySelector(':scope > g[data-pixl-still]');
+  if(animated&&still){still.remove();animated.replaceWith(...animated.childNodes);}
+ }
  // Resolve static stylesheet declarations before removing stylesheet nodes.
  // No imported stylesheet is ever inserted into the application document.
  const declarations=new Map();
@@ -30,7 +38,8 @@ export function sanitizeSvg(source){
   if(!tags.has(node.localName)||node.namespaceURI!==NS){if(node.localName!=='style')warnings.add('Unsupported or active SVG content was removed.');return null;}
   const out=document.createElementNS(NS,node.localName);
   for(const a of node.attributes){const name=a.name,value=a.value.replace(/[\r\n\t]/g,' ');if(name==='id'||name==='style'||name==='class'||name.startsWith('xmlns')||name==='data-layer-name')continue;
-   if(a.localName==='href'){
+   if(name===mirroringAttribute&&node.localName==='path'&&validMirroring(value))out.setAttribute(name,value);
+   else if(a.localName==='href'){
     if(/^#[\w.-]+$/.test(value)||node.localName==='image'&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=\s]+$/.test(value))out.setAttribute('href',value);else warnings.add('External resource links were removed.');
    }else if(attrs.has(name)&&safePaint(value))out.setAttribute(name,value);else if(/^on/i.test(name)||/url\s*\(/i.test(value))warnings.add('Active or external SVG content was removed.');
   }
@@ -91,8 +100,10 @@ export function animationScene(animation){
  const seek=(time,overrides={})=>{for(const b of bindings){const value=b.value(overrides[b.track.element]?.[b.track.property]??trackValue(b.track,time));b.node.setAttribute(b.attribute,b.type?`${b.baseTransform??''} ${b.type}(${value})`.trim():value);}};seek(0);
  return {root,bindings,motionGuides,frames,seek};
 }
-export function animatedSvg(doc,{animated=true}={}){
- validateAnimation(doc);const a=doc.svg_animation,{root,bindings}=animationScene(a),settings=interactionSettings(a),interactive=animated&&bindings.length>0&&settings.trigger!=='load';
+export function animatedSvg(doc,{animated=true,time=0}={}){
+ validateAnimation(doc);const a=doc.svg_animation,{root,bindings,seek}=animationScene(a),settings=interactionSettings(a),interactive=animated&&bindings.length>0&&settings.trigger!=='load';
+ if(!animated){if(!Number.isFinite(time)||time<0||time>a.duration)throw new Error('Choose a frame within the animation duration.');seek(time);}
+ const firstFrame=animated&&bindings.length?root.cloneNode(true):null;
  if(animated)for(const b of bindings){const keys=exportKeys(b.track,a.duration),node=document.createElementNS(NS,b.motion?'animateMotion':b.type?'animateTransform':'animate');
   if(b.baseTransform!==undefined)node.setAttribute('additive','sum');
   if(b.motion){if(interactive)b.node.setAttribute('data-pixl-motion','');else b.node.removeAttribute('transform');node.setAttribute('path',b.track.motion.d);node.setAttribute('rotate',b.track.motion.rotate==='none'?'0':b.track.motion.rotate);node.setAttribute('keyPoints',keys.map(k=>k.value/100).join(';'));}
@@ -100,8 +111,10 @@ export function animatedSvg(doc,{animated=true}={}){
   node.setAttribute('dur',a.duration+'ms');node.setAttribute('begin',interactive?'indefinite':'0s');node.setAttribute('repeatCount',!interactive&&a.loop?'indefinite':'1');node.setAttribute('fill','freeze');node.setAttribute('calcMode','spline');
   node.setAttribute('keyTimes',keys.map(k=>k.time/a.duration).join(';'));node.setAttribute('keySplines',keys.slice(0,-1).map(k=>easingPoints(k.easing).join(' ')).join(';'));b.node.append(node);
  }
+ if(firstFrame)reducedMotionFallback(root,firstFrame);
  if(interactive){root.setAttribute('tabindex','0');root.setAttribute('role','button');root.setAttribute('aria-label',doc.name+' animation');root.style.cursor=settings.trigger==='click'?'pointer':'default';root.style.pointerEvents='all';const script=document.createElementNS(NS,'script');script.textContent=interactionScript(settings,a.duration,a.loop);root.append(script);}
  for(const node of root.querySelectorAll('[data-layer-name]'))node.removeAttribute('data-layer-name');
+ for(const node of root.querySelectorAll(`[${mirroringAttribute}]`))node.removeAttribute(mirroringAttribute);
  return serialize(root);
 }
 export function normalizeSvgAnimation(doc){validateAnimation(doc);const {svg,warnings}=sanitizeSvg(doc.svg_animation.svg);const next={...doc,svg_animation:{...doc.svg_animation,svg}};animationScene(next.svg_animation);return {document:next,warnings};}
