@@ -81,3 +81,5 @@
 .svg-anchor-lasso{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
 .svg-anchor-lasso path{fill:color-mix(in srgb,var(--ui-accent) 15%,transparent);stroke:var(--ui-accent);stroke-width:1}
 .svg-workspace[data-drawing-tool=direct][data-anchor-selection=lasso],.svg-stage[data-drawing-tool=direct][data-anchor-selection=lasso]{cursor:crosshair}
+
+.svg-path-smoothing{margin:12px 0}.svg-smooth-path{height:24px;border:1px solid var(--ui-border);padding:0 8px;text-align:center}

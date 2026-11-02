@@ -254,3 +254,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Atomic complete/partial subpath deletion; surviving geometry/metadata/order and selection remapping; final-subpath deletion cleans element tracks/origin | Existing Delete action and Delete/Backspace with box/Lasso/Shift selections; one Undo | Five browser workflows and four model tests: mixed/invalid removal, geometry, animation cleanup, focus, gesture guards, history, native reopening and SVG export; existing Join/lease/Morph tests | Partial deletion must retain two anchors; one base-path element, no timed Morph. Reference deletion semantics not exercised. Local only, not alpha.21; supersedes earlier whole-subpath remainder |
+
+
+### SVG existing-path smoothing — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Sample actual cubics in screen space; shared Pencil reduction/handles extended to closed rings; open endpoints, compact contours and non-collinear loop area retained | Session-only 0–100% Smoothing and explicit Smooth path in the existing Path inspector, including detached Inspector; one Undo | Six model and six browser workflows; four shared Pencil regressions; transformed geometry, cyclic seams, no-ops, atomic failure, guards, focus, history, reopening/export | One base-path element, no timed Morph; 4,096 samples; only replace contours with fewer points. Reference Simplify algorithm/slider parity unverified. Local only, not alpha.21 |

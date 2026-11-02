@@ -1166,3 +1166,23 @@ anchor semantics therefore remain unverified against Figma. Pxl Prfct extends it
 existing Delete control/keyboard action, retaining dimensions/icons and adding a
 short selection hint. No new panel, dropdown or toolbar arrangement is introduced.
 This verifies the local implementation, not full Figma workflow/pixel parity.
+
+
+## 2026-11-02 — Smoothing existing paths reference boundary
+
+Read-only live Figma inspection in Capwah Components confirmed More exposes Shape
+builder and Variable width. Its dark menu measures approximately 190 × 64 CSS px
+at 2× capture, with 24px action rows and 12px labels. The Vector menu exposes
+Simplify Vector separately from Smooth Join Selection. No reference geometry
+command was executed. `.local/svg-path-smoothing/figma-reference.png` records the
+existing vector toolbar and right inspector after dismissing the menus.
+
+Figma's [Simplify a vector path](https://help.figma.com/hc/en-us/articles/33792593975575-Simplify-a-vector-path)
+documentation describes an adjustable slider that reduces points. That slider's
+live appearance/interaction and underlying algorithm have not been verified.
+Pxl Prfct's bounded smoothing feature reuses its shared 24px number field and
+existing Path inspector styling with an explicit Smooth path action. It extends
+the existing Pencil reduction policy to existing open/closed artwork; it is not
+a verified facsimile of Figma's Simplify slider or an interactive smoothing brush.
+The wider reference-parity gap remains open. Local evidence:
+`.local/svg-path-smoothing/{smoothed,live-preview}.png`.

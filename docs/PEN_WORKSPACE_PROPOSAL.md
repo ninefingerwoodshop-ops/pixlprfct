@@ -1,7 +1,7 @@
 # Pen workspace proposal
 
 Updated November 2, 2026. **Drawing foundation shipped in alpha.21; arbitrary
-segment insertion, group anchor actions and whole-subpath removal are verified
+segment insertion, group anchor actions, whole-subpath removal and smoothing are verified
 in local source only.**
 
 The owner authorized roadmap development after the planning pass. Pen, core
@@ -68,7 +68,7 @@ also ships in Design in the first release remains a scope decision.
 | Convert Anchor | Switch corner/smooth behavior; separate or reconnect handles | Corner/smooth conversion; independent, angle-only and angle-and-length mirroring verified locally (November 2) |
 | Split/Join | Cut at an anchor, open a closed path, and join compatible endpoints | Implemented locally within and across compatible SVG path elements; independent animation/references remain guarded |
 | Pencil | Draw editable freehand paths with adjustable smoothing | Implemented locally; 0–100% smoothing, Shift constraint, round ends and editable cubic handles |
-| Smooth | Refine an existing path without redrawing the whole object | Proposed detail; exact gesture to discuss |
+| Smooth | Refine an existing path without redrawing the whole object | Local whole-path reduction with 0–100% amount and Smooth path in the Path inspector; closed seams/endpoints, compact-curve no-ops and one Undo |
 | Brush | Expressive strokes, potentially including pressure, width and presets | Accepted candidate; behavior and release scope not set |
 
 Fill and stroke colors are explicitly requested. Fill/stroke none, opacity,
@@ -339,3 +339,36 @@ or verified, so no exact workflow/pixel parity is claimed. Evidence:
 This supersedes the earlier whole-subpath-removal remainder. Local source only,
 not alpha.21. Next bounded vector step: smoothing existing paths. Multi-object
 editing and joining independently animated/referenced paths remain open.
+
+
+## 2026-11-02 — Smoothing existing paths (local source)
+
+The Path inspector now provides a session-only **Smoothing %** setting and an
+explicit **Smooth path** action. It refines every subpath in the selected base
+path, including when only some anchors are selected. The amount alone changes
+no artwork. Zero strength and already-compact contours are no-ops; each successful
+pass has one Undo. Native reopening, animated SVG export and detached inspectors
+retain the result and share history.
+
+The model samples actual cubic segments in screen space, then reuses Pencil's
+point reduction and corner/handle policy. Closed rings reduce both sides of a
+fixed seam, retain non-collinear area, and fit seam handles cyclically. Open
+endpoints stay fixed. A pass only replaces contours when it reduces their anchor
+count; existing economical cubic geometry/metadata is retained exactly. Retained
+sharp turns stay corners; smooth fitted points receive angle-mirroring metadata.
+Paint/transform attributes, element identity, animation tracks and origins persist.
+
+Invalid values, non-invertible transforms, excessive sampling or out-of-range
+results reject the entire pass. Join, drawing/anchor/selection/object gestures,
+playback, read-only leases and timed Morph remain guarded. Amount cancellation
+and invalid fields write no artwork; a completed pass resets anchor selection to
+the first surviving anchor and restores the action's keyboard focus.
+
+Six model tests plus the four shared Pencil tests verify geometry/reduction,
+cubic shape, closed seams, endpoints, transforms, no-ops and atomic failures.
+Six browser workflows cover the controls, guards, history, native reopening,
+clean export and detached Inspector. Evidence:
+`.local/svg-path-smoothing/{smoothed,live-preview}.png`.
+This closes whole-path smoothing locally, not in alpha.21. Interactive brush
+smoothing and full reference Simplify semantics are separate scope. Next bounded
+vector step: multi-object selection; duplication and grouping follow separately.

@@ -507,3 +507,19 @@ Other artwork is retained. One Undo restores everything; Redo, native reopening
 and SVG export preserve the result. Base editing remains unavailable for timed
 Morph paths and read-only documents. This completes the earlier whole-subpath
 removal remainder locally, not in alpha.21. Smoothing existing paths is next.
+
+
+### Smooth existing artwork (November 2 local source)
+
+Select a path, set **Smoothing %** in its **Path** inspector, and choose **Smooth
+path**. The action reduces points and smooths all its subpaths. Open endpoints
+stay in place; retained sharp turns stay corners, and closed paths keep their
+seam connected. Already-compact curves retain their geometry. The amount alone
+changes no artwork, and zero is a no-op. One Undo restores the whole pass.
+
+The setting uses a tolerance in visible canvas pixels, so zoom affects how much
+detail is retained. Native reopening and SVG exports preserve the result. Paint
+settings and existing animation stay attached to the element. Read-only files,
+playback, active gestures, Join and timed Morph paths cannot apply smoothing.
+This also works from a detached Inspector. This completes the earlier smoothing
+remainder locally, not in alpha.21. Multi-object selection is next.
