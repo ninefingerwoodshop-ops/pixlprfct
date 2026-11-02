@@ -13,8 +13,8 @@ test.beforeEach(async({page})=>{await page.route(/https?:\/\//,r=>new URL(r.requ
 test('Shift-click toggles anchors; group keyboard movement carries handles, saves and exports with one undo',async({page})=>{
  await open(page);const before=await saved(page),points=await geometry(page);
  await anchor(page,1).click({modifiers:['Shift']});await expect(selected(page)).toHaveCount(2);
- for(const name of ['Add midpoint after anchor','Split path at anchor','Join endpoints','Continue selected endpoint'])await expect(page.getByRole('button',{name,exact:true})).toBeDisabled();
- for(const name of ['Delete selected anchors','Smooth selected anchors','Corner selected anchors'])await expect(page.getByRole('button',{name,exact:true})).toBeEnabled();
+ for(const name of ['Split path at anchor','Join endpoints','Continue selected endpoint'])await expect(page.getByRole('button',{name,exact:true})).toBeDisabled();
+ for(const name of ['Add midpoints after selected anchors','Delete selected anchors','Smooth selected anchors','Corner selected anchors'])await expect(page.getByRole('button',{name,exact:true})).toBeEnabled();
  await expect(page.getByRole('radio',{name:'Mirror angle',exact:true})).toBeDisabled();
  await anchor(page,1).press('Shift+ArrowRight');let moved=await geometry(page);
  for(const i of [0,1])expect(moved[i]).toEqual(points[i].map((n,j)=>n+(j%2?0:10)));expect(moved[2]).toEqual(points[2]);await expect(selected(page)).toHaveCount(2);

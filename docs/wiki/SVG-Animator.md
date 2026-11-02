@@ -444,3 +444,51 @@ Surviving handles remain unchanged, so deleting anchors can change the curve.
 After deletion a nearby survivor in each affected subpath becomes selected.
 Bulk insertion/mirroring and removing entire subpaths remain open. See the
 [delivery record](../SVG_ANIMATION.md#2026-11-02--bulk-anchor-actions-local-source).
+
+
+### Lasso-select base-path anchors (local source, not alpha.21)
+
+Choose **Edit base path**, then **Lasso** in Pen tools. Draw around anchors to
+select them; release to close the region. Hold Shift when starting to add to the
+selection. The lasso selects anchors across subpaths of the current element,
+using the shape you draw. Handles do not count as anchors. Escape restores the
+previous selection; an empty loop clears the anchor group and keeps the path.
+
+Drag or nudge the resulting group, or use the Smooth, Corner and Delete controls.
+Press **A** for rectangular selection while keeping your selected anchors.
+Lasso selection adds no Undo entry. It is unavailable for timed Morph paths,
+read-only documents or while choosing a Join target. This completes the lasso
+remainder noted above; bulk insertion/mirroring and multi-object editing remain
+open. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--lasso-anchor-selection-local-source).
+
+
+### Mirror handles on selected anchors (local source, not alpha.21)
+
+Select curved interior anchors in **Edit base path**, then choose a Mirroring
+mode in the Path inspector. **Mirror angle** aligns the opposite handle while
+keeping its length; **Mirror angle and length** matches both. **No mirroring**
+keeps the current curve and makes future handle edits independent. Different
+selected modes leave all three options unselected. Keyboard arrows or Home/End
+choose a mode; the selected group stays selected, and one Undo restores it.
+
+Group changes use each anchor's outgoing handle, falling back to incoming when
+outgoing is collapsed. All selected anchors must be eligible: smooth corners
+first, and exclude open endpoints. No partial changes occur if a result exceeds
+coordinate limits. Saved reopening and SVG export preserve the resulting curves.
+This closes the earlier bulk-mirroring remainder; bulk insertion stays open.
+See the [delivery record](../SVG_ANIMATION.md#2026-11-02--bulk-handle-mirroring-local-source).
+
+
+### Add midpoints to selected segments (November 2 local source)
+
+In **Edit base path**, select anchors with Shift-click, a box or Lasso and choose
+**Add midpoints after selected anchors** in Pen tools. This subdivides the segment
+after each anchor without changing its curve, including adjacent segments and
+closed seams. The new midpoints stay selected; one Undo restores the whole edit.
+
+Exclude the last anchor of an open path, which has no following segment. If any
+selected anchor is invalid or the result exceeds 512 total anchors, no segment
+changes. Existing animation and appearance stay intact; native reopening and
+animated SVG export preserve the result. Read-only and timed Morph paths retain
+their editing restrictions. This resolves the earlier bulk-insertion remainder
+in local source only, not alpha.21. Whole-subpath removal is the next vector step.

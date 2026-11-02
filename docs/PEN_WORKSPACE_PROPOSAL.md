@@ -242,3 +242,73 @@ to every reference deletion/healing behavior. Local only, not alpha.21.
 
 Next bounded vector scope: lasso anchor selection. Bulk insertion/mirroring,
 removing entire subpaths, and multi-object editing remain open.
+
+
+## 2026-11-02 — Lasso anchor selection (local source)
+
+In Edit base path, Lasso in Pen tools selects anchors inside a freeform outline
+across subpaths of the current element. The closing edge is implicit; concave
+and crossing regions use the drawn shape rather than its bounding rectangle.
+Highlights update during the gesture. Shift extends the group, Escape restores
+it, and Direct Selection (A) returns to box selection without losing the group.
+The selected anchors support existing group movement and bulk actions.
+Selection never edits artwork or adds Undo history. Cancellation, read-only
+leases, timed Morph paths and Join-target mode retain the existing protections.
+
+Live Figma's Lasso control and non-area trace behavior were inspected first.
+The 62 × 24px control, 16px icon, label, radius and active color follow that
+reference; full freeform reference gestures and transient fill were not captured.
+Six browser workflows and three geometry tests cover the local behavior.
+Evidence: `.local/svg-lasso/{tracing,live-preview,figma-lasso-control}.png`.
+This completes the earlier lasso remainder locally, not in alpha.21 downloads.
+Next bounded vector step: bulk handle mirroring. Bulk insertion, whole-subpath
+removal and multi-object editing remain open.
+
+
+## 2026-11-02 — Bulk handle mirroring (local source)
+
+The existing Path inspector Mirroring control now applies independent, angle-only
+or angle-and-length modes to selected curved interior anchors across subpaths.
+Mixed modes leave all three segments unselected, with a keyboard entry point on
+No mirroring. Group edits keep the selected anchors and make one Undo entry.
+Each anchor's outgoing handle drives group alignment; a collapsed outgoing handle
+falls back to its incoming handle. Single-anchor edits retain the selected-handle
+behavior. Angle-only keeps the opposite length; independent mode preserves the
+curve. Any ineligible anchor or out-of-range result rejects the entire action.
+
+The 184 × 24px inspector control and icon arrangement are unchanged. Live Figma
+multi-anchor inspector layout was inspected read-only; automatic approval review
+blocked applying a reference mode because it could alter persisted artwork.
+Reference group geometry and mixed-state equivalence therefore remain unverified.
+Five browser workflows and three model tests cover local behavior, including
+native reopening, export, animation isolation, keyboard/focus and detached panels.
+Evidence: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+This completes bulk mirroring locally, not in alpha.21. Next bounded vector step:
+bulk midpoint insertion. Whole-subpath removal and multi-object editing remain open.
+
+
+## 2026-11-02 — Bulk midpoint insertion (local source)
+
+Add midpoints after selected anchors extends the existing midpoint action to a
+group within one base-path element. It subdivides each selected anchor’s following
+segment at t=0.5, including adjacent segments and closed seams, without changing
+the cubic curves. Original indexes are resolved before insertion; new midpoints
+become the selection, with a single Undo entry. Other subpaths, transforms,
+appearance and animation tracks stay intact. Any open final endpoint, stale
+address or result over 512 total anchors rejects the entire operation. Active
+node/selection drags, Join, timed Morph and read-only editing remain guarded.
+
+Four model tests verify all original curves, selection ordering/deduplication,
+mirroring metadata and atomic endpoint/limit rejection. Four browser workflows
+verify group insertion, persistence/export, Undo/Redo, selection and gesture guards;
+existing group tests cover Join, leases and Morph. Undo also repairs the active
+anchor when a newly inserted point disappears, so Split/Continue/Join address the
+surviving selection. Live Figma’s vector toolbar and
+Vector menu were inspected read-only; no equivalent bulk midpoint command was
+identified. The existing local control retains its layout and icon with a plural
+label. This is a PixlPrfct extension, not a claim of reference workflow parity.
+Evidence: `.local/svg-bulk-insertion/{inserted,live-preview}.png`.
+
+This closes the earlier bulk-insertion remainder locally, not in alpha.21.
+Next bounded vector step: whole-subpath removal. Multi-object editing and
+joining independently animated or referenced paths remain open.

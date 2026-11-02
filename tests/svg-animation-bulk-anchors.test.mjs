@@ -24,7 +24,7 @@ test('group deletion uses original indexes across open and closed subpaths and r
 
 test('bulk operations reject invalid selections, undersized subpaths and out-of-bounds smoothing atomically',()=>{
  const value=fixture(),before=structuredClone(value);
- for(const operation of ['delete','smooth','corner']){assert.throws(()=>editPathAnchors(value,[],operation),/Select anchors/);assert.throws(()=>editPathAnchors(value,[[0,1],[3,0]],operation),/no longer available/);assert.throws(()=>editPathAnchors(value,[[0,1.5]],operation),/no longer available/);}
- assert.throws(()=>editPathAnchors(value,[[0,1],[2,0]],'delete'),/two anchors in each subpath/);assert.throws(()=>editPathAnchors(value,[[1,0],[1,1],[1,2]],'delete'),/two anchors/);assert.throws(()=>editPathAnchors(value,[[0,1]],'insert'),/Delete, Smooth or Corner/);assert.deepEqual(value,before);
+ for(const operation of ['insert','delete','smooth','corner']){assert.throws(()=>editPathAnchors(value,[],operation),/Select anchors/);assert.throws(()=>editPathAnchors(value,[[0,1],[3,0]],operation),/no longer available/);assert.throws(()=>editPathAnchors(value,[[0,1.5]],operation),/no longer available/);}
+ assert.throws(()=>editPathAnchors(value,[[0,1],[2,0]],'delete'),/two anchors in each subpath/);assert.throws(()=>editPathAnchors(value,[[1,0],[1,1],[1,2]],'delete'),/two anchors/);assert.throws(()=>editPathAnchors(value,[[0,1]],'unknown'),/Insert, Delete, Smooth or Corner/);assert.deepEqual(value,before);
  const edge=morphPath('M99990 -20L100000 0L99999 20'),copy=structuredClone(edge);assert.throws(()=>editPathAnchors(edge,[[0,0],[0,1]],'smooth'),/100,000/);assert.deepEqual(edge,copy);
 });

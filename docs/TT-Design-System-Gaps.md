@@ -555,6 +555,40 @@ by this planning pass, and no new editor feature was implemented or shipped.
     bulk actions from the earlier B42 remainder; bulk insertion/mirroring, full
     subpath removal, lasso and multi-object editing remain open. Local only,
     not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42n — Lasso anchor selection within one SVG base-path element.~~
+    Local resolution (2026-11-02): Lasso in Pen tools selects anchors inside a
+    freeform region across subpaths, with live highlights and Shift extension.
+    Concave/crossing outlines, boundaries and transforms/zoom are covered by
+    three model tests; six browser workflows cover group edits, tool switching,
+    cancellation, handle-only/empty regions, Join, read-only and Morph guards.
+    Selection changes no artwork/history; a straight trace selects nothing.
+    Evidence: `.local/svg-lasso/{tracing,live-preview,figma-lasso-control}.png`.
+    This resolves the lasso remainder in earlier B42 entries. Bulk insertion and
+    mirroring, full subpath removal, multi-object editing and full visual parity
+    remain open. Local only, not alpha.21; no TerritoryIQ issue is resolved.
+  - [x] ~~B42o — Bulk handle mirroring for selected curved interior anchors.~~
+    Local resolution (2026-11-02): existing inspector segments apply independent,
+    angle-only or angle-and-length modes across subpaths, with mixed state,
+    retained group selection, keyboard focus and one Undo. The whole request
+    rejects if any anchor is ineligible or any result exceeds coordinate bounds.
+    Five browser workflows and three model tests cover geometry, validation,
+    native reopening/export, detached inspector, box/lasso and editing guards.
+    Evidence: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+    This closes the bulk-mirroring remainder above. Bulk insertion, whole-subpath
+    removal, multi-object editing and reference group behavior/parity remain open.
+    Local only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42p — Bulk midpoint insertion after selected base-path anchors.~~
+    Local resolution (2026-11-02): existing midpoint control subdivides original
+    following segments across subpaths, including adjacent segments and closed
+    seams, with exact curve preservation, new-midpoint selection and one Undo.
+    Invalid open endpoints, addresses or anchor-limit overflow reject atomically.
+    Four model tests and four browser workflows cover geometry, ordering,
+    metadata, selection, gestures, history, native reopening and animated export;
+    existing Join/read-only/Morph checks also cover insertion.
+    Evidence: `.local/svg-bulk-insertion/{inserted,live-preview}.png`.
+    This closes the earlier bulk-insertion remainder. Whole-subpath removal is
+    next; multi-object editing and full reference parity remain open.
+    Local only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -754,3 +788,31 @@ B42m final verification (2026-11-02, local source): 145 SVG Chromium browser
 scenarios, 64 SVG model tests, four responsive website checks, targeted lint,
 type checking, editor asset build and diff checks pass. In-app bulk Smooth and
 one-step Undo verified; `.local/svg-bulk-anchors/live-preview.png`. Not released.
+
+
+B42n final verification (2026-11-02, local source): 151 SVG Chromium browser
+scenarios, 67 SVG model tests and four responsive website checks pass. Six lasso
+workflows passed again after the final docked-control style correction. Targeted
+lint, types, editor asset build and diff checks pass. In-app Lasso activation,
+empty-region clearing and Shift anchor selection verified; refreshed preview
+kept open. `.local/svg-lasso/live-preview.png` records the final control.
+Not released; full reference parity and TerritoryIQ work remain open.
+
+
+B42o final verification (2026-11-02, local source): 156 SVG Chromium browser
+scenarios, 70 SVG model tests and four responsive website checks pass, plus
+TypeScript, targeted lint, editor asset build and diff checks. In-app group
+mirroring, one-step Undo and Redo verified on the new sample; editor and Dev Log
+previews remain open. Evidence: `.local/svg-bulk-mirroring/live-preview.png`.
+Not released; full reference equivalence and TerritoryIQ work remain open.
+
+
+B42p final verification (2026-11-02, local source): all 160 SVG Chromium browser
+scenarios, 74 SVG model tests and four responsive website checks pass, plus
+TypeScript, targeted lint, editor build and diff checks. The final browser run
+includes repaired active-anchor selection after topology Undo and a stage test
+that waits for imported artwork to persist before creating its read-only fixture.
+In-app adjacent/closed-seam insertion, one-step Undo and Redo verified; editor
+and updated Dev Log previews remain open. Evidence:
+`.local/svg-bulk-insertion/live-preview.png`. Not released; full reference parity
+and TerritoryIQ code/design-file work remain open.

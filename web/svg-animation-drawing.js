@@ -5,13 +5,13 @@ import {installMorphNodes} from './svg-animation-nodes.js';
 import {installPathJoinTargets,joinPathElements} from './svg-animation-join.js';
 import {installPathMarquee} from './svg-animation-marquee.js';
 import {checkedPath,editAnchor,editPathAnchors,continuePath,pencilPath,splitPath,joinEndpoints,isEndpoint,nearestPathSegment,movePathAnchors} from './svg-animation-drawing-model.js';
-import {mirroringAttribute,readMirroring,writeMirroring,mirroringMode,canMirror,setHandleMirroring,movePathPoint} from './svg-animation-mirroring.js';
+import {mirroringAttribute,readMirroring,writeMirroring,mirroringMode,canMirror,setPathHandleMirroring,movePathPoint} from './svg-animation-mirroring.js';
 
 const NS='http://www.w3.org/2000/svg';
-const anchorIcons={'vector-smooth':'M3 17C3 5 21 5 21 17M5 8h14M12 8v4M10 12h4v4h-4Z','vector-corner':'M3 18 12 7l9 11M10 5h4v4h-4Z'};
+const anchorIcons={'lasso':'M7 5 10 3M13 3l2 1M18 5l2 2M21 10v2M20 15l-1 2M16 19l-2 1M11 21H9M6 20l-2-2M3 15v-2M3 10l1-2M5 6 9 4','vector-smooth':'M3 17C3 5 21 5 21 17M5 8h14M12 8v4M10 12h4v4h-4Z','vector-corner':'M3 18 12 7l9 11M10 5h4v4h-4Z'};
 const button=(name,glyph,run)=>{const b=el('button');b.type='button';b.title=name;b.setAttribute('aria-label',name);b.innerHTML=anchorIcons[glyph]?`<svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${anchorIcons[glyph]}"/></svg>`:icon(glyph);b.onclick=run;return b;};
 export function installSvgDrawing({host,workspace,toolbar,read,select,change,start,refresh,paint,remove,report,restorePanel=()=>{}}){
- let mode='select',draft=null,gesture=null,selection=[0,0],selections=[[0,0]],selectionOwner=null,position=null,paintSync=[],mirrorSync=[],activeHandle='out',activeDocument=null,suppressClick=false,smoothing=50,joinFrom=null,hover=null,hiddenSource=null;
+ let mode='select',selectionShape='box',draft=null,gesture=null,selection=[0,0],selections=[[0,0]],selectionOwner=null,position=null,paintSync=[],mirrorSync=[],activeHandle='out',activeDocument=null,suppressClick=false,smoothing=50,joinFrom=null,hover=null,hiddenSource=null;
  const attempt=fn=>(...args)=>{try{return fn(...args);}catch(error){report(error.message);}};
  const overlay=document.createElementNS(NS,'svg');overlay.classList.add('svg-drawing-preview');overlay.setAttribute('aria-hidden','true');host.append(overlay);host.tabIndex=-1;
  const palette=el('div','svg-pen-palette');palette.dataset.detachablePanel='pen';palette.dataset.panelLabel='Pen tools';palette.setAttribute('role','toolbar');palette.setAttribute('aria-label','Pen tools');palette.hidden=true;
@@ -25,7 +25,8 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  const actions=[['Add midpoint after anchor','plus','insert'],['Delete anchor','minus','delete'],['Smooth anchor','vector-smooth','smooth'],['Corner anchor','vector-corner','corner']].map(([name,glyph,op])=>{
   const b=button(name,glyph,attempt(()=>applyAnchorAction(op)));b.dataset.anchorAction=op;tools.append(b);return b;
  });
- tools.prepend(pen,pencil,direct);const resume=button('Continue selected endpoint','pen',attempt(()=>{
+ const lasso=button('Lasso','lasso',()=>setMode('direct','lasso'));lasso.className='svg-lasso-tool';lasso.append(el('span','','Lasso'));
+ tools.prepend(pen,pencil,direct,lasso);const resume=button('Continue selected endpoint','pen',attempt(()=>{
   const state=nodeState();if(!state?.enabled||selections.length!==1)return;const value=continuePath(state.value,...selection);nodes.cancel();start();mode='pen';draft={value,path:selection[0],id:read().selected};update();refresh();
  }));tools.append(resume);palette.append(tools);
  const finish=button('Finish open path (Enter)','check',attempt(()=>finishPath(false)));finish.className='svg-pen-finish';finish.append(el('span','','Finish path'));tools.append(finish);
@@ -47,14 +48,14 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  function nodeState(){
   const s=read(),source=pathSource();if(mode!=='direct'||!source||draft||s.running||s.animation.tracks.some(t=>t.element===s.selected&&t.property==='morph'))return null;
   if(selectionOwner!==s.selected){selectionOwner=s.selected;selection=[0,0];selections=[[0,0]];}
-  try{const value=readMirroring(morphPath(source.getAttribute('d')),source.getAttribute(mirroringAttribute));if(!value[selection[0]]?.points[selection[1]])selection=[0,0];selections=selections.filter(([path,index])=>value[path]?.points[index]);return {node:s.root.querySelector('#'+s.selected),value,selection,selections,enabled:s.enabled,dragEnabled:!joinFrom};}catch{return null;}
+  try{const value=readMirroring(morphPath(source.getAttribute('d')),source.getAttribute(mirroringAttribute));selections=selections.filter(([path,index])=>value[path]?.points[index]);if(!selections.some(([path,index])=>path===selection[0]&&index===selection[1]))selection=selections.at(-1)??[0,0];return {node:s.root.querySelector('#'+s.selected),value,selection,selections,selectionShape,enabled:s.enabled,dragEnabled:!joinFrom};}catch{return null;}
  }
  function savePath(value){
   checkedPath(value);const s=read();if(!s.enabled)return;const root=s.source.cloneNode(true),node=root.querySelector('#'+s.selected);node.setAttribute('d',morphData(value));const modes=writeMirroring(value);if(modes)node.setAttribute(mirroringAttribute,modes);else node.removeAttribute(mirroringAttribute);change(root,s.selected);
  }
  function applyAnchorAction(operation,focus=false){
-  const state=nodeState();if(!state?.enabled||joinFrom||!selections.length||nodes.dragging||operation==='insert'&&selections.length!==1)return;
-  const next=operation==='insert'?{value:editAnchor(state.value,...selection,'insert'),selections:[[selection[0],selection[1]+1]]}:editPathAnchors(state.value,selections,operation);
+  const state=nodeState();if(!state?.enabled||joinFrom||!selections.length||nodes.dragging||marquee.dragging)return;
+  const next=editPathAnchors(state.value,selections,operation);
   selections=next.selections;selection=selections.at(-1);savePath(next.value);
   if(focus)host.querySelector(`[data-morph-point="${selection[0]}-${selection[1]}-anchor"]`)?.focus({preventScroll:true});
  }
@@ -72,8 +73,8 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   const next=joinPathElements({source:s.source,scene:s.root,animation:s.animation,fromId:s.selected,from:joinFrom,toId:id,to});
   joinFrom=null;selection=next.selection;selections=[[...selection]];change(next.root,s.selected,next.removed);
  },report});
- function setMode(next){if(draft&&!draft.pencil&&!gesture&&draft.value[draft.path].points.length>=2)finishPath(false);cancel();start();mode=next;selection=[0,0];selections=[[0,0]];if(next==='pen'||next==='pencil')select(null);palette.hidden=next==='select'&&!docked;update();refresh();}
- const marquee=installPathMarquee({host,workspace,read:nodeState,select:pairs=>{selections=pairs;selection=pairs.at(-1)??selection;nodes.update();updateActions();}});
+ function setMode(next,shape='box'){if(draft&&!draft.pencil&&!gesture&&draft.value[draft.path].points.length>=2)finishPath(false);const preserve=mode==='direct'&&next==='direct';cancel();start();mode=next;selectionShape=shape;if(!preserve){selection=[0,0];selections=[[0,0]];}if(next==='pen'||next==='pencil')select(null);palette.hidden=next==='select'&&!docked;update();refresh();}
+ const marquee=installPathMarquee({host,workspace,read:nodeState,select:pairs=>{selections=pairs;selection=pairs.at(-1)??selection;nodes.update();updateActions();},report});
  function restoreSource(){if(hiddenSource){hiddenSource.node.style.visibility=hiddenSource.visibility;hiddenSource=null;}}
  function cancel(){gesture?.cancel();marquee.cancel();nodes.cancel();draft=null;joinFrom=null;joinTargets.clear();hover=null;restoreSource();overlay.replaceChildren();}
  function suspend(){cancel();mode='select';palette.hidden=!docked;update();}
@@ -101,26 +102,28 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   }));
   function dot(p,r){const n=document.createElementNS(NS,'circle');n.setAttribute('cx',p.x-box.left);n.setAttribute('cy',p.y-box.top);n.setAttribute('r',r);n.setAttribute('class','svg-morph-glyph');overlay.append(n);}
  }
- function updateActions(){const state=nodeState(),endpoint=state&&isEndpoint(state.value[selection[0]],selection[1]);actions.forEach(b=>{b.disabled=!state?.enabled||!!joinFrom||!selections.length||b.dataset.anchorAction==='insert'&&selections.length!==1;const names={insert:'Add midpoint after anchor',delete:selections.length>1?'Delete selected anchors':'Delete anchor',smooth:selections.length>1?'Smooth selected anchors':'Smooth anchor',corner:selections.length>1?'Corner selected anchors':'Corner anchor'},name=names[b.dataset.anchorAction];b.title=name;b.setAttribute('aria-label',name);});resume.disabled=!state?.enabled||!endpoint||!!joinFrom||selections.length!==1;finish.disabled=!draft||draft.pencil||draft.value[draft.path].points.length<2||!read().enabled;
+ function updateActions(){const state=nodeState(),endpoint=state&&isEndpoint(state.value[selection[0]],selection[1]);actions.forEach(b=>{b.disabled=!state?.enabled||!!joinFrom||!selections.length;const names={insert:selections.length>1?'Add midpoints after selected anchors':'Add midpoint after anchor',delete:selections.length>1?'Delete selected anchors':'Delete anchor',smooth:selections.length>1?'Smooth selected anchors':'Smooth anchor',corner:selections.length>1?'Corner selected anchors':'Corner anchor'},name=names[b.dataset.anchorAction];b.title=name;b.setAttribute('aria-label',name);});resume.disabled=!state?.enabled||!endpoint||!!joinFrom||selections.length!==1;finish.disabled=!draft||draft.pencil||draft.value[draft.path].points.length<2||!read().enabled;
   split.disabled=!state?.enabled||!!joinFrom||endpoint||selections.length!==1;join.disabled=!state?.enabled||!endpoint||selections.length!==1;join.setAttribute('aria-pressed',String(!!joinFrom));joinHint.hidden=!joinFrom;
-  penHint.hidden=mode!=='pen';directHint.hidden=!state||!!joinFrom;discard.disabled=!draft;deletePath.disabled=!read().enabled||!pathSource()||!!draft;
+  penHint.hidden=mode!=='pen';directHint.hidden=!state||!!joinFrom;directHint.textContent=selectionShape==='lasso'?'Draw around anchors to select them. Hold Shift to add. Escape cancels; Direct Selection (A) returns to box selection.':'Drag a box to select anchors. Hold Shift to add, or Shift-click to toggle. Move selected anchors with a drag or arrow keys. Double-click a segment to add an anchor.';lasso.disabled=!state?.enabled||!!joinFrom;discard.disabled=!draft;deletePath.disabled=!read().enabled||!pathSource()||!!draft;
   mirrorSync=mirrorSync.filter(({host})=>host.isConnected);mirrorSync.forEach(({sync})=>sync());
  }
  function mirroringControls(container){
   const row=el('div','svg-mirroring'),caption=el('div','svg-mirroring-label','Mirroring'),group=el('div','svg-mirroring-options');group.setAttribute('role','radiogroup');group.setAttribute('aria-label','Handle mirroring');row.append(caption,group);container.append(row);
   const options=[['n','No mirroring','M5 16 9 8h10M6 17l3-9 9 9'],['a','Mirror angle','M5 8h15M5 17c0-6 2-9 4-9s8 3 10 9'],['s','Mirror angle and length','M4 8h16M5 17c1-6 4-9 7-9s6 3 7 9']];
-  const choose=attempt((value,focus=false)=>{const state=nodeState();if(!state?.enabled||joinFrom||selections.length!==1||!canMirror(state.value[selection[0]],selection[1]))return;savePath(setHandleMirroring(state.value,...selection,value,activeHandle));if(focus)mirrorSync.find(r=>r.host.isConnected)?.host.querySelector(`[data-mirroring="${value}"]`)?.focus();});
+  const available=state=>state?.enabled&&!joinFrom&&selections.length>0&&selections.every(([path,index])=>canMirror(state.value[path],index));
+  const choose=attempt((value,focus=false)=>{const state=nodeState();if(!available(state)||nodes.dragging||marquee.dragging)return;savePath(setPathHandleMirroring(state.value,selections,value,selections.length===1?activeHandle:'out'));if(focus)mirrorSync.find(r=>r.host.isConnected)?.host.querySelector(`[data-mirroring="${value}"]`)?.focus();});
   options.forEach(([value,label,path])=>{const b=el('button');b.type='button';b.setAttribute('role','radio');b.setAttribute('aria-label',label);b.dataset.mirroring=value;b.title=label;b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/><circle cx="${value==='s'?12:9}" cy="8" r="1.5" fill="var(--ui-panel)"/><circle cx="${value==='n'?5:4}" cy="${value==='n'?16:8}" r="1" fill="currentColor"/><circle cx="20" cy="8" r="1" fill="currentColor"/></svg>`;b.onclick=()=>choose(value);group.append(b);});
   group.onkeydown=e=>{const buttons=[...group.children],index=buttons.indexOf(e.target);if(index<0||!['ArrowLeft','ArrowRight','Home','End',' ','Enter'].includes(e.key))return;e.preventDefault();e.stopPropagation();const next=e.key==='Home'?0:e.key==='End'?2:e.key==='ArrowLeft'?(index+2)%3:e.key==='ArrowRight'?(index+1)%3:index;choose(options[next][0],true);};
-  const sync=()=>{const state=nodeState();row.hidden=!state;const enabled=state?.enabled&&!joinFrom&&selections.length===1&&canMirror(state.value[selection[0]],selection[1]),current=state?mirroringMode(state.value[selection[0]],selection[1]):'n';for(const b of group.children){const selected=b.dataset.mirroring===current;b.disabled=!enabled;b.setAttribute('aria-checked',String(selected));b.tabIndex=selected&&enabled?0:-1;b.title=enabled?b.getAttribute('aria-label'):'Select one curved interior anchor, or use Smooth anchor first.';}};
+  const sync=()=>{const state=nodeState();row.hidden=!state;const enabled=available(state),modes=state?selections.map(([path,index])=>mirroringMode(state.value[path],index)):[],current=modes.length&&modes.every(mode=>mode===modes[0])?modes[0]:null;group.setAttribute('aria-description',modes.length&&current===null?'Selected anchors use different mirroring modes.':'');for(const b of group.children){const selected=b.dataset.mirroring===current;b.disabled=!enabled;b.setAttribute('aria-checked',String(selected));b.tabIndex=enabled&&(selected||current===null&&b===group.firstElementChild)?0:-1;b.title=enabled?b.getAttribute('aria-label'):'Select curved interior anchors, or use Smooth anchor first.';}};
   mirrorSync.push({host:row,sync});sync();return row;
  }
  function clamp(){if(docked||palette.ownerDocument!==document)return;const w=workspace.clientWidth,h=workspace.clientHeight;position??={x:w-palette.offsetWidth-16,y:56};position.x=Math.max(8,Math.min(position.x,Math.max(8,w-palette.offsetWidth-8)));position.y=Math.max(8,Math.min(position.y,Math.max(8,h-palette.offsetHeight-72)));palette.style.left=position.x+'px';palette.style.top=position.y+'px';}
  function update(){
   marquee.cancel();syncDock();const s=read();if(activeDocument!==s.animation){cancel();activeDocument=s.animation;}if(!s.enabled)cancel();
   host.dataset.drawingTool=mode;workspace.dataset.drawingTool=mode;
+  host.dataset.anchorSelection=selectionShape;workspace.dataset.anchorSelection=selectionShape;
   toolbar.querySelector('#svg-select-tool')?.setAttribute('aria-pressed',String(mode==='select'));
-  for(const b of [pen,penTool])b.setAttribute('aria-pressed',String(mode==='pen'));for(const b of [direct,directTool])b.setAttribute('aria-pressed',String(mode==='direct'));
+  for(const b of [pen,penTool])b.setAttribute('aria-pressed',String(mode==='pen'));directTool.setAttribute('aria-pressed',String(mode==='direct'));direct.setAttribute('aria-pressed',String(mode==='direct'&&selectionShape==='box'));lasso.setAttribute('aria-pressed',String(mode==='direct'&&selectionShape==='lasso'));
   for(const b of [pencil,pencilTool])b.setAttribute('aria-pressed',String(mode==='pencil'));pencilOptions.hidden=mode!=='pencil';const input=smoothingField.querySelector('input');input.disabled=!s.enabled;syncInput(input,smoothing);
   nodes.update();joinTargets.update();drawDraft();updateActions();paintSync=paintSync.filter(({host})=>host.isConnected);paintSync.forEach(({sync})=>sync());if(!palette.hidden)clamp();
  }
@@ -178,7 +181,7 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  });
  host.addEventListener('pointerleave',()=>{hover=null;if(draft&&!gesture)drawDraft();});
  function segmentHit(e){
-  if(e.button!==0||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||joinFrom||gesture||nodes.dragging||e.target.closest('.svg-morph-point'))return null;
+  if(e.button!==0||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||selectionShape==='lasso'||joinFrom||gesture||nodes.dragging||e.target.closest('.svg-morph-point'))return null;
   const state=nodeState(),matrix=state?.node?.getScreenCTM();if(!state?.enabled||!matrix)return null;
   const hit=nearestPathSegment(state.value,{x:e.clientX,y:e.clientY},matrix);return hit?{state,hit}:null;
  }

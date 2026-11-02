@@ -1126,3 +1126,110 @@ Bulk-action verification (2026-11-02): all 145 SVG Chromium browser scenarios,
 checking, editor asset build and diff checks pass. In-app preview Smooth updated
 both selected endpoints and one Undo restored their original handles. Local and
 unreleased; cross-browser and complete reference parity remain unverified.
+
+
+## 2026-11-02 — Lasso anchor selection (local source)
+
+Choose **Edit base path**, then **Lasso** in Pen tools. Drag from blank canvas to
+draw around anchors in the selected path, including its separate subpaths. The
+region closes from the current pointer to the starting point. Concave outlines
+and crossing loops select their enclosed regions; anchors on the boundary count,
+while curve handles do not. A straight trace has no area and selects nothing.
+Shift at the start adds to the previous group. Empty selection retains the path
+and Lasso tool; **Direct Selection (A)** switches back to a box and keeps the group.
+
+The existing group drag, arrow-key movement and bulk Smooth/Corner/Delete work
+on the result. Lasso mode does not double-click-insert anchors. Live selection is
+transient: no artwork or history writes. Escape, pointer cancellation, lost
+capture, blur, zoom and document/mode changes cancel the gesture. Join-target
+mode, read-only leases and timed Morph paths cannot start it. Extremely long
+traces cancel with a message rather than retaining unbounded pointer samples.
+
+Six new browser workflows cover transformed/zoomed regions, Shift extension
+across subpaths, bulk editing/Undo, cancellation, tool switching, anchor drags,
+empty and handle-only loops, straight traces, insertion and edit guards. Three
+model tests cover concave/crossing polygons, boundaries, repeated points,
+degenerate outlines, rotations, skew and reflected/fractional scales.
+Evidence: `.local/svg-lasso/{tracing,live-preview}.png`.
+This closes the earlier lasso remainder locally. Bulk insertion/mirroring,
+whole-subpath removal and multi-object editing remain open; not in alpha.21.
+
+Lasso verification (2026-11-02): all 151 SVG Chromium browser scenarios,
+67 SVG model tests and four responsive website checks pass. Six lasso workflows
+passed again after correcting the docked control's inherited font/selected state;
+computed styles confirm 62 × 24px, 12px text, white foreground and solid accent
+background. Targeted lint, type checking, editor asset build and diff checks pass.
+In-app activation, non-area clearing and Shift anchor selection were checked,
+and the refreshed preview remains open. Full freeform loops were exercised in
+Chromium browser tests. Local and unreleased; cross-browser and full reference
+visual/interaction parity remain unverified.
+
+
+## 2026-11-02 — Bulk handle mirroring (local source)
+
+Select curved interior anchors with Shift-click, box selection or Lasso, then
+choose **No mirroring**, **Mirror angle** or **Mirror angle and length** in the
+Path inspector. The same three-segment control applies to the group across
+subpaths of one base-path element. Different modes leave all segments unselected;
+the group announces that the selected anchors have different mirroring modes.
+Tab enters the first option when mixed; arrows, Home/End, Space and Enter choose
+modes and retain focus after the inspector refreshes, including when detached.
+
+Each group operation uses the outgoing handle at each anchor, or its incoming
+handle if outgoing is collapsed. Angle mirroring preserves the opposite length;
+angle-and-length mirrors that handle exactly. No mirroring removes the constraint
+without moving handles. Single-anchor editing still follows the selected handle.
+Selection is preserved, unrelated anchors/animation stay unchanged, and one Undo
+restores the entire group. Reapplying an unchanged mode creates no history entry.
+Mirroring metadata survives native reopening and is stripped from SVG exports
+while the resulting curves are retained.
+
+Every selected anchor must be curved and interior (closed subpaths include their
+first/last anchor). Empty selections, corners without handles and open endpoints
+disable the control. Use Smooth first on corners; open endpoints remain excluded.
+Invalid/stale selections and any out-of-range result reject the whole operation.
+Queued actions during anchor or selection drags, Join mode, read-only leases and
+timed Morph editing cannot change artwork. These are base-path operations only.
+
+Five browser workflows and three model tests cover mixed/uniform state, cross-
+subpath geometry, opposite lengths, collapsed-handle fallback, duplicate/stale
+selections, coordinate bounds, atomic Undo/Redo, reopening/export, input/focus,
+box/lasso selection, detached inspectors and editing guards. Evidence:
+`.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+Local source only, not alpha.21. This supersedes the earlier bulk-mirroring
+remainder; bulk insertion, whole-subpath removal and multi-object editing stay open.
+
+Bulk-mirroring verification (2026-11-02): all 156 SVG Chromium browser scenarios,
+70 SVG model tests and four responsive website checks pass. Targeted ESLint,
+TypeScript, editor asset build and diff checks pass. The visible in-app sample
+applied symmetric handles to both selected anchors; one Undo restored the mixed
+modes and both original handle positions, and Redo restored the group edit.
+The editor and updated Dev Log previews remain open. Not released; other browsers
+and full reference group geometry/mixed-state equivalence remain unverified.
+
+
+### Bulk midpoint insertion — November 2 local source
+
+1. Select a path and choose **Edit base path**.
+2. Select anchors with Shift-click, a box or Lasso. Each anchor must have a
+   following segment; an open path’s last anchor cannot be included.
+3. Choose **Add midpoints after selected anchors** in Pen tools. Each following
+   segment is divided at its cubic parameter midpoint, including closed seams.
+   The visible curves stay the same and the new midpoints are selected.
+4. Undo restores the entire insertion in one step; Redo reapplies it.
+
+Adjacent selections use their original segments. The edit is atomic across
+subpaths: an invalid endpoint/address or more than 512 total anchors changes
+nothing and creates no history. Paints, transforms and animation stay intact;
+inserted points and mirroring metadata survive native reopening, and SVG export
+retains the curves without editor-only metadata. Timed Morph paths must retain
+matching topology, so base-path insertion remains unavailable for them.
+
+Four model tests and four new browser workflows cover subdivision, ordering,
+limits, selection, gesture guards, history, native reopening and animated export.
+After Undo removes an inserted point, anchor controls follow the surviving
+selection rather than a stale active address.
+Existing tests also verify Join, read-only and Morph restrictions. Evidence:
+`.local/svg-bulk-insertion/{inserted,live-preview}.png`. This closes the previous
+bulk-insertion remainder locally; alpha.21 downloads do not include it.
+Whole-subpath removal is next; multi-object editing remains open.

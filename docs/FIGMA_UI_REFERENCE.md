@@ -1094,3 +1094,59 @@ single-anchor geometry semantics are retained, with atomic validation and one
 Undo for the group. This is functional progress, not a claim of equivalent vector
 networks, deletion/healing algorithms, menus or full pixel parity. Evidence:
 `.local/svg-bulk-anchors/smoothed.png` and `live-preview.png`.
+
+
+## 2026-11-02 — Vector Lasso control
+
+Inspected live Figma desktop in Capwah Components with Rectangle 4 in vector edit
+mode. Lasso follows Move in the vector toolbar. From the 2× rendered screenshot,
+the control measures approximately 62 × 24 CSS px, with a 4px radius, 16px dashed
+loop icon and 12px label. The selected control uses a blue fill and white icon/text.
+Activating it keeps vector edit mode active. A straight non-area trace cleared the
+anchor selection, disabled X/Y and left Lasso active, without changing artwork.
+Reference: `.local/svg-lasso/figma-lasso-control.png`.
+
+The native capture API supports straight drags only, so a complete freeform
+reference loop, its transient fill/outline and Shift semantics were not verified.
+PixlPrfct adds this measured control immediately after Direct Selection in its
+existing Pen tools. The loop uses a 1px accent outline and the existing 15% accent
+selection fill; Shift extends, matching the local box-selection convention.
+Those transient details and the wider Pen tools layout are not certified pixel
+parity. Evidence: `.local/svg-lasso/{tracing,live-preview}.png`.
+
+
+## 2026-11-02 — Mirroring with an anchor group
+
+Read-only inspection of live Figma desktop in Capwah Components selected the two
+top anchors of Rectangle 4 with the Move vector tool. The right Vector inspector
+retains the 184 × 24 CSS px, three-segment Mirroring row beneath Position, with
+No mirroring outlined and the two other icons muted. X reads Mixed and Y is 248.
+The multi-anchor layout does not introduce a new panel or dropdown. Reference:
+`.local/svg-bulk-mirroring/figma-group-controls.png`.
+
+Automatic approval review rejected clicking Mirror angle on this reference
+artwork because it may change persisted vector state. No reference mode was
+changed. Group geometry, handling of straight corners, and mixed-mode appearance
+remain unverified; do not claim full interaction or pixel parity for them.
+PixlPrfct retains its existing measured inspector control and curved-interior
+anchor boundary, extending the local geometry semantics atomically to groups.
+Its mixed state shows no selected segment and exposes an accessible description.
+Local screenshots: `.local/svg-bulk-mirroring/{mixed,symmetric,live-preview}.png`.
+
+
+## 2026-11-02 — Bulk midpoint insertion reference boundary
+
+Read-only inspection of live Figma desktop in Capwah Components found the Vector
+menu’s Join Selection, Smooth Join Selection, Delete and Heal Selection, Split
+Vector, Simplify Vector and Offset Vector commands. No equivalent bulk midpoint
+command appeared in this menu or the visible vector toolbar. No geometry command
+was executed on the reference artwork. The rendered toolbar retains Move, Lasso,
+Paint, Bend, Cut, Erase and More; its Move/Lasso controls are approximately 62 ×
+24 CSS px at the 2× capture scale. The Mirroring row remains 184 × 24 CSS px.
+Screenshot: `.local/svg-bulk-insertion/figma-vector-controls.png`.
+
+PixlPrfct extends its existing midpoint action without changing layout, dimensions
+or icon; the accessible label/tooltip becomes plural for a group. This is an
+additional tool capability; equivalent bulk subdivision semantics and complete
+reference pixel parity remain unverified. Local evidence:
+`.local/svg-bulk-insertion/{inserted,live-preview}.png`.

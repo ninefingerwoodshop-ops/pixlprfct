@@ -226,3 +226,24 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Engine / data | Browser UI | Verification | Remaining |
 | --- | --- | --- | --- |
 | Atomic Smooth/Corner/Delete across selected anchors; original-index filtering and surviving mirroring metadata | Existing controls enable for groups with plural labels; Delete/Backspace on canvas; one Undo per action | Five browser workflows and three model tests; open/closed subpaths, history, metadata, keyboard/lease/Morph guards, reopening/export; in-app Smooth and Undo verified | Two anchors required per subpath; lasso, bulk insertion/mirroring and whole-subpath removal remain open. Local only, not alpha.21 |
+
+
+### SVG lasso anchor selection — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Screen-space region selection with boundary inclusion, concave/crossing loops and degenerate-line rejection | Lasso in Pen tools, live anchor highlights, Shift extension, Escape restore, A returns to box with group retained | Six browser workflows and three geometry tests; transformed/zoomed subpaths, group edits/Undo, cancellation, tool switching and edit guards | One base-path element; no timed Morph or multi-object selection. Transient reference fill and Shift parity unverified. Local only, not alpha.21 |
+
+
+### SVG bulk handle mirroring — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Atomic independent/angle/symmetric modes across selected curved interior anchors; outgoing-handle driver with incoming fallback | Existing Path inspector segments, mixed state, keyboard/focus and detached inspector | Five browser workflows and three model tests: open/closed subpaths, validation, Undo/Redo, persistence/export, selection gestures and edit guards | All anchors must be eligible; no open endpoints, handle-free corners or timed Morph editing. Reference group geometry/mixed-state parity unverified. Not alpha.21 |
+
+
+### SVG bulk midpoint insertion — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Atomic cubic subdivision at t=0.5 after selected original anchors, including adjacent segments and closed seams; metadata index remapping | Existing midpoint button enables for groups with a plural label; new midpoints selected, one Undo | Four model tests and four browser workflows: curve preservation, selection ordering, limits, gestures, history, reopening and animated export; existing Join/lease/Morph checks extended | One base-path element; exclude open final endpoints, maximum 512 total anchors. No reference bulk-insert equivalent verified. Local only, not alpha.21 |
