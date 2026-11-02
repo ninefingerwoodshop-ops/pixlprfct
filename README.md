@@ -1,8 +1,8 @@
-# Pixel Perfect (PixlPrfct)
+# Pxl Prfct
 
-**[Product website & free downloads](https://ninefingerwoodshop-ops.github.io/pixlprfct/)** — screenshots, the project overview, and Windows preview downloads. Pixel Perfect is free to use with source available under the [Community License](LICENSE). Create and sell your own work; do not sell the editor or software derived from its code.
+**[Product website & free downloads](https://ninefingerwoodshop-ops.github.io/pixlprfct/)** — screenshots, the project overview, and Windows preview downloads. Pxl Prfct is free to use with source available under the [Community License](LICENSE). Create and sell your own work; do not sell the editor or software derived from its code.
 
-**[pxlprfct icons](https://ninefingerwoodshop-ops.github.io/pixlprfct/#icons)** — preview the separate MIT-licensed collection, browse all 679 icons, and download SVGs or the complete font pack.
+**[Pxl Prfct icons](https://ninefingerwoodshop-ops.github.io/pixlprfct/#icons)** — preview the separate MIT-licensed collection, browse all 679 icons, and download SVGs or the complete font pack.
 
 [Wiki](https://github.com/ninefingerwoodshop-ops/pixlprfct/wiki) · [Dev log](https://ninefingerwoodshop-ops.github.io/pixlprfct/dev-log.html) · [Contribution guide](CONTRIBUTING.md) · [GitHub Releases](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases)
 
