@@ -8,10 +8,10 @@ import {checkedPath,editAnchor,editPathAnchors,continuePath,pencilPath,splitPath
 import {mirroringAttribute,readMirroring,writeMirroring,mirroringMode,canMirror,setHandleMirroring,movePathPoint} from './svg-animation-mirroring.js';
 
 const NS='http://www.w3.org/2000/svg';
-const anchorIcons={'vector-smooth':'M3 17C3 5 21 5 21 17M5 8h14M12 8v4M10 12h4v4h-4Z','vector-corner':'M3 18 12 7l9 11M10 5h4v4h-4Z'};
+const anchorIcons={'lasso':'M7 5 10 3M13 3l2 1M18 5l2 2M21 10v2M20 15l-1 2M16 19l-2 1M11 21H9M6 20l-2-2M3 15v-2M3 10l1-2M5 6 9 4','vector-smooth':'M3 17C3 5 21 5 21 17M5 8h14M12 8v4M10 12h4v4h-4Z','vector-corner':'M3 18 12 7l9 11M10 5h4v4h-4Z'};
 const button=(name,glyph,run)=>{const b=el('button');b.type='button';b.title=name;b.setAttribute('aria-label',name);b.innerHTML=anchorIcons[glyph]?`<svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${anchorIcons[glyph]}"/></svg>`:icon(glyph);b.onclick=run;return b;};
 export function installSvgDrawing({host,workspace,toolbar,read,select,change,start,refresh,paint,remove,report,restorePanel=()=>{}}){
- let mode='select',draft=null,gesture=null,selection=[0,0],selections=[[0,0]],selectionOwner=null,position=null,paintSync=[],mirrorSync=[],activeHandle='out',activeDocument=null,suppressClick=false,smoothing=50,joinFrom=null,hover=null,hiddenSource=null;
+ let mode='select',selectionShape='box',draft=null,gesture=null,selection=[0,0],selections=[[0,0]],selectionOwner=null,position=null,paintSync=[],mirrorSync=[],activeHandle='out',activeDocument=null,suppressClick=false,smoothing=50,joinFrom=null,hover=null,hiddenSource=null;
  const attempt=fn=>(...args)=>{try{return fn(...args);}catch(error){report(error.message);}};
  const overlay=document.createElementNS(NS,'svg');overlay.classList.add('svg-drawing-preview');overlay.setAttribute('aria-hidden','true');host.append(overlay);host.tabIndex=-1;
  const palette=el('div','svg-pen-palette');palette.dataset.detachablePanel='pen';palette.dataset.panelLabel='Pen tools';palette.setAttribute('role','toolbar');palette.setAttribute('aria-label','Pen tools');palette.hidden=true;
@@ -25,7 +25,8 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  const actions=[['Add midpoint after anchor','plus','insert'],['Delete anchor','minus','delete'],['Smooth anchor','vector-smooth','smooth'],['Corner anchor','vector-corner','corner']].map(([name,glyph,op])=>{
   const b=button(name,glyph,attempt(()=>applyAnchorAction(op)));b.dataset.anchorAction=op;tools.append(b);return b;
  });
- tools.prepend(pen,pencil,direct);const resume=button('Continue selected endpoint','pen',attempt(()=>{
+ const lasso=button('Lasso','lasso',()=>setMode('direct','lasso'));lasso.className='svg-lasso-tool';lasso.append(el('span','','Lasso'));
+ tools.prepend(pen,pencil,direct,lasso);const resume=button('Continue selected endpoint','pen',attempt(()=>{
   const state=nodeState();if(!state?.enabled||selections.length!==1)return;const value=continuePath(state.value,...selection);nodes.cancel();start();mode='pen';draft={value,path:selection[0],id:read().selected};update();refresh();
  }));tools.append(resume);palette.append(tools);
  const finish=button('Finish open path (Enter)','check',attempt(()=>finishPath(false)));finish.className='svg-pen-finish';finish.append(el('span','','Finish path'));tools.append(finish);
@@ -47,7 +48,7 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  function nodeState(){
   const s=read(),source=pathSource();if(mode!=='direct'||!source||draft||s.running||s.animation.tracks.some(t=>t.element===s.selected&&t.property==='morph'))return null;
   if(selectionOwner!==s.selected){selectionOwner=s.selected;selection=[0,0];selections=[[0,0]];}
-  try{const value=readMirroring(morphPath(source.getAttribute('d')),source.getAttribute(mirroringAttribute));if(!value[selection[0]]?.points[selection[1]])selection=[0,0];selections=selections.filter(([path,index])=>value[path]?.points[index]);return {node:s.root.querySelector('#'+s.selected),value,selection,selections,enabled:s.enabled,dragEnabled:!joinFrom};}catch{return null;}
+  try{const value=readMirroring(morphPath(source.getAttribute('d')),source.getAttribute(mirroringAttribute));if(!value[selection[0]]?.points[selection[1]])selection=[0,0];selections=selections.filter(([path,index])=>value[path]?.points[index]);return {node:s.root.querySelector('#'+s.selected),value,selection,selections,selectionShape,enabled:s.enabled,dragEnabled:!joinFrom};}catch{return null;}
  }
  function savePath(value){
   checkedPath(value);const s=read();if(!s.enabled)return;const root=s.source.cloneNode(true),node=root.querySelector('#'+s.selected);node.setAttribute('d',morphData(value));const modes=writeMirroring(value);if(modes)node.setAttribute(mirroringAttribute,modes);else node.removeAttribute(mirroringAttribute);change(root,s.selected);
@@ -72,8 +73,8 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   const next=joinPathElements({source:s.source,scene:s.root,animation:s.animation,fromId:s.selected,from:joinFrom,toId:id,to});
   joinFrom=null;selection=next.selection;selections=[[...selection]];change(next.root,s.selected,next.removed);
  },report});
- function setMode(next){if(draft&&!draft.pencil&&!gesture&&draft.value[draft.path].points.length>=2)finishPath(false);cancel();start();mode=next;selection=[0,0];selections=[[0,0]];if(next==='pen'||next==='pencil')select(null);palette.hidden=next==='select'&&!docked;update();refresh();}
- const marquee=installPathMarquee({host,workspace,read:nodeState,select:pairs=>{selections=pairs;selection=pairs.at(-1)??selection;nodes.update();updateActions();}});
+ function setMode(next,shape='box'){if(draft&&!draft.pencil&&!gesture&&draft.value[draft.path].points.length>=2)finishPath(false);const preserve=mode==='direct'&&next==='direct';cancel();start();mode=next;selectionShape=shape;if(!preserve){selection=[0,0];selections=[[0,0]];}if(next==='pen'||next==='pencil')select(null);palette.hidden=next==='select'&&!docked;update();refresh();}
+ const marquee=installPathMarquee({host,workspace,read:nodeState,select:pairs=>{selections=pairs;selection=pairs.at(-1)??selection;nodes.update();updateActions();},report});
  function restoreSource(){if(hiddenSource){hiddenSource.node.style.visibility=hiddenSource.visibility;hiddenSource=null;}}
  function cancel(){gesture?.cancel();marquee.cancel();nodes.cancel();draft=null;joinFrom=null;joinTargets.clear();hover=null;restoreSource();overlay.replaceChildren();}
  function suspend(){cancel();mode='select';palette.hidden=!docked;update();}
@@ -103,7 +104,7 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  }
  function updateActions(){const state=nodeState(),endpoint=state&&isEndpoint(state.value[selection[0]],selection[1]);actions.forEach(b=>{b.disabled=!state?.enabled||!!joinFrom||!selections.length||b.dataset.anchorAction==='insert'&&selections.length!==1;const names={insert:'Add midpoint after anchor',delete:selections.length>1?'Delete selected anchors':'Delete anchor',smooth:selections.length>1?'Smooth selected anchors':'Smooth anchor',corner:selections.length>1?'Corner selected anchors':'Corner anchor'},name=names[b.dataset.anchorAction];b.title=name;b.setAttribute('aria-label',name);});resume.disabled=!state?.enabled||!endpoint||!!joinFrom||selections.length!==1;finish.disabled=!draft||draft.pencil||draft.value[draft.path].points.length<2||!read().enabled;
   split.disabled=!state?.enabled||!!joinFrom||endpoint||selections.length!==1;join.disabled=!state?.enabled||!endpoint||selections.length!==1;join.setAttribute('aria-pressed',String(!!joinFrom));joinHint.hidden=!joinFrom;
-  penHint.hidden=mode!=='pen';directHint.hidden=!state||!!joinFrom;discard.disabled=!draft;deletePath.disabled=!read().enabled||!pathSource()||!!draft;
+  penHint.hidden=mode!=='pen';directHint.hidden=!state||!!joinFrom;directHint.textContent=selectionShape==='lasso'?'Draw around anchors to select them. Hold Shift to add. Escape cancels; Direct Selection (A) returns to box selection.':'Drag a box to select anchors. Hold Shift to add, or Shift-click to toggle. Move selected anchors with a drag or arrow keys. Double-click a segment to add an anchor.';lasso.disabled=!state?.enabled||!!joinFrom;discard.disabled=!draft;deletePath.disabled=!read().enabled||!pathSource()||!!draft;
   mirrorSync=mirrorSync.filter(({host})=>host.isConnected);mirrorSync.forEach(({sync})=>sync());
  }
  function mirroringControls(container){
@@ -119,8 +120,9 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  function update(){
   marquee.cancel();syncDock();const s=read();if(activeDocument!==s.animation){cancel();activeDocument=s.animation;}if(!s.enabled)cancel();
   host.dataset.drawingTool=mode;workspace.dataset.drawingTool=mode;
+  host.dataset.anchorSelection=selectionShape;workspace.dataset.anchorSelection=selectionShape;
   toolbar.querySelector('#svg-select-tool')?.setAttribute('aria-pressed',String(mode==='select'));
-  for(const b of [pen,penTool])b.setAttribute('aria-pressed',String(mode==='pen'));for(const b of [direct,directTool])b.setAttribute('aria-pressed',String(mode==='direct'));
+  for(const b of [pen,penTool])b.setAttribute('aria-pressed',String(mode==='pen'));directTool.setAttribute('aria-pressed',String(mode==='direct'));direct.setAttribute('aria-pressed',String(mode==='direct'&&selectionShape==='box'));lasso.setAttribute('aria-pressed',String(mode==='direct'&&selectionShape==='lasso'));
   for(const b of [pencil,pencilTool])b.setAttribute('aria-pressed',String(mode==='pencil'));pencilOptions.hidden=mode!=='pencil';const input=smoothingField.querySelector('input');input.disabled=!s.enabled;syncInput(input,smoothing);
   nodes.update();joinTargets.update();drawDraft();updateActions();paintSync=paintSync.filter(({host})=>host.isConnected);paintSync.forEach(({sync})=>sync());if(!palette.hidden)clamp();
  }
@@ -178,7 +180,7 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  });
  host.addEventListener('pointerleave',()=>{hover=null;if(draft&&!gesture)drawDraft();});
  function segmentHit(e){
-  if(e.button!==0||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||joinFrom||gesture||nodes.dragging||e.target.closest('.svg-morph-point'))return null;
+  if(e.button!==0||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||selectionShape==='lasso'||joinFrom||gesture||nodes.dragging||e.target.closest('.svg-morph-point'))return null;
   const state=nodeState(),matrix=state?.node?.getScreenCTM();if(!state?.enabled||!matrix)return null;
   const hit=nearestPathSegment(state.value,{x:e.clientX,y:e.clientY},matrix);return hit?{state,hit}:null;
  }

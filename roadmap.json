@@ -168,7 +168,7 @@
   "svgAnimationRoadmap": {
     "updated": "2026-11-02",
     "source": "docs/PEN_WORKSPACE_PROPOSAL.md",
-    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, group anchor movement, marquee anchor selection, bulk Smooth/Corner/Delete, separate-path joining, handle mirroring, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
+    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, group anchor movement, marquee/lasso anchor selection, bulk Smooth/Corner/Delete, separate-path joining, handle mirroring, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
     "completedLocally": [
       "Pen tool and nib cursor, corner/cubic anchors, open/closed paths, endpoint continuation",
       "Direct Selection for base paths, anchor/handle drag and nudge, curve-preserving midpoint insertion, deletion, smooth/corner conversion",
@@ -193,10 +193,11 @@
       "Shift-click and Shift+Enter anchor selection within one base-path element; transformed group dragging, keyboard nudging, carried handles, cancellation, atomic history, native persistence and clean SVG export (2026-11-02, local source only)",
       "Join open endpoints across separate SVG path elements, converting all target subpaths and handles into the starting path\u2019s coordinates, retaining its appearance and shared parent animation; atomic history, persistence/export and guards for independent animation, references and collapsed transforms (2026-11-02, local source only)",
       "Screen-space marquee selection across subpaths in one SVG base path; Shift extends selection, live anchor highlights, keyboard group movement, Escape/capture/blur/zoom cancellation, and read-only/Morph guards (2026-11-02, local source only)",
-      "Bulk Smooth, Corner and Delete across selected base-path anchors/subpaths, plus Delete/Backspace shortcuts; original-index deletion, mirroring metadata preservation, atomic rejection/history, saved reopening and clean SVG export (2026-11-02, local source only)"
+      "Bulk Smooth, Corner and Delete across selected base-path anchors/subpaths, plus Delete/Backspace shortcuts; original-index deletion, mirroring metadata preservation, atomic rejection/history, saved reopening and clean SVG export (2026-11-02, local source only)",
+      "Freeform lasso selection across subpaths in one base path, using the traced region through transforms/zoom; Shift extends, Escape restores, tool switching retains groups, and selection writes no artwork/history (2026-11-02, local source only)"
     ],
     "remaining": [
-      "Lasso anchor selection, bulk insertion/mirroring and joining independently animated or externally referenced paths",
+      "Bulk handle mirroring (next bounded vector step), bulk insertion, whole-subpath removal and joining independently animated or externally referenced paths",
       "Whole-path smoothing for existing artwork, Brush",
       "Multi-object selection, duplication and grouping",
       "Precision/construction, expressive artwork and cross-workspace handoff phases",

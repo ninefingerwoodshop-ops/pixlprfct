@@ -1126,3 +1126,40 @@ Bulk-action verification (2026-11-02): all 145 SVG Chromium browser scenarios,
 checking, editor asset build and diff checks pass. In-app preview Smooth updated
 both selected endpoints and one Undo restored their original handles. Local and
 unreleased; cross-browser and complete reference parity remain unverified.
+
+
+## 2026-11-02 — Lasso anchor selection (local source)
+
+Choose **Edit base path**, then **Lasso** in Pen tools. Drag from blank canvas to
+draw around anchors in the selected path, including its separate subpaths. The
+region closes from the current pointer to the starting point. Concave outlines
+and crossing loops select their enclosed regions; anchors on the boundary count,
+while curve handles do not. A straight trace has no area and selects nothing.
+Shift at the start adds to the previous group. Empty selection retains the path
+and Lasso tool; **Direct Selection (A)** switches back to a box and keeps the group.
+
+The existing group drag, arrow-key movement and bulk Smooth/Corner/Delete work
+on the result. Lasso mode does not double-click-insert anchors. Live selection is
+transient: no artwork or history writes. Escape, pointer cancellation, lost
+capture, blur, zoom and document/mode changes cancel the gesture. Join-target
+mode, read-only leases and timed Morph paths cannot start it. Extremely long
+traces cancel with a message rather than retaining unbounded pointer samples.
+
+Six new browser workflows cover transformed/zoomed regions, Shift extension
+across subpaths, bulk editing/Undo, cancellation, tool switching, anchor drags,
+empty and handle-only loops, straight traces, insertion and edit guards. Three
+model tests cover concave/crossing polygons, boundaries, repeated points,
+degenerate outlines, rotations, skew and reflected/fractional scales.
+Evidence: `.local/svg-lasso/{tracing,live-preview}.png`.
+This closes the earlier lasso remainder locally. Bulk insertion/mirroring,
+whole-subpath removal and multi-object editing remain open; not in alpha.21.
+
+Lasso verification (2026-11-02): all 151 SVG Chromium browser scenarios,
+67 SVG model tests and four responsive website checks pass. Six lasso workflows
+passed again after correcting the docked control's inherited font/selected state;
+computed styles confirm 62 × 24px, 12px text, white foreground and solid accent
+background. Targeted lint, type checking, editor asset build and diff checks pass.
+In-app activation, non-area clearing and Shift anchor selection were checked,
+and the refreshed preview remains open. Full freeform loops were exercised in
+Chromium browser tests. Local and unreleased; cross-browser and full reference
+visual/interaction parity remain unverified.

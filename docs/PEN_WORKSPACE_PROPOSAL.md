@@ -242,3 +242,24 @@ to every reference deletion/healing behavior. Local only, not alpha.21.
 
 Next bounded vector scope: lasso anchor selection. Bulk insertion/mirroring,
 removing entire subpaths, and multi-object editing remain open.
+
+
+## 2026-11-02 — Lasso anchor selection (local source)
+
+In Edit base path, Lasso in Pen tools selects anchors inside a freeform outline
+across subpaths of the current element. The closing edge is implicit; concave
+and crossing regions use the drawn shape rather than its bounding rectangle.
+Highlights update during the gesture. Shift extends the group, Escape restores
+it, and Direct Selection (A) returns to box selection without losing the group.
+The selected anchors support existing group movement and bulk actions.
+Selection never edits artwork or adds Undo history. Cancellation, read-only
+leases, timed Morph paths and Join-target mode retain the existing protections.
+
+Live Figma's Lasso control and non-area trace behavior were inspected first.
+The 62 × 24px control, 16px icon, label, radius and active color follow that
+reference; full freeform reference gestures and transient fill were not captured.
+Six browser workflows and three geometry tests cover the local behavior.
+Evidence: `.local/svg-lasso/{tracing,live-preview,figma-lasso-control}.png`.
+This completes the earlier lasso remainder locally, not in alpha.21 downloads.
+Next bounded vector step: bulk handle mirroring. Bulk insertion, whole-subpath
+removal and multi-object editing remain open.

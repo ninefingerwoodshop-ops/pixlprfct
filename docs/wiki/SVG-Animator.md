@@ -444,3 +444,19 @@ Surviving handles remain unchanged, so deleting anchors can change the curve.
 After deletion a nearby survivor in each affected subpath becomes selected.
 Bulk insertion/mirroring and removing entire subpaths remain open. See the
 [delivery record](../SVG_ANIMATION.md#2026-11-02--bulk-anchor-actions-local-source).
+
+
+### Lasso-select base-path anchors (local source, not alpha.21)
+
+Choose **Edit base path**, then **Lasso** in Pen tools. Draw around anchors to
+select them; release to close the region. Hold Shift when starting to add to the
+selection. The lasso selects anchors across subpaths of the current element,
+using the shape you draw. Handles do not count as anchors. Escape restores the
+previous selection; an empty loop clears the anchor group and keeps the path.
+
+Drag or nudge the resulting group, or use the Smooth, Corner and Delete controls.
+Press **A** for rectangular selection while keeping your selected anchors.
+Lasso selection adds no Undo entry. It is unavailable for timed Morph paths,
+read-only documents or while choosing a Join target. This completes the lasso
+remainder noted above; bulk insertion/mirroring and multi-object editing remain
+open. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--lasso-anchor-selection-local-source).

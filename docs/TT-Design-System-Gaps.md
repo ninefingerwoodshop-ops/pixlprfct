@@ -555,6 +555,17 @@ by this planning pass, and no new editor feature was implemented or shipped.
     bulk actions from the earlier B42 remainder; bulk insertion/mirroring, full
     subpath removal, lasso and multi-object editing remain open. Local only,
     not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42n — Lasso anchor selection within one SVG base-path element.~~
+    Local resolution (2026-11-02): Lasso in Pen tools selects anchors inside a
+    freeform region across subpaths, with live highlights and Shift extension.
+    Concave/crossing outlines, boundaries and transforms/zoom are covered by
+    three model tests; six browser workflows cover group edits, tool switching,
+    cancellation, handle-only/empty regions, Join, read-only and Morph guards.
+    Selection changes no artwork/history; a straight trace selects nothing.
+    Evidence: `.local/svg-lasso/{tracing,live-preview,figma-lasso-control}.png`.
+    This resolves the lasso remainder in earlier B42 entries. Bulk insertion and
+    mirroring, full subpath removal, multi-object editing and full visual parity
+    remain open. Local only, not alpha.21; no TerritoryIQ issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -754,3 +765,12 @@ B42m final verification (2026-11-02, local source): 145 SVG Chromium browser
 scenarios, 64 SVG model tests, four responsive website checks, targeted lint,
 type checking, editor asset build and diff checks pass. In-app bulk Smooth and
 one-step Undo verified; `.local/svg-bulk-anchors/live-preview.png`. Not released.
+
+
+B42n final verification (2026-11-02, local source): 151 SVG Chromium browser
+scenarios, 67 SVG model tests and four responsive website checks pass. Six lasso
+workflows passed again after the final docked-control style correction. Targeted
+lint, types, editor asset build and diff checks pass. In-app Lasso activation,
+empty-region clearing and Shift anchor selection verified; refreshed preview
+kept open. `.local/svg-lasso/live-preview.png` records the final control.
+Not released; full reference parity and TerritoryIQ work remain open.

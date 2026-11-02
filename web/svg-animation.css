@@ -77,3 +77,7 @@
 .svg-path-nodes .anchor[aria-pressed=false]:focus-visible .svg-morph-glyph{fill:white}
 .svg-anchor-marquee{position:absolute;border:1px solid var(--ui-accent);background:color-mix(in srgb,var(--ui-accent) 15%,transparent);pointer-events:none;z-index:1}
 .svg-workspace[data-drawing-tool=direct]{touch-action:none}
+.svg-pen-tools .svg-lasso-tool{--ui-text:12px;--ui-selected:var(--ui-accent);--ui-accent-text:#fff;--ui-selected-hover:var(--ui-primary-hover);--ui-selected-pressed:var(--ui-primary-pressed);width:62px;height:24px;align-self:center;padding:0 4px;font-size:12px;border-radius:4px}
+.svg-anchor-lasso{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
+.svg-anchor-lasso path{fill:color-mix(in srgb,var(--ui-accent) 15%,transparent);stroke:var(--ui-accent);stroke-width:1}
+.svg-workspace[data-drawing-tool=direct][data-anchor-selection=lasso],.svg-stage[data-drawing-tool=direct][data-anchor-selection=lasso]{cursor:crosshair}

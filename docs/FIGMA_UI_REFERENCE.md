@@ -1094,3 +1094,22 @@ single-anchor geometry semantics are retained, with atomic validation and one
 Undo for the group. This is functional progress, not a claim of equivalent vector
 networks, deletion/healing algorithms, menus or full pixel parity. Evidence:
 `.local/svg-bulk-anchors/smoothed.png` and `live-preview.png`.
+
+
+## 2026-11-02 — Vector Lasso control
+
+Inspected live Figma desktop in Capwah Components with Rectangle 4 in vector edit
+mode. Lasso follows Move in the vector toolbar. From the 2× rendered screenshot,
+the control measures approximately 62 × 24 CSS px, with a 4px radius, 16px dashed
+loop icon and 12px label. The selected control uses a blue fill and white icon/text.
+Activating it keeps vector edit mode active. A straight non-area trace cleared the
+anchor selection, disabled X/Y and left Lasso active, without changing artwork.
+Reference: `.local/svg-lasso/figma-lasso-control.png`.
+
+The native capture API supports straight drags only, so a complete freeform
+reference loop, its transient fill/outline and Shift semantics were not verified.
+PixlPrfct adds this measured control immediately after Direct Selection in its
+existing Pen tools. The loop uses a 1px accent outline and the existing 15% accent
+selection fill; Shift extends, matching the local box-selection convention.
+Those transient details and the wider Pen tools layout are not certified pixel
+parity. Evidence: `.local/svg-lasso/{tracing,live-preview}.png`.

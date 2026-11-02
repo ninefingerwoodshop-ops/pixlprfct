@@ -226,3 +226,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Engine / data | Browser UI | Verification | Remaining |
 | --- | --- | --- | --- |
 | Atomic Smooth/Corner/Delete across selected anchors; original-index filtering and surviving mirroring metadata | Existing controls enable for groups with plural labels; Delete/Backspace on canvas; one Undo per action | Five browser workflows and three model tests; open/closed subpaths, history, metadata, keyboard/lease/Morph guards, reopening/export; in-app Smooth and Undo verified | Two anchors required per subpath; lasso, bulk insertion/mirroring and whole-subpath removal remain open. Local only, not alpha.21 |
+
+
+### SVG lasso anchor selection — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Screen-space region selection with boundary inclusion, concave/crossing loops and degenerate-line rejection | Lasso in Pen tools, live anchor highlights, Shift extension, Escape restore, A returns to box with group retained | Six browser workflows and three geometry tests; transformed/zoomed subpaths, group edits/Undo, cancellation, tool switching and edit guards | One base-path element; no timed Morph or multi-object selection. Transient reference fill and Shift parity unverified. Local only, not alpha.21 |
