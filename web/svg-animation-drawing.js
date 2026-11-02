@@ -6,12 +6,13 @@ import {installPathJoinTargets,joinPathElements} from './svg-animation-join.js';
 import {installPathMarquee} from './svg-animation-marquee.js';
 import {checkedPath,editAnchor,editPathAnchors,continuePath,pencilPath,splitPath,joinEndpoints,isEndpoint,nearestPathSegment,movePathAnchors} from './svg-animation-drawing-model.js';
 import {mirroringAttribute,readMirroring,writeMirroring,mirroringMode,canMirror,setPathHandleMirroring,movePathPoint} from './svg-animation-mirroring.js';
+import {smoothExistingPath} from './svg-animation-smoothing.js';
 
 const NS='http://www.w3.org/2000/svg';
 const anchorIcons={'lasso':'M7 5 10 3M13 3l2 1M18 5l2 2M21 10v2M20 15l-1 2M16 19l-2 1M11 21H9M6 20l-2-2M3 15v-2M3 10l1-2M5 6 9 4','vector-smooth':'M3 17C3 5 21 5 21 17M5 8h14M12 8v4M10 12h4v4h-4Z','vector-corner':'M3 18 12 7l9 11M10 5h4v4h-4Z'};
 const button=(name,glyph,run)=>{const b=el('button');b.type='button';b.title=name;b.setAttribute('aria-label',name);b.innerHTML=anchorIcons[glyph]?`<svg class="app-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${anchorIcons[glyph]}"/></svg>`:icon(glyph);b.onclick=run;return b;};
 export function installSvgDrawing({host,workspace,toolbar,read,select,change,start,refresh,paint,remove,report,restorePanel=()=>{}}){
- let mode='select',selectionShape='box',draft=null,gesture=null,selection=[0,0],selections=[[0,0]],selectionOwner=null,position=null,paintSync=[],mirrorSync=[],activeHandle='out',activeDocument=null,suppressClick=false,smoothing=50,joinFrom=null,hover=null,hiddenSource=null;
+ let mode='select',selectionShape='box',draft=null,gesture=null,selection=[0,0],selections=[[0,0]],selectionOwner=null,position=null,paintSync=[],mirrorSync=[],smoothingSync=[],activeHandle='out',activeDocument=null,suppressClick=false,smoothing=50,pathSmoothing=50,joinFrom=null,hover=null,hiddenSource=null;
  const attempt=fn=>(...args)=>{try{return fn(...args);}catch(error){report(error.message);}};
  const overlay=document.createElementNS(NS,'svg');overlay.classList.add('svg-drawing-preview');overlay.setAttribute('aria-hidden','true');host.append(overlay);host.tabIndex=-1;
  const palette=el('div','svg-pen-palette');palette.dataset.detachablePanel='pen';palette.dataset.panelLabel='Pen tools';palette.setAttribute('role','toolbar');palette.setAttribute('aria-label','Pen tools');palette.hidden=true;
@@ -107,6 +108,23 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   split.disabled=!state?.enabled||!!joinFrom||endpoint||selections.length!==1;join.disabled=!state?.enabled||!endpoint||selections.length!==1;join.setAttribute('aria-pressed',String(!!joinFrom));joinHint.hidden=!joinFrom;
   penHint.hidden=mode!=='pen';directHint.hidden=!state||!!joinFrom;directHint.textContent=selectionShape==='lasso'?'Draw around anchors to select them. Hold Shift to add. Escape cancels; Direct Selection (A) returns to box selection.':'Drag a box to select anchors. Hold Shift to add, or Shift-click to toggle. Move selected anchors with a drag or arrow keys. Double-click a segment to add an anchor.';directHint.textContent+=' Select every anchor in a subpath to delete it.';lasso.disabled=!state?.enabled||!!joinFrom;discard.disabled=!draft;deletePath.disabled=!read().enabled||!pathSource()||!!draft;
   mirrorSync=mirrorSync.filter(({host})=>host.isConnected);mirrorSync.forEach(({sync})=>sync());
+  smoothingSync=smoothingSync.filter(({host})=>host.isConnected);smoothingSync.forEach(({sync})=>sync());
+ }
+ function smoothingControls(container){
+  const owner=read().selected,group=el('div','svg-drawing-paints svg-path-smoothing');container.append(group);
+  const available=()=>{const s=read();return s.selected===owner&&s.enabled&&!s.running&&!s.busy&&!draft&&!gesture&&!joinFrom&&!nodes.dragging&&!marquee.dragging&&pathSource()&&!s.animation.tracks.some(t=>t.element===owner&&t.property==='morph');};
+  const field=numberField('Path smoothing (%)',pathSmoothing,v=>{pathSmoothing=v;syncInput(input,v);},{min:0,max:100,step:5}),input=field.querySelector('input');
+  const apply=el('button','svg-smooth-path','Smooth path');apply.type='button';apply.title='Smooth every subpath in the selected element';
+  apply.onclick=attempt(()=>{
+   if(!group.isConnected||!available()||!input.reportValidity())return;
+   const s=read(),source=pathSource(),value=readMirroring(morphPath(source.getAttribute('d')),source.getAttribute(mirroringAttribute)),matrix=s.root.querySelector('#'+owner)?.getScreenCTM();
+   const next=smoothExistingPath(value,pathSmoothing,matrix);
+   if(JSON.stringify(next)===JSON.stringify(value))return;
+   selection=[0,0];selections=[[0,0]];selectionOwner=owner;savePath(next);
+   smoothingSync.find(item=>item.host.isConnected)?.host.querySelector('.svg-smooth-path')?.focus({preventScroll:true});
+  });
+  group.append(settingRow('Smoothing %',field),apply,el('p','svg-drawing-caption','Reduce points and smooth all subpaths. Open endpoints stay in place.'));
+  const sync=()=>{const enabled=!!available();input.disabled=apply.disabled=!enabled;syncInput(input,pathSmoothing);};smoothingSync.push({host:group,sync});sync();return group;
  }
  function mirroringControls(container){
   const row=el('div','svg-mirroring'),caption=el('div','svg-mirroring-label','Mirroring'),group=el('div','svg-mirroring-options');group.setAttribute('role','radiogroup');group.setAttribute('aria-label','Handle mirroring');row.append(caption,group);container.append(row);
@@ -213,5 +231,5 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  });
  window.addEventListener('keydown',keydown,true);
  new ResizeObserver(()=>{if(!palette.hidden)clamp();}).observe(workspace);
- return {update,cancel,suspend,setMode,paintControls,mirroringControls,keydown,get active(){return mode!=='select';},get drafting(){return !!draft;},get mode(){return mode;}};
+ return {update,cancel,suspend,setMode,paintControls,mirroringControls,smoothingControls,keydown,get active(){return mode!=='select';},get drafting(){return !!draft;},get mode(){return mode;}};
 }

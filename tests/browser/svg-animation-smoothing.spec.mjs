@@ -1,0 +1,56 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+import {newSvgAnimation} from '../../web/svg-animation-model.js';
+import {morphPath} from '../../web/svg-animation-morph.js';
+
+const fixture=()=>{
+ const doc=newSvgAnimation('Smoothing existing paths'),open=Array.from({length:101},(_,i)=>[60+i*3,130+25*Math.sin(i/23)+(i%2?.4:0)]),ring=Array.from({length:96},(_,i)=>{const t=i*Math.PI/48;return [160+55*Math.cos(t),320+55*Math.sin(t)];}),data=points=>points.map((p,i)=>(i?'L':'M')+p.join(' ')).join('');
+ doc.svg_animation.svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(20 10) rotate(8) scale(1.1 .9)"><path id="pxv1" data-layer-name="Contours" d="${data(open)} ${data(ring)}Z M310 300L360 300" fill="none" stroke="#ffffff" stroke-width="3"/></g><path id="pxv2" data-layer-name="Other" d="M320 440L400 440" stroke="#4488ff" fill="none"/></svg>`;
+ doc.svg_animation.tracks=['pxv1','pxv2'].map(element=>({element,property:'opacity',keys:[{time:0,value:1,easing:'linear'},{time:3000,value:.5,easing:'linear'}]}));doc.svg_animation.origins={pxv1:[180,230],pxv2:[360,440]};return doc;
+};
+const saved=page=>page.evaluate(()=>JSON.parse(JSON.parse(localStorage.getItem('pixlprfct.drafts.v1')).files.find(f=>f.id===new URLSearchParams(location.search).get('draft')).body));
+const geometry=page=>page.locator('.svg-art #pxv1').getAttribute('d').then(morphPath);
+const smooth=page=>page.getByRole('button',{name:'Smooth path',exact:true});
+const amount=page=>page.getByLabel('Path smoothing (%)',{exact:true});
+const anchor=(page,path,index)=>page.locator(`.svg-path-nodes [data-morph-point="${path}-${index}-anchor"]`);
+async function open(page,doc=fixture()){await page.goto('/editor/project-home.html');await page.locator('#project-import-file').setInputFiles({name:'Smoothing.pixl',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(doc))});await page.getByRole('button',{name:'Select Contours',exact:true}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.length).toBe(2);}
+async function edit(page){await page.getByRole('button',{name:'Edit base path',exact:true}).click();if(await page.getByRole('button',{name:'Dock Pen tools on right',exact:true}).count())await page.getByRole('button',{name:'Dock Pen tools on right',exact:true}).click();}
+async function setAmount(page,value){await amount(page).fill(String(value));await amount(page).press('Tab');}
+async function center(locator){const b=await locator.boundingBox();return {x:b.x+b.width/2,y:b.y+b.height/2};}
+test.beforeEach(async({page})=>{await page.route(/https?:\/\//,r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());});
+
+test('whole-path smoothing reduces transformed open and closed subpaths with one undo, persistence and clean export',async({page})=>{
+ await open(page);const before=await saved(page),points=await geometry(page),path=page.locator('.svg-art #pxv1'),transform=await path.locator('..').getAttribute('transform');await expect(amount(page)).toHaveValue('50');await setAmount(page,100);expect(await saved(page)).toEqual(before);await smooth(page).click();await expect(smooth(page)).toBeFocused();const after=await geometry(page);expect(after[0].points.length).toBeLessThan(30);expect(after[1].points.length).toBeLessThan(30);expect(after[1].closed).toBe(true);expect(after[2]).toEqual(points[2]);expect(after[0].points[0].slice(0,2)).toEqual(points[0].points[0].slice(0,2));expect(after[0].points.at(-1).slice(0,2)).toEqual(points[0].points.at(-1).slice(0,2).map(n=>+n.toFixed(6)));await expect(path).toHaveAttribute('stroke','#ffffff');await expect(path).toHaveAttribute('stroke-width','3');expect(await path.locator('..').getAttribute('transform')).toBe(transform);
+ await expect.poll(async()=>(await saved(page)).svg_animation.svg).not.toBe(before.svg_animation.svg);const smoothed=await saved(page);expect(smoothed.svg_animation.tracks).toEqual(before.svg_animation.tracks);expect(smoothed.svg_animation.origins).toEqual(before.svg_animation.origins);expect(smoothed.svg_animation.svg).toContain('data-pixl-mirroring');await page.screenshot({path:'.local/svg-path-smoothing/smoothed.png'});
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Redo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(smoothed);
+ await page.reload();await page.getByRole('button',{name:'Select Contours',exact:true}).click();expect(await geometry(page)).toEqual(after);await expect(amount(page)).toHaveValue('50');await page.getByRole('button',{name:'Export',exact:true}).click();const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'Download SVG',exact:true}).click();const svg=await readFile(await(await downloading).path(),'utf8');expect(svg).toContain(await path.getAttribute('d'));expect(svg).not.toContain('data-pixl-mirroring');expect(svg.match(/<animate /g)).toHaveLength(2);
+});
+
+test('smoothing uses the whole element even with a partial anchor selection and resets selection for continued editing',async({page})=>{
+ await open(page);await edit(page);const before=await saved(page),points=await geometry(page);await anchor(page,0,90).press('Enter');await anchor(page,0,99).press('Shift+Enter');await smooth(page).press('Enter');await expect(page.locator('.svg-path-nodes .anchor[aria-pressed=true]')).toHaveCount(1);await expect(anchor(page,0,0)).toHaveAttribute('aria-pressed','true');expect((await geometry(page))[1].points.length).toBeLessThan(points[1].points.length);await expect.poll(()=>saved(page)).not.toEqual(before);const smoothed=await saved(page);
+ await anchor(page,0,0).press('ArrowRight');expect((await geometry(page))[0].points[0][0]).toBe(points[0].points[0][0]+1);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(smoothed);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await expect(anchor(page,0,0)).toHaveAttribute('aria-pressed','true');
+});
+
+test('amount edits, zero smoothing, compact paths and invalid values create no artwork/history changes',async({page})=>{
+ await open(page);const before=await saved(page);await amount(page).fill('100');await amount(page).press('Escape');await expect(amount(page)).toHaveValue('50');await setAmount(page,0);await smooth(page).click();expect(await saved(page)).toEqual(before);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();
+ for(const value of ['101','-5','']){await amount(page).fill(value);await smooth(page).click();expect(await saved(page)).toEqual(before);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();}
+ await amount(page).press('Escape');await setAmount(page,100);await page.getByRole('button',{name:'Select Other',exact:true}).click();await smooth(page).click();expect(await saved(page)).toEqual(before);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();
+ const collapsed=fixture();collapsed.svg_animation.svg=collapsed.svg_animation.svg.replace('scale(1.1 .9)','scale(0 .9)');await open(page,collapsed);const invalid=await saved(page);await smooth(page).click();await expect(page.locator('#svg-message')).toContainText('invertible transform');expect(await saved(page)).toEqual(invalid);await expect(page.getByRole('button',{name:'Undo',exact:true})).toBeDisabled();
+});
+
+test('queued smoothing respects anchor, marquee, object drags, Join mode and playback',async({page})=>{
+ await open(page);await edit(page);const before=await saved(page),a=await center(anchor(page,0,0));await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(a.x+20,a.y+10,{steps:3});await smooth(page).dispatchEvent('click');expect(await saved(page)).toEqual(before);await page.keyboard.press('Escape');await page.mouse.up();
+ await page.mouse.move(a.x-15,a.y-15);await page.mouse.down();await page.mouse.move(a.x+80,a.y+80,{steps:3});await smooth(page).dispatchEvent('click');expect(await saved(page)).toEqual(before);await page.keyboard.press('Escape');await page.mouse.up();
+ await anchor(page,0,0).press('Enter');await page.getByRole('button',{name:'Join endpoints',exact:true}).click();await expect(smooth(page)).toBeDisabled();await smooth(page).dispatchEvent('click');expect(await saved(page)).toEqual(before);await page.keyboard.press('Escape');await page.getByRole('button',{name:'Select element',exact:true}).click();
+ const handle=await center(page.locator('.svg-transform-corner').first());await page.mouse.move(handle.x,handle.y);await page.mouse.down();await page.mouse.move(handle.x+25,handle.y+10,{steps:3});await smooth(page).dispatchEvent('click');expect(await saved(page)).toEqual(before);await page.keyboard.press('Escape');await page.mouse.up();
+ await page.getByRole('button',{name:'Play',exact:true}).click();await expect(smooth(page)).toBeDisabled();await smooth(page).dispatchEvent('click');expect(await saved(page)).toEqual(before);await page.getByRole('button',{name:'Pause',exact:true}).click();await expect(smooth(page)).toBeEnabled();
+});
+
+test('read-only and timed Morph paths cannot apply smoothing',async({page})=>{
+ await open(page);const original=await saved(page),body=JSON.stringify(original),id='00000000-0000-4000-8000-000000000094';let writes=0;await page.route('**/api/documents/'+id+'**',r=>{if(r.request().method()!=='GET')writes++;return r.fulfill({json:new URL(r.request().url()).pathname.endsWith('/editing')?{editingMode:'handoff',documentRevision:1,canEdit:false,serverNow:Date.now(),lease:null}:{id,body,revision:1,collaboration:true,can_edit:false}});});await page.goto('/editor/svg-animation.html?cloud='+id+'&workspace=team%3Asvg');await page.getByRole('button',{name:'Select Contours',exact:true}).click();await expect(amount(page)).toBeDisabled();await expect(smooth(page)).toBeDisabled();await smooth(page).dispatchEvent('click');expect(writes).toBe(0);
+ await open(page);await page.getByRole('button',{name:'Edit nodes',exact:true}).click();await expect.poll(async()=>(await saved(page)).svg_animation.tracks.some(t=>t.property==='morph')).toBe(true);const morph=await saved(page);await expect(smooth(page)).toBeDisabled();await smooth(page).dispatchEvent('click');expect(await saved(page)).toEqual(morph);
+});
+
+test('detached inspector smoothing edits the parent document and retains focus and undo',async({page})=>{
+ await open(page);const before=await saved(page),popup=page.waitForEvent('popup');await page.getByRole('button',{name:'Open Inspector in separate window',exact:true}).click();const inspector=await popup;await expect(smooth(inspector)).toBeVisible();await setAmount(inspector,100);await smooth(inspector).press('Enter');await expect(smooth(inspector)).toBeFocused();await expect.poll(()=>saved(page)).not.toEqual(before);expect((await geometry(page))[0].points.length).toBeLessThan(30);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);await inspector.close();await expect(smooth(page)).toBeVisible();await expect(amount(page)).toHaveValue('100');
+});

@@ -1274,3 +1274,53 @@ Editor and updated Dev Log previews remain open. Evidence:
 `.local/svg-subpath-removal/{selected-subpath,live-preview,dev-log}.png`.
 Not released; full reference parity and TerritoryIQ code/design-file work remain
 open. Next bounded vector step: smoothing existing paths.
+
+
+### Smooth existing paths — November 2 local source
+
+1. Select an SVG path. In the **Path** inspector, set **Smoothing %** from 0–100.
+2. Choose **Smooth path** to reduce and smooth the entire element's subpaths.
+   This works in object selection or Edit base path, regardless of anchor selection.
+3. Undo restores the original in one step; Redo reapplies it.
+
+Changing the amount alone makes no document edit. Escape restores the last
+accepted amount; invalid values cannot apply. Zero leaves the path untouched.
+Already-compact contours keep their original cubic data, so smoothing never adds
+anchors. The amount is session-only and resets to 50 after reopening.
+
+Actual cubic segments are sampled before applying the shared Pencil reduction
+and tangent fitting. Reduction tolerance is measured at the current canvas zoom,
+up to 3 visible pixels at 100%; this is the reduction tolerance, not a maximum
+curve-deviation guarantee. Retained sharp turns stay corners. Open endpoints
+stay fixed, while closed subpaths retain their seam and use cyclic handles.
+Non-collinear closed contours retain at least three points. All subpaths keep
+open/closed state and order; fitted smooth anchors get angle-mirroring metadata.
+Selection resets to the first anchor after a change for continued node editing.
+
+Paint/transform attributes, element identity, tracks and origins remain intact.
+Native files retain the smoothed geometry/metadata; SVG export retains geometry
+and animation while stripping editor metadata. Coordinates use the editor's
+existing six-decimal SVG serialization. No-op passes add no history entry.
+
+Timed Morph paths must keep their keyed topology and cannot use base smoothing.
+Read-only files, playback, Join and active drawing/node/region/object gestures
+also block the action. Non-invertible transforms, more than 4,096 cubic samples,
+or invalid/out-of-range geometry reject the whole pass. Zooming out can reduce
+sampling requirements. The same controls work in a detached Inspector.
+
+Six model tests and six browser workflows cover reduction, closed seams,
+transforms, retained cubic shape, no-ops, selection/focus, guards, history,
+reopening/export and detached panels; four shared Pencil tests cover existing
+Design behavior. Evidence: `.local/svg-path-smoothing/{smoothed,live-preview}.png`.
+This completes the previously recorded whole-path smoothing remainder locally,
+not in alpha.21. Next: multi-object selection, then duplication and grouping.
+
+Final verification (2026-11-02, local source): 171 SVG Chromium browser scenarios,
+84 SVG model tests, four shared Pencil model tests and four responsive website
+checks pass. TypeScript, editor asset build and diff checks pass; targeted ESLint
+has no errors and retains the existing `location.assign` navigation warning.
+The visible 88% zoom sample reduces an open path from 101 anchors to five and a
+closed ring from 96 to 16, retaining the compact two-anchor subpath. One Undo
+restores the original; native keyboard amount editing and reapplication work.
+Editor and updated Dev Log previews remain open. Evidence:
+`.local/svg-path-smoothing/{before-anchors,live-preview,dev-log}.png`.

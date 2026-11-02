@@ -118,5 +118,5 @@ export function installTransformHandles({host,read,start,preview,restore,change,
    try{change(Object.fromEntries(Object.entries(next).map(([k,v])=>[k,clean(v)])));}catch(error){report(error.message);}update();focus(record);
   };
  }
- return {update,cancel(){drag?.cancel();}};
+ return {update,cancel(){drag?.cancel();},get dragging(){return !!drag;}};
 }

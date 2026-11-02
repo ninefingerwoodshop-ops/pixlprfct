@@ -169,7 +169,7 @@
   "svgAnimationRoadmap": {
     "updated": "2026-11-02",
     "source": "docs/PEN_WORKSPACE_PROPOSAL.md",
-    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, group anchor movement, marquee/lasso anchor selection, bulk midpoint insertion, whole-subpath removal, Smooth/Corner/Delete and handle mirroring, separate-path joining, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
+    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, group anchor movement, marquee/lasso anchor selection, bulk midpoint insertion, whole-subpath removal, whole-path smoothing, Smooth/Corner/Delete and handle mirroring, separate-path joining, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
     "completedLocally": [
       "Pen tool and nib cursor, corner/cubic anchors, open/closed paths, endpoint continuation",
       "Direct Selection for base paths, anchor/handle drag and nudge, curve-preserving midpoint insertion, deletion, smooth/corner conversion",
@@ -198,13 +198,13 @@
       "Freeform lasso selection across subpaths in one base path, using the traced region through transforms/zoom; Shift extends, Escape restores, tool switching retains groups, and selection writes no artwork/history (2026-11-02, local source only)",
       "Bulk handle mirroring for selected curved interior anchors across subpaths; mixed inspector state, keyboard navigation, atomic validation/history, saved reopening, clean export and detached inspector support (2026-11-02, local source only)",
       "Bulk midpoint insertion after selected base-path anchors across subpaths; exact cubic subdivision, new-midpoint selection, atomic endpoint/anchor-limit validation, one Undo, saved reopening and clean animated SVG export (2026-11-02, local source only)",
-      "Whole-subpath removal by selecting every anchor and using Delete/Backspace or the existing Delete control; mixed partial/full deletion validates atomically, remaps selection and metadata, and keeps surviving geometry/animation. Removing the last subpath deletes the element with track/origin cleanup and one Undo (2026-11-02, local source only)"
+      "Whole-subpath removal by selecting every anchor and using Delete/Backspace or the existing Delete control; mixed partial/full deletion validates atomically, remaps selection and metadata, and keeps surviving geometry/animation. Removing the last subpath deletes the element with track/origin cleanup and one Undo (2026-11-02, local source only)",
+      "Whole-path smoothing of existing cubic artwork with a 0–100% Path inspector setting and explicit Smooth path action; shared Pencil reduction/corner policy, closed-ring seams, open endpoint retention, compact-curve no-ops, one Undo, native reopening and clean export. Guards cover gestures, Join, playback, leases and timed Morph (2026-11-02, local source only)"
     ],
     "remaining": [
-      "Whole-path smoothing for existing artwork (next bounded vector step)",
       "Joining independently animated or externally referenced paths",
       "Brush",
-      "Multi-object selection, duplication and grouping",
+      "Multi-object selection (next bounded vector step), followed by duplication and grouping",
       "Precision/construction, expressive artwork and cross-workspace handoff phases",
       "Grouped panel docking and named workspace presets"
     ],

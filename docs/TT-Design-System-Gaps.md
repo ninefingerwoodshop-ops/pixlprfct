@@ -603,6 +603,21 @@ by this planning pass, and no new editor feature was implemented or shipped.
     This supersedes earlier whole-subpath-removal remainders. Smoothing existing
     paths is next; multi-object editing and full reference parity remain open.
     Local source only, not alpha.21; no TerritoryIQ code/design-file fix claimed.
+  - [x] ~~B42r — Smooth existing SVG base paths without redrawing them.~~
+    Local resolution (2026-11-02): shared 0–100% inspector field and Smooth path
+    action reduce/smooth all subpaths, with fixed open endpoints, cyclic closed
+    seams and retained sharp corners. Compact curves and zero strength are
+    no-ops. Actual cubic sampling and the shared Pencil fitter preserve editable
+    geometry; changed smooth points receive mirroring metadata. One Undo restores
+    the complete pass, with paint/transform attributes and animation retained.
+    Six model tests, six browser workflows and four shared Pencil tests cover
+    geometry, transforms, no-ops, failures, active gestures, playback, leases,
+    Morph, detached Inspector, selection/focus, history, reopening and export.
+    Evidence: `.local/svg-path-smoothing/{smoothed,live-preview}.png`.
+    This supersedes the earlier whole-path smoothing remainder. Multi-object
+    selection is next. Interactive brush smoothing and full Figma Simplify
+    workflow/pixel parity remain open. Local only, not alpha.21; no TerritoryIQ
+    code or design-file fix claimed.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -841,3 +856,16 @@ Editor and updated Dev Log previews remain open. Evidence:
 `.local/svg-subpath-removal/{selected-subpath,live-preview,dev-log}.png`.
 Not released; full reference parity and TerritoryIQ code/design-file work remain
 open. Next bounded vector step: smoothing existing paths.
+
+
+B42r final verification (2026-11-02, local source): all 171 SVG Chromium browser
+scenarios, 84 SVG model tests, four shared Pencil model tests and four responsive
+website checks pass. TypeScript, editor asset build and diff checks pass; targeted
+ESLint reports no errors and the pre-existing navigation warning. In-app native
+amount editing and whole-path application reduce the sample's 101/96/2 anchors
+to 5/16/2 at 88% zoom. Undo restores the original and reapplication works. Editor
+and updated Dev Log previews remain open. Evidence:
+`.local/svg-path-smoothing/{before-anchors,live-preview,dev-log}.png`.
+Not released; Figma Simplify slider/algorithm parity, the interactive smoothing
+brush and TerritoryIQ code/design-file work remain open. Next bounded vector
+step: multi-object selection.
