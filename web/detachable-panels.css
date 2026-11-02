@@ -92,7 +92,7 @@ main>.panel-placeholder[data-side=right]{height:100%}
 body.panel-inspector-collapsed:not(.svg-animation-app),body.panel-inspector-detached:not(.svg-animation-app){--right:48px!important}
 body.panel-left-compact:not(.svg-animation-app){--left-width:48px!important}
 .svg-animation-app:is(.panel-elements-collapsed,.panel-elements-detached) main{grid-template-columns:48px minmax(180px,1fr) 240px}
-.svg-animation-app.panel-elements-collapsed .svg-file-heading input,.svg-animation-app.panel-elements-collapsed .svg-type{display:none}.svg-animation-app.panel-elements-collapsed .svg-file-heading{height:48px;padding:12px}.svg-animation-app.panel-elements-collapsed .svg-file-heading img{width:24px;height:24px}.svg-animation-app.panel-elements-collapsed .svg-file-actions{flex-direction:column;padding:4px 8px;gap:8px}
+.svg-animation-app.panel-elements-collapsed .svg-file-heading input{display:none}.svg-animation-app.panel-elements-collapsed .svg-file-heading{height:48px;padding:12px}.svg-animation-app.panel-elements-collapsed .svg-file-heading img{width:24px;height:24px}.svg-animation-app.panel-elements-collapsed .svg-file-actions{flex-direction:column;padding:4px 8px;gap:8px}
 .svg-animation-app:is(.panel-inspector-collapsed,.panel-inspector-detached):not(:has(.right-panel>.svg-pen-docked:not(.panel-collapsed))) main{grid-template-columns:296px minmax(180px,1fr) 48px}
 .svg-animation-app:is(.panel-elements-collapsed,.panel-elements-detached):is(.panel-inspector-collapsed,.panel-inspector-detached):not(:has(.right-panel>.svg-pen-docked:not(.panel-collapsed))) main{grid-template-columns:48px minmax(180px,1fr) 48px}
 #svg-inspector-panel{display:flex;flex-direction:column;min-height:0;flex:1;overflow:auto}

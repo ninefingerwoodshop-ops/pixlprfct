@@ -175,3 +175,28 @@ new universal/notarized/public release.
 The completed SVG drawing/editing/import, parent panel workspace and independent gradient animation work is included in [Windows alpha.21](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21). Earlier local completion entries remain historical evidence; uncompleted child items remain open. [Panel Workspace](wiki/Panel-Workspace.md) documents the final parent-only scope and icon flyouts.
 
 Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflows, 25 final panel/site checks, production build, types, generated API, lint and Rust formatting/Clippy. Native panel acceptance verifies cursor following, stop-on-release, refresh/restart restoration and explicit docking. Package provenance, checksums and Windows verification are recorded with the release. This does not claim full interface parity, real sleep/wake, a participant pilot, or resolution of TerritoryIQ code/design-file work.
+
+### Arbitrary SVG anchor insertion — 2026-11-02 (local source)
+
+| Model | Interface | Verification | Delivery |
+| --- | --- | --- | --- |
+| Cubic subdivision at an arbitrary parameter; shared Design segment picking in transformed screen coordinates | Direct Selection double-click adds and focuses an anchor; existing midpoint action remains available | 13 drawing/topology model checks and nine drawing browser scenarios pass; transformed curves, closed segments, Undo/Redo, persistence/export and Morph/read-only guards; screenshot reviewed | Local browser preview only; not in alpha.21 downloads; multi-node selection, separate-element joins and handle mirroring remain open |
+
+### Current-frame SVG export — 2026-11-02 (local source)
+
+| Model | Interface | Verification | Delivery |
+| --- | --- | --- | --- |
+| Static scene sampled at an explicit time; transforms, morphs, motion paths and gradient animation become ordinary SVG attributes | Shared export dropdown offers first frame or current playhead; matching preview with time caption | Four new Chromium cases and 18 existing export regressions; source/read-only protection, types, targeted lint and asset build pass | Local browser preview only; not in alpha.21 downloads; reduced-motion behavior and additional formats remain open |
+
+### Reduced-motion SVG export — 2026-11-02 (local source)
+
+| Model | Interface | Verification | Delivery |
+| --- | --- | --- | --- |
+| Independent first-frame artwork selected by a CSS media query; interactive clock resets and rejects activation while motion is reduced; reimport excludes duplicate fallback layers | Existing export dialog explains the fallback and updates its preview caption with the preference; static-current output retains the chosen pose | Seven Chromium scenarios, 22 existing export regressions, 12 SVG model/player checks, typecheck, targeted lint and asset build | Local preview only; not in alpha.21 downloads. Cross-browser verification, GIF/video and other formats remain open; hidden native SMIL can still advance |
+
+### Handle mirroring and persistent drawing toolbar — 2026-11-02 (local source)
+
+| Model | Interface | Verification | Delivery |
+| --- | --- | --- | --- |
+| Independent, angle-only and symmetric base-path handles; bounded native mode metadata, topology preservation and metadata-free SVG export | Three-option right Path inspector control for curved interior/closed anchors; detached Inspector supported | Five new browser scenarios, 46 related regressions, 18 model checks, types, targeted lint and editor build | Local preview only; not in alpha.21 downloads. Multi-node selection, separate-element joins and full vector-editor parity remain open |
+| Saved toolbar collapse/window state migrates; placement persists per editor | Main toolbar drags within the workspace and stays expanded, with no tear-out. Design dropdown buttons follow inspected Figma dimensions/states | Pointer/keyboard, cancellation, reload, resize, unchanged artwork and dropdown browser checks | Local preview only; not in alpha.21 downloads; supersedes earlier toolbar window behavior |

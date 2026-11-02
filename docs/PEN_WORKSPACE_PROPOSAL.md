@@ -1,6 +1,7 @@
 # Pen workspace proposal
 
-Updated November 1, 2026. **First implementation verified locally; not shipped.**
+Updated November 2, 2026. **Drawing foundation shipped in alpha.21; arbitrary
+segment anchor insertion and handle mirroring are verified in local source only.**
 
 The owner authorized roadmap development after the planning pass. Pen, core
 Direct Selection, and the movable palette are now implemented in local source.
@@ -62,8 +63,8 @@ also ships in Design in the first release remains a scope decision.
 | --- | --- | --- |
 | Pen | Click for corners, drag for Bézier handles; finish open paths, close paths, and continue endpoints | Implemented locally: corners/cubics, open/closed paths, both endpoints |
 | Direct Selection | Select, move and nudge anchors and handles independently | Implemented locally for ordinary path geometry |
-| Add/Delete Anchor | Add an anchor while preserving the curve; remove selected anchors with predictable geometry | Local midpoint insertion/deletion; arbitrary segment-click insertion remains open |
-| Convert Anchor | Switch corner/smooth behavior; separate or reconnect handles | Local corner/smooth conversion and independent handles; mirroring remains open |
+| Add/Delete Anchor | Add an anchor while preserving the curve; remove selected anchors with predictable geometry | Midpoint insertion/deletion in alpha.21; arbitrary segment double-click insertion verified locally (November 2) |
+| Convert Anchor | Switch corner/smooth behavior; separate or reconnect handles | Corner/smooth conversion; independent, angle-only and angle-and-length mirroring verified locally (November 2) |
 | Split/Join | Cut at an anchor, open a closed path, and join compatible endpoints | Implemented locally within one SVG path element; joining separate elements remains open |
 | Pencil | Draw editable freehand paths with adjustable smoothing | Implemented locally; 0–100% smoothing, Shift constraint, round ends and editable cubic handles |
 | Smooth | Refine an existing path without redrawing the whole object | Proposed detail; exact gesture to discuss |
@@ -136,3 +137,40 @@ implemented subset; remaining candidates have no delivery commitment or date.
 - Supported geometry: path elements, up to 512 anchors and 64 subpaths, bounded
   coordinates. Shape-to-path conversion, vector networks, multi-node selection,
   handle mirroring and exhaustive pixel parity remain open.
+
+## Arbitrary segment insertion — 2026-11-02 (local source)
+
+Direct Selection now accepts a double-click anywhere along a selected base path
+to insert an anchor without altering its curve. It uses the Design editor's
+existing segment-picking approach in screen coordinates, including SVG groups,
+rotation, nonuniform scaling and zoom. Near-anchor clicks retain ordinary anchor
+editing; the palette's midpoint command remains the keyboard-accessible option.
+Nine drawing browser checks and 13 drawing/topology model checks pass, including
+Undo/Redo, reopening, export, closing segments and edit permissions. This does
+not close multi-node selection, joining separate elements or handle mirroring.
+
+## Handle mirroring — 2026-11-02 (local source)
+
+The next batch closes base-path handle mirroring: the right Path inspector uses
+the live Figma reference's three-option control, with independent handles,
+preserved opposite length, or symmetric handles. It supports pointer and keyboard
+editing, Undo/Redo, native reopening, topology changes and detached Inspector
+windows. Curved interior/closed-path anchors are supported; corners require
+Smooth anchor first, and open endpoints are disabled. Morph animation keeps its
+separate editor. SVG exports retain geometry without editor-only mode metadata.
+
+Five new browser scenarios and 46 related browser regressions pass, alongside
+18 model checks. The owner's bottom toolbar request is also implemented in both
+editors: Drawing tools stays expanded, including migrated saved layouts, while
+tear-out and docking remain available. See the [delivery record](SVG_ANIMATION.md#2026-11-02--handle-mirroring-and-an-expanded-toolbelt-local-source).
+This supersedes the historical mirroring-open notes above; multi-node selection,
+separate-element joining and full Figma parity remain open. Not yet released.
+
+Toolbar clarification (2026-11-02, local): the main Drawing tools bar now moves
+within each editor instead of opening a separate window. This supersedes the
+previous tear-out statement for that bar. Other parent panels retain their
+window behavior; see [the current toolbar record](DETACHABLE_PANELS.md#main-toolbar-moves-within-the-editor--2026-11-02-local-correction).
+
+Next implementation: select and move multiple anchors within one SVG base-path
+element, preserving each anchor's handles, transforms and existing animation.
+This is separate from selecting multiple SVG objects and joining separate paths.

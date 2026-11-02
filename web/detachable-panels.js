@@ -6,12 +6,14 @@ import {panelGlyphs,panelIcon,panelSide,dockGlyph} from './panel-icons.js';
 
 // Portals share the editor's live controls and history. A panel never loads a
 // second editor or writes a competing copy of the document.
-export function installDetachablePanels({root=document.body,dropdowns,keydown,report,changed=()=>{},contexts=false,parentKeys=null,storageKey='pixlprfct.panels.v1:'+location.pathname}){
+export function installDetachablePanels({root=document.body,dropdowns,keydown,report,changed=()=>{},contexts=false,parentKeys=null,excludedKeys=[],storageKey='pixlprfct.panels.v1:'+location.pathname}){
  const entries=new Map();let closing=false,nativeClosing=false;
  window.pixlPanels?.onClosing(value=>{nativeClosing=value;closing=value;for(const entry of entries.values())remember(entry);});
  let saved={};try{const value=JSON.parse(localStorage.getItem(storageKey)??'{}');if(value&&typeof value==='object'&&!Array.isArray(value))saved=value;}catch{}
+ const removed=excludedKeys.some(key=>Object.hasOwn(saved,key));for(const key of excludedKeys)delete saved[key];
  if(parentKeys){const migrated={};for(const [key,value] of Object.entries(saved)){const parent=parentKeys.includes(key)?key:key==='pages'?'layers':'inspector';migrated[parent]??=value;}saved=migrated;}
  const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch{}};
+ if(removed)persist();
  const remember=entry=>{const child=entry.window;if(!entry.ready||!child||child.closed)return;const next={label:entry.label,x:child.screenX,y:child.screenY,width:child.outerWidth,height:child.outerHeight};if(JSON.stringify(saved[entry.key])!==JSON.stringify(next)){saved[entry.key]=next;persist();}};
  const make=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls;if(text)n.textContent=text;return n;};
  const button=(label,run,glyph)=>{const b=make('button','panel-action',glyph?'':label);b.type='button';b.onclick=run;b.setAttribute('aria-label',label);b.title=label;if(glyph)b.innerHTML=icon(glyph);return b;};
@@ -127,7 +129,7 @@ export function installDetachablePanels({root=document.body,dropdowns,keydown,re
  function sync(){
   for(const node of root.querySelectorAll('[data-detachable-panel]')){
    if(node.parentElement.closest('[data-detachable-panel]'))continue;
-   const key=node.dataset.detachablePanel;let entry=entries.get(key);
+   const key=node.dataset.detachablePanel;if(excludedKeys.includes(key))continue;let entry=entries.get(key);
    if(!entry){entry={key,label:node.dataset.panelLabel??key,node:null};entries.set(key,entry);registerEditorPanel(entry);}
    if(entry.node!==node){entry.node=node;decorate(entry,node);if(entry.window)mount(entry);}
   }

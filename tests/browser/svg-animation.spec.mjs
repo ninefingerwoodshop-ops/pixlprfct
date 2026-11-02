@@ -3,6 +3,8 @@ import {newSvgAnimation,trackValue} from '../../web/svg-animation-model.js';
 import desktopPolicy from '../../desktop/policy.cjs';
 import {readFile} from 'node:fs/promises';
 const storageKey='pixlprfct.drafts.v1';
+// Playback cases deliberately enable motion; preference handling has its own suite.
+test.use({reducedMotion:'no-preference'});
 const svg='<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240"><defs><linearGradient id="paint"><stop stop-color="#0d99ff"/><stop offset="1" stop-color="#b28cff"/></linearGradient><clipPath id="clip"><rect width="240" height="240"/></clipPath></defs><g id="Artwork" clip-path="url(#clip)"><rect id="Tile" x="40" y="40" width="80" height="80" fill="url(#paint)"/><circle id="Dot" cx="160" cy="160" r="20" fill="#ff0000"/></g></svg>';
 test.beforeEach(async({page})=>{await page.route(/https?:\/\//,r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());});
 async function create(page,name='SVG acceptance'){

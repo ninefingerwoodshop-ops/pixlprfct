@@ -11,7 +11,7 @@ The [Windows alpha.21 preview](https://github.com/ninefingerwoodshop-ops/pixlprf
 - **Pen:** click for corners or drag for Bézier handles. A stroke appears immediately. Enter, Escape, **Finish path**, or switching to Select keeps an open path; **Discard** cancels it. Closing a loop is optional. An open path can supply a motion route.
 - **Pencil:** draw editable curves with 0–100% smoothing and round stroke ends; Shift constrains a straight line.
 - **Select:** click artwork on the stage, including near thin strokes. Drag to move, use Shift to constrain, and delete a selected path with the keyboard, palette or inspector. Removing an element also removes its animation. Undo restores both.
-- **Direct Selection:** move or nudge anchors/handles, insert a midpoint, remove anchors, change corner/smooth type, split or open a path, and join endpoints within the same element. Multi-node selection and joining separate objects remain future work.
+- **Direct Selection:** move or nudge anchors/handles, insert a midpoint, remove anchors, change corner/smooth type, split or open a path, and join endpoints within the same element. Local November 2 source also supports arbitrary segment insertion and handle mirroring. Select a curved interior/closed-path anchor in Edit base path, then choose No mirroring, Mirror angle, or Mirror angle and length in the Path inspector. Corners need Smooth anchor first; open endpoints are disabled. Multi-node selection and joining separate objects remain future work.
 - Base edits preserve existing animation. A path with a Morph track uses the separate timed-node workflow; topology changes are rejected when they would invalidate animation.
 
 ### Independent gradient animation
@@ -41,7 +41,7 @@ Choose a linear or radial gradient for Fill or Stroke. Gradient rotation is inde
 - Provide a dedicated docked **timeline**: multi-select, marquee, group drag with snapping, copy/paste, paste to another element, duplicate at playhead, reverse, retime, delete, and previous/next-keyframe navigation.
 - Provide a right **inspector** for property values, keyframe easing (presets and a cubic-Bézier editor), selection timing, motion paths and morph nodes.
 - **Play back** in the editor by seeking a live DOM scene once per animation frame.
-- **Export** static SVG (first frame) or animated SVG. Interactive (hover or click) exports embed a small player.
+- **Export** static SVG (first or current frame) or animated SVG. Interactive (hover or click) exports embed a small player. Animated exports show a still first frame for reduced-motion viewers.
 - **Persist** as `.pixl` through local drafts or revision-checked cloud saves, using the shared editing lease for team files.
 
 ## Document model
@@ -118,6 +118,7 @@ A morph value is `[{closed, points:[[ax,ay, inx,iny, outx,outy], …]}, …]`: e
 | File | Role |
 | --- | --- |
 | [svg-animation-drawing.js](../../web/svg-animation-drawing.js), [drawing model](../../web/svg-animation-drawing-model.js), [picking](../../web/svg-animation-picking.js) | Pen/Pencil, anchor editing and topology, stage selection and movement. |
+| [svg-animation-mirroring.js](../../web/svg-animation-mirroring.js) | Base-path handle constraints, bounded native `data-pixl-mirroring` metadata, topology-aware mode normalization and atomic coordinate validation. SVG exports strip the metadata. |
 | [svg-animation-gradient-inspector.js](../../web/svg-animation-gradient-inspector.js), [gradient model](../../web/svg-animation-gradient-model.js), [gradients](../../web/svg-animation-gradients.js) | Paint controls, stop validation/interpolation, gradient definitions and scene bindings. |
 | [svg-animation-import.js](../../web/svg-animation-import.js), [import dialog](../../web/svg-animation-import-dialog.js) | Add/Replace operations, reference remapping and import choices. |
 | [detachable-panels.js](../../web/detachable-panels.js), [panel-docks.js](../../web/panel-docks.js), [editor-dom.js](../../web/editor-dom.js) | Shared parent windows, icon strips and flyouts, cross-window live-control lookup. |
@@ -128,9 +129,10 @@ A morph value is `[{closed, points:[[ax,ay, inx,iny, outx,outy], …]}, …]`: e
 | [svg-animation-timeline.js](../../web/svg-animation-timeline.js) | `installSvgTimeline({...})`: the docked `#motion-timeline` panel with transport controls, ruler/scrubber, tracks, playhead, marquee, snap guide, context menu, keyboard handling, zoom (1–32×) and resize/collapse. Holds the selection and the clipboard. |
 | [svg-animation-easing.js](../../web/svg-animation-easing.js) | `easingEditor({value, mixed, disabled, change})`: preset dropdown, draggable Bézier handle SVG and X1/Y1/X2/Y2 fields. Handles support arrow keys, Home/End and Escape. |
 | [svg-animation-morph.js](../../web/svg-animation-morph.js) | Morph value helpers: `validMorph`, `morphPath`, `sameMorphTopology`, `interpolateMorph`, `morphData`, `moveMorphPoint` (moving an anchor carries both of its handles). |
-| [svg-animation-nodes.js](../../web/svg-animation-nodes.js) | `installMorphNodes(...)`: on-canvas overlay of anchors and handles, with pointer drag, keyboard nudging (1 unit; 10 with Shift) and Escape to cancel. |
+| [svg-animation-nodes.js](../../web/svg-animation-nodes.js) | `installMorphNodes(...)`: on-canvas overlay of anchors and handles, with pointer drag, keyboard nudging (1 unit; 10 with Shift) and Escape to cancel. Base-path editing supplies a mirroring-aware `movePoint`; Morph retains its existing independent-handle behavior. |
 | [svg-animation-path.js](../../web/svg-animation-path.js) | `pathKinds`, `pathGeometry`, `captureMotionPath`, `pathSampler` (uses `getPointAtLength` and computes a tangent angle for auto-rotate). |
 | [svg-animation-svg.js](../../web/svg-animation-svg.js) | `sanitizeSvg`, `animationLayers`, `baseValue`, `animationScene` (wrapper construction and `seek`), `animatedSvg` (export serializer), `normalizeSvgAnimation`. |
+| [svg-animation-reduced-motion.js](../../web/svg-animation-reduced-motion.js) | Independent first-frame scene, remapped local references and CSS media query for reduced-motion exports, including image embeds. |
 | [svg-animation-transform.js](../../web/svg-animation-transform.js) | *(Included since alpha.20, PR #51.)* Canvas transform handles: `installTransformHandles({host, read, start, preview, restore, change, report})` draws an SVG overlay (`#svg-selection`) with four corner resize handles, four full-edge stretch targets and four rotation targets just outside the corners; `resizedValues(values, bounds, origin, handle, delta, {center, uniform})` computes new `scaleX`/`scaleY` and re-anchors `x`/`y` so the opposite edge/corner (or the center with Alt) stays fixed. Edits only the existing parent-space properties (`x`, `y`, `rotation`, `scaleX`, `scaleY`); imported geometry is never rewritten. |
 | [svg-animation-interactions.js](../../web/svg-animation-interactions.js) | `interactionClock` (playback state machine), `mountSvgInteraction` (event wiring scoped to one `<svg>`), `interactionScript` (serializes both into a `<script>`). Both functions are **self-contained on purpose** because their source text is copied into exported files. |
 | [svg-animation-export.js](../../web/svg-animation-export.js) | `installSvgExport(...)`: Export dialog with format, trigger, mouse-out, second-click and repeat options, a sandboxed preview iframe, and the Save settings and Download SVG actions. |
@@ -280,10 +282,19 @@ sequenceDiagram
    - `animateTransform` (with `type` = `translate`/`rotate`/`scale`) for wrapper tracks
    - `animate` (with `attributeName`) for attribute tracks
 3. Every SMIL element uses `calcMode="spline"`, `fill="freeze"`, `dur="<duration>ms"`, `keyTimes` = time/duration, and `keySplines` taken from each key's easing except the last. `exportKeys` pads held keys at 0 and at `duration` so that the keyTimes span 0–1.
-4. Static export (`animated:false`) emits only the first frame: the scene after `seek(0)`, with no animation elements and no script.
+4. Static export (`animated:false`) defaults to the first frame. An optional `time` in milliseconds exports the scene after `seek(time)`; it must be finite and within the document duration. Neither choice emits animation elements or scripts. The export dialog offers both first frame and current frame, capturing the playhead when the dialog opens. This choice does not change the saved timeline.
 5. Editor-only `data-layer-name` attributes are removed. The motion guide and morph overlay never enter the scene.
 
 **On-load** exports use `begin="0s"` and `repeatCount="indefinite"` when looping. They contain no script.
+
+**Reduced motion.** Before adding SMIL, the serializer clones the first frame.
+`reducedMotionFallback()` wraps the animated and still scenes separately, remaps
+the still scene's IDs, paint and local references, and emits a scoped media query.
+With `prefers-reduced-motion: reduce`, only the still scene is displayed. This
+works without scripts in image/background embeds; hidden SMIL may still advance.
+The extra artwork increases file size. `sanitizeSvg()` discards this generated
+fallback branch and unwraps the animated scene when reimporting, before its
+normal sanitization. Static exports do not include the fallback or media query.
 
 **Hover and click** exports use `begin="indefinite"` and `repeatCount="1"`, and they add `tabindex="0"`, `role="button"`, an `aria-label`, and an inline `<script>` produced by `interactionScript(settings, duration, loop)`. That script is the stringified source of `mountSvgInteraction` and `interactionClock`, plus a JSON options literal that holds only validated enums, numbers and booleans. The embedded runtime is a few dozen lines with no network access and no imports. Apart from a `pagehide` cleanup listener, it listens only on the exported `<svg>`. It works like this:
 
@@ -291,6 +302,7 @@ sequenceDiagram
 - `interactionClock` keeps `time`, `direction` and `playing` and advances them with `requestAnimationFrame`. It handles looping, reverse playback and stopping at the ends.
 - Each frame calls `root.setCurrentTime(time/1000)`, so SMIL still does all interpolation. The script only controls the document clock.
 - `pointerenter`/`pointerleave` and `focusin`/`focusout` drive hover. A click drives activation. Enter and Space work in both modes.
+- A motion-preference listener resets the clock and disables activation while reduced motion is enabled, changes the role to `img` and removes `tabindex`. Restoring motion makes the SVG interactive again, waiting for new input. `pagehide` removes the listener and cancels the clock.
 
 For motion tracks in interactive exports, the wrapper keeps its static `transform` and is marked `data-pixl-motion`. If scripts are disabled (for example in `<img>`), the file still shows the correct initial pose. The player removes that attribute when it mounts.
 

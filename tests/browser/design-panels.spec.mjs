@@ -18,10 +18,10 @@ test('Design Inspector contains Layout, Fill and Effects with custom dropdowns, 
  await select(page,label);await expect(layout.locator('#width')).toHaveValue('300');await layout.getByRole('button',{name:'Dock panel',exact:true}).click();await expect(page.locator('#width')).toHaveValue('300');
 });
 
-test('Design Pages, Layers and drawing tools operate in separate windows',async({page})=>{
+test('Design Pages and Layers operate in a separate window',async({page})=>{
  const {box}=await seed(page);const layers=await pop(page,'Layers'),pages=layers;await select(layers,box);await expect(page.locator('#shape-name')).toHaveValue('Acceptance card');await layers.locator('.layer.active').press('Delete');await expect.poll(async()=>(await saved(page)).shapes.some(s=>s.id===box)).toBe(false);await layers.locator('.panel-window-header strong').click();await layers.keyboard.press('ControlOrMeta+z');await expect.poll(async()=>(await saved(page)).shapes.some(s=>s.id===box)).toBe(true);
  await pages.locator('#add-page').click();await expect.poll(async()=>(await saved(page)).pages.length).toBe(2);await pages.locator('#page-switch-options button').first().click();
- const tools=await pop(page,'Drawing tools');await tools.getByRole('button',{name:'Pen',exact:true}).click();await expect(tools.getByRole('button',{name:'Pen',exact:true})).toHaveAttribute('aria-pressed','true');await tools.screenshot({path:'.local/design-panels/tools.png'});await tools.close();await layers.close();await expect(page.locator('.layer')).not.toHaveCount(0);
+ await layers.close();await expect(page.locator('.layer')).not.toHaveCount(0);
 });
 
 test('Design Motion timeline tears out and the parent Inspector follows mode changes',async({page})=>{
@@ -33,16 +33,23 @@ test('collapsed parents open adjacent flyouts without windows, keep controls liv
  await page.getByRole('button',{name:'Collapse Layers panel',exact:true}).click();await page.getByRole('button',{name:'Show Layers flyout',exact:true}).click();await expect(page.locator('#layers-page-control')).toBeVisible();expect(context.pages()).toHaveLength(count);await page.locator('#canvas').click({position:{x:500,y:500}});await expect(page.locator('#file-panel')).toBeHidden();await page.screenshot({path:'.local/design-panels/collapsed-design.png'});
 });
 
-test('collapse and expand icons point toward the next state for left, right and bottom docks',async({page})=>{
+test('collapse and expand icons point toward the next state for side docks',async({page})=>{
  await seed(page);
- for(const [name,key,collapse,expand] of [['Layers','layers','left','right'],['Inspector','inspector','right','left'],['Drawing tools','tools','down','up']]){
+ for(const [name,key,collapse,expand] of [['Layers','layers','left','right'],['Inspector','inspector','right','left']]){
   const close=page.getByRole('button',{name:'Collapse '+name+' panel',exact:true});await expect(close).toHaveAttribute('data-action-icon','chevrons-'+collapse);const before=await close.locator('path').getAttribute('d');await close.click();const open=page.getByRole('button',{name:'Expand '+name+' panel',exact:true});await expect(open).toHaveAttribute('data-action-icon','chevrons-'+expand);expect(await open.locator('path').getAttribute('d')).not.toBe(before);await open.click();await expect(close).toBeVisible();await expect(page.locator('[data-panel-rail="'+key+'"]')).toBeHidden();
  }
 });
 
+test('the main Design toolbelt stays expanded and migrates older collapsed layouts',async({page})=>{
+ await seed(page);const before=await saved(page);await page.evaluate(()=>localStorage.setItem('pixlprfct.panel-icons.v1:'+location.pathname,JSON.stringify(['tools','inspector'])));await page.reload();
+ await expect(page.locator('.toolbox')).toBeVisible();await expect(page.getByRole('button',{name:'Collapse Drawing tools panel',exact:true})).toHaveCount(0);await expect(page.locator('[data-panel-rail=tools]')).toHaveCount(0);await expect(page.getByRole('button',{name:'Expand Inspector panel',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Pen',exact:true}).click();await expect(page.getByRole('button',{name:'Pen',exact:true})).toHaveAttribute('aria-pressed','true');expect(await saved(page)).toEqual(before);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('pixlprfct.panel-icons.v1:'+location.pathname)))).toEqual(['inspector']);await page.reload();await expect(page.locator('.toolbox')).toBeVisible();
+});
+
 test('every Design parent keeps an icon and an operable icon dock after tear-out',async({page})=>{
  await seed(page);
- for(const [key,name] of [['layers','Layers'],['assets','Assets'],['inspector','Inspector'],['tools','Drawing tools'],['timeline','Timeline']]){
+ for(const [key,name] of [['layers','Layers'],['assets','Assets'],['inspector','Inspector'],['timeline','Timeline']]){
   if(key==='assets')await page.locator('#nav-assets').click();if(key==='timeline')await page.getByRole('button',{name:'Motion',exact:true}).click();
   const parent=page.locator('[data-detachable-panel="'+key+'"]');await expect(parent.locator(':scope > .panel-parent-heading .panel-type-icon svg')).toHaveCount(1);
   await page.getByRole('button',{name:'Collapse '+name+' panel',exact:true}).click();const rail=page.locator('[data-panel-rail="'+key+'"]');await expect(rail).toBeVisible();await expect(rail.locator('button')).toHaveCount(2);await expect(rail.locator('button svg')).toHaveCount(2);if(['layers','assets'].includes(key))for(const label of ['Document actions','All projects','Import design','Download project copy'])await expect(page.locator('.left-panel').getByRole('button',{name:label,exact:true})).toBeVisible();await page.getByRole('button',{name:'Expand '+name+' panel',exact:true}).click();

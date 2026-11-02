@@ -1,0 +1,4 @@
+#workspace .toolbox{width:max-content;max-width:calc(100% - 24px);flex-wrap:wrap}
+#workspace .toolbox>.toolbelt-grip{width:16px!important;min-width:16px!important;max-width:16px!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding:0!important;flex:0 0 16px!important;cursor:grab;touch-action:none;color:var(--ui-text-muted);background:transparent;display:grid;place-items:center}
+#workspace .toolbox>.toolbelt-grip svg{width:16px;height:16px}
+#workspace .toolbox.toolbelt-dragging,#workspace .toolbox.toolbelt-dragging *{cursor:grabbing!important;user-select:none}

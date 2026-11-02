@@ -495,6 +495,24 @@ by this planning pass, and no new editor feature was implemented or shipped.
     selection includes thin painted strokes at different zooms. Five new browser
     cases cover paint, transformed picking, history, continuation and read-only
     selection. Supersedes the earlier draft-Escape behavior; source only.
+  - [x] ~~B42h — Insert an anchor anywhere along a base-path segment.~~ Local
+    resolution (2026-11-02): Direct Selection double-click inserts at the nearest
+    screen-space curve point through zoom and SVG transforms, preserving the
+    curve and all existing animation. Nine drawing browser scenarios and 13
+    drawing/topology model checks pass, including closing segments, Undo/Redo,
+    save/reopen, SVG export and Morph/read-only protection. Evidence:
+    `.local/svg-anchor-insertion/curve.png`. Not installed or released; other
+    B42 scope remains open.
+  - [x] ~~B42i — Base-path handle mirroring.~~ Local resolution (2026-11-02):
+    independent, angle-only and angle-and-length modes in the right Path
+    inspector, matching the inspected live Figma control's 184 × 24 px layout.
+    Pointer/keyboard edits, cancellation, Undo/Redo, reopening, topology changes,
+    detached Inspector and clean SVG export are verified. Curved interior or
+    closed-path anchors only; corners require Smooth anchor first. Five new
+    browser scenarios and 18 drawing/topology/mirroring model checks pass, plus
+    46 related browser regressions. Evidence: `.local/svg-mirroring/inspector.png`
+    and `figma-reference.png`. Local source only, not installed or released;
+    remaining B42 scope and exhaustive visual parity stay open.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -605,3 +623,70 @@ build, and native window restoration passed. Both browser previews are updated.
 The completed SVG drawing/editing/import, parent panel workspace and independent gradient animation work is included in [Windows alpha.21](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21). Earlier local completion entries remain historical evidence; uncompleted child items remain open. [Panel Workspace](wiki/Panel-Workspace.md) documents the final parent-only scope and icon flyouts.
 
 Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflows, 25 final panel/site checks, production build, types, generated API, lint and Rust formatting/Clippy. Native panel acceptance verifies cursor following, stop-on-release, refresh/restart restoration and explicit docking. Package provenance, checksums and Windows verification are recorded with the release. This does not claim full interface parity, real sleep/wake, a participant pilot, or resolution of TerritoryIQ code/design-file work.
+
+B44e branding follow-up (2026-11-02, local source): “SVG Animator” now appears
+beside the left drawer logo; the separate “SVG Animation” title and motion icon
+are removed. The inline toggle and compact logo/icon rail remain intact.
+Verified expanded/collapsed states in the running browser and passed both
+focused Elements tear-out/flyout checks. Screenshot: `.local/svg-branding/after.png`.
+ESLint reports no errors (one existing navigation warning). This follow-up is
+not yet part of a published release.
+
+### Roadmap export delivery — 2026-11-02 (local source)
+
+- [x] ~~SVG static export is limited to the first frame.~~ The November 1
+  product evaluation identified current-playhead stills as an output gap.
+  **Static SVG · current frame** now previews and downloads the paused pose,
+  including transforms, morphs, motion paths and animated gradients, without
+  animation or playback scripts. Four new browser checks verify preview/download
+  agreement, source preservation, first-frame compatibility, reopening and
+  read-only export. Eighteen existing export regressions also pass; typecheck,
+  asset build and targeted lint pass. Evidence: `tests/browser/svg-animation-static-frame.spec.mjs`
+  and `.local/static-frame/current-frame.png`. Local source only, not shipped.
+  Reduced-motion behavior, additional formats and B43's editable workspace handoff
+  remain open. No TerritoryIQ code or design-file item is resolved by this work.
+
+- [x] ~~Animated SVG exports do not honor the viewer's reduced-motion preference.~~
+  **2026-11-02, local source:** exports now show a separate still first frame via
+  CSS, including image/background embeds. Click/hover players stop and reset,
+  remove keyboard activation, and wait for new input when motion is restored.
+  Export preview shares the behavior; current-frame stills retain the chosen pose.
+  Reimport drops the fallback copy so it does not duplicate editable layers.
+  Seven Chromium checks and 22 existing export regressions pass, alongside 12
+  model/player checks, typecheck, asset build and targeted lint. Evidence:
+  `tests/browser/svg-animation-reduced-motion.spec.mjs` and
+  `.local/reduced-motion/{preview,embeds}.png`. On-load output remains script-free;
+  hidden native animation may still advance. Cross-browser checks, GIF/video,
+  additional formats and B43 workspace handoff remain open. Not shipped; no
+  TerritoryIQ code or design-file item is resolved.
+
+B44e toolbar follow-up (2026-11-02, local source): the owner requires the main
+bottom Drawing tools bar to remain expanded. Removed its collapse action in
+Design and SVG Animator, and migrate that entry out of older saved collapsed
+layouts without changing other panels. Tear-out/dock still works. Both migration
+and interaction cases pass, along with the existing panel regressions (23 panel
+browser scenarios in the 51-scenario drawing/mirroring batch). Evidence:
+`.local/svg-mirroring/live-preview.png`. Not installed or released.
+
+B44e toolbar correction (2026-11-02, local source): the owner clarified that the
+main Drawing tools bar must drag inside the editor, not tear out. Removed its
+window registration and pop-out control in Design and SVG Animator; its small
+left grip now moves it inside the canvas workspace. Placement persists per
+editor, clamps after resize, supports arrows/Home and cancels on Escape without
+editing artwork. Old toolbar window entries are removed before parent migration,
+so they cannot accidentally reopen an Inspector. Prior completion records remain
+historical; this supersedes their Drawing tools window behavior.
+
+The owner also requested Figma-style toolbar dropdown buttons. Inspected the live
+Figma Creation tools menu, then matched 32 px tool buttons and 16 × 32 px chevron
+hit areas with neutral hover/open states and a small downward chevron. Menus
+follow the moved toolbar and choose available space above/below. Reference and
+local screenshots are in `.local/toolbelt-drag/`. Local preview only, not released.
+
+Verification for the toolbar correction: all 28 Design/SVG panel and toolbar
+browser scenarios pass across the broad and focused runs, including 800 × 600
+resize checks and restoring placement after collapsed sidebars initialize. Two SVG fixtures now wait for their initial artwork to save before
+capturing an unchanged-document baseline. Typecheck, editor asset build, targeted
+ESLint (zero errors, one existing navigation warning) and diff checks pass. The
+running Design draft was inspected after a real drag; its dropdown opens below
+the moved toolbar. Screenshot: `.local/toolbelt-drag/live-preview.png`.

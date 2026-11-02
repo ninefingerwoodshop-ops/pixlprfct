@@ -1,7 +1,7 @@
 import {moveMorphPoint,morphData} from './svg-animation-morph.js';
 
 const NS='http://www.w3.org/2000/svg';
-export function installMorphNodes({host,read,select,change,preview,report,activate=()=>false,label='Morph nodes',nodeLabel='Morph node',anchorShape='rect',overlayClass='svg-morph-nodes'}){
+export function installMorphNodes({host,read,select,change,preview,report,activate=()=>false,movePoint=moveMorphPoint,label='Morph nodes',nodeLabel='Morph node',anchorShape='rect',overlayClass='svg-morph-nodes'}){
  const overlay=document.createElementNS(NS,'svg');overlay.classList.add(overlayClass);overlay.setAttribute('aria-label',label);host.append(overlay);
  let drag=null,records=[],outline=null;
  const make=(tag,attrs)=>{const node=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))node.setAttribute(k,v);overlay.append(node);return node;};
@@ -28,19 +28,19 @@ export function installMorphNodes({host,read,select,change,preview,report,activa
     const area=document.createElementNS(NS,'circle');area.setAttribute('r','8');area.classList.add('svg-morph-hit');hit.append(area);
     const glyph=document.createElementNS(NS,kind==='anchor'?anchorShape:'circle');if(kind==='anchor'&&anchorShape==='rect')for(const [k,v] of Object.entries({x:-3,y:-3,width:6,height:6}))glyph.setAttribute(k,v);else glyph.setAttribute('r','3');glyph.classList.add('svg-morph-glyph');hit.append(glyph);
     records.push({path:pathIndex,index,kind,label,hit,line});
-    hit.onclick=e=>{e.stopPropagation();if(activate(pathIndex,index,kind))return;select(pathIndex,index);draw(read().value,state.node);};
+    hit.onclick=e=>{e.stopPropagation();if(activate(pathIndex,index,kind))return;select(pathIndex,index,kind);draw(read().value,state.node);};
     hit.onkeydown=e=>{
-     if(!state.enabled)return;if(e.key==='Enter'){e.preventDefault();e.stopPropagation();if(activate(pathIndex,index,kind))return;select(pathIndex,index);draw(read().value,state.node);return;}
+     if(!state.enabled)return;if(e.key==='Enter'){e.preventDefault();e.stopPropagation();if(activate(pathIndex,index,kind))return;select(pathIndex,index,kind);draw(read().value,state.node);return;}
      if(state.dragEnabled===false)return;
-     if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();select(pathIndex,index);
+     if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();select(pathIndex,index,kind);
      const value=read().value,p=value[pathIndex].points[index],step=e.shiftKey?10:1,x=p[offset]+(e.key==='ArrowRight'?step:e.key==='ArrowLeft'?-step:0),y=p[offset+1]+(e.key==='ArrowDown'?step:e.key==='ArrowUp'?-step:0);
-     try{change(moveMorphPoint(value,pathIndex,index,kind,x,y));focus(key);}catch(error){report(error.message);}
+     try{change(movePoint(value,pathIndex,index,kind,x,y));focus(key);}catch(error){report(error.message);}
     };
     hit.onpointerdown=e=>{
-     if(e.button!==0||!state.enabled)return;e.preventDefault();e.stopPropagation();if(state.dragEnabled===false){hit.focus({preventScroll:true});return;}select(pathIndex,index);hit.focus({preventScroll:true});
+     if(e.button!==0||!state.enabled)return;e.preventDefault();e.stopPropagation();if(state.dragEnabled===false){hit.focus({preventScroll:true});return;}select(pathIndex,index,kind);hit.focus({preventScroll:true});
      const before=read().value,inverse=state.node.getScreenCTM()?.inverse();if(!inverse)return;const start=new DOMPoint(e.clientX,e.clientY).matrixTransform(inverse),p=before[pathIndex].points[index];let value=before;
      hit.setPointerCapture(e.pointerId);
-     const move=event=>{const at=new DOMPoint(event.clientX,event.clientY).matrixTransform(inverse);try{value=moveMorphPoint(before,pathIndex,index,kind,p[offset]+at.x-start.x,p[offset+1]+at.y-start.y);preview(value);draw(value,state.node);}catch(error){report(error.message);}};
+     const move=event=>{const at=new DOMPoint(event.clientX,event.clientY).matrixTransform(inverse);try{value=movePoint(before,pathIndex,index,kind,p[offset]+at.x-start.x,p[offset+1]+at.y-start.y);preview(value);draw(value,state.node);}catch(error){report(error.message);}};
      const clear=()=>{hit.removeEventListener('pointermove',move);hit.removeEventListener('pointerup',done);hit.removeEventListener('pointercancel',cancel);hit.removeEventListener('lostpointercapture',cancel);window.removeEventListener('keydown',escape,true);drag=null;};
      const cancel=()=>{clear();preview(before);update();focus(key);},done=()=>{clear();try{if(JSON.stringify(value)!==JSON.stringify(before))change(value);else update();focus(key);}catch(error){preview(before);update();report(error.message);}},escape=event=>{if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();cancel();}};
      drag={cancel};hit.addEventListener('pointermove',move);hit.addEventListener('pointerup',done);hit.addEventListener('pointercancel',cancel);hit.addEventListener('lostpointercapture',cancel);window.addEventListener('keydown',escape,true);

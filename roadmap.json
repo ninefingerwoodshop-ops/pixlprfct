@@ -39,7 +39,7 @@
     "named prototype flow starting points, presentation flow switching/reset, same-page canvas connection wires and drag-to-connect with atomic undo",
     "instant, dissolve and directional slide prototype transitions with duration/easing, reduced-motion support and clean cancellation",
     "atomic paste-to-replace across selected destinations with parent/stack/layout preservation, subtree replacement, internal-link remapping and undo",
-    "adjustable Pencil point reduction and Bézier smoothing with corner/endpoint retention, zoom-adjusted tolerance and editable persistent handles",
+    "adjustable Pencil point reduction and B\u00e9zier smoothing with corner/endpoint retention, zoom-adjusted tolerance and editable persistent handles",
     "JPEG page/selection export with adjustable quality, opaque backgrounds, resolution scaling and bounded raster memory",
     "batch SVG/PNG/JPEG export of selected roots or top-level frames to ZIP with unique filenames, sequential rendering, progress and size limits",
     "Rust vector path splitting and closed-path opening at anchors with cubic preservation, separate bounds, inherited settings and atomic history",
@@ -66,7 +66,7 @@
     "named cloud version checkpoints with immutable snapshots, paginated history, ownership isolation, revision-checked transactional restoration, automatic pre-restore backups and open-version-as-copy",
     "transactional automatic backups of prior cloud saves at five-minute intervals, literal-name file search and cursor pagination across active files and Trash",
     "private immutable object storage for cloud document bodies above 1.5 MB with backward-compatible inline reads, object-backed history/restore, failure preservation and verified 2.56 MB browser round trip",
-    "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; Bézier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
+    "independent line/path start and end tips: line arrows, triangles, reverse triangles, diamonds and circles; B\u00e9zier tangent orientation, union-mask opacity/gradients, hit testing, component overrides, split/join endpoint preservation and pixel-verified PNG/SVG export",
     "on-canvas auto-layout padding, main-gap and wrapped cross-gap handles with Rust descendant preview, linked opposite padding, keyboard adjustment, zoom-aware hit targets, clipping and atomic undo",
     "inside/center/outside stroke alignment for closed geometry, text and image outlines with shared masks, independent stroke opacity/gradients, outer-edge hit testing, bounded export buffers, component overrides and pixel-verified PNG/SVG placement",
     "per-frame inside-stroke inclusion in auto layout with independent nested settings, content-space fill allocation, padding/border minimums, stroke-aware wrapping and canvas handles, component overrides and legacy persistence",
@@ -132,7 +132,7 @@
     "Complete shared-variable integration, scopes, code syntax, RGBA, component/prototype bindings and bulk metadata editing"
   ],
   "deferred": [],
-  "statusDate": "2026-11-01",
+  "statusDate": "2026-11-02",
   "statusSource": "docs/CAPABILITY_MATRIX.md",
   "verificationPolicy": "Engine, UI, visual verification, installed builds and published releases are tracked separately. Local passing checks do not establish full Figma parity.",
   "latestVerification": {
@@ -166,9 +166,9 @@
     ]
   },
   "svgAnimationRoadmap": {
-    "updated": "2026-11-01",
+    "updated": "2026-11-02",
     "source": "docs/PEN_WORKSPACE_PROPOSAL.md",
-    "releaseStatus": "Included in Windows v0.1.1-alpha.21; native install/startup/uninstall and packaged browser verification recorded in release notes",
+    "releaseStatus": "Drawing foundation, panels and gradients included in Windows v0.1.1-alpha.21; November 2 anchor insertion, handle mirroring, current-frame static export, reduced-motion SVG exports and movable in-editor drawing toolbars with refined dropdowns are local source only. Package verification is recorded in release notes.",
     "completedLocally": [
       "Pen tool and nib cursor, corner/cubic anchors, open/closed paths, endpoint continuation",
       "Direct Selection for base paths, anchor/handle drag and nudge, curve-preserving midpoint insertion, deletion, smooth/corner conversion",
@@ -180,14 +180,19 @@
       "Visible Finish path guidance for open motion routes; Delete/Backspace and inspector/palette path deletion with track cleanup and undo",
       "Live painted Pen strokes and next-segment preview; Escape, Enter, Finish path or Select keeps open paths; explicit discard",
       "Direct stage selection with zoom-aware hit tolerance for thin painted strokes",
-      "Independent SVG panel windows for parent Inspector, Elements, Timeline, Drawing tools and Pen tools; live controls, dock/close restoration and shared history",
+      "Independent SVG panel windows for parent Inspector, Elements, Timeline and Pen tools; live controls, dock/close restoration and shared history",
       "Cursor-connected panel tear-out through mouse release; saved window positions/sizes across refresh and desktop restart",
       "Right-docked SVG Pen tools with saved placement; five-icon compact sidebar when Elements is detached",
-      "Parent panel icons, persisted icon-only collapse and adjacent in-editor flyouts; child sections remain inside their parent",
-      "Independent fill/stroke gradient rotation and stop animation (color, position and opacity), linear/radial paint editing, shared-definition isolation and native animated SVG export"
+      "Parent panel icons, persisted icon-only collapse and adjacent in-editor flyouts; Drawing tools stays expanded (November 2 local source); child sections remain inside their parent",
+      "Independent fill/stroke gradient rotation and stop animation (color, position and opacity), linear/radial paint editing, shared-definition isolation and native animated SVG export",
+      "Arbitrary segment double-click anchor insertion with curve preservation, screen-space picking through transforms/zoom, atomic history, persistence/export and Morph/edit-lease protection (2026-11-02 local source; not in alpha.21)",
+      "Static SVG export at the current playhead, with matching preview, preserved transforms/morphs/motion paths/gradient animation, and no document writes for read-only exports (2026-11-02, local source only)",
+      "Reduced-motion animated SVG exports with a script-free first-frame fallback for image embeds, preference-aware interactive playback and matching sandboxed preview (2026-11-02, local source only; Chromium verified)",
+      "Base-path handle mirroring: independent, angle-only and angle-and-length modes; pointer/keyboard editing, topology preservation, native reopening and clean SVG export (2026-11-02, local source only)",
+      "Main Drawing tools drags within Design and SVG Animator, stays expanded and remembers placement; old collapsed/window layouts migrate; Design dropdown triggers follow the live Figma reference (2026-11-02, local source only)"
     ],
     "remaining": [
-      "Joining separate path elements, click-anywhere anchor insertion, multi-node selection and handle mirroring",
+      "Joining separate path elements and multi-node selection",
       "Whole-path smoothing for existing artwork, Brush",
       "Multi-object selection, duplication and grouping",
       "Precision/construction, expressive artwork and cross-workspace handoff phases",

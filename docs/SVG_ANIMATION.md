@@ -33,8 +33,10 @@ v0.1.0-alpha.1 download does not include this workspace.
    arrow keys move selected keyframes by 10 ms (Shift: 100 ms), and Delete removes
    them. Undo/redo applies to document edits. Duration changes cannot discard keys.
 6. **Export** previews the actual generated SVG. Choose animated or static output,
-   playback trigger, and repeat behavior, then download the file. **Static SVG**
-   exports the first frame. **Save settings** stores export behavior without downloading.
+   playback trigger, and repeat behavior, then download the file. Choose
+   **Static SVG · first frame** or **Static SVG · current frame** to export a still.
+   Current frame captures the playhead when Export opens and shows its time below
+   the preview. **Save settings** stores export behavior without downloading.
 
 Transform origins can be entered or centered on the source element. Position is
 an offset from imported geometry; scales multiply the imported geometry. The
@@ -317,6 +319,13 @@ On-load exports use script-free native SVG animation. Interactive exports includ
 a small self-contained player with no network dependencies. Embed interactive SVG
 inline or with an `<object>`; browsers disable its scripts in `<img>` elements and
 CSS backgrounds. Static exports contain neither animation nor scripts.
+
+Animated exports honor **prefers-reduced-motion** by displaying a separate still
+first frame. This also works in image and CSS-background embeds. The export
+preview follows the preference and explains when the still is showing. Interactive
+players reset and stop when reduced motion is enabled; pointer and keyboard
+activation are disabled until the preference changes back. Static current-frame
+exports keep the chosen pose regardless of the preference.
 
 Changes in this dialog are temporary until **Save settings** or **Download SVG**.
 Cancel discards them. Settings are saved in `.pixl` files and support undo/redo.
@@ -871,3 +880,117 @@ first frame. Color, offset and opacity interpolate together with track easing.
 Parent-only tear-outs and icon-strip side flyouts supersede the earlier section
 tear-outs. See [panel behavior](DETACHABLE_PANELS.md). No installed or published
 release change is claimed.
+
+## 2026-11-02 — Insert an anchor anywhere along a path (local source)
+
+Select a path and choose **Edit base path** or **Direct Selection (A)**. Double-click
+any segment to add an anchor at the nearest point on the curve. The new anchor
+is selected and keyboard-focused; its handles preserve the original curve.
+The palette also retains **Add midpoint after anchor** for keyboard use.
+
+Picking uses an 8-screen-pixel tolerance through zoom, imported group transforms,
+rotation and nonuniform scaling. Existing anchors take precedence within their
+hit area. Open, closed and compound paths work; empty-space clicks do not insert
+anything. Each insertion is one Undo step, preserves animation tracks and origins,
+and survives reopening and SVG export. Paths with a Morph animator keep their
+fixed topology and cannot use this base-path operation; read-only files remain
+protected. The existing 512-anchor path limit applies.
+
+Verification: all nine SVG drawing browser scenarios and 13 drawing/topology
+model cases pass. They cover arbitrary cubic subdivision, closing segments,
+transformed picking, near-anchor/empty-space guards, Undo/Redo, save/reopen,
+animated export, Morph protection and read-only access. Changed-file ESLint and
+the editor build pass. Reviewed screenshot: `.local/svg-anchor-insertion/curve.png`.
+Available in the local browser preview; not included in alpha.21 downloads.
+
+Follow-up regression run: all 11 existing stage-selection and split/join browser
+scenarios pass as well (20 browser scenarios total for this batch).
+
+## 2026-11-02 — Current-frame static SVG export (local source)
+
+Export now offers **Static SVG · current frame** alongside animated output and
+the existing first-frame still. It captures the paused playhead when the dialog
+opens; the caption shows that time. Reopen Export after moving the playhead to
+capture another frame. Preview and download share the same scene and time.
+
+Transforms, opacity/paints, morph geometry, motion paths and gradient stops/rotation
+are baked into the still. No animation elements or playback script are included.
+The editable source and timeline remain intact; read-only cloud projects may
+download without saving settings. The first-frame default used by project
+thumbnails is unchanged.
+
+Verification: four new Chromium scenarios plus 18 existing export regressions
+pass, including interactive playback, motion/morph/gradient agreement, read-only
+files and desktop CSP. Typecheck, editor asset build and targeted ESLint pass
+(one pre-existing navigation warning). Screenshot:
+`.local/static-frame/current-frame.png`. Live Figma export controls were inspected;
+full interface parity is not certified. This is local source and browser preview
+only, not an installed or published release.
+
+## 2026-11-02 — Reduced-motion SVG export (local source)
+
+Animated SVGs include a first-frame scene selected by a CSS media query. Its
+independent IDs and references keep gradients, morphs, motion routes, masks and
+clipping static. On-load output stays script-free; its hidden native animation
+may continue advancing internally. The fallback adds artwork to the file size.
+Reimport removes the fallback copy, preserving a single editable artwork scene;
+`.pixl` remains the format for retaining editable animation tracks.
+
+Interactive exports reset their clock, remove keyboard activation and expose
+an image role while reduced motion is enabled. Changing back restores interaction
+but waits for a new activation. The sandboxed preview shares this behavior.
+The interface retains the shared dropdowns and dark export layout, with a brief
+motion-preference note and state caption.
+
+Verification is recorded in `tests/browser/svg-animation-reduced-motion.spec.mjs`:
+seven Chromium scenarios cover script-free output, ID/reference isolation,
+image/background rendering, live preference changes during click/hover playback,
+JavaScript-disabled rendering, reimport and unchanged source/static-current export.
+Image tests use Chromium's browser-wide preference because page-level emulation
+does not reach embedded SVG image documents. Cross-browser and live OS preference
+changes inside image embeds remain unverified. Screenshots:
+`.local/reduced-motion/preview.png` and `.local/reduced-motion/embeds.png`.
+This is local source and browser preview work, not a published alpha.21 update.
+
+## 2026-11-02 — Handle mirroring and an expanded toolbelt (local source)
+
+In **Edit base path**, select a curved interior anchor (or a curved anchor on a
+closed path). The right Path inspector offers **No mirroring**, **Mirror angle**,
+and **Mirror angle and length**. Angle mode preserves the opposite handle's
+length; angle-and-length mode makes the handles symmetric. Both dragging and
+keyboard nudging follow the selected mode. Use **Smooth anchor** first for a
+corner; open endpoints have no opposite segment and keep mirroring disabled.
+Morph-keyframe editing remains separate, and read-only paths cannot change.
+
+The active handle determines which direction is retained when switching modes.
+Modes survive Undo/Redo and reopening in the native document's SVG source through
+bounded `data-pixl-mirroring` metadata. SVG exports strip this editor metadata and
+retain the resulting geometry. Insertion, deletion, reversal, split and join keep
+the modes attached to their anchors; subdivision can downgrade equal-length
+mirroring to angle-only to preserve the original curve. Escape cancels both
+handles together, and out-of-bounds mirrored edits fail atomically.
+
+The main bottom **Drawing tools** toolbar now stays expanded in both Design and
+SVG Animator. Its collapse control is removed and older saved collapsed layouts
+are migrated. Separate-window and docking controls still work; other panels keep
+their existing collapse behavior.
+
+Verification: five new mirroring browser scenarios, 43 drawing/topology/stage/panel
+regressions and three shared Morph/sanitizer regressions pass (51 browser scenarios
+across the broad and focused runs). Three existing tests now wait for persistence
+before capturing a saved-document baseline. Eighteen mirroring/drawing/topology
+model checks, typecheck, targeted ESLint and the editor build pass. ESLint retains
+one pre-existing navigation warning. Live Figma's 184 × 24 px mirroring control was
+inspected; reference and result are `.local/svg-mirroring/figma-reference.png` and
+`inspector.png`. This verifies the implemented control, not full vector-editor
+parity. Local source and browser preview only; not included in alpha.21 downloads.
+
+## 2026-11-02 — Main toolbar placement correction (local source)
+
+The owner clarified that the main Drawing tools bar should move within the
+editor, not tear out. Drag its small left grip to place it anywhere within the
+canvas workspace. The bar remains expanded and remembers its position. On the
+focused grip, arrows move it, Shift makes larger steps, and Home resets it.
+Escape cancels a drag. Older saved toolbar windows are removed; other panel
+windows retain their behavior. This supersedes the preceding main-toolbar
+tear-out/dock statement. Local preview only, not included in alpha.21 downloads.

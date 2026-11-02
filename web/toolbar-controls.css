@@ -11,9 +11,9 @@
 .toolbox :is(.tool-split>button,.toolbar-disclosure){display:inline-flex}
 .toolbox .toolbar-disclosure{background:transparent;color:var(--ui-text-muted);list-style:none;cursor:pointer}
 .toolbox .toolbar-disclosure::marker{content:''}
-#workspace .toolbox .tool-group:is([open],:has(.active))>summary.toolbar-disclosure{background-color:var(--ui-selected)!important;color:var(--ui-accent-text)}
-#workspace .toolbox .tool-group:is([open],:has(.active))>summary.toolbar-disclosure:hover{background-color:var(--ui-selected-hover)!important}
-#workspace .toolbox .tool-group:is([open],:has(.active))>summary.toolbar-disclosure:active{background-color:var(--ui-selected-pressed)!important}
+#workspace .toolbox .tool-group>summary.toolbar-disclosure{background-color:transparent!important;color:var(--ui-text-color)}
+#workspace .toolbox .tool-group[open]>summary.toolbar-disclosure,#workspace .toolbox .tool-group>summary.toolbar-disclosure:hover{background-color:#383838!important}
+#workspace .toolbox .tool-group>summary.toolbar-disclosure:active{background-color:var(--ui-pressed)!important}
 .toolbox>i{flex:0 0 1px;width:1px;height:16px;margin:0 var(--ui-space-1);background:var(--ui-border)}
 
 /* Anchor menus to the full bar so every tool's options remain inside the
@@ -25,8 +25,11 @@
 /* Figma-style toolbelt: seven compact split groups and a mode segment. */
 #workspace .toolbox{gap:4px;padding:6px;max-width:calc(100% - 24px);border-radius:14px;bottom:28px}
 #workspace .toolbox .tool-split{gap:0}
-#workspace .toolbox .tool-split>button,#workspace .toolbox>button,#workspace .toolbelt-modes>button{width:30px;height:32px;padding:7px;border:0;flex:none}
-#workspace .toolbox .toolbar-disclosure{height:32px;width:12px;border:0;border-radius:5px}
+#workspace .toolbox .tool-split>button,#workspace .toolbox>#toolbelt-actions{width:32px!important;min-width:32px!important;max-width:32px!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding:4px!important;border:0;flex:0 0 32px!important;border-radius:4px}
+#workspace .toolbox .tool-split>button svg,#workspace .toolbox>#toolbelt-actions svg{width:24px;height:24px}
+#workspace .toolbox .toolbar-disclosure{width:16px!important;min-width:16px!important;max-width:16px!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding:0!important;flex:0 0 16px!important;border:0;border-radius:4px}
+#workspace .toolbox .toolbar-disclosure::before{content:none}
+#workspace .toolbox .toolbar-disclosure svg{width:12px;height:12px;pointer-events:none}
 #workspace .toolbox .tool-options{width:224px;max-width:calc(100vw - 24px);padding:4px}
 #workspace .toolbox .tool-options button{height:32px;gap:10px;border:0;border-radius:5px;white-space:nowrap;font-size:12px}
 #workspace .toolbox button:hover,#workspace .toolbox summary:hover{background:var(--ui-hover)}
