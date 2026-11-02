@@ -247,3 +247,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Atomic cubic subdivision at t=0.5 after selected original anchors, including adjacent segments and closed seams; metadata index remapping | Existing midpoint button enables for groups with a plural label; new midpoints selected, one Undo | Four model tests and four browser workflows: curve preservation, selection ordering, limits, gestures, history, reopening and animated export; existing Join/lease/Morph checks extended | One base-path element; exclude open final endpoints, maximum 512 total anchors. No reference bulk-insert equivalent verified. Local only, not alpha.21 |
+
+
+### SVG whole-subpath removal — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Atomic complete/partial subpath deletion; surviving geometry/metadata/order and selection remapping; final-subpath deletion cleans element tracks/origin | Existing Delete action and Delete/Backspace with box/Lasso/Shift selections; one Undo | Five browser workflows and four model tests: mixed/invalid removal, geometry, animation cleanup, focus, gesture guards, history, native reopening and SVG export; existing Join/lease/Morph tests | Partial deletion must retain two anchors; one base-path element, no timed Morph. Reference deletion semantics not exercised. Local only, not alpha.21; supersedes earlier whole-subpath remainder |

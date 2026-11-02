@@ -1150,3 +1150,19 @@ or icon; the accessible label/tooltip becomes plural for a group. This is an
 additional tool capability; equivalent bulk subdivision semantics and complete
 reference pixel parity remain unverified. Local evidence:
 `.local/svg-bulk-insertion/{inserted,live-preview}.png`.
+
+
+## 2026-11-02 — Whole-subpath removal reference boundary
+
+Read-only inspection of live Figma desktop in Capwah Components, Rectangle 4 in
+vector-edit mode, confirmed the existing Move/Lasso/Paint/Bend/Cut/Erase/More
+vector toolbar and Edit > Delete menu entry. At 2× capture scale, the toolbar is
+approximately 529 × 40 CSS px with 24px-high inner controls; the Mirroring row
+remains approximately 184 × 24 CSS px. Screenshot:
+`.local/svg-subpath-removal/figma-vector-reference.png`.
+
+No reference artwork was deleted or changed. Subpath-removal geometry and final-
+anchor semantics therefore remain unverified against Figma. Pxl Prfct extends its
+existing Delete control/keyboard action, retaining dimensions/icons and adding a
+short selection hint. No new panel, dropdown or toolbar arrangement is introduced.
+This verifies the local implementation, not full Figma workflow/pixel parity.

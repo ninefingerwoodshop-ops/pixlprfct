@@ -589,6 +589,20 @@ by this planning pass, and no new editor feature was implemented or shipped.
     This closes the earlier bulk-insertion remainder. Whole-subpath removal is
     next; multi-object editing and full reference parity remain open.
     Local only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42q — Whole-subpath removal from a selected anchor group.~~
+    Local resolution (2026-11-02): selecting every anchor removes that subpath
+    through the existing Delete control or Delete/Backspace. Mixed partial/full
+    deletion validates atomically; one-anchor remainders change nothing. Remaining
+    cubic geometry, metadata, paints/transforms, tracks and origins persist;
+    selection indexes remap. Removing all subpaths deletes the element and its
+    own tracks/origin with one Undo. Other artwork/animation remains intact.
+    Five browser workflows and four model tests cover geometry, mixed/invalid
+    groups, animation cleanup, history, persistence/export and gesture guards;
+    existing tests retain Join/read-only/Morph protection.
+    Evidence: `.local/svg-subpath-removal/live-preview.png`.
+    This supersedes earlier whole-subpath-removal remainders. Smoothing existing
+    paths is next; multi-object editing and full reference parity remain open.
+    Local source only, not alpha.21; no TerritoryIQ code/design-file fix claimed.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -816,3 +830,14 @@ In-app adjacent/closed-seam insertion, one-step Undo and Redo verified; editor
 and updated Dev Log previews remain open. Evidence:
 `.local/svg-bulk-insertion/live-preview.png`. Not released; full reference parity
 and TerritoryIQ code/design-file work remain open.
+
+
+B42q final verification (2026-11-02, local source): all 165 SVG
+Chromium browser scenarios, 78 SVG model tests and four responsive website checks
+pass. Targeted ESLint, TypeScript, editor asset build and diff checks pass. The
+visible in-app sample removes the complete closed subpath, keeps the open curve
+and other artwork, restores everything with one Undo, and reapplies with Redo.
+Editor and updated Dev Log previews remain open. Evidence:
+`.local/svg-subpath-removal/{selected-subpath,live-preview,dev-log}.png`.
+Not released; full reference parity and TerritoryIQ code/design-file work remain
+open. Next bounded vector step: smoothing existing paths.

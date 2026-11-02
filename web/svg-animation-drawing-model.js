@@ -80,22 +80,34 @@ export function editPathAnchors(value,selection,operation){
   if(!groups.has(path))groups.set(path,new Set());
   if(groups.get(path).has(index))continue;groups.get(path).add(index);unique.push([path,index]);
  }
- if(operation==='delete')for(const [path,indexes] of groups)if(value[path].points.length-indexes.size<2)throw new Error('Keep at least two anchors in each subpath, or delete the whole path.');
+ if(operation==='delete')return deletePathAnchors(value,groups);
  if(operation==='insert')for(const [path,indexes] of groups)if(!value[path].closed&&indexes.has(value[path].points.length-1))throw new Error('Select anchors with following segments; an open path’s last anchor has none.');
- const next=structuredClone(value),selected=[],inserted=new Map();
+ const next=structuredClone(value),inserted=new Map();
  for(const [path,indexes] of groups){
-  if(operation==='delete'){
-   const part=next[path],first=Math.min(...indexes);part.points=part.points.filter((_,i)=>!indexes.has(i));
-   if(part.mirroring)part.mirroring=part.mirroring.filter((_,i)=>!indexes.has(i));
-   selected.push([path,Math.min(first,part.points.length-1)]);
-  }else if(operation==='insert'){
+  if(operation==='insert'){
    // Subdivide from the end so adjacent selections still address original segments.
    const ordered=[...indexes].sort((a,b)=>a-b);
    for(let i=ordered.length-1;i>=0;i--)changeAnchor(next[path],ordered[i],operation);
    ordered.forEach((index,offset)=>inserted.set(`${path}:${index}`,[path,index+offset+1]));
   }else for(const index of indexes)changeAnchor(next[path],index,operation);
  }
- return {value:checkedPath(next),selections:operation==='delete'?selected:operation==='insert'?unique.map(([path,index])=>inserted.get(`${path}:${index}`)):unique};
+ return {value:checkedPath(next),selections:operation==='insert'?unique.map(([path,index])=>inserted.get(`${path}:${index}`)):unique};
+}
+function deletePathAnchors(value,groups){
+ // Selecting every anchor removes a subpath. Reject a one-anchor remainder
+ // before making any edits, including removals of other complete subpaths.
+ for(const [path,indexes] of groups)if(value[path].points.length-indexes.size===1)throw new Error('Keep at least two anchors in each subpath, or select every anchor to remove it.');
+ const next=[],remap=new Map(),selected=[];
+ for(const [path,part] of structuredClone(value).entries()){
+  const indexes=groups.get(path);if(indexes?.size===part.points.length)continue;
+  if(indexes){part.points=part.points.filter((_,i)=>!indexes.has(i));if(part.mirroring)part.mirroring=part.mirroring.filter((_,i)=>!indexes.has(i));}
+  remap.set(path,next.length);next.push(part);
+ }
+ // Empty geometry belongs to the element-deletion lifecycle, never to SVG d.
+ if(!next.length)return {value:null,selections:[],deleteElement:true};
+ for(const [path,indexes] of groups)if(remap.has(path))selected.push([remap.get(path),Math.min(Math.min(...indexes),next[remap.get(path)].points.length-1)]);
+ if(!selected.length){const first=Math.min(...groups.keys()),nearby=[...remap.keys()].find(path=>path>=first)??[...remap.keys()].at(-1);selected.push([remap.get(nearby),0]);}
+ return {value:checkedPath(next),selections:selected};
 }
 export function continuePath(value,pathIndex,index){
  const next=structuredClone(value),path=next[pathIndex];

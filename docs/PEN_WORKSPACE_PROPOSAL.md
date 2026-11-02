@@ -1,7 +1,8 @@
 # Pen workspace proposal
 
 Updated November 2, 2026. **Drawing foundation shipped in alpha.21; arbitrary
-segment anchor insertion and handle mirroring are verified in local source only.**
+segment insertion, group anchor actions and whole-subpath removal are verified
+in local source only.**
 
 The owner authorized roadmap development after the planning pass. Pen, core
 Direct Selection, and the movable palette are now implemented in local source.
@@ -312,3 +313,29 @@ Evidence: `.local/svg-bulk-insertion/{inserted,live-preview}.png`.
 This closes the earlier bulk-insertion remainder locally, not in alpha.21.
 Next bounded vector step: whole-subpath removal. Multi-object editing and
 joining independently animated or referenced paths remain open.
+
+
+## 2026-11-02 — Whole-subpath removal (local source)
+
+Select every anchor in an open or closed subpath with Shift-click, box or Lasso,
+then use the existing Delete control or Delete/Backspace. Complete subpaths are
+removed; partial deletions must retain at least two anchors. Mixed requests are
+validated before any change, so a one-anchor remainder rejects the entire edit.
+Surviving subpaths keep their cubic geometry, order and mirroring metadata; the
+SVG element keeps its identity, paint/transform attributes, tracks and origins.
+Selection indexes remap to surviving subpaths for continued keyboard editing.
+
+Removing every subpath uses the existing element-deletion lifecycle, cleaning its
+tracks/origin without saving empty geometry. Other elements and their animation
+remain intact. Each operation has one Undo; Redo, native reopening and SVG export
+preserve the result. Join, active gestures, read-only leases and timed Morph paths
+retain their existing guards. Five new browser workflows and four model tests
+cover these cases alongside the existing bulk-action restriction tests.
+
+Live Figma's vector toolbar and Edit > Delete entry were inspected read-only.
+The existing local control is reused; reference deletion geometry was not changed
+or verified, so no exact workflow/pixel parity is claimed. Evidence:
+`.local/svg-subpath-removal/{figma-vector-reference,live-preview}.png`.
+This supersedes the earlier whole-subpath-removal remainder. Local source only,
+not alpha.21. Next bounded vector step: smoothing existing paths. Multi-object
+editing and joining independently animated/referenced paths remain open.

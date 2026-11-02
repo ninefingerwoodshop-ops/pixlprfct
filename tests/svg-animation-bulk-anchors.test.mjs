@@ -28,3 +28,26 @@ test('bulk operations reject invalid selections, undersized subpaths and out-of-
  assert.throws(()=>editPathAnchors(value,[[0,1],[2,0]],'delete'),/two anchors in each subpath/);assert.throws(()=>editPathAnchors(value,[[1,0],[1,1],[1,2]],'delete'),/two anchors/);assert.throws(()=>editPathAnchors(value,[[0,1]],'unknown'),/Insert, Delete, Smooth or Corner/);assert.deepEqual(value,before);
  const edge=morphPath('M99990 -20L100000 0L99999 20'),copy=structuredClone(edge);assert.throws(()=>editPathAnchors(edge,[[0,0],[0,1]],'smooth'),/100,000/);assert.deepEqual(edge,copy);
 });
+
+test('whole open and closed subpaths are removed with stable geometry, metadata and fallback selection',()=>{
+ const value=fixture(),before=structuredClone(value),all=path=>value[path].points.map((_,i)=>[path,i]);
+ for(const path of [0,1,2]){
+  const result=editPathAnchors(value,all(path),'delete');assert.deepEqual(result.value,value.filter((_,i)=>i!==path));assert.deepEqual(result.selections,[[Math.min(path,1),0]]);assert.equal(result.deleteElement,undefined);
+ }
+ const result=editPathAnchors(value,[...all(2),...all(0),[0,1]],'delete');assert.deepEqual(result.value,[value[1]]);assert.deepEqual(result.selections,[[0,0]]);assert.deepEqual(value,before);
+});
+
+test('mixed partial and whole-subpath deletion remaps original selections and mirroring',()=>{
+ const value=fixture(),result=editPathAnchors(value,[[1,3],[0,4],[0,3],[0,2],[2,1],[0,1],[2,0],[0,0]],'delete');
+ assert.deepEqual(result.value,[{...value[1],points:value[1].points.slice(0,3),mirroring:value[1].mirroring.slice(0,3)}]);assert.deepEqual(result.selections,[[0,2]]);
+});
+
+test('removing every subpath requests element deletion without producing invalid empty geometry',()=>{
+ const value=fixture(),before=structuredClone(value),all=value.flatMap((part,path)=>part.points.map((_,i)=>[path,i]));
+ assert.deepEqual(editPathAnchors(value,[...all.reverse(),[0,0]],'delete'),{value:null,selections:[],deleteElement:true});assert.deepEqual(value,before);
+});
+
+test('one-anchor remainders reject complete subpath removals in the same request atomically',()=>{
+ const value=fixture(),before=structuredClone(value);
+ assert.throws(()=>editPathAnchors(value,[[2,0],[2,1],[1,0],[1,1],[1,2]],'delete'),/select every anchor/);assert.deepEqual(value,before);
+});
