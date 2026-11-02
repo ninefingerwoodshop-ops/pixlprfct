@@ -219,3 +219,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Engine / data | Browser UI | Verification | Remaining |
 | --- | --- | --- | --- |
 | Transient anchor selection; existing atomic group translation carries handles | Drag a box across subpaths in one base path; Shift extends, Escape restores; live transformed/zoomed hit testing | Five browser scenarios cover selection, group keyboard movement/Undo, cancellation, outside release, read-only and Morph guards; visible in-app preview checked | Lasso, bulk anchor operations, multi-object editing; exact transient-box visual parity unverified. Not alpha.21 |
+
+
+### SVG bulk anchor actions — 2026-11-02, local source
+
+| Engine / data | Browser UI | Verification | Remaining |
+| --- | --- | --- | --- |
+| Atomic Smooth/Corner/Delete across selected anchors; original-index filtering and surviving mirroring metadata | Existing controls enable for groups with plural labels; Delete/Backspace on canvas; one Undo per action | Five browser workflows and three model tests; open/closed subpaths, history, metadata, keyboard/lease/Morph guards, reopening/export; in-app Smooth and Undo verified | Two anchors required per subpath; lasso, bulk insertion/mirroring and whole-subpath removal remain open. Local only, not alpha.21 |

@@ -543,6 +543,18 @@ by this planning pass, and no new editor feature was implemented or shipped.
     This supersedes the marquee-only remainder in B42j/B42k; lasso, bulk anchor
     operations, multi-object selection and advanced joins remain open. Local
     source only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42m — Bulk Smooth, Corner and Delete for selected base-path anchors.~~
+    Local resolution (2026-11-02): the existing controls now apply to groups across
+    subpaths, with plural labels and one Undo per action. Delete/Backspace handles
+    anchor selection; input fields, read-only leases, active drags, Join mode and
+    timed Morph paths are guarded. Deletion preserves surviving handles/metadata
+    and requires two anchors per subpath, rejecting the whole operation otherwise.
+    Five browser workflows and three model tests cover geometry, validation,
+    keyboard handling, history, native reopening and SVG export. Evidence:
+    `.local/svg-bulk-anchors/{smoothed,live-preview}.png`. This resolves those three
+    bulk actions from the earlier B42 remainder; bulk insertion/mirroring, full
+    subpath removal, lasso and multi-object editing remain open. Local only,
+    not alpha.21; no TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -737,3 +749,8 @@ scenarios, 61 SVG model tests, four responsive website checks, targeted lint,
 type checking, editor asset build and diff checks pass. In-app preview box
 selection verified on the sample curve; `.local/svg-marquee/live-preview.png`.
 No release or TerritoryIQ resolution is implied.
+
+B42m final verification (2026-11-02, local source): 145 SVG Chromium browser
+scenarios, 64 SVG model tests, four responsive website checks, targeted lint,
+type checking, editor asset build and diff checks pass. In-app bulk Smooth and
+one-step Undo verified; `.local/svg-bulk-anchors/live-preview.png`. Not released.

@@ -14,7 +14,7 @@ test.beforeEach(async({page})=>{await page.route(/https?:\/\//,r=>new URL(r.requ
 test('reverse marquee selects transformed anchors live, then moves the group with one undo',async({page})=>{
  await open(page);await page.getByRole('button',{name:'Zoom in',exact:true}).click();const before=await saved(page),first=await center(anchor(page,0,0)),second=await center(anchor(page,0,1));
  await drag(page,(await bounds(page,[[0,0],[0,1]])).reverse(),false);await expect(selected(page)).toHaveCount(2);await expect(page.locator('.svg-anchor-marquee')).toBeVisible();expect(await saved(page)).toEqual(before);
- await page.screenshot({path:'.local/svg-marquee/marquee.png'});await page.mouse.up();await expect(page.locator('.svg-anchor-marquee')).toBeHidden();await expect(selected(page)).toHaveCount(2);await expect(page.getByRole('button',{name:'Delete anchor',exact:true})).toBeDisabled();
+ await page.screenshot({path:'.local/svg-marquee/marquee.png'});await page.mouse.up();await expect(page.locator('.svg-anchor-marquee')).toBeHidden();await expect(selected(page)).toHaveCount(2);await expect(page.getByRole('button',{name:'Smooth selected anchors',exact:true})).toBeEnabled();
  await page.keyboard.press('Shift+ArrowRight');await expect(selected(page)).toHaveCount(2);const nextFirst=await center(anchor(page,0,0)),nextSecond=await center(anchor(page,0,1));expect(nextFirst.x-first.x).toBeCloseTo(nextSecond.x-second.x,3);expect(nextFirst.y-first.y).toBeCloseTo(nextSecond.y-second.y,3);expect(nextFirst.x).toBeGreaterThan(first.x);
  await expect.poll(async()=>(await saved(page)).svg_animation.svg).not.toBe(before.svg_animation.svg);await page.getByRole('button',{name:'Undo',exact:true}).click();await expect.poll(()=>saved(page)).toEqual(before);
 });
