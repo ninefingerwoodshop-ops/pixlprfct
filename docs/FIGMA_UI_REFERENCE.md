@@ -1040,3 +1040,37 @@ blue/white selected-point treatment. Existing dark inspector/palette controls ar
 retained. This batch implements group movement, not Figma's entire vector toolbar,
 alignment, mixed-coordinate inspector, lasso or bulk operations. Local rendered
 proof: `.local/roadmap-pr/multi-anchor.png`; exact overall parity remains open.
+
+## Joining vectors — 2026-11-02
+
+Inspected live Figma vector-edit mode and its Actions search. The results expose
+Join selection (Cmd+J) and Smooth join selection (Shift+Cmd+J), in 32 px action
+rows inside the dark Actions surface. The vector canvas retains circular endpoint
+markers and the existing dark vector toolbelt. Reference screenshot:
+`.local/svg-path-joining/figma-join-reference.png`; no user artwork was changed.
+
+PixlPrfct extends its existing Join endpoints workflow to other SVG path elements.
+It reuses the current 32 px palette button and circular 3 px-radius anchor glyphs
+with 8 px hit radii; target endpoints are pointer- and keyboard-accessible. No new
+panel, dropdown or native select was introduced. This verifies the inspected
+command and reused vector treatment, not full equivalence to Figma's selection,
+smooth-join, shortcut or multi-object workflow. Local rendered evidence:
+`.local/svg-path-joining/targets.png` and `joined.png`.
+
+
+## 2026-11-02 — Vector marquee selection
+
+Inspected live Figma desktop in Capwah Components with Rectangle 4 in vector edit
+mode. Dragging a box from blank canvas around the two top anchors selected both,
+kept vector edit mode active, and showed X as Mixed with a shared Y. The selected
+circles are blue with white borders (about 8 CSS px across); unselected circles
+remain white with blue borders (about 6 CSS px). No artwork was edited.
+Reference: `.local/svg-marquee/figma-anchor-selection.png`.
+
+PixlPrfct uses the existing anchor glyphs and selection accent, adding a 1px box
+with the same 15% accent fill as its timeline marquee. The native capture API
+observed the result after release, so the transient rectangle's exact opacity and
+Shift-marquee semantics were not independently measured; do not claim pixel or
+interaction parity for those details. Local Shift-box extends selection, with
+Shift-click retained for toggling. Implementation evidence:
+`.local/svg-marquee/marquee.png` and `live-preview.png`. Lasso remains open.

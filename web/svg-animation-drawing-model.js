@@ -113,3 +113,13 @@ export function joinEndpoints(value,from,to){
  if(modes){modes[seam]='n';left.mirroring=modes;}
  return {value:checkedPath(next),selection:[a-(b<a?1:0),seam]};
 }
+
+// Transfer every subpath into the retained element's local coordinate system,
+// then use the same seam/orientation rules as an ordinary endpoint join.
+export function joinTransformedPaths(left,from,right,to,matrix){
+ if(!matrix||!['a','b','c','d','e','f'].every(key=>Number.isFinite(matrix[key]))||Math.abs(matrix.a*matrix.d-matrix.b*matrix.c)<1e-12)throw new Error('Both paths need invertible transforms to join.');
+ const mapped=structuredClone(right);
+ for(const path of mapped)for(const point of path.points)for(let i=0;i<6;i+=2){const x=point[i],y=point[i+1];point[i]=matrix.a*x+matrix.c*y+matrix.e;point[i+1]=matrix.b*x+matrix.d*y+matrix.f;}
+ checkedPath(mapped);
+ return joinEndpoints([...structuredClone(left),...mapped],from,[left.length+to[0],to[1]]);
+}

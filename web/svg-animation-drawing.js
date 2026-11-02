@@ -2,6 +2,8 @@ import {icon,iconPaths} from './icons.js';
 import {element as el,colorField,numberField,settingRow,syncInput} from './inspector-settings.js';
 import {morphPath,morphData} from './svg-animation-morph.js';
 import {installMorphNodes} from './svg-animation-nodes.js';
+import {installPathJoinTargets,joinPathElements} from './svg-animation-join.js';
+import {installPathMarquee} from './svg-animation-marquee.js';
 import {checkedPath,editAnchor,continuePath,pencilPath,splitPath,joinEndpoints,isEndpoint,nearestPathSegment,movePathAnchors} from './svg-animation-drawing-model.js';
 import {mirroringAttribute,readMirroring,writeMirroring,mirroringMode,canMirror,setHandleMirroring,movePathPoint} from './svg-animation-mirroring.js';
 
@@ -29,9 +31,9 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  const finish=button('Finish open path (Enter)','check',attempt(()=>finishPath(false)));finish.className='svg-pen-finish';finish.append(el('span','','Finish path'));tools.append(finish);
  const split=button('Split path at anchor','cut',attempt(()=>{const state=nodeState();if(!state?.enabled||joinFrom||selections.length!==1)return;const next=splitPath(state.value,...selection);selection=next.selection;selections=[[...selection]];savePath(next.value);}));
  const join=button('Join endpoints','link',()=>{const state=nodeState();if(!state?.enabled||selections.length!==1)return;joinFrom=joinFrom?null:[...selection];update();});tools.append(split,join);
- const joinHint=el('p','svg-drawing-caption svg-join-hint','Choose another endpoint in this path. Escape cancels.');joinHint.setAttribute('role','status');palette.append(joinHint);
+ const joinHint=el('p','svg-drawing-caption svg-join-hint','Choose another endpoint in this or another path. The joined path uses this path’s appearance. Escape cancels.');joinHint.setAttribute('role','status');palette.append(joinHint);
  const penHint=el('p','svg-drawing-caption svg-join-hint','Esc, Enter or Finish path ends an open path. Click the first anchor to close it.');palette.append(penHint);
- const directHint=el('p','svg-drawing-caption svg-join-hint','Shift-click anchors to select together, then drag or use arrow keys. Double-click a segment to add an anchor.');palette.append(directHint);
+ const directHint=el('p','svg-drawing-caption svg-join-hint','Drag a box to select anchors. Hold Shift to add, or Shift-click to toggle. Move selected anchors with a drag or arrow keys. Double-click a segment to add an anchor.');palette.append(directHint);
  const discard=button('Discard unfinished path','close',()=>{cancel();update();});tools.append(discard);
  const deletePath=button('Delete selected path','trash',attempt(()=>{if(!draft&&pathSource()&&read().enabled)remove();}));tools.append(deletePath);
  const pencilOptions=el('div','svg-drawing-paints svg-pencil-options'),smoothingField=numberField('Pencil smoothing (%)',smoothing,v=>{smoothing=v;syncInput(smoothingField.querySelector('input'),v);},{min:0,max:100,step:5});pencilOptions.append(settingRow('Smoothing %',smoothingField),el('p','svg-drawing-caption','Hold Shift to draw straight lines'));palette.append(pencilOptions);
@@ -59,9 +61,15 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
   if(!joinFrom)return false;const state=nodeState();if(!state?.enabled)return true;
   try{if(kind!=='anchor')throw new Error('Choose an anchor endpoint, not a handle.');const next=joinEndpoints(state.value,joinFrom,[path,index]);joinFrom=null;selection=next.selection;selections=[[...selection]];savePath(next.value);}catch(error){report(error.message);}return true;
  },change:attempt(savePath),preview:value=>{const s=read();s.root.querySelector('#'+s.selected)?.setAttribute('d',morphData(value));},report});
+ const joinTargets=installPathJoinTargets({host,read:()=>{const state=nodeState(),s=read();return joinFrom&&state?{root:s.root,selected:s.selected,enabled:state.enabled}:null;},join:(id,to)=>{
+  const state=nodeState(),s=read();if(!joinFrom||!state?.enabled)return;
+  const next=joinPathElements({source:s.source,scene:s.root,animation:s.animation,fromId:s.selected,from:joinFrom,toId:id,to});
+  joinFrom=null;selection=next.selection;selections=[[...selection]];change(next.root,s.selected,next.removed);
+ },report});
  function setMode(next){if(draft&&!draft.pencil&&!gesture&&draft.value[draft.path].points.length>=2)finishPath(false);cancel();start();mode=next;selection=[0,0];selections=[[0,0]];if(next==='pen'||next==='pencil')select(null);palette.hidden=next==='select'&&!docked;update();refresh();}
+ const marquee=installPathMarquee({host,workspace,read:nodeState,select:pairs=>{selections=pairs;selection=pairs.at(-1)??selection;nodes.update();updateActions();}});
  function restoreSource(){if(hiddenSource){hiddenSource.node.style.visibility=hiddenSource.visibility;hiddenSource=null;}}
- function cancel(){gesture?.cancel();nodes.cancel();draft=null;joinFrom=null;hover=null;restoreSource();overlay.replaceChildren();}
+ function cancel(){gesture?.cancel();marquee.cancel();nodes.cancel();draft=null;joinFrom=null;joinTargets.clear();hover=null;restoreSource();overlay.replaceChildren();}
  function suspend(){cancel();mode='select';palette.hidden=!docked;update();}
  function finishPath(closed){
   if(!draft)return;const s=read();if(!s.enabled){cancel();return;}
@@ -103,12 +111,12 @@ export function installSvgDrawing({host,workspace,toolbar,read,select,change,sta
  }
  function clamp(){if(docked||palette.ownerDocument!==document)return;const w=workspace.clientWidth,h=workspace.clientHeight;position??={x:w-palette.offsetWidth-16,y:56};position.x=Math.max(8,Math.min(position.x,Math.max(8,w-palette.offsetWidth-8)));position.y=Math.max(8,Math.min(position.y,Math.max(8,h-palette.offsetHeight-72)));palette.style.left=position.x+'px';palette.style.top=position.y+'px';}
  function update(){
-  syncDock();const s=read();if(activeDocument!==s.animation){cancel();activeDocument=s.animation;}if(!s.enabled)cancel();
+  marquee.cancel();syncDock();const s=read();if(activeDocument!==s.animation){cancel();activeDocument=s.animation;}if(!s.enabled)cancel();
   host.dataset.drawingTool=mode;workspace.dataset.drawingTool=mode;
   toolbar.querySelector('#svg-select-tool')?.setAttribute('aria-pressed',String(mode==='select'));
   for(const b of [pen,penTool])b.setAttribute('aria-pressed',String(mode==='pen'));for(const b of [direct,directTool])b.setAttribute('aria-pressed',String(mode==='direct'));
   for(const b of [pencil,pencilTool])b.setAttribute('aria-pressed',String(mode==='pencil'));pencilOptions.hidden=mode!=='pencil';const input=smoothingField.querySelector('input');input.disabled=!s.enabled;syncInput(input,smoothing);
-  nodes.update();drawDraft();updateActions();paintSync=paintSync.filter(({host})=>host.isConnected);paintSync.forEach(({sync})=>sync());if(!palette.hidden)clamp();
+  nodes.update();joinTargets.update();drawDraft();updateActions();paintSync=paintSync.filter(({host})=>host.isConnected);paintSync.forEach(({sync})=>sync());if(!palette.hidden)clamp();
  }
  function paintControls(container,prefix=''){
   const group=el('div','svg-drawing-paints');container.append(group);
