@@ -1,14 +1,14 @@
 # Pen workspace proposal
 
 Updated November 2, 2026. **Drawing foundation shipped in alpha.21; arbitrary
-segment insertion, group anchor actions, whole-subpath removal and smoothing are verified
+segment insertion, group anchor actions, whole-subpath removal, smoothing and multi-object selection are verified
 in local source only.**
 
 The owner authorized roadmap development after the planning pass. Pen, core
 Direct Selection, and the movable palette are now implemented in local source.
 [Usage and verification](SVG_ANIMATION.md#2026-11-01--pen-and-base-path-editing-local-source)
 record the delivered scope. The original proposal and remaining candidates below
-are retained; this does not mark the entire drawing foundation complete.
+are retained; dated delivery records below supersede their earlier remainders. This does not mark the entire drawing foundation complete.
 
 Second batch verified locally: object-body dragging, keyboard movement and the
 explicit Add/Replace SVG import workflow. Multi-object selection, duplication and
@@ -372,3 +372,32 @@ clean export and detached Inspector. Evidence:
 This closes whole-path smoothing locally, not in alpha.21. Interactive brush
 smoothing and full reference Simplify semantics are separate scope. Next bounded
 vector step: multi-object selection; duplication and grouping follow separately.
+
+
+## 2026-11-02 — Multi-object selection (local source)
+
+SVG object selection now supports Shift-click toggles, box selection from blank
+canvas or workspace, Shift extension, and Command/Ctrl deep boxes for nested
+non-group elements. Elements supports Shift ranges and Command/Ctrl toggles,
+including keyboard activation, filtered lists and detached panels. Select All
+works from canvas/layers; Escape and blank clicks clear. A selected object's
+Shift-drag still constrains its existing single-object movement.
+
+Selection is transient and never enters document history, saves or exports.
+Ancestor/descendant choices are exclusive. Transformed geometry bounds determine
+box intersections; hidden, fully transparent and out-of-viewport elements are
+excluded from box/Select All. Default boxes select roots/groups. Escape, capture
+loss, blur and document/time/mode changes cancel unfinished boxes.
+
+Individual and aggregate blue outlines accompany an “N selected” inspector
+heading. Single-object property controls are hidden for a group to avoid editing
+an arbitrary last item. Batch move/resize/rotation, paint editing and deletion,
+duplication and grouping remain open. No full Figma multi-selection inspector or
+transform parity is claimed; masks/clips are not used for exact painted hit areas.
+
+Six browser workflows and four model tests cover modifiers, nesting, transformed
+bounds, history neutrality, keyboard scope, cancellation, read-only files,
+export/reopening and detached Elements. Existing movement and anchor-selection
+regressions cover Shift-drag and box/Lasso isolation. Evidence:
+`.local/svg-object-selection/{live-preview,figma-restored}.png`.
+Local source only, not alpha.21. Next bounded vector step: duplication.

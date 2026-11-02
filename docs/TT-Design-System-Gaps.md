@@ -618,6 +618,20 @@ by this planning pass, and no new editor feature was implemented or shipped.
     selection is next. Interactive brush smoothing and full Figma Simplify
     workflow/pixel parity remain open. Local only, not alpha.21; no TerritoryIQ
     code or design-file fix claimed.
+  - [x] ~~B42s — Select multiple SVG objects.~~ Local resolution (2026-11-02):
+    canvas Shift-click, transformed bounds boxes, Shift extension, Command/Ctrl
+    deep boxes, layer ranges/toggles/keyboard and Select All/Escape. Ancestors and
+    children are exclusive; individual/aggregate outlines and a count heading
+    show the group. Selection changes no artwork, history, saved file or export.
+    Read-only files and detached Elements support the same workflow. Single-
+    object Shift-drag retains constrained movement. Six browser scenarios and
+    four model tests cover modifiers, nesting, visibility, transformed bounds,
+    cancellation, keyboard scope and file neutrality. Evidence:
+    `.local/svg-object-selection/{live-preview,figma-restored}.png`.
+    This resolves selection only: duplication is next; grouping and batch object
+    transforms, paints and deletion remain open. Exact clipped/masked picking
+    and full Figma group inspector/transform parity are unverified. Local source
+    only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -869,3 +883,15 @@ and updated Dev Log previews remain open. Evidence:
 Not released; Figma Simplify slider/algorithm parity, the interactive smoothing
 brush and TerritoryIQ code/design-file work remain open. Next bounded vector
 step: multi-object selection.
+
+
+### Verification update — 2026-11-02, SVG object selection
+
+B42s passes 177 SVG Chromium scenarios, four responsive website checks, 88 SVG
+model tests and three shared selection tests. TypeScript, editor build and diff
+checks pass; targeted lint has no errors and one pre-existing navigation warning.
+Live Command-click, canvas Shift-click and box selection were verified in the
+in-app sample. Evidence: `.local/svg-object-selection/{final-browser,models}.log`
+and `{live-preview,dev-log}.png`. Duplication is next; grouping, batch object
+transforms/paints/deletion and full Figma parity remain open. Local source only,
+not alpha.21; TerritoryIQ code/design-file work remains separate.
