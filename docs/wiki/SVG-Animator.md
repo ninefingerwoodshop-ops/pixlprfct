@@ -538,3 +538,19 @@ Blue outlines and the inspector count show the group. Select one object to edit
 its properties or animation. Box selection uses transformed bounds, with hidden
 and out-of-viewport objects excluded. Batch transforms, paints, deletion and
 grouping remain open; duplication is next. Local source only, not alpha.21.
+
+
+### Duplicate objects — local development, November 2
+
+Select objects or groups and press **Command/Ctrl+D** from the canvas or Elements,
+or right-click and choose **Duplicate**. **Shift+F10** opens the same menu from a
+focused layer or stage. Detached Elements works too. Copies start over the
+originals, retain their artwork and animation, and become selected. One Undo
+removes all copies from that action; saving, reopening and SVG exports preserve
+them. Group children copy once, with independent IDs and animation data.
+
+Select a single copy to move it or change its properties. Read-only files,
+playback, drawing, timed Morph and active gestures block duplication. Timeline
+keyframe duplication and text fields keep their existing shortcuts. Grouping is
+next; batch edits, Alt/Option-drag and repeated-transform duplication remain open.
+Local source only, not alpha.21.

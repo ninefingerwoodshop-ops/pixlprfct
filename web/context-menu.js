@@ -11,14 +11,14 @@ export function contextMenuBounds(point, size, viewport) {
   };
 }
 
-export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = null, anchor = null, onClose = () => {}, onShortcut = () => false} = {}) {
+export function showContextMenu(event, actions, returnFocus, {label = 'Layer actions', heading = null, container = null, anchor = null, className = '', onClose = () => {}, onShortcut = () => false} = {}) {
   container??=(returnFocus?.ownerDocument??anchor?.ownerDocument??event.target?.ownerDocument??globalThis.document).body;
   const document=container.ownerDocument,window=document.defaultView;
   event.preventDefault();
   closeMenu();
   const menu = document.createElement('div');
   menu.id = 'selection-menu';
-  menu.className = 'selection-menu';
+  menu.className = 'selection-menu' + (className ? ' ' + className : '');
   menu.setAttribute('role', 'menu');
   menu.setAttribute('aria-label', label);
   if (heading !== null) {

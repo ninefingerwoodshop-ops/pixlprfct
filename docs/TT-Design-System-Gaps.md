@@ -632,6 +632,17 @@ by this planning pass, and no new editor feature was implemented or shipped.
     transforms, paints and deletion remain open. Exact clipped/masked picking
     and full Figma group inspector/transform parity are unverified. Local source
     only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42t — Duplicate selected SVG objects and groups.~~ Local resolution
+    (2026-11-02): Command/Ctrl+D and shared Duplicate context action, keyboard
+    menu access, new-copy selection/focus and detached Elements. Source subtrees,
+    all IDs/references, animation tracks and origins copy together at the same
+    position; one Undo restores the action. Seven UI workflows and three DOM/model
+    cases cover nested geometry, shared resources, animation independence,
+    permissions, active/stale actions, budgets, reopening and export. Live Figma
+    menus inspected read-only; screenshots/logs in `.local/svg-duplication/`.
+    Grouping is next; batch transforms/paints/deletion, Alt/Option-drag, repeated
+    transforms and full Figma parity remain open. Local only, not alpha.21.
+
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -895,3 +906,16 @@ in-app sample. Evidence: `.local/svg-object-selection/{final-browser,models}.log
 and `{live-preview,dev-log}.png`. Duplication is next; grouping, batch object
 transforms/paints/deletion and full Figma parity remain open. Local source only,
 not alpha.21; TerritoryIQ code/design-file work remains separate.
+
+
+### Verification update — 2026-11-02, SVG object duplication
+
+B42t passes all 205 Chromium checks (187 SVG, 14 Design/panel/toolbar and four
+responsive website scenarios), 88 SVG model tests, three shared selection tests
+and two context-menu helpers. TypeScript, editor build and diff checks pass;
+targeted ESLint has zero errors and one existing navigation warning. The in-app
+sample verifies native Command-D, menu group duplication, one-step Undo/Redo and
+independent copy movement. Evidence: `.local/svg-duplication/` logs plus
+`{live-menu,live-preview,dev-log}.png`. Roadmap and Dev Log mark grouping next.
+Alt/Option-drag, repeated transforms, batch editing and full reference parity
+remain open. Local source only; not an alpha.21 release or TerritoryIQ resolution.

@@ -56,5 +56,5 @@ export function installElementSelection({host,workspace,read,select,pick}){
   drag={cancel,document:state.document,time:state.time};window.addEventListener('pointermove',move,true);window.addEventListener('pointerup',done,true);window.addEventListener('pointercancel',cancel);window.addEventListener('blur',cancel);workspace.addEventListener('lostpointercapture',cancel);
  },true);
  window.addEventListener('keydown',e=>{if(!drag)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();drag.cancel();}else if(!['Shift','Control','Meta','Alt'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
- return {update,cancel(){drag?.cancel();},all(){const state=read();return normalizeElementSelection(state.layers,candidates(state).map(item=>item.id));}};
+ return {update,cancel(){drag?.cancel();},get dragging(){return !!drag;},all(){const state=read();return normalizeElementSelection(state.layers,candidates(state).map(item=>item.id));}};
 }

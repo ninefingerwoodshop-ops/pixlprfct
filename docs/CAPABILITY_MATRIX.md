@@ -268,3 +268,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Transient ordered selection, ancestor deduplication, filtered ranges and transformed polygon/box intersection | Shift-click, box/Shift extension, Command/Ctrl deep box, layer modifiers/keyboard, Select All/Escape, individual/aggregate outlines and count heading; detached Elements | Six browser workflows and four model tests; history/file/export neutrality, read-only, nesting, zoom, cancellation, keyboard scope and existing Shift-drag/anchor-selection regressions | Selection only; one object required for properties/animation. Duplication, grouping and batch transforms/paint/deletion remain open. Bounds-based marquee, not exact clipped/masked paint. Local only, not alpha.21; full Figma inspector/pixel parity unverified |
+
+
+### SVG object duplication — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Clone source subtrees once; remap all copied IDs and internal/cross-selection references; preserve external resources, animation tracks and origins; atomic budgets/history | Command/Ctrl+D and compact shared Duplicate context action, keyboard menu/focus, new-copy selection, detached Elements | Seven UI workflows and three DOM/model cases: nested geometry, every animation value kind, independent edits, leases/gestures/stale actions, Undo/Redo, reopening/export and limits | Same-position copies; Alt/Option-drag and repeated transforms open. Grouping next; batch editing separate. Context action is an SVG extension; full Figma parity unverified. Local only, not alpha.21 |
