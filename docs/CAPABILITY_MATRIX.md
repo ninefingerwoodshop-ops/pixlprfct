@@ -10,6 +10,10 @@ complete Figma parity, an installed update, a merged branch, or a public release
 | Figma library snapshots | Components, native variant sets, variables, shared styles and min/max bindings | Import `.fig`, review limitations, Add to file, insert from Assets | Real file: 46 masters / 11 sets / 15 variables / 12 styles; manual and worker/browser checks | No live Figma catalog/URL sync; see LIBRARIES.md |
 | Local projects and recovery | Version-aware writes; cross-tab Web Locks; per-tab recovery; conflict copies and export | Create/edit/reopen, stale tab, conflict copy, quota failure/reload tested in Chromium | Recovery dialog inspected manually | Installed locally in alpha.11; no public release |
 | Pages | Navigation, search, reorder, duplicate and history | Inline list; Find; 32px rows; keyboard/pointer resize; page paint | Live Figma inspected; geometry assertions and screenshot baseline | Installed locally in alpha.11; no public release |
+| SVG path authoring (2026-11-01) | Browser SVG base geometry; shared Design Pencil smoothing; no Rust/MCP path-authoring API | Pen, Pencil with 0–100% smoothing/Shift constraint, core anchor editing, split/join within one element, live painted open paths, direct stage selection, open motion routes, path deletion, movable shared-paint palette; history, export, persistence and leases | Live Figma vector/Pencil tools inspected; rendered palette reviewed; 18 drawing/Pencil/topology browser workflows and cubic-preservation model checks | Local source only, not published alpha.20; joining separate elements, whole-path smoothing and multi-object workflows remain open |
+| SVG independent panels (2026-11-01) | Shared in-memory editor state/history, no duplicate document writer | Every SVG inspector section, Elements, Timeline and Pen tools: tear out, edit, dock and close | Browser workflows and screenshots in `.local/svg-stage/`; native acceptance tracked in SVG guide | Local source only; extended by the shared Design/SVG panel delivery below |
+| Shared panel workspace (2026-11-01) | One editor/history, cross-window controls and local UI preferences | Design sections/Pages/Layers/Assets/tools/Motion; cursor-following tear-out, saved bounds, SVG Pen right docking and compact icon rail | [Panel delivery](DETACHABLE_PANELS.md); browser acceptance plus actual Electron refresh/restart and window-position verification | Local source and development preview only; grouped docking remains open |
+| SVG object movement and import (2026-11-01) | Parent-space transform tracks; bounded SVG merge with local-reference remapping | Body drag/nudge, Shift constraint; Add/Replace/Cancel, one-step undo, reopen, file drop/desktop import and edit leases | Live Figma selection/menu/modal inspected read-only; 14 browser cases and rendered geometry checks | Local source only, not published alpha.20; live Figma drag gesture and full parity not certified |
 | Typography | Letter spacing in px/% and case; text style propagation; sizing, Canvas/SVG/CSS; .fig attribute conversion | Spacing, Type settings, style creation/application/edit/detach | Live Figma inspected; picker and Type settings baselines | Installed locally in alpha.11; no public release |
 | Page Styles | Named color styles, text/effect styles, component inheritance and library ID remapping | Unselected Text/Color/Effect browse/create/edit/rename/duplicate/delete, fill/stroke application and detach | Live Figma inspected; three new baselines and nested-picker regression | Installed locally in alpha.12; no public release |
 | Bounded MCP exports | Revision/scope cursors, manifest, 64,000-character maximum chunks | Consumers concatenate chunks; small responses retain complete file text | Unicode and runtime reconstruction tests | Installed alpha.12; large-export consumers must follow cursors |
@@ -157,3 +161,17 @@ its design or revision; its local server restarted successfully. The currently
 open one-frame desktop project retained its exact normalized digest across the
 installed update. Both legacy bundle paths contain this Mac’s arm64 build, not a
 new universal/notarized/public release.
+
+
+### Local 2026-11-01 scope refinement
+
+| Capability | Local state | Limits |
+|---|---|---|
+| Parent panel windows and icon flyouts | Design and SVG parents collapse to saved icon docks; icons open adjacent in-editor panels, headings tear into windows | Supersedes individual inspector-section windows; grouped docking and named presets remain open |
+| SVG gradient motion | Linear/radial fill and stroke rotation, independent object rotation, stop color/position/opacity keyframes, Undo/persistence/native export | Fixed stop count per animator; SVG canvas gradient handles and angular/diamond gradients remain open |
+
+### Alpha.21 release follow-through — 2026-11-01
+
+The completed SVG drawing/editing/import, parent panel workspace and independent gradient animation work is included in [Windows alpha.21](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21). Earlier local completion entries remain historical evidence; uncompleted child items remain open. [Panel Workspace](wiki/Panel-Workspace.md) documents the final parent-only scope and icon flyouts.
+
+Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflows, 25 final panel/site checks, production build, types, generated API, lint and Rust formatting/Clippy. Native panel acceptance verifies cursor following, stop-on-release, refresh/restart restoration and explicit docking. Package provenance, checksums and Windows verification are recorded with the release. This does not claim full interface parity, real sleep/wake, a participant pilot, or resolution of TerritoryIQ code/design-file work.

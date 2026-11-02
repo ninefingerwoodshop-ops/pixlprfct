@@ -1,7 +1,7 @@
 const {app,autoUpdater,BrowserWindow,Menu,dialog,ipcMain,protocol,session,shell,nativeTheme}=require('electron');
 const {readFile,realpath}=require('node:fs/promises');
 const path=require('node:path');
-const {APP_URL,contentSecurityPolicy,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor}=require('./policy.cjs');
+const {APP_URL,contentSecurityPolicy,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor,isPanelWindow}=require('./policy.cjs');
 const {readDesign,designExtensions,designFilters}=require('./design-files.cjs');
 const {discoverBridges}=require('./mcp-discovery.cjs');
 const {readPreferences,writePreferences,isOnlineFontURL}=require('./preferences.cjs');
@@ -10,6 +10,7 @@ const updateConfig=require('./update-config.json');
 let updates;
 let preferences={onlineFonts:false};
 const root=__dirname,windows=new Map(),pending=new Map(),configured=new Set();
+const closingNotice=(win,closing)=>{if(!win.isDestroyed())win.webContents.send('desktop:closing',closing);};
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.wasm':'application/wasm','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf','.mp4':'video/mp4','.webm':'video/webm'};
 app.setName('PixlPrfct');
 // A test profile can be explicitly selected without touching the user's drafts.
@@ -19,6 +20,7 @@ app.enableSandbox();
 nativeTheme.themeSource='dark';
 const single=process.mas||app.requestSingleInstanceLock();
 if(!single){app.quit();}else{
+ app.on('before-quit',()=>{for(const {win,role} of windows.values())if(role!=='panel')closingNotice(win,true);});
  const initialFiles=process.argv.slice(1).filter(value=>!value.startsWith('-')&&designExtensions.includes(path.extname(value).toLowerCase()));
  app.on('open-file',(event,file)=>{event.preventDefault();if(app.isReady())openNativeFile(file);else initialFiles.push(file);});
  app.on('second-instance',(_event,args)=>{const file=args.find(value=>designExtensions.includes(path.extname(value).toLowerCase()));if(file)openNativeFile(file);else localWindow().focus();});
@@ -50,7 +52,7 @@ function configureSession(base){
  });
  const mayUse=(contents,permission)=>{
   const record=contents&&windows.get(contents.id);
-  return !!record&&sameWorkspace(contents.getURL(),record.base)&&['clipboard-sanitized-write',...(record.role==='local'?['clipboard-read']:[])].includes(permission);
+  return !!record&&record.role!=='panel'&&sameWorkspace(contents.getURL(),record.base)&&['clipboard-sanitized-write',...(record.role==='local'?['clipboard-read']:[])].includes(permission);
  };
  ses.setPermissionRequestHandler((contents,permission,callback)=>callback(mayUse(contents,permission)));
  ses.setPermissionCheckHandler((contents,permission)=>mayUse(contents,permission));
@@ -68,18 +70,33 @@ function createWindow(base,role=isLocalURL(base)?'local':'remote',parent){
  const contentsId=win.webContents.id;
  windows.set(contentsId,{win,base,role});
  win.once('ready-to-show',()=>win.show());
+ win.on('close',()=>closingNotice(win,true));
  win.on('closed',()=>{windows.delete(contentsId);pending.delete(contentsId);});
  const navigate=(event,url)=>{if(!sameWorkspace(url,base)){event.preventDefault();const external=externalURL(url);if(external)shell.openExternal(external).catch(()=>{});}};
  win.webContents.on('will-navigate',navigate);
  win.webContents.on('will-redirect',(event,url)=>{if(!sameWorkspace(url,base))event.preventDefault();});
- win.webContents.setWindowOpenHandler(({url})=>{
+ win.webContents.setWindowOpenHandler(({url,frameName})=>{
+  if(['local','remote'].includes(role)&&isPanelWindow(url,base,frameName))return {action:'allow',overrideBrowserWindowOptions:{
+   title:'Panel · PixlPrfct',minWidth:260,minHeight:180,backgroundColor:'#2c2c2c',autoHideMenuBar:true,
+   webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,webviewTag:false,preload:path.join(root,'preload-panel.cjs')},
+  }};
   if(sameWorkspace(url,base))createWindow(url,role);else{const external=externalURL(url);if(external)shell.openExternal(external).catch(()=>{});}return {action:'deny'};
+ });
+ win.webContents.on('did-create-window',(panel,details)=>{
+  if(!isPanelWindow(details.url,base,details.frameName)){panel.close();return;}
+  const id=panel.webContents.id;windows.set(id,{win:panel,base,role:'panel',owner:win});
+  panel.on('closed',()=>windows.delete(id));panel.setMenu(null);
+  // Panels have no native bridge, permission grant, nested windows, or navigation beyond their shell.
+  panel.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+  panel.webContents.on('will-navigate',(event,url)=>{if(url!==details.url)event.preventDefault();});
+  panel.webContents.on('will-redirect',event=>event.preventDefault());
+  panel.webContents.on('will-attach-webview',event=>event.preventDefault());
  });
  win.webContents.on('will-attach-webview',event=>event.preventDefault());
  win.webContents.on('will-prevent-unload',async event=>{
   // Electron requires the cancellation decision synchronously.
   const result=dialog.showMessageBoxSync(win,{type:'question',buttons:['Keep open','Close anyway'],defaultId:0,cancelId:0,message:'Changes may still be saving.',detail:'Keep this window open to finish saving your project.'});
-  if(result===1)event.preventDefault();
+  if(result===1)event.preventDefault();else closingNotice(win,false);
  });
  win.webContents.on('did-fail-load',(_event,code,description,_url,mainFrame)=>{if(mainFrame&&code!==-3){win.show();dialog.showMessageBox(win,{type:'error',message:'The workspace could not be opened.',detail:description,buttons:['OK']});}});
  win.loadURL(base).catch(()=>{});
@@ -127,13 +144,14 @@ function installIPC(){
  });
 }
 function installMenu(){
- const command=(name,win)=>{const target=windows.get(win?.webContents.id);if(target&&target.role!=='connection')win.webContents.send('desktop:command',name);};
+ const owner=win=>windows.get(win?.webContents.id)?.owner??win;
+ const command=(name,win)=>{const target=windows.get(win?.webContents.id);if(target?.role==='panel'){target.owner.webContents.send('desktop:command',name);}else if(target&&target.role!=='connection')win.webContents.send('desktop:command',name);};
  const template=[...(process.platform==='darwin'?[{role:'appMenu'}]:[]),{label:'File',submenu:[
-  {label:'New design',accelerator:'CmdOrCtrl+N',click:(_item,win)=>createWindow(windows.get(win?.webContents.id)?.role==='remote'?new URL('/?new=1',win.webContents.getURL()).href:APP_URL+'?new=1')},
+  {label:'New design',accelerator:'CmdOrCtrl+N',click:(_item,win)=>{win=owner(win);createWindow(windows.get(win?.webContents.id)?.role==='remote'?new URL('/?new=1',win.webContents.getURL()).href:APP_URL+'?new=1');}},
   {label:'All local projects',accelerator:'CmdOrCtrl+Shift+O',click:()=>{const win=createWindow(APP_URL);win.focus();}},
   {label:'Import design…',accelerator:'CmdOrCtrl+O',click:async(_item,win)=>{if(windows.has(win?.webContents.id))command('open',win);else{const result=await dialog.showOpenDialog({title:'Import design',filters:designFilters,properties:['openFile']});if(!result.canceled)await openNativeFile(result.filePaths[0]);}}},
   {label:'Save a copy…',accelerator:'CmdOrCtrl+S',click:(_item,win)=>command('save',win)},
-  {type:'separator'},{label:'Connect to a team server…',click:(_item,win)=>showConnect(win)},
+  {type:'separator'},{label:'Connect to a team server…',click:(_item,win)=>showConnect(owner(win))},
   {type:'separator'},{role:process.platform==='darwin'?'close':'quit'}
  ]},{label:'Edit',submenu:[{label:'Undo',accelerator:'CmdOrCtrl+Z',click:(_item,win)=>{command('undo',win);}},{label:'Redo',accelerator:'CmdOrCtrl+Shift+Z',click:(_item,win)=>{command('redo',win);}},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},
  {label:'View',submenu:[{role:'reload'},{role:'togglefullscreen'},{type:'separator'},{label:'Allow online fonts in local designs',type:'checkbox',checked:preferences.onlineFonts,click:async item=>{

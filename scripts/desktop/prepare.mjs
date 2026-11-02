@@ -4,7 +4,7 @@ import sharp from 'sharp';
 const root=path.resolve(import.meta.dirname,'../..'),target=path.join(root,'.desktop/app');
 await rm(target,{recursive:true,force:true});await mkdir(target,{recursive:true});
 await cp(path.join(root,'web'),path.join(target,'web'),{recursive:true,filter:source=>!source.endsWith('.DS_Store')});
-for(const file of ['main.cjs','updates.cjs','design-files.cjs','policy.cjs','preferences.cjs','mcp-discovery.cjs','preload.cjs','preload-remote.cjs'])await cp(path.join(root,'desktop',file),path.join(target,file));
+for(const file of ['main.cjs','updates.cjs','design-files.cjs','policy.cjs','preferences.cjs','mcp-discovery.cjs','preload.cjs','preload-remote.cjs','preload-panel.cjs'])await cp(path.join(root,'desktop',file),path.join(target,file));
 for(const file of ['LICENSE','PRIVACY.md','CODE_SIGNING.md'])await cp(path.join(root,file),path.join(target,file));
 await cp(path.join(root,'docs/licenses'),path.join(target,'licenses'),{recursive:true});
 await writeFile(path.join(target,'LICENSING.md'),(await readFile(path.join(root,'docs/LICENSING.md'),'utf8')).replace('(../LICENSE)','(LICENSE)'));

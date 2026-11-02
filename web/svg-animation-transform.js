@@ -29,7 +29,7 @@ export function resizedValues(values,bounds,origin,handle,delta,{center=false,un
  const next={...values,scaleX:clamp(values.scaleX*fx,'scaleX'),scaleY:clamp(values.scaleY*fy,'scaleY')};
  return anchored(values,next,anchor,origin);
 }
-export function installTransformHandles({host,read,start,preview,restore,change,report}){
+export function installTransformHandles({host,read,start,preview,restore,change,report,pick}){
  const overlay=document.createElementNS(NS,'svg');overlay.classList.add('svg-transform-handles');overlay.id='svg-selection';overlay.setAttribute('aria-label','Object transform handles');host.append(overlay);
  const make=(tag,attrs,parent=overlay)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);parent.append(n);return n;};
  const outline=make('path',{class:'svg-transform-outline'}),records=[];
@@ -61,6 +61,33 @@ export function installTransformHandles({host,read,start,preview,restore,change,
  }
  function valid(state){const now=read();return now?.enabled&&now.document===state.document&&now.element===state.element&&now.time===state.time;}
  function focus(record){record.hit.focus({preventScroll:true});}
+ // Capture on the stable stage: preview() replaces the artwork's SVG nodes.
+ let bodyClick=false;
+ host.addEventListener('click',e=>{if(bodyClick){bodyClick=false;e.preventDefault();e.stopImmediatePropagation();}},true);
+ host.addEventListener('pointerdown',e=>{
+  bodyClick=false;if(e.defaultPrevented||e.button!==0||drag||e.ctrlKey||e.metaKey||e.altKey||!pick?.(e.target,e))return;
+  start();update();if(!last?.state.enabled)return;
+  const {state,g}=last,inverse=g.screen.inverse(),initial=point(e.clientX,e.clientY,inverse),values={...state.values};let next=values,moved=false;
+  e.preventDefault();e.stopPropagation();bodyClick=true;host.focus({preventScroll:true});host.setPointerCapture(e.pointerId);
+  const move=event=>{
+   if(event.pointerId!==e.pointerId)return;if(!valid(state)){cancel();return;}
+   if(!moved&&Math.hypot(event.clientX-e.clientX,event.clientY-e.clientY)<2)return;moved=true;
+   try{const p=point(event.clientX,event.clientY,inverse);let dx=p.x-initial.x,dy=p.y-initial.y;if(event.shiftKey){if(Math.abs(dx)>=Math.abs(dy))dy=0;else dx=0;}
+    next={...values,x:clamp(values.x+dx,'x'),y:clamp(values.y+dy,'y')};preview(next);draw(state,g,next);
+   }catch(error){cancel();report(error.message);}
+  };
+  const clear=()=>{drag=null;host.removeEventListener('pointermove',move);host.removeEventListener('pointerup',done);host.removeEventListener('pointercancel',cancel);host.removeEventListener('lostpointercapture',cancel);window.removeEventListener('keydown',escape,true);window.removeEventListener('blur',cancel);if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);};
+  const cancel=()=>{clear();restore();update();};
+  const done=event=>{if(event.pointerId!==e.pointerId)return;const allowed=valid(state);clear();restore();try{if(allowed&&moved)change(Object.fromEntries(Object.entries(next).map(([k,v])=>[k,clean(v)])));}catch(error){report(error.message);}update();};
+  const escape=event=>{if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();cancel();}};
+  drag={cancel};host.addEventListener('pointermove',move);host.addEventListener('pointerup',done);host.addEventListener('pointercancel',cancel);host.addEventListener('lostpointercapture',cancel);window.addEventListener('keydown',escape,true);window.addEventListener('blur',cancel);
+ });
+ host.addEventListener('keydown',e=>{
+  if(e.target!==host||e.ctrlKey||e.metaKey||e.altKey||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)||!read()?.enabled)return;
+  e.preventDefault();e.stopPropagation();drag?.cancel();start();update();if(!last?.state.enabled)return;
+  const step=e.shiftKey?10:1,values=last.state.values,next={...values,x:clamp(values.x+(e.key==='ArrowLeft'?-step:e.key==='ArrowRight'?step:0),'x'),y:clamp(values.y+(e.key==='ArrowUp'?-step:e.key==='ArrowDown'?step:0),'y')};
+  try{change(next);}catch(error){report(error.message);}update();
+ });
  for(const record of records){
   const {hit,handle,rotate}=record;make('title',{},hit).textContent=rotate?'Drag to rotate. Shift snaps to 15°. Arrow keys rotate 1°; Shift rotates 15°.':'Drag to resize. Shift keeps proportions; Alt/Option resizes from center. Arrow keys resize; Shift uses 10 units.';hit.onclick=e=>e.stopPropagation();
   hit.onpointerdown=e=>{

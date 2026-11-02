@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {componentAssets} from './assets.js';
 import {visibleInTree} from './selection.js';
 import {showContextMenu} from './context-menu.js';
@@ -54,7 +55,7 @@ export function slotInstancePicker(doc,slot,onInsert,{preview}={}){
  search.oninput=()=>{page='';render();};source.onchange=()=>{page='';render();};dialog.append(header,searchWrap,toolbar,results,error);dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);render();dialog.showModal();search.focus();
 }
 export function renderSlotOverlay(host,doc,scene,pan,zoom,selected,onAdd,pointer=null){
- host??=document.createElement('div');host.id='slot-overlays';if(!host.isConnected)document.getElementById('workspace').append(host);
+ host??=document.createElement('div');host.id='slot-overlays';if(!host.isConnected)editorDOM.getElementById('workspace').append(host);
  const chosen=new Set(selected),slots=scene.filter(s=>s.slot&&s.component?.type==='instance'&&visibleInTree(s,scene)&&!scene.some(c=>c.parent_id===s.id));
  const hovered=new Set(slots.filter(s=>pointer&&pointer.x>=s.x&&pointer.x<=s.x+s.width&&pointer.y>=s.y&&pointer.y<=s.y+s.height).map(s=>s.id));
  const key=JSON.stringify([slots.map(s=>[s.id,s.x,s.y,s.width,s.height,s.rotation,slotProperty(doc,s)?.slot_settings?.display_empty]),pan,zoom,[...chosen],[...hovered]]);if(host.dataset.renderKey===key)return host;host.dataset.renderKey=key;

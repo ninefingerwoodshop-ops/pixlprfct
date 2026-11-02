@@ -1,4 +1,4 @@
-const scope='.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.frame-labels,#grid-area-status';
+const scope='.panel-placeholder,.panel-parent-heading,.panel-window-header,.panel-icon-rail,.navigation-rail,.left-panel,.right-panel,.toolbox,dialog,.paint-popover,.selection-menu,.inspector-select-menu,.frame-labels,#grid-area-status';
 export function tooltipText(value,mac=false){
  return value.replace(/Ctrl\s*\/\s*(?:Cmd|Command|⌘)|Cmd\s*\/\s*Ctrl|⌘\s*\/\s*Ctrl/g,mac?'⌘':'Ctrl').replace(/Ctrl\s*\+\s*\/\s*Cmd/g,mac?'⌘':'Ctrl').replace(/Ctrl(?=[ +])/g,mac?'⌘':'Ctrl').replace(/\bCmd\b/g,mac?'⌘':'Ctrl').replace(/\bShift\b/g,mac?'⇧':'Shift').replace(/\bAlt\b/g,mac?'⌥':'Alt');
 }
@@ -30,7 +30,7 @@ export function installTooltips(){
  const tooltip=document.createElement('div');tooltip.id='editor-tooltip';tooltip.className='editor-tooltip';tooltip.setAttribute('role','tooltip');tooltip.setAttribute('popover','manual');tooltip.tabIndex=-1;document.body.append(tooltip);
  let target=null,timer=null,keyboardRequest=0,returnFocus=null;
  const hide=()=>{const restore=document.activeElement===tooltip?returnFocus:null;returnFocus=null;keyboardRequest++;clearTimeout(timer);if(target){const ids=(target.getAttribute('aria-describedby')??'').split(/\s+/).filter(id=>id&&id!==tooltip.id);if(ids.length)target.setAttribute('aria-describedby',ids.join(' '));else target.removeAttribute('aria-describedby');}if(tooltip.matches(':popover-open'))tooltip.hidePopover();target=null;if(restore?.isConnected)restore.focus({preventScroll:true});};
- const readTitle=el=>{if(el.hasAttribute('title')){labels.set(el,el.getAttribute('title'));el.removeAttribute('title');}};
+ const readTitle=el=>{if(el.matches('iframe'))return;if(el.hasAttribute('title')){labels.set(el,el.getAttribute('title'));el.removeAttribute('title');}};
  const scan=node=>{if(!(node instanceof Element))return;if(node.closest(scope))readTitle(node);for(const el of node.querySelectorAll('[title]'))if(el.closest(scope))readTitle(el);};
  scan(document.body);
  new MutationObserver(records=>{for(const r of records){if(r.type==='attributes'){if(r.target.closest(scope))readTitle(r.target);}else for(const node of r.addedNodes)scan(node);}if(target){const relevant=records.some(r=>r.type==='attributes'&&r.target.contains(target)&&['hidden','open'].includes(r.attributeName));if(!target.isConnected||(relevant&&!tooltipTargetVisible(target))||(target.hasAttribute('data-tooltip-overflow')&&records.some(r=>r.type==='childList'&&target.contains(r.target))))hide();}}).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['title','hidden','open']});
@@ -43,7 +43,10 @@ export function installTooltips(){
   const visual=window.visualViewport,viewport={left:visual?.offsetLeft??0,top:visual?.offsetTop??0,width:visual?.width??innerWidth,height:visual?.height??innerHeight};
   tooltip.style.maxWidth=Math.max(0,Math.min(280,viewport.width-16))+'px';
   tooltip.style.maxHeight=Math.max(0,viewport.height-16)+'px';
-  const p=tooltipPosition(target.getBoundingClientRect(),tooltip.getBoundingClientRect(),viewport);
+  const anchor=target.getBoundingClientRect(),size=tooltip.getBoundingClientRect(),p=tooltipPosition(anchor,size,viewport),rail=target.closest('.panel-placeholder,.panel-icon-rail,.design-navigation,.svg-file-actions,.left-footer,.svg-footer');
+  // Narrow docks need side tooltips so a top button's label cannot cover the
+  // next action in the same column (especially Show / Dock).
+  if(rail&&rail.getBoundingClientRect().width<=64){const right=viewport.left+viewport.width,left=anchor.left+anchor.width/2>viewport.left+viewport.width/2?anchor.left-size.width-8:anchor.right+8;p.x=Math.max(viewport.left+8,Math.min(right-size.width-8,left));p.y=Math.max(viewport.top+8,Math.min(viewport.top+viewport.height-size.height-8,anchor.top+(anchor.height-size.height)/2));}
   tooltip.style.left=p.x+'px';tooltip.style.top=p.y+'px';
  };
  const areaBadge=document.getElementById('grid-area-status');

@@ -1,3 +1,6 @@
+import {installDesignPanels} from './design-panels.js';
+let designPanels=null,editorKeydown=()=>{},updateCollapsible=()=>{};
+import {editorDOM,queryPanel} from './editor-dom.js';
 import {installTeamCollaboration} from './team-collaboration.js';
 function setTextIfChanged(node,value){const text=String(value);if(node.textContent!==text)node.textContent=text;}
 import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay} from './slots.js';
@@ -127,11 +130,11 @@ import { scaleShapes } from './scaling.js';
 import { vectorTools, fromPoints, drawnShape, vectorPath, vectorSvg, anchors, reshape } from './vectors.js';
 import { icon, installIcons, componentLabelType } from './icons.js';
 
-const $ = id => document.getElementById(id);
+const $ = id => editorDOM.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
 let canvasSize=null;
 const renderDeviceChrome=installDeviceChrome(canvas);
-const showFramePresets=installFramePresets(document.querySelector('.right-panel'),preset=>safe(()=>{
+const showFramePresets=installFramePresets(editorDOM.querySelector('.right-panel'),preset=>safe(()=>{
  const x=Math.round((canvas.clientWidth/2-pan.x)/zoom-preset.width/2),y=Math.round((canvas.clientHeight/2-pan.y)/zoom-preset.height/2);
  const id=editor.insert(JSON.stringify({id:0,kind:'frame',...preset,x,y,parent_id:0,fill:'#ffffff',text:'',clip_content:true,hidden:false}));
  setSelection([id]);setTool('select');refresh();fit(true);
@@ -595,8 +598,8 @@ function showLeftPanel(name){
   for(const [key,id] of [['layers','file-panel'],['assets','assets-panel']]){
     $(id).hidden=key!==name;const nav=$('nav-'+key);nav.classList.toggle('active',key===name);nav.setAttribute('aria-pressed',String(key===name));
   }
-  document.querySelector('.left-panel').classList.add('mobile-open');
-  document.querySelector('.left-panel').classList.toggle('showing-assets',name==='assets');
+  editorDOM.querySelector('.left-panel').classList.add('mobile-open');
+  editorDOM.querySelector('.left-panel').classList.toggle('showing-assets',name==='assets');
 }
 function showFilePanel(){showLeftPanel('layers');}
 let assetsWindow,libraries;
@@ -703,7 +706,7 @@ function renderLibraryProtection(){
  const author=current();policyPanel.hidden=author?.component?.type!=='master'||!!libraryForShape(doc,author);policyPanel.replaceChildren();
  if(!policyPanel.hidden){const h=document.createElement('h3');h.textContent='Library instance permissions';policyPanel.append(h);for(const [key,title]of [['properties','Exposed text and visibility'],['sizing','Size and layout'],['variants','Variants in this component set']]){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=instancePermissions(doc,author)[key];input.setAttribute('aria-label','Allow library '+title.toLowerCase());input.onchange=()=>update({...author,editor_meta:{...author.editor_meta,library_overrides:{...instancePermissions(doc,author),[key]:input.checked}}});label.append(input,document.createTextNode(title));policyPanel.append(label);}}
  const slot=current()?.slot&&current()?.component?.type==='instance';
- if(slot){for(const id of ['position-section','dimensions-section','constraints-panel','layout-guides-panel'])for(const field of $(id)?.querySelectorAll('input,select,button')??[]){if(field.matches('.inspector-accordion-toggle,.inspector-section-toggle'))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}}
+ if(slot){for(const id of ['position-section','dimensions-section','constraints-panel','layout-guides-panel'])for(const field of $(id)?.querySelectorAll('input,select,button')??[]){if(field.matches('.inspector-accordion-toggle,.inspector-section-toggle,.panel-popout'))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}}
  const shapes=selectionShapes(),link=shapes.map(s=>libraryForShape(doc,s)).find(Boolean);
  const sourceLocked=libraries?.locked(shapes)??false;
  if(!sourceLocked&&shapes.length===1&&shapes[0].slot&&shapes[0].component?.type==='instance')return;
@@ -714,9 +717,9 @@ function renderLibraryProtection(){
  if(!link&&!sourceLocked)return;
  const permissions=shapes.length===1&&link?instancePermissions(doc,shapes[0]):{};
  const movable=shapes.length===1&&shapes[0].component?.master===shapes[0].component?.source;
- for(const field of $('design-inspector').querySelectorAll('input,select,textarea,button')){if((permissions.properties&&field.closest('#exposed-properties')&&field.closest('.exposed-property'))||(permissions.variants&&field.closest('#variant-properties'))||(permissions.sizing&&['width','height','x','y','limit-min_width','limit-max_width','limit-min_height','limit-max_height','layout-item-width','layout-item-height'].includes(field.id))||field.closest('#library-selection-notice')||field.matches('.inspector-accordion-toggle,.inspector-section-toggle')||['go-main','select-instance-root','go-nested-main','export-artwork','edit-component-css'].includes(field.id)||field.getAttribute('aria-label')==='Copy CSS class'||(link&&movable&&['x','y','duplicate','delete'].includes(field.id)))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}
+ for(const field of queryPanel($('design-inspector'),'input,select,textarea,button')){if((permissions.properties&&field.closest('#exposed-properties')&&field.closest('.exposed-property'))||(permissions.variants&&field.closest('#variant-properties'))||(permissions.sizing&&['width','height','x','y','limit-min_width','limit-max_width','limit-min_height','limit-max_height','layout-item-width','layout-item-height'].includes(field.id))||field.closest('#library-selection-notice')||field.matches('.inspector-accordion-toggle,.inspector-section-toggle,.panel-popout')||['go-main','select-instance-root','go-nested-main','export-artwork','edit-component-css'].includes(field.id)||field.getAttribute('aria-label')==='Copy CSS class'||(link&&movable&&['x','y','duplicate','delete'].includes(field.id)))continue;libraryDisabled.set(field,field.disabled);field.disabled=true;}
 }
-const renderPropertiesDeferred=inspectorRenderer(()=>{for(const [field,disabled]of libraryDisabled)field.disabled=disabled;libraryDisabled.clear();renderPropertiesNow();renderLibraryProtection();if(team?.active()&&!team.editable())for(const field of $('design-inspector').querySelectorAll('input,select,textarea')){if(!libraryDisabled.has(field))libraryDisabled.set(field,field.disabled);field.disabled=true;}syncInspectorDropdowns();},()=>document.querySelector('.right-panel'),()=>[...selectedIds].join(','));
+const renderPropertiesDeferred=inspectorRenderer(()=>{for(const [field,disabled]of libraryDisabled)field.disabled=disabled;libraryDisabled.clear();renderPropertiesNow();renderLibraryProtection();if(team?.active()&&!team.editable())for(const field of queryPanel($('design-inspector'),'input,select,textarea')){if(!libraryDisabled.has(field))libraryDisabled.set(field,field.disabled);field.disabled=true;}syncInspectorDropdowns();updateCollapsible();designPanels?.sync();},()=>editorDOM.querySelector('.right-panel'),()=>[...selectedIds].join(','));
 function renderProperties(){team?.selectionChanged();scheduleViewportDraw();renderPropertiesDeferred();}
 let libraryGuardEnabled=null;
 const libraryWriteGuard=(before,after,history)=>team?.guard(before,after)||libraries?.guard(JSON.parse(before),JSON.parse(after),history)||'';
@@ -746,8 +749,8 @@ function renderPropertiesNow() {
   updateVariables();
   const shapes = selectionShapes(), shape = current();
   if($('edit-layout-css'))$('edit-layout-css').hidden=!shape?.auto_layout||shape.component?.type==='instance';
-  document.querySelector('.right-panel').classList.toggle('protected-instance',shapes.some(s=>s.component?.type==='instance'&&!s.slot));
-  document.querySelector('.right-panel').classList.toggle('native-control-editor',!!shape?.control);
+  editorDOM.querySelector('.right-panel').classList.toggle('protected-instance',shapes.some(s=>s.component?.type==='instance'&&!s.slot));
+  editorDOM.querySelector('.right-panel').classList.toggle('native-control-editor',!!shape?.control);
   renderComponentProperties(shape);
   renderSlotInspector(shape);
   const lockTargets=shapes.filter(s=>!inheritedLock(s));$('lock-panel').hidden=!shapes.length;$('toggle-lock').disabled=!lockTargets.length;setTextIfChanged($('toggle-lock'),lockTargets.length?(lockTargets.every(s=>s.locked)?'Unlock selection':'Lock selection'):'Locked by parent');setTextIfChanged($('lock-status'),shapes.some(s=>lockedInTree(s,pageShapes()))?'Locked layers cannot be edited on the canvas. Use the inspector or unlock their parent.':'Ctrl/Cmd Shift L');
@@ -782,7 +785,7 @@ function renderPropertiesNow() {
   $('constraints-panel').hidden=!shapes.length||shapes.some(s=>!s.parent_id||pageShapes().find(p=>p.id===s.parent_id)?.auto_layout&&!s.layout_item?.absolute);
   for(const axis of ['horizontal','vertical']){const value=shapes[0]?.constraints?.[axis]??'min';$('constraint-'+axis).value=shapes.some(s=>(s.constraints?.[axis]??'min')!==value)?'':value;}
   $('group-actions').hidden=!shapes.length; $('group-layers').disabled=!shapes.length; $('ungroup-layers').disabled=!shapes.some(s=>['group','frame'].includes(s.kind)&&!s.component);
-  document.querySelectorAll('[data-align]').forEach(button=>button.disabled=!shapes.length||(shapes.length===1&&(!parentShape||(layoutParent&&!shape.layout_item?.absolute))));
+  editorDOM.querySelectorAll('[data-align]').forEach(button=>button.disabled=!shapes.length||(shapes.length===1&&(!parentShape||(layoutParent&&!shape.layout_item?.absolute))));
   $('scale-panel').hidden=tool!=='scale'||!shapes.length;
   $('join-paths').hidden=shapes.length!==2||shapes.some(s=>s.closed||!s.points?.length)||shapes[0].parent_id!==shapes[1].parent_id;
   $('empty-selection').hidden = shapes.length > 0; $('properties').hidden = !shape; $('multi-properties').hidden = shapes.length < 2;
@@ -794,7 +797,7 @@ function renderPropertiesNow() {
     setTextIfChanged($('multi-size'),`${Math.round(box.width)} × ${Math.round(box.height)}`);
     const mixed = shapes.some(s => s.fill !== shapes[0].fill || appearance(s).gradient);
     $('multi-fill').value = shapes[0].fill; setTextIfChanged($('multi-fill-value'),mixed ? 'Mixed' : shapes[0].fill.toUpperCase());
-    document.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3);
+    editorDOM.querySelectorAll('[data-distribute]').forEach(b => b.disabled = shapes.length < 3);
   }
   renderShadowControls($('shadow-section'),shape,next=>{if(effectBlur(next.appearance,'backdrop_blur')>0)cssCanvasEnabled=true;update(next);},effectStyleApi());
   prototypeInteraction=Math.min(prototypeInteraction,Math.max(0,(shape?interactions(shape).length:0)-1));
@@ -810,7 +813,7 @@ function renderPropertiesNow() {
   const areaOverride=gridAreaEditingOverridden(shape,pageShapes());
   if(shape.auto_layout?.direction!=='grid'||shape.auto_layout.grid?.masonry||areaOverride){editingGridAreas=0;activeGridArea=null;}
   const areaButton=$('edit-grid-areas');areaButton.hidden=!!shape.auto_layout?.grid?.masonry;
-  const gridCaption=document.querySelector('#grid-layout-section .grid-caption');
+  const gridCaption=editorDOM.querySelector('#grid-layout-section .grid-caption');
   if(gridCaption){gridCaption.hidden=!!shape.auto_layout?.grid?.masonry;setTextIfChanged(gridCaption,areaOverride?'This breakpoint overrides the grid structure. Edit Layout CSS, or switch to a base-layout width to draw areas.':'Drag into cells. Resize edges to span tracks.');}
   setTextIfChanged(areaButton,editingGridAreas===shape.id?'Finish editing areas':'Draw areas on canvas');areaButton.setAttribute('aria-pressed',String(editingGridAreas===shape.id));areaButton.disabled=!canvasEditable()||shape.component?.type==='instance'||areaOverride;
   setTextIfChanged($('edit-layout-spacing'),editingLayout===shape.id?'Finish spacing edits':'Edit spacing on canvas');$('edit-layout-spacing').disabled=!canvasEditable();$('edit-layout-spacing').setAttribute('aria-pressed',String(editingLayout===shape.id));
@@ -916,7 +919,7 @@ function draw() {
     if(basePlan)updateAreaTrackValues($('grid-cell-controls'),areaLayer,basePlan,{preview:true});
     updateAreaTrackValues($('grid-cell-controls'),areaLayer,plan,{parent});
     const live=scene.find(s=>s.id===areaLayer.id);
-    if(live)for(const axis of ['width','height'])if(document.activeElement!==$(axis))$(axis).value=Number(live[axis].toFixed(2));
+    if(live)for(const axis of ['width','height'])if(editorDOM.activeElement!==$(axis))$(axis).value=Number(live[axis].toFixed(2));
   }
   $('css-canvas').setAttribute('aria-pressed',String(cssActive()));
   $('css-canvas').disabled=needsControlRenderer();$('css-canvas').title=needsControlRenderer()?'CSS canvas is required for controls, CSS Grid, and custom CSS':'Browser layout with live inspector editing';
@@ -1047,9 +1050,9 @@ function setTool(value) {
   if(value==='comment'&&team?.active()){team.showComments();return;}
   if(!finishText())return;
   prototypeLinkSelected=false;penPoints=[]; gesture=null; editingLayout=0;activeSpacing=null;editingPath=0;editingGradient=0;activeGradient=null;
-  document.querySelectorAll('.tool-group').forEach(el=>el.open=false);
+  editorDOM.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   $('pencil-options').hidden=value!=='pencil';
-  tool = value;updateToolbelt(tool); document.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
+  tool = value;updateToolbelt(tool); editorDOM.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
   showFramePresets(tool==='frame');
   renderProperties();
   draw();
@@ -1119,7 +1122,7 @@ function bind() {
   const snappingDialog=$('snapping-dialog');
   const renderSnapping=()=>{for(const key of ['enabled','objects','grid'])$('snap-'+key).checked=snapping[key];$('snap-increment').value=snapping.increment;$('snap-options').hidden=!snapping.enabled;$('snap-increment-row').hidden=!snapping.grid;};
   const saveSnapping=()=>{try{localStorage.setItem('pixlprfct-snapping',JSON.stringify(snapping));}catch{toast('Snapping changed, but could not save preferences');}renderSnapping();};
-  $('global-settings').onclick=()=>{document.querySelector('.file-menu').open=false;renderSnapping();snappingDialog.showModal();};
+  $('global-settings').onclick=()=>{editorDOM.querySelector('.file-menu').open=false;renderSnapping();snappingDialog.showModal();};
   for(const key of ['enabled','objects','grid'])$('snap-'+key).onchange=e=>{snapping[key]=e.target.checked;saveSnapping();};
   $('snap-increment').onchange=e=>{const value=Number(e.target.value);if(!Number.isFinite(value)||value<.1||value>1000){e.target.setCustomValidity('Enter a value between 0.1 and 1000 pixels.');e.target.reportValidity();return;}e.target.setCustomValidity('');snapping.increment=value;saveSnapping();};
   $('snap-increment').oninput=e=>{e.target.setCustomValidity('');const value=Number(e.target.value);if(e.target.value&&Number.isFinite(value)&&value>=.1&&value<=1000){snapping.increment=value;try{localStorage.setItem('pixlprfct-snapping',JSON.stringify(snapping));}catch{}}};
@@ -1232,11 +1235,11 @@ function bind() {
   $('apply-scale').onclick=()=>safe(()=>{const shapes=transformedSelection(),box=bounds(selectionShapes());if(box) updateMany(scaleShapes(shapes,box,Number($('scale-percent').value)/100));});
   $('stroke-width').onchange=()=>{if(current()) update({...current(),stroke_width:Number($('stroke-width').value)}); renderProperties();};
   $('edit-path').onclick=()=>{if(!canvasEditable()){toast('Unlock the layer or its parent to edit on canvas');return;}if(current()?.points?.length){if(tool!=='select')setTool('select');editingGradient=0;activeGradient=null;editingPath=editingPath?0:current().id;activeNode=-1;renderProperties(); $('hint').textContent=editingPath?'Drag anchors or handles · Alt-drag an anchor to create handles · Enter to finish':'Double-click a vector to edit points'; draw();}};
-  document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) document.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
-  const showShortcuts = () => { document.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
+  document.addEventListener('pointerdown',event=>{ if(!event.target.closest('.tool-group')) editorDOM.querySelectorAll('.tool-group').forEach(el=>el.open=false); });
+  const showShortcuts = () => { editorDOM.querySelector('.file-menu').open = false; $('shortcuts-dialog').showModal(); };
   for (const id of ['shortcuts','nav-help']) $(id).onclick = showShortcuts;
   const toolActions=[['select','Move','V'],['scale','Scale','K'],['hand','Hand / pan','H'],['frame','Frame','F'],['rectangle','Rectangle','R'],['ellipse','Ellipse','O'],['line','Line','L'],['arrow','Arrow','Shift L'],['polygon','Polygon',''],['star','Star',''],['pen','Pen','P'],['pencil','Pencil','Shift P'],['text','Text','T']].map(([tool,label,shortcut])=>({label,shortcut,category:'Drawing',run:()=>{setTool(tool);canvas.focus();}}));
-  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['combine-variants','Combine as variants','Components','','Select two or more main components'],['add-variant','Add variant','Components','','Select a main component or component set'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add Flex Layout','Layout','Shift A','Select layers without a layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['menu-new-design','New design','Files'],['browse-drafts','All projects','Files'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export-artwork','Export artwork','Files'],['export','Export pages / project','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].filter(([id])=>!staticHost||id!=='cloud-files').map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&(['undo','redo','place-image'].includes(id)||![...document.querySelectorAll('[hidden]')].some(el=>!['file-panel','pages-panel','assets-panel'].includes(el.id)&&el.contains(b)));},run:()=>$(id).click()}));
+  const commands=[['create-component','Create component','Components','Ctrl/⌘ Alt K','Select ordinary layers'],['combine-variants','Combine as variants','Components','','Select two or more main components'],['add-variant','Add variant','Components','','Select a main component or component set'],['insert-instance','Insert instance','Components','','Select a main component'],['nav-assets','Browse components','Components'],['push-style-overrides','Push text and styles to main','Components','','Select an instance with text or style overrides'],['select-instance-root','Select outer instance','Components','','Select a child of an instance'],['go-nested-main','Go to nested main component','Components','','Select a nested component layer'],['add-auto-layout','Add Flex Layout','Layout','Shift A','Select layers without a layout'],['group-layers','Group selection','Layers','Ctrl/⌘ G','Select sibling layers'],['ungroup-layers','Ungroup selection','Layers','Ctrl/⌘ Shift G','Select a group'],['duplicate','Duplicate selection','Layers','Ctrl/⌘ D','Select layers'],['delete','Delete selection','Layers','Delete','Select layers'],['undo','Undo','History','Ctrl/⌘ Z','No edits to undo'],['redo','Redo','History','Ctrl/⌘ Shift Z','No edits to redo'],['place-image','Place image or SVG','Drawing','Ctrl/⌘ Shift K'],['add-page','New page','Pages'],['rename-page','Rename page','Pages'],['delete-page','Delete page','Pages','','Keep at least one page'],['menu-new-design','New design','Files'],['browse-drafts','All projects','Files'],['cloud-files','Cloud files','Files'],['open','Open design','Files'],['save','Save local copy','Files','Ctrl/⌘ S'],['export-artwork','Export artwork','Files'],['export','Export pages / project','Files'],['present-prototype','Present prototype','Prototype'],['shortcuts','Keyboard shortcuts','Help','?']].filter(([id])=>!staticHost||id!=='cloud-files').map(([id,label,category,shortcut,unavailable])=>({label,category,shortcut,unavailable,enabled:()=>{const b=$(id);return !!b&&!b.disabled&&(['undo','redo','place-image'].includes(id)||![...editorDOM.querySelectorAll('[hidden]')].some(el=>!['file-panel','pages-panel','assets-panel'].includes(el.id)&&el.contains(b)));},run:()=>$(id).click()}));
   commands.push({label:'Show / hide selection',category:'Layers',shortcut:'Ctrl/⌘ Shift H',enabled:()=>selectedIds.size>0,run:toggleSelectionVisibility},{label:'Rename layer',category:'Layers',shortcut:'Ctrl/⌘ R',enabled:()=>!!current(),run:renameSelection},{label:'Lock / unlock selection',category:'Layers',shortcut:'Ctrl/⌘ Shift L',enabled:()=>selectionShapes().some(s=>!inheritedLock(s)),run:toggleSelectionLock});
   commands.push({label:'Remove layout',category:'Layout',shortcut:'Alt Shift A',enabled:()=>selectionShapes().some(s=>s.auto_layout),unavailable:'Select a Flex Layout or Grid Layout frame',run:removeAutoLayout});
   commands.push({label:'Frame selection',category:'Layout',shortcut:'Ctrl/⌘ Alt G',enabled:()=>selectedIds.size>0,unavailable:'Select sibling layers',run:frameSelection});
@@ -1247,7 +1250,7 @@ function bind() {
   commands.push({label:'MCP connection',category:'Development',keywords:'agent AI automation bridge',run:showAgentConnection});
   const showActions=installActionPanel([...toolActions,...commands]);$('nav-tools').onclick=showActions;
   $('close-shortcuts').onclick = () => $('shortcuts-dialog').close();
-  const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { document.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
+  const showSearch = () => { showFilePanel(); $('search-panel').hidden = !$('search-panel').hidden; if (!$('search-panel').hidden) { editorDOM.querySelector('.left-panel').classList.add('mobile-open'); $('layer-search').focus(); } else { $('layer-search').value = ''; renderLayers(); } };
   $('search-toggle').onclick = showSearch;
   for(const [id,collapse] of [['expand-all-layers',false],['collapse-all-layers',true]]){
     $(id).onclick=()=>{
@@ -1286,7 +1289,7 @@ function bind() {
     $('page-typeahead-text').textContent=matches.length?'Jump to: “'+query+'” · '+(index>=0?(index+1)+' of '+matches.length:matches.length+' matching '+(matches.length===1?'page':'pages')):'No matching pages for “'+query+'” · 0 of 0';
     status.dataset.noMatch=String(matches.length===0);status.hidden=false;
   };
-  $('page-switch-options').addEventListener('pages-rendered',()=>{if(pageTypeahead.query){highlightPageMatches();updatePageSearchStatus(Number(document.activeElement.dataset.pageId));}});
+  $('page-switch-options').addEventListener('pages-rendered',()=>{if(pageTypeahead.query){highlightPageMatches();updatePageSearchStatus(Number(editorDOM.activeElement.dataset.pageId));}});
   $('page-switch-options').addEventListener('focusin',event=>{
     const row=event.target.closest('[data-page-id]');if(row)updatePageSearchStatus(Number(row.dataset.pageId));
   });
@@ -1390,7 +1393,7 @@ function bind() {
     const picker=$('layers-page-control'),items=[...$('page-switch-menu').querySelectorAll('button:not(:disabled):not(#clear-page-search)')];
     if(event.key==='Tab')return;
     if(picker.open&&!event.target.closest('input,textarea,[contenteditable],.selection-menu')&&!event.isComposing&&!event.metaKey&&!event.ctrlKey&&!event.altKey&&(event.key.length===1||event.key==='Backspace')){
-      const id=pageTypeahead.match(event.key,doc.pages,Number(document.activeElement.dataset.pageId),performance.now());
+      const id=pageTypeahead.match(event.key,doc.pages,Number(editorDOM.activeElement.dataset.pageId),performance.now());
       if(event.key!==' '||pageTypeahead.query){
         event.preventDefault();
         if(!pageTypeahead.query){clearPageSearch();return;}
@@ -1407,14 +1410,14 @@ function bind() {
       const menu=$('page-switch-menu'),row=$('page-switch-options').querySelector('button:not([hidden])');
       const available=menu.clientHeight-$('page-search-header').getBoundingClientRect().height;
       const step=Math.max(1,Math.floor(available/(row?.getBoundingClientRect().height||32)));
-      const id=cyclePageMatch(doc.pages,pageTypeahead.query,Number(document.activeElement.dataset.pageId),event.key==='PageDown'?step:-step,false);
+      const id=cyclePageMatch(doc.pages,pageTypeahead.query,Number(editorDOM.activeElement.dataset.pageId),event.key==='PageDown'?step:-step,false);
       updatePageSearchStatus(id);
       if(id!==null)focusPage(id);
       return;
     }
     if(picker.open&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&['ArrowDown','ArrowUp','Home','End'].includes(event.key)){
       event.preventDefault();
-      const id=cyclePageMatch(doc.pages,pageTypeahead.query,Number(document.activeElement.dataset.pageId),event.key==='Home'?'first':event.key==='End'?'last':event.key==='ArrowDown'?1:-1);
+      const id=cyclePageMatch(doc.pages,pageTypeahead.query,Number(editorDOM.activeElement.dataset.pageId),event.key==='Home'?'first':event.key==='End'?'last':event.key==='ArrowDown'?1:-1);
       updatePageSearchStatus(id);
       if(id!==null)focusPage(id);
       return;
@@ -1422,19 +1425,19 @@ function bind() {
     if(event.key==='Escape'&&pageTypeahead.query){event.preventDefault();clearPageSearch();focusPage(lastSearchPage??doc.active_page);return;}
     if(['ArrowDown','ArrowUp','Home','End','Escape','Enter','Tab'].includes(event.key))clearPageSearch();
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();$('page-search-header').hidden=true;$('layers-page').focus();return;}
-    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();event.stopPropagation();picker.open=true;const index=items.indexOf(document.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:event.key==='ArrowDown'?(index+1)%items.length:(index<0?items.length-1:(index-1+items.length)%items.length);items[next]?.focus();}
+    if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();event.stopPropagation();picker.open=true;const index=items.indexOf(editorDOM.activeElement),next=event.key==='Home'?0:event.key==='End'?items.length-1:event.key==='ArrowDown'?(index+1)%items.length:(index<0?items.length-1:(index-1+items.length)%items.length);items[next]?.focus();}
   });
   $('add-page').addEventListener('click',event=>{event.preventDefault();event.stopPropagation();$('layers-page-control').open=true;});
   $('find-page').onclick=event=>{event.preventDefault();event.stopPropagation();$('layers-page-control').open=true;$('page-search-header').hidden=false;$('page-search-input').focus();};
   $('page-search-header').hidden=true;installPagesResize();
   $('layer-search').oninput = renderLayers;
-  document.querySelectorAll('.menu-panel button').forEach(button => button.addEventListener('click', () => document.querySelector('.file-menu').open = false));
-  document.addEventListener('pointerdown', event => { if (!event.target.closest('.file-menu')) document.querySelector('.file-menu').open = false; });
+  editorDOM.querySelectorAll('.menu-panel button').forEach(button => button.addEventListener('click', () => editorDOM.querySelector('.file-menu').open = false));
+  document.addEventListener('pointerdown', event => { if (!event.target.closest('.file-menu')) editorDOM.querySelector('.file-menu').open = false; });
   const divider = $('sidebar-resize');
   for(const [handle,side,variable,direction] of [[divider,'left','--left-width',1],[$('inspector-resize'),'right','--right',-1]]){
-    const panel=document.querySelector(`.${side}-panel`),other=document.querySelector(`.${side==='left'?'right':'left'}-panel`);
+    const panel=editorDOM.querySelector(`.${side}-panel`),other=editorDOM.querySelector(`.${side==='left'?'right':'left'}-panel`);
     let drag=null;
-    const maximum=()=>{const mobile=matchMedia('(max-width:760px)').matches,otherWidth=mobile&&side==='right'?0:other.getBoundingClientRect().width;return Math.max(200,Math.min(400,document.querySelector('main').clientWidth-otherWidth-(mobile?210:180)));};
+    const maximum=()=>{const mobile=matchMedia('(max-width:760px)').matches,otherWidth=mobile&&side==='right'?0:other.getBoundingClientRect().width;return Math.max(200,Math.min(400,editorDOM.querySelector('main').clientWidth-otherWidth-(mobile?210:180)));};
     const sync=()=>{handle.setAttribute('aria-valuenow',Math.round(panel.getBoundingClientRect().width));handle.setAttribute('aria-valuemax',Math.floor(maximum()));};
     const setWidth=width=>{document.documentElement.style.setProperty(variable,`${Math.round(Math.max(200,Math.min(maximum(),width)))}px`);sync();};
     const finish=cancel=>{
@@ -1458,8 +1461,8 @@ function bind() {
     window.addEventListener('resize',()=>{finish(true);const width=document.documentElement.style.getPropertyValue(variable);if(width)setWidth(parseFloat(width));sync();});
     const panelObserver=new ResizeObserver(sync);panelObserver.observe(panel);panelObserver.observe(other);sync();
   }
-  document.querySelectorAll('[data-align]').forEach(button => button.onclick = () => safe(() => { editor.align_many(selectionJson(),button.dataset.align); refresh(); }));
-  document.querySelectorAll('[data-distribute]').forEach(button => button.onclick = () => safe(() => { editor.distribute_many(selectionJson(),button.dataset.distribute); refresh(); }));
+  editorDOM.querySelectorAll('[data-align]').forEach(button => button.onclick = () => safe(() => { editor.align_many(selectionJson(),button.dataset.align); refresh(); }));
+  editorDOM.querySelectorAll('[data-distribute]').forEach(button => button.onclick = () => safe(() => { editor.distribute_many(selectionJson(),button.dataset.distribute); refresh(); }));
   $('multi-fill').onchange = () => updateMany(selectionShapes().map(s => ({...s,fill:$('multi-fill').value,appearance:{...appearance(s),gradient:null}})));
   $('multi-duplicate').onclick = duplicateSelection; $('multi-delete').onclick = deleteSelection;
   const styleFields = { 'font-family': 'font_family', 'font-size': 'font_size', 'font-weight': 'font_weight', 'line-height': 'line_height', 'text-align': 'align', 'text-wrap': 'wrap' };
@@ -1498,11 +1501,12 @@ function bind() {
   $('mobile-add-page').onclick = () => $('add-page').click();
   $('mobile-rename-page').onclick = () => $('rename-page').click();
   $('mobile-delete-page').onclick = () => $('delete-page').click();
-  document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+  editorDOM.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   const applyHistory=direction=>{gesture=null;activeNode=-1;const before=JSON.parse(editor.snapshot()),selection={frame:editingGridAreas,name:activeGridArea};editor[direction]();const after=JSON.parse(editor.snapshot()),gridItems=historyGridItemSelection(before,after,[...selectedIds]),next=historyAreaSelection(before,after,selection);if(next){setSelection([next.frame]);editingGridAreas=next.frame;activeGridArea=next.name;setTool('select');}else {activeGridArea=null;if(gridItems)setSelection(gridItems);}refresh();if(next){revealSelectedArea();canvas.focus();}else if(gridItems)canvas.focus({preventScroll:true});};
   $('undo').onclick=()=>applyHistory('undo');$('redo').onclick=()=>applyHistory('redo');
   $('zoom-fit').onclick = fit; $('zoom-in').onclick = () => zoomAt(1.2); $('zoom-out').onclick = () => zoomAt(1 / 1.2);
   $('document-name').onchange = () => safe(() => { editor.load(JSON.stringify({ ...doc, name: $('document-name').value.trim() || 'Untitled design' })); refresh(); });
+  $('document-name').addEventListener('blur',()=>editorDOM.querySelector('.file-heading').classList.remove('renaming-document'));
   $('document-name').onkeydown = event => {
     if(!['Enter','Escape'].includes(event.key))return;
     event.preventDefault();event.stopPropagation();
@@ -1512,12 +1516,12 @@ function bind() {
   const documentActions=$('document-actions');let closeDocumentMenu=null;
   const openDocumentMenu=event=>{
     if(closeDocumentMenu){closeDocumentMenu(true);return;}
-    $('layers-page-control').open=false;document.querySelector('.file-menu').open=false;
+    $('layers-page-control').open=false;editorDOM.querySelector('.file-menu').open=false;
     closeDocumentMenu=showContextMenu(event,[
       {label:'New design…',run:()=>goProjectHome(true)},
       {label:'All projects',run:()=>goProjectHome()},
       {separator:true},
-      {label:'Rename…',run:()=>{$('document-name').focus();$('document-name').select();}},
+      {label:'Rename…',run:()=>{editorDOM.querySelector('.file-heading').classList.add('renaming-document');$('document-name').focus();$('document-name').select();}},
       {label:'Save a local copy…',shortcut:'Ctrl/⌘ S',run:()=>$('save').click()},
       {separator:true},
       {label:'Export code / project…',run:()=>$('export').click()},
@@ -1537,7 +1541,7 @@ function bind() {
   documentActions.onkeydown=event=>{
     if(!['ArrowDown','ArrowUp'].includes(event.key))return;
     event.preventDefault();event.stopPropagation();openDocumentMenu(event);
-    if(event.key==='ArrowUp')[...document.querySelectorAll('#selection-menu button:not(:disabled)')].at(-1)?.focus();
+    if(event.key==='ArrowUp')[...editorDOM.querySelectorAll('#selection-menu button:not(:disabled)')].at(-1)?.focus();
   };
   for (const key of ['x', 'y', 'width', 'height', 'fill', 'text']) $(key).onchange = () => {
     if (!current()) return; const value = ['x', 'y', 'width', 'height'].includes(key) ? Number($(key).value) : $(key).value;
@@ -1792,13 +1796,14 @@ function bind() {
       scheduleViewportDraw();
     }
   }, { passive: false });
-  window.addEventListener('keydown', event => {
+  editorKeydown=event => {
+    if(event.defaultPrevented)return;
     // Let Escape dismiss the active inspector popup without clearing the layer.
-    if(event.key==='Escape'&&document.querySelector('[popover]:popover-open'))return;
+    if(event.key==='Escape'&&editorDOM.querySelector('[popover]:popover-open'))return;
     // Enter/Space activate the focused control; they must not also edit the
     // selected text or navigate into a layer on the canvas.
     if(['Enter',' '].includes(event.key)&&event.target.closest('button,summary,[role=menuitem]'))return;
-    if (document.querySelector('dialog[open]:not(.variables-dialog)') || event.target.closest('.variables-dialog')) return;
+    if (editorDOM.querySelector('dialog[open]:not(.variables-dialog)') || event.target.closest('.variables-dialog')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(prototypeConnections&&prototypeLinkSelected&&event.target===canvas&&!mod&&!event.altKey&&['delete','backspace'].includes(key)){
@@ -1894,7 +1899,8 @@ function bind() {
     if (event.code === 'Digit1' && !mod) { event.preventDefault(); fit(); }
     if (event.code === 'Digit2' && event.shiftKey && !mod) { event.preventDefault(); fit(true); }
     if (key === '?') showShortcuts();
-  });
+  };
+  window.addEventListener('keydown',editorKeydown);
   window.addEventListener('keyup', event => { if (event.code === 'Space') space = false; });
   window.addEventListener('blur', () => { space = false; cancelGesture(); });
   document.addEventListener('pointerdown',event=>{
@@ -1944,15 +1950,15 @@ try {
   else seed();
   local=new LocalPersistence({drafts,snapshot:()=>editor.snapshot(),storage:tabStorage,status:error=>{if(!local.enabled)return;$('save-status').textContent=error?'Local changes need recovery':'Saved on this device';updateRecovery(error);syncProjectAddress();}});
   if(stored&&!recoveryBlocked)local.adopt(editor.snapshot());
-  updateRecovery=localRecovery({session:local,host:document.querySelector('.left-footer'),download:downloadLocalCopy,load:loadDesign,report:toast});
+  updateRecovery=localRecovery({session:local,host:editorDOM.querySelector('.left-footer'),download:downloadLocalCopy,load:loadDesign,report:toast});
   if(requestedProject?.kind!=='cloud'&&!recoveryBlocked)try{const recovery=local.recovery();if(recovery){editor.load(recovery.body);editor.clear_history();local.restore(recovery);toast('Recovered unsaved local changes');}}catch(error){recoveryBlocked=true;toast(error.message);}
   updateInspectorLayout=installInspectorLayout();updateToolbelt=installToolbelt({action:key=>{if(key==='code'){setTool('select');development.activate('development');}else if(key==='media')$('place-image').click();else{development.activate('design');setTool('spec');}},modeChanged:mode=>{setTool(mode==='draw'?'pencil':'select');development?.activate(mode==='dev'?'inspect':mode==='motion'?'motion':'design');motionTools?.mode(mode==='motion');}});updateAutoLayoutInspector=installAutoLayoutInspector(current,update,{document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});updateLayoutSizing=installLayoutSizing({selection:selectionShapes,all:pageShapes,change:updateMany});updateVariables=installVariables({document:()=>doc,current,change:update,history:action=>{editor[action]();refresh();},save:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();}),pageMode:(id,collection,mode)=>safe(()=>{editor.set_page_variable_mode(id,collection,mode);refresh();}),mode:(id,collection,mode)=>safe(()=>{editor.set_variable_mode(id,collection,mode);refresh();})});updateCompactInspector=installCompactInspector(current,update,{document:()=>doc,bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});updateContextualActions=installContextualActions({current,change:update,shapes:pageShapes});updateRectangleInspector=installRectangleInspector({current,change:update});updatePaintPopovers=installPaintPopovers({current,change:update,document:()=>doc,colorStyles:{read:()=>doc.color_styles??[],edit:(...args)=>colorStyleControls.edit(...args),apply:(id,channel)=>safe(()=>{editor.apply_color_style(selectionJson(),id,channel==='stroke');refresh();})},saveVariables:values=>{editor.save_variables(JSON.stringify(values));refresh();},bind:(id,path,variable)=>safe(()=>{editor.bind_variable(id,path,variable);refresh();})});installLayerDrop($('layers'),(id,target,position,ids,copy)=>safe(()=>{if(copy){setSelection(JSON.parse(editor.duplicate_drop_layers(JSON.stringify(ids),target,position)));}else{editor.drop_layers(JSON.stringify(ids),target,position);setSelection(ids);}refresh();}),{onDestinationChange:id=>{layerDragDestination=id;scheduleViewportDraw();},destinationParent:(target,position)=>layerDropParent(pageShapes(),target,position),destinationName:(target,position)=>layerDropDestination(pageShapes(),target,position,activePage()?.name??'Page'),project:(target,position,deltaX,ids)=>projectLayerDrop(pageShapes(),target,position,deltaX,ids),dropReason:(ids,target,position,copy)=>layerDropReason(pageShapes(),ids,target,position,copy),canDrop:(ids,target,position,copy)=>layerDropAllowed(pageShapes(),ids,target,position,copy),selection:()=>[...selectedIds],previewLayers:ids=>pageShapes().reverse().filter(s=>ids.includes(s.id)).map(s=>({name:s.name,icon:icon(componentLabelType(s)?(componentLabelType(s)==='master'?'component':'instance'):s.auto_layout?.direction?'layout-'+s.auto_layout.direction:s.kind)})),collapse:row=>row.dispatchEvent(new Event('layer-drag-collapse')),expand:row=>row.dispatchEvent(new Event('layer-drag-expand'))});bind(); updateFigmaInspector=installFigmaInspector({current,change:update});
   updateTextStyles=installTextStyleControls({current,change:update,document:()=>doc,save:(style,layer)=>safe(()=>{const id=editor.save_text_style(JSON.stringify(style),layer);refresh();return id;}),apply:id=>safe(()=>{editor.apply_text_style(selectionJson(),id);refresh();}),remove:id=>safe(()=>{editor.remove_text_style(id);refresh();})});
   colorStyleControls=installColorStyleControls({textLayout,current,document:()=>doc,save:(style,layer,stroke)=>saveDocumentStyle('color',style,layer,stroke),apply:(id,channel)=>safe(()=>{editor.apply_color_style(selectionJson(),id,channel==='stroke');refresh();}),remove:id=>removeDocumentStyle('color',id),saveVariables:values=>{editor.save_variables(JSON.stringify(values));refresh();}});
   const effectHost=document.createElement('div'),effectHeading=document.createElement('div');effectHost.append(effectHeading);pageEffectStyles=createEffectStyleControls(effectHost,effectHeading,renderShadowControls);
   updatePageStyles=installPageStyles({textLayout,document:()=>doc,open:(kind,style,anchor)=>({text:updateTextStyles,color:colorStyleControls,effect:pageEffectStyles}[kind]).openPage(style,anchor),save:saveDocumentStyle,remove:removeDocumentStyle});
-  updatePageBackground=installPageBackground({page:activePage,change:(id,value)=>safe(()=>{editor.set_page_background(id,JSON.stringify(value));refresh();})});refresh(false); if(stored&&!recoveryBlocked){const previous=JSON.parse(stored).shapes??[];if(doc.shapes.some(s=>previous.find(p=>p.id===s.id)?.layout_class!==s.layout_class||!previous.find(p=>p.id===s.id)?.device_chrome_breakpoints&&s.device_chrome_breakpoints))persist();} installCollapsibleInspector(current,update); tooltips=installTooltips(); fit(); $('engine-status').textContent = 'Rust engine connected';
-  cloud=cloudFiles({recoveryOwner:accountRuntime?.mode==='self-hosted'?(accountIdentity??'signed-out'):null,snapshot:()=>editor.snapshot(),backupLocal:saveLocalDraft,openLocal:openLocalDesign,load:body=>{local.enabled=false;loadDesign(body);drafts.detach();},status:text=>{libraries?.context();team?.context()?.catch(()=>{});local.enabled=!cloud?.session.active;updateRecovery(local.enabled?local.error:null);if(cloud?.session.active){drafts.detach();syncProjectAddress();}$('save-status').textContent=text;document.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});
+  updatePageBackground=installPageBackground({page:activePage,change:(id,value)=>safe(()=>{editor.set_page_background(id,JSON.stringify(value));refresh();})});refresh(false); if(stored&&!recoveryBlocked){const previous=JSON.parse(stored).shapes??[];if(doc.shapes.some(s=>previous.find(p=>p.id===s.id)?.layout_class!==s.layout_class||!previous.find(p=>p.id===s.id)?.device_chrome_breakpoints&&s.device_chrome_breakpoints))persist();} updateCollapsible=installCollapsibleInspector(current,update); designPanels=installDesignPanels({dropdowns:()=>syncInspectorDropdowns,keydown:e=>editorKeydown(e),report:toast,changed:()=>{motionTools?.layout();renderProperties();}}); tooltips=installTooltips(); fit(); $('engine-status').textContent = 'Rust engine connected';
+  cloud=cloudFiles({recoveryOwner:accountRuntime?.mode==='self-hosted'?(accountIdentity??'signed-out'):null,snapshot:()=>editor.snapshot(),backupLocal:saveLocalDraft,openLocal:openLocalDesign,load:body=>{local.enabled=false;loadDesign(body);drafts.detach();},status:text=>{libraries?.context();team?.context()?.catch(()=>{});local.enabled=!cloud?.session.active;updateRecovery(local.enabled?local.error:null);if(cloud?.session.active){drafts.detach();syncProjectAddress();}$('save-status').textContent=text;editorDOM.querySelector('.file-location span').textContent=cloud?.session.active?'Cloud file':'Local file';},toast});
   if(requestedProject?.kind==='cloud'){if(accountRuntime?.mode==='self-hosted')await cloud.authorize(requestedProject.id);if(!cloud.restore(requestedProject.id))await cloud.open(requestedProject.id);}
   else if(!requestedProject&&accountRuntime?.mode!=='self-hosted')cloud.restore();
   libraries=createLibraryManager({getDocument:()=>JSON.parse(editor.snapshot()),getSession:()=>cloud.session,applyDocument:next=>{editor.load(JSON.stringify(next));refresh();},getProject:()=>cloud.session.active?{kind:'cloud',id:cloud.session.active.id}:{kind:'local',id:drafts.activeId},saveProject:async()=>{await cloud.session.flush();await saveLocalDraft();},normalizeDocument:document=>{const isolated=new Editor();try{isolated.load(JSON.stringify(document));return JSON.parse(isolated.snapshot());}finally{isolated.free();}},textLayout,refresh:()=>{syncLibraryGuard();renderAssetBrowser();renderProperties();},toast,selfHosted:accountRuntime?.mode==='self-hosted'});
@@ -1966,6 +1972,6 @@ try {
   if(!recoveryBlocked&&!cloud.session.active)persist();
   loadingMessage('Preparing your canvas…');
   await document.fonts.ready; editor.refresh_text_layout(); refresh(false);
-  installDesktop({importFile:importDesignFile,report:error=>toast(error.message),commands:{save:()=>$('save').click(),undo:()=>$('undo').click(),redo:()=>$('redo').click()}});
+  installDesktop({focusedDocument:()=>editorDOM.focusedDocument(),importFile:importDesignFile,report:error=>toast(error.message),commands:{save:()=>$('save').click(),undo:()=>$('undo').click(),redo:()=>$('redo').click()}});
   finishLoading();
 } catch (error) { failLoading('Your workspace couldn’t open. Try again, or choose another project.'); $('engine-status').textContent = 'Engine could not start'; $('save-status').textContent = 'Editor unavailable'; toast(`Could not start editor: ${error}`); console.error(error); }

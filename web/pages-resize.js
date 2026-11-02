@@ -1,5 +1,6 @@
+import {editorDOM} from './editor-dom.js';
 export function installPagesResize(){
- const handle=document.getElementById('pages-resize'),panel=document.getElementById('page-switch-menu');let drag=null;
+ const handle=editorDOM.getElementById('pages-resize'),panel=editorDOM.getElementById('page-switch-menu');let drag=null;
  const set=height=>{const value=Math.round(Math.max(64,Math.min(innerHeight*.45,height)));panel.style.setProperty('--pages-height',value+'px');handle.setAttribute('aria-valuenow',value);handle.setAttribute('aria-valuemin',64);handle.setAttribute('aria-valuemax',Math.round(innerHeight*.45));};
  const save=()=>{try{localStorage.setItem('pixlprfct.pages-height',panel.clientHeight);}catch{}};
  try{const value=Number(localStorage.getItem('pixlprfct.pages-height'));set(value||160);}catch{set(160);}

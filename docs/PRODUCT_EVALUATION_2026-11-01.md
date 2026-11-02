@@ -1,7 +1,14 @@
 # Design and SVG Animation evaluation
 
 Evaluated November 1, 2026 against `ffbea1a` (Windows alpha.20 source).
-This is a planning assessment, not a feature release or a parity certification.
+This is a historical planning assessment, not a feature release or a parity certification.
+Later on November 1, the owner authorized development. Pen, Pencil with freehand
+smoothing, core base-path editing, split/join within one SVG element, the movable
+palette, object movement, path deletion, live Pen strokes, stage selection,
+independent SVG panel windows and Add/Replace import are now implemented
+locally; see the dated delivery records in
+[SVG Animation](SVG_ANIMATION.md#2026-11-01--live-strokes-stage-selection-and-separate-panels-local-source).
+The original findings below are preserved as the pre-implementation baseline.
 The [public roadmap](https://ninefingerwoodshop-ops.github.io/pixlprfct/roadmap.html)
 is the discussion view; the [Pen workspace proposal](PEN_WORKSPACE_PROPOSAL.md)
 records the requested cursor and movable tool palette.

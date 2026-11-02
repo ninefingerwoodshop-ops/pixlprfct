@@ -413,23 +413,143 @@ Evaluated Design and SVG Animation against alpha.20 source (`ffbea1a`). See
 [Pen workspace proposal](PEN_WORKSPACE_PROPOSAL.md). No product gap is resolved
 by this planning pass, and no new editor feature was implemented or shipped.
 
-- [ ] **B40 — SVG object-body dragging does not translate artwork.** Reproduced
+- [x] ~~**B40 — SVG object-body dragging does not translate artwork.**~~ Originally reproduced
   in the sample Core: a body drag leaves X/Y at zero and creates no undo entry.
   Numeric position controls work; resize/rotation handles are already in
   alpha.20. Evidence: `.local/product-evaluation-2026-11-01/svg-drag-does-not-move.png`.
-- [ ] **B41 — SVG import replaces artwork and clears tracks without an Add vs
-  Replace choice.** Code-inspected in `web/svg-animation.js` `importSvg`.
-  Same-session Undo is available; no irreversible-loss claim or fix is made.
+  - Local resolution (2026-11-01, not shipped): object-body dragging updates X/Y
+    at the playhead with one undo entry; Shift constrains movement, arrows nudge
+    focused canvas selection. Five browser workflows verify save/reopen, nested
+    transforms/zoom, selected groups with motion paths, no-op/cancel/seek/blur,
+    and read-only/lease-release protection. Existing resize and rotation remain.
+    Evidence: `.local/svg-editing/body-drag.png` and `svg-animation-move.spec.mjs`.
+- [x] ~~**B41 — SVG import replaces artwork and clears tracks without an Add vs
+  Replace choice.**~~ Code-inspected in `web/svg-animation.js` `importSvg`.
+  Same-session Undo was available; the initial evaluation made no irreversible-loss claim.
+  - Earlier checkpoint (2026-11-01, local source only; superseded below): `svg-animation-import.js` prepared
+    Add/Replace changes without mutating the input. Add preserves existing IDs,
+    tracks, origins and canvas dimensions, remaps incoming local references, and
+    retains the imported viewport/default paints. Four Chromium cases pass,
+    including persistence and animated export. The module was not yet connected
+    to editor controls, so B41 remained unresolved. Live Figma inspection for the
+    next UI work was blocked by the locked Mac; B40 was also still open.
+  - Local resolution after unlock (2026-11-01, not shipped): nonempty files now
+    offer Add to canvas (default), Replace artwork, and Cancel through the shared
+    custom dropdown. Add preserves existing animation and canvas dimensions;
+    Replace explicitly clears tracks/origins and adopts the imported canvas.
+    Both are one undoable change. Nine browser cases cover merge/reference
+    isolation, sanitization/limits, export, dialog geometry, cancellation,
+    undo/redo/reopen, drop/desktop import, stale documents and edit leases.
+    Evidence: `.local/svg-editing/import-choice.png`; import and import-ui specs.
 - [ ] **B42 — SVG authoring lacks ordinary Pen/Pencil, base-path node editing,
   multi-object construction and a complete layer organization workflow.**
   Morph-keyframe editing and imported groups/masks already work. The owner
   requested a pen-icon cursor and movable right-side toolbar, matching the
   bottom toolbelt, with Pen/Pencil tools and stroke/fill controls synchronized
-  with the inspector. This is a proposal, not implemented functionality.
+  with the inspector. This was a proposal at the initial evaluation.
+  - [x] ~~B42a — Ordinary SVG Pen and icon cursor.~~ Local resolution (2026-11-01):
+    corner/cubic drawing, open/closed paths and continuation from either endpoint.
+  - [x] ~~B42b — Core base-path anchor editing.~~ Local resolution (2026-11-01):
+    anchor/handle drag and nudge, curve-preserving midpoint insertion, deletion,
+    and smooth/corner conversion. Split/join followed in B42e; multi-node editing
+    remains open.
+  - [x] ~~B42c — Movable palette and synchronized paints.~~ Local resolution
+    (2026-11-01): pointer/keyboard movement, Home reset, viewport clamping and
+    shared fill/stroke/opacity/weight controls; enforced read-only/editing leases.
+  - Evidence: six new Chromium drawing scenarios, mathematical cubic-subdivision
+    and reversal checks, save/reopen/export/undo coverage; live Figma reference
+    and rendered result in `.local/svg-pen/`. See [SVG guide](SVG_ANIMATION.md).
+    Source only, not installed or shipped; full B42 remains unchecked for
+    joining separate elements, whole-path smoothing, multi-object construction
+    and layer organization.
+  - [x] ~~B42d — SVG Pencil with adjustable freehand smoothing.~~ Local resolution
+    (2026-11-01): Shift+P, 0–100% smoothing reused from Design, editable cubic
+    handles, round stroke ends, Shift-constrained straight lines, shared paints,
+    one-step undo, persistence/export and edit-lease protection. Six new Chromium
+    cases cover geometry, limits, cancellation, history and permissions; two new
+    model cases cover conversion and atomic bounds. Live Figma reference and
+    rendered result: `.local/svg-pencil/figma-pencil.png` and `verified.png`.
+    This smooths new strokes; it does not resolve whole-path smoothing or Brush.
+    Local source only, not installed or shipped.
+  - [x] ~~B42e — Split/open paths and join endpoints within one SVG path element.~~
+    Local resolution (2026-11-01): preserve cubic segments and element identity,
+    join either endpoint orientation, merge coincident endpoints or add straight
+    bridges, with one-step undo, export/reopen and Morph/edit-lease protection.
+    Joining separate elements remains open. Live Figma reference and rendered
+    result: `.local/svg-topology/figma-vector-toolbar.png` and `verified.png`.
+    Local source only, not installed or shipped.
+  - [x] ~~B42f — Discoverable open Pen completion and path deletion.~~ Local
+    resolution (2026-11-01): visible Finish path label and Enter guidance; open
+    Pen paths can be followed by another animated object. Delete/Backspace from
+    the canvas/layer list and inspector/palette trash actions remove the selected
+    path and its tracks, with undo. Text fields, timeline keys and editing leases
+    retain their protections. Local source only, not installed or shipped.
+  - B42e/f evidence: six Chromium topology/open-path/deletion workflows and five
+    model cases; all 83 SVG browser cases pass across the broad and corrected
+    focused runs, with 3 Rust and 1,050 JavaScript tests passing. See the
+    [dated delivery record](SVG_ANIMATION.md#2026-11-01--splitjoin-and-open-path-workflows-local-source)
+    and `.local/svg-topology/` logs. Full B42 remains open for the scope above.
+  - [x] ~~B42g — Live Pen strokes, ordinary open completion and stage picking.~~
+    Local resolution (2026-11-01): real stroke/next-segment preview; Escape or
+    Select preserves an open path; explicit Discard cancels. Direct canvas
+    selection includes thin painted strokes at different zooms. Five new browser
+    cases cover paint, transformed picking, history, continuation and read-only
+    selection. Supersedes the earlier draft-Escape behavior; source only.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
   integration independently; do not remove existing safety or lease boundaries.
+
+- [ ] **B44 — Detachable sections and independent panel windows.** Owner request
+  (2026-11-01) explicitly chooses windows outside PixlPrfct.
+  - [x] ~~B44a — SVG Animation panels.~~ Local implementation: every inspector
+    section, Elements, Timeline and Pen tools can detach and dock with current
+    controls/selection, shared history and enforced editing leases. Eight browser
+    workflows cover live edits, dropdowns/colors, timeline, closing, blocked
+    popups, header dragging, easing/timing and read-only access. Native Electron
+    acceptance verifies actual independent windows, docking, close restoration
+    and native-menu undo/redo with sandbox/isolation retained. See the latest
+    [SVG delivery record](SVG_ANIMATION.md#2026-11-01--live-strokes-stage-selection-and-separate-panels-local-source).
+    Local source only; no installed or shipped release claim.
+  - [x] ~~B44b — Integrate the separate Design workspace.~~ Local resolution
+    (2026-11-01): Pages, Layers, Assets, Drawing tools, Motion timeline and inspector
+    sections use independent windows with shared controls/history. Browser checks
+    exercise selection, edits, Undo, dropdowns/popovers, Pages and Motion transitions.
+    See [panel delivery and evidence](DETACHABLE_PANELS.md). No installed/shipped claim.
+  - [ ] B44c — Save panel arrangements and support grouped docking.
+    - [x] ~~Save panel arrangements.~~ Local resolution (2026-11-01): window
+      position/size and SVG Pen right-dock preference survive refresh/restart.
+      Native acceptance verifies cursor-following drag, release, exact restored
+      bounds, and clearing saved windows on explicit docking. Evidence:
+      `.local/design-panels/native-layout.json`.
+    - [ ] Grouped docking and named workspace presets remain open.
+  - [x] ~~B44d — SVG compact sidebar when Elements is detached.~~ Local resolution
+    (2026-11-01): 48 px column of five icons with shared tooltips for Projects,
+    Import SVG, Download, Show Elements and Dock Elements. Browser checks cover
+    layout, tooltips, docking and refresh restoration.
+
+  - [x] ~~B44e — Parent-only tear-outs and icon flyouts.~~ Local resolution
+    (2026-11-01): Layers/Pages, Assets, Inspector, Drawing tools, Elements, Pen
+    tools and Timeline have appropriate parent icons. Collapse saves an icon
+    dock; an icon opens its live panel beside the strip without a new window.
+    Repeat click, outside click or Escape dismisses it. Child sections travel
+    with the parent. This owner-requested scope **supersedes** the per-section
+    behavior recorded in B44a/B44b; their completed work and evidence are retained.
+    `design-panels.spec.mjs` and `svg-animation-panels.spec.mjs` verify live edits,
+    adjacent geometry, dismissal, restoration and distinct window tear-out.
+    Follow-up (2026-11-01, local): collapse/expand arrows now point toward the
+    future state for left, right and bottom docks; a browser check exercises
+    both actions and confirms their opposite glyphs.
+- [x] ~~B45 — SVG gradient animation and independent gradient rotation.~~ Local
+  resolution (2026-11-01): linear/radial fill and stroke paints, per-element
+  gradient rotation separate from object rotation, timed stop colors/positions/
+  opacity, add/delete static stops, flip/90° rotation, shared-definition isolation,
+  save/reopen, Undo and native animated SVG export. Two model and four browser
+  tests cover interpolation, validation, imported inheritance, independence,
+  native export matrices, persistence, detached Inspector stop edits, and named/currentColor/alpha preservation. New/live controls follow
+  the inspected Figma gradient structure; keyframe controls are an extension.
+  Angular/diamond gradient animation is outside this delivery. Local source
+  only; not included in published alpha.20.
 
 B33 remains open using the later cross-environment evidence. B31/B35/B38 remain
 partly unresolved. B36/B37 recovery fixes and completed B39 library workflows
@@ -440,3 +560,48 @@ and design-file work remain tracked separately.
 Verification: full unit suite passed (3 Rust + 1,040 JavaScript); targeted SVG
 model/controller run passed 36 tests. Browser spot checks and source inspection
 support the findings above; no new performance or complete UI parity claim.
+
+### Panel and gradient verification closeout — 2026-11-01, local source
+
+B44e and B45 follow-up verification: 22 final feature browser checks pass, plus
+four gradient checks after imported color/opacity resolution was finalized.
+Native parent-window acceptance passes cursor tracking, refresh/restart bounds
+and explicit docking. Full units pass (3 Rust + 1,053 JavaScript); the broader
+137-workflow browser run had 129 initial passes and eight subsequently corrected
+and passing rechecks. Production build, typecheck, changed-file lint (no errors),
+generated API and diff checks pass. Evidence and exact run scope are recorded in
+[Detachable panels](DETACHABLE_PANELS.md#verification-closeout--2026-11-01-local-source).
+These remain local changes, not a published alpha.20 update or complete parity.
+
+B44e follow-up (2026-11-01, local source): the owner reconfirmed parent-only
+tear-outs. Completed an icon audit of all five parents in both Design and SVG
+Animation, including window headers, compact Show/Dock actions, sidebar project
+actions and save recovery. Fixed tooltip overlap with the next icon and kept
+renaming available while compact. See the [parent icon audit](DETACHABLE_PANELS.md#complete-parent-icon-audit--2026-11-01-local-source).
+Grouped docking and named workspace presets remain open; no shipped release
+or Figma/Adobe parity claim is added.
+
+B44e follow-up (2026-11-01, local): left drawers now keep the logo first and the
+collapse/expand toggle immediately below it in both states, above project
+actions. Parent headers stay visible during scrolling. All 21 panel browser
+checks pass (`.local/design-panels/top-toggle-browser.log`); live previews were
+refreshed. No release was published.
+
+B44e header refinement (2026-11-01, local): SVG's expanded toggle shares the
+logo row. Design's duplicate logo is removed and its expanded toggle follows
+the document-title dropdown. Compact toggle ordering is retained. Live browser
+captures: `.local/design-panels/inline-toggle-{svg,design}.png`.
+Verification: three focused browser checks passed initially; the Design parent
+audit passed after fixing the Assets title-row visibility. ESLint and diff
+checks pass. This remains local source only.
+
+B44e audit evidence (2026-11-01, local): 21 panel and 13 existing editor browser
+checks passed, followed by two expanded parent checks for simultaneous docks and
+inactive detached panels. Eleven tooltip/desktop units, typecheck, production
+build, and native window restoration passed. Both browser previews are updated.
+
+### Alpha.21 release follow-through — 2026-11-01
+
+The completed SVG drawing/editing/import, parent panel workspace and independent gradient animation work is included in [Windows alpha.21](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21). Earlier local completion entries remain historical evidence; uncompleted child items remain open. [Panel Workspace](wiki/Panel-Workspace.md) documents the final parent-only scope and icon flyouts.
+
+Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflows, 25 final panel/site checks, production build, types, generated API, lint and Rust formatting/Clippy. Native panel acceptance verifies cursor following, stop-on-release, refresh/restart restoration and explicit docking. Package provenance, checksums and Windows verification are recorded with the release. This does not claim full interface parity, real sleep/wake, a participant pilot, or resolution of TerritoryIQ code/design-file work.

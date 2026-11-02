@@ -1,3 +1,4 @@
+import {svgGradient,gradientBindings} from './svg-animation-gradients.js';
 import {properties,easingPoints,trackValue,exportKeys,validateAnimation} from './svg-animation-model.js';
 import {pathSampler,pathKinds,pathGeometry} from './svg-animation-path.js';
 import {morphPath,morphData} from './svg-animation-morph.js';
@@ -57,7 +58,7 @@ export function animationLayers(root){
 }
 function ancestors(node,root){let depth=0;while(node.parentElement&&node.parentElement!==root){depth++;node=node.parentElement;}return depth;}
 export function baseValue(node,property){
- const p=properties[property];if(!p.attribute)return p.initial;
+ const p=properties[property];if(p.gradient)return svgGradient(node,p.channel)?.stops??null;if(!p.attribute)return p.initial;
  if(p.morph)return morphPath(pathGeometry(node));
  const style=getComputedStyle(node),raw=style.getPropertyValue(p.attribute)||node.getAttribute(p.attribute);
  if(p.color){const rgb=raw?.match(/^rgba?\(\s*(\d+)[, ]+\s*(\d+)[, ]+\s*(\d+)/);if(rgb)return '#'+rgb.slice(1,4).map(n=>Math.min(255,Number(n)).toString(16).padStart(2,'0')).join('');if(/^#[\da-f]{6}$/i.test(raw))return raw;return p.initial;}
@@ -72,8 +73,9 @@ export function animationScene(animation){
   frames.set(id,node.parentElement);
   const tracks=animation.tracks.filter(t=>t.element===id),origin=animation.origins[id]??[0,0];
   if(tracks.some(t=>t.property==='morph')){if(!pathKinds.has(node.localName))throw new Error('Morph tracks require a path or geometric shape.');if(node.localName!=='path'){const path=document.createElementNS(NS,'path');for(const a of node.attributes)if(!['x','y','width','height','rx','ry','cx','cy','r','x1','y1','x2','y2','points'].includes(a.name))path.setAttribute(a.name,a.value);path.append(...node.childNodes);node.replaceWith(path);node=path;}}
+  bindings.push(...gradientBindings(root,node,tracks));
   let outer=node;
-  const transforms=tracks.filter(t=>!properties[t.property].attribute&&!properties[t.property].motion);
+  const transforms=tracks.filter(t=>!properties[t.property].attribute&&!properties[t.property].motion&&!properties[t.property].gradient&&!properties[t.property].gradientRotation);
   if(transforms.length){const inner=group();inner.setAttribute('transform',`translate(${-origin[0]} ${-origin[1]})`);outer.replaceWith(inner);inner.append(outer);outer=inner;
    for(const property of ['scaleY','scaleX','rotation']){const track=transforms.find(t=>t.property===property);if(track){const wrap=group();outer.replaceWith(wrap);wrap.append(outer);outer=wrap;bindings.push({node:wrap,track,attribute:'transform',type:property==='rotation'?'rotate':'scale',value:v=>property==='rotation'?String(v):property==='scaleX'?`${v} 1`:`1 ${v}`});}}
    const pivot=group();pivot.setAttribute('transform',`translate(${origin.join(' ')})`);outer.replaceWith(pivot);pivot.append(outer);outer=pivot;
@@ -86,14 +88,15 @@ export function animationScene(animation){
    bindings.push({node:wrap,track:motion,attribute:'transform',motion:true,value:v=>{const p=sample(v/100),angle=motion.motion.rotate==='none'?0:p.angle+(motion.motion.rotate==='auto-reverse'?180:0);return `translate(${p.x} ${p.y}) rotate(${angle})`;}});
   }
  }
- const seek=(time,overrides={})=>{for(const b of bindings){const value=b.value(overrides[b.track.element]?.[b.track.property]??trackValue(b.track,time));b.node.setAttribute(b.attribute,b.type?`${b.type}(${value})`:value);}};seek(0);
+ const seek=(time,overrides={})=>{for(const b of bindings){const value=b.value(overrides[b.track.element]?.[b.track.property]??trackValue(b.track,time));b.node.setAttribute(b.attribute,b.type?`${b.baseTransform??''} ${b.type}(${value})`.trim():value);}};seek(0);
  return {root,bindings,motionGuides,frames,seek};
 }
 export function animatedSvg(doc,{animated=true}={}){
  validateAnimation(doc);const a=doc.svg_animation,{root,bindings}=animationScene(a),settings=interactionSettings(a),interactive=animated&&bindings.length>0&&settings.trigger!=='load';
  if(animated)for(const b of bindings){const keys=exportKeys(b.track,a.duration),node=document.createElementNS(NS,b.motion?'animateMotion':b.type?'animateTransform':'animate');
+  if(b.baseTransform!==undefined)node.setAttribute('additive','sum');
   if(b.motion){if(interactive)b.node.setAttribute('data-pixl-motion','');else b.node.removeAttribute('transform');node.setAttribute('path',b.track.motion.d);node.setAttribute('rotate',b.track.motion.rotate==='none'?'0':b.track.motion.rotate);node.setAttribute('keyPoints',keys.map(k=>k.value/100).join(';'));}
-  else{node.setAttribute('attributeName',b.attribute);if(b.type)node.setAttribute('type',b.type);node.setAttribute('values',keys.map(k=>b.value(k.value)).join(';'));}
+  else{node.setAttribute('attributeName',b.attribute);if(b.type)node.setAttribute('type',b.type);node.setAttribute('values',keys.map(k=>b.value(b.baseTransform!==undefined?k.value-keys[0].value:k.value)).join(';'));}
   node.setAttribute('dur',a.duration+'ms');node.setAttribute('begin',interactive?'indefinite':'0s');node.setAttribute('repeatCount',!interactive&&a.loop?'indefinite':'1');node.setAttribute('fill','freeze');node.setAttribute('calcMode','spline');
   node.setAttribute('keyTimes',keys.map(k=>k.time/a.duration).join(';'));node.setAttribute('keySplines',keys.slice(0,-1).map(k=>easingPoints(k.easing).join(' ')).join(';'));b.node.append(node);
  }

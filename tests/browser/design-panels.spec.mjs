@@ -1,0 +1,61 @@
+import {test,expect,seed,saved,field,select,rename,key} from './fixtures.mjs';
+test.beforeEach(async({page})=>{page.on('pageerror',e=>console.error(e.stack));});
+async function pop(page,name){const ready=page.waitForEvent('popup');await page.getByRole('button',{name:'Open '+name+' in separate window',exact:true}).click();const child=await ready;const errors=[];child.on('pageerror',e=>errors.push(e.message));await expect(child.getByRole('button',{name:'Dock panel',exact:true})).toBeVisible();return child;}
+
+test('Design Inspector tears out before mouse release and follows selection, edits, Undo and docking',async({page})=>{
+ const {box,label}=await seed(page);await select(page,box);
+ const heading=page.locator('.right-panel > .panel-parent-heading'),b=await heading.boundingBox(),ready=page.waitForEvent('popup');await page.mouse.move(b.x+20,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+25,b.y+b.height/2);const child=await ready;await expect(child.locator('#x')).toBeVisible();await page.mouse.up();
+ await child.locator('#x').fill('200');await child.locator('#x').press('Tab');await expect.poll(async()=>(await saved(page)).shapes.find(s=>s.id===box).x).toBe(200);
+ await select(page,label);await expect(child.locator('#x')).toHaveValue('80');await child.locator('.panel-window-header strong').click();await child.keyboard.press('ControlOrMeta+z');await expect.poll(async()=>(await saved(page)).shapes.find(s=>s.id===box).x).toBe(80);
+ await page.locator('#canvas').press('Escape');await expect(child.locator('#page-section')).toBeVisible();await expect(child.locator('#x')).toBeHidden();
+ await select(page,box);await expect(child.locator('#x')).toBeVisible();await child.screenshot({path:'.local/design-panels/position.png'});await child.close();await expect(page.locator('#x')).toHaveValue('80');
+});
+
+test('Design Inspector contains Layout, Fill and Effects with custom dropdowns, popovers and input focus',async({page})=>{
+ const {box,label}=await seed(page);await select(page,box);const layout=await pop(page,'Inspector');await layout.locator('#width').fill('310');await layout.locator('#width').press('Tab');await expect.poll(async()=>(await saved(page)).shapes.find(s=>s.id===box).width).toBe(310);
+ const fill=layout;await fill.getByRole('button',{name:'Fill 1 color picker',exact:true}).click();await expect(fill.getByRole('dialog',{name:'Fill paint',exact:true})).toBeVisible();await fill.screenshot({path:'.local/design-panels/fill.png'});await fill.keyboard.press('Escape');
+ const effects=layout;await effects.getByRole('button',{name:'Drop shadow settings 1',exact:true}).click();await expect(effects.getByRole('dialog',{name:'effect settings',exact:true})).toBeVisible();await field(effects,'Shadow 1 Blur','12');await expect.poll(async()=>(await saved(page)).shapes.find(s=>s.id===box).appearance.shadows[0].blur).toBe(12);
+ await select(page,label);await expect(layout.locator('#width')).toHaveValue('300');await layout.getByRole('button',{name:'Dock panel',exact:true}).click();await expect(page.locator('#width')).toHaveValue('300');
+});
+
+test('Design Pages, Layers and drawing tools operate in separate windows',async({page})=>{
+ const {box}=await seed(page);const layers=await pop(page,'Layers'),pages=layers;await select(layers,box);await expect(page.locator('#shape-name')).toHaveValue('Acceptance card');await layers.locator('.layer.active').press('Delete');await expect.poll(async()=>(await saved(page)).shapes.some(s=>s.id===box)).toBe(false);await layers.locator('.panel-window-header strong').click();await layers.keyboard.press('ControlOrMeta+z');await expect.poll(async()=>(await saved(page)).shapes.some(s=>s.id===box)).toBe(true);
+ await pages.locator('#add-page').click();await expect.poll(async()=>(await saved(page)).pages.length).toBe(2);await pages.locator('#page-switch-options button').first().click();
+ const tools=await pop(page,'Drawing tools');await tools.getByRole('button',{name:'Pen',exact:true}).click();await expect(tools.getByRole('button',{name:'Pen',exact:true})).toHaveAttribute('aria-pressed','true');await tools.screenshot({path:'.local/design-panels/tools.png'});await tools.close();await layers.close();await expect(page.locator('.layer')).not.toHaveCount(0);
+});
+
+test('Design Motion timeline tears out and the parent Inspector follows mode changes',async({page})=>{
+ const {box}=await seed(page);await select(page,box);const fill=await pop(page,'Inspector');await page.getByRole('button',{name:'Motion',exact:true}).click();await expect(fill.getByRole('button',{name:'Fill 1 color picker',exact:true})).toBeVisible();const timeline=await pop(page,'Timeline');await field(timeline,'Current time','500');await expect(timeline.getByRole('slider',{name:'Timeline scrubber',exact:true})).toHaveAttribute('aria-valuenow','500');await timeline.close();await page.getByRole('button',{name:'Design',exact:true}).click();await expect(fill.getByRole('button',{name:'Fill 1 color picker',exact:true})).toBeVisible();await fill.close();await expect(page.getByRole('button',{name:'Fill 1 color picker',exact:true})).toBeVisible();
+});
+
+test('collapsed parents open adjacent flyouts without windows, keep controls live and restore on refresh',async({page,context})=>{
+ const {box}=await seed(page);await select(page,box);const count=context.pages().length;await page.getByRole('button',{name:'Collapse Inspector panel',exact:true}).click();const rail=page.locator('[data-panel-rail="inspector"]');await expect(rail).toBeVisible();await expect(page.locator('.right-panel')).toBeHidden();await page.getByRole('button',{name:'Show Inspector flyout',exact:true}).click();await expect(page.locator('.right-panel')).toHaveClass(/panel-flyout/);const a=await rail.boundingBox(),b=await page.locator('.right-panel').boundingBox();expect(b.x+b.width).toBeLessThanOrEqual(a.x);expect(a.x-b.x-b.width).toBeLessThanOrEqual(8);await page.locator('#x').fill('140');await page.locator('#x').press('Tab');await expect.poll(async()=>(await saved(page)).shapes.find(s=>s.id===box).x).toBe(140);expect(context.pages()).toHaveLength(count);await page.getByRole('button',{name:'Show Inspector flyout',exact:true}).click();await expect(page.locator('.right-panel')).toBeHidden();await page.getByRole('button',{name:'Show Inspector flyout',exact:true}).click();await page.keyboard.press('Escape');await expect(page.locator('.right-panel')).toBeHidden();await page.reload();await expect(page.getByRole('button',{name:'Show Inspector flyout',exact:true})).toBeVisible();await page.getByRole('button',{name:'Expand Inspector panel',exact:true}).click();await expect(page.locator('.right-panel')).toBeVisible();await expect(page.locator('.property-section .panel-popout')).toHaveCount(0);
+ await page.getByRole('button',{name:'Collapse Layers panel',exact:true}).click();await page.getByRole('button',{name:'Show Layers flyout',exact:true}).click();await expect(page.locator('#layers-page-control')).toBeVisible();expect(context.pages()).toHaveLength(count);await page.locator('#canvas').click({position:{x:500,y:500}});await expect(page.locator('#file-panel')).toBeHidden();await page.screenshot({path:'.local/design-panels/collapsed-design.png'});
+});
+
+test('collapse and expand icons point toward the next state for left, right and bottom docks',async({page})=>{
+ await seed(page);
+ for(const [name,key,collapse,expand] of [['Layers','layers','left','right'],['Inspector','inspector','right','left'],['Drawing tools','tools','down','up']]){
+  const close=page.getByRole('button',{name:'Collapse '+name+' panel',exact:true});await expect(close).toHaveAttribute('data-action-icon','chevrons-'+collapse);const before=await close.locator('path').getAttribute('d');await close.click();const open=page.getByRole('button',{name:'Expand '+name+' panel',exact:true});await expect(open).toHaveAttribute('data-action-icon','chevrons-'+expand);expect(await open.locator('path').getAttribute('d')).not.toBe(before);await open.click();await expect(close).toBeVisible();await expect(page.locator('[data-panel-rail="'+key+'"]')).toBeHidden();
+ }
+});
+
+test('every Design parent keeps an icon and an operable icon dock after tear-out',async({page})=>{
+ await seed(page);
+ for(const [key,name] of [['layers','Layers'],['assets','Assets'],['inspector','Inspector'],['tools','Drawing tools'],['timeline','Timeline']]){
+  if(key==='assets')await page.locator('#nav-assets').click();if(key==='timeline')await page.getByRole('button',{name:'Motion',exact:true}).click();
+  const parent=page.locator('[data-detachable-panel="'+key+'"]');await expect(parent.locator(':scope > .panel-parent-heading .panel-type-icon svg')).toHaveCount(1);
+  await page.getByRole('button',{name:'Collapse '+name+' panel',exact:true}).click();const rail=page.locator('[data-panel-rail="'+key+'"]');await expect(rail).toBeVisible();await expect(rail.locator('button')).toHaveCount(2);await expect(rail.locator('button svg')).toHaveCount(2);if(['layers','assets'].includes(key))for(const label of ['Document actions','All projects','Import design','Download project copy'])await expect(page.locator('.left-panel').getByRole('button',{name:label,exact:true})).toBeVisible();await page.getByRole('button',{name:'Expand '+name+' panel',exact:true}).click();
+  const child=await pop(page,name);await expect(child.locator('.panel-window-header .panel-type-icon svg')).toHaveCount(1);const stub=page.locator('[data-panel-placeholder="'+key+'"]');await expect(stub).toBeVisible();await expect(stub.locator('button')).toHaveCount(2);await expect(stub.locator('button svg')).toHaveCount(2);expect(await stub.locator('button').allTextContents()).toEqual(['','']);
+  if(key==='assets'){await page.locator('#nav-layers').click();await expect(stub).toBeHidden();await page.locator('#nav-assets').click();await expect(stub).toBeVisible();}
+  const overflow=await stub.evaluate(n=>[...n.querySelectorAll('button')].some(b=>{const r=b.getBoundingClientRect(),p=n.getBoundingClientRect();return r.left<p.left||r.right>p.right+1||r.bottom>p.bottom+1;}));expect(overflow).toBe(false);
+  await page.getByRole('button',{name:'Show '+name+' panel',exact:true}).hover();await expect(page.getByRole('tooltip')).toHaveText('Show '+name+' panel');await page.getByRole('button',{name:'Dock '+name+' panel',exact:true}).click();await expect.poll(()=>child.isClosed()).toBe(true);await expect(parent).toBeVisible();
+ }
+});
+
+test('compact Design sidebar retains project actions and save recovery as icons',async({page})=>{
+ await seed(page);await page.evaluate(key=>{const write=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(this===localStorage&&k===key)throw new DOMException('Quota exceeded','QuotaExceededError');return write.call(this,k,v);};},key);await rename(page,'Unsaved icon recovery');await expect(page.getByRole('button',{name:'Recover unsaved changes',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Collapse Layers panel',exact:true}).click();await expect(page.locator('.left-panel')).toHaveCSS('width','48px');
+ for(const label of ['Document actions','All projects','Import design','Download project copy','Recover unsaved changes']){const b=page.locator('.left-panel').getByRole('button',{name:label,exact:true});await expect(b).toBeVisible();await expect(b.locator('svg')).toHaveCount(1);expect((await b.boundingBox()).width).toBeLessThanOrEqual(32);}
+ await page.getByRole('button',{name:'Document actions',exact:true}).click();await page.getByRole('menuitem',{name:'Rename…',exact:true}).click();await expect(page.getByLabel('Document name',{exact:true})).toBeVisible();await page.getByLabel('Document name',{exact:true}).press('Escape');await expect(page.locator('.left-panel')).toHaveCSS('width','48px');await page.getByRole('button',{name:'Recover unsaved changes',exact:true}).click();await expect(page.getByRole('dialog',{name:'Recover local changes',exact:true})).toBeVisible();await page.getByRole('dialog',{name:'Recover local changes',exact:true}).getByRole('button',{name:'Close',exact:true}).click();const download=page.waitForEvent('download');await page.getByRole('button',{name:'Download project copy',exact:true}).click();expect((await download).suggestedFilename()).toMatch(/\.pixl$/);await page.screenshot({path:'.local/design-panels/compact-design-actions.png'});
+});

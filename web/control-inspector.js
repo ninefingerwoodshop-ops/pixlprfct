@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {renderSegmentedInspector} from './segmented-control.js';
 import {passwordConfig} from './password-control.js';
 import {numberConfig} from './number-control.js';
@@ -13,7 +14,7 @@ import {controlTypes,controlStates,controlPreviewStates,newControl,supportsReado
 const make=(tag,text)=>{const e=document.createElement(tag);if(text)e.textContent=text;return e;};
 export function installControlInspector({current,document:doc,change,redraw,preview,selectChild,resetShared}){
  const section=make('section');section.id='control-inspector';section.className='property-section';
- document.querySelector('#properties').prepend(section);
+ editorDOM.querySelector('#properties').prepend(section);
  let signature='',lastId=null,state='default',part='input',showOverrides=false,extraStates=[];
  const render=()=>{
   const shape=current(),component=shape?.component;

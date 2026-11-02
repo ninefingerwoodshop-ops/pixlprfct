@@ -1,9 +1,10 @@
+import {editorDOM} from './editor-dom.js';
 import {icon} from './icons.js';
 const positions=['start','center','end'];
 export function alignmentPatch(direction,x,y,automatic=false){return direction==='vertical'?{align:positions[x],...(!automatic?{justify:positions[y]}:{})}:{align:positions[y],...(!automatic?{justify:positions[x]}:{})};}
 export function paddingPatch(axis,value){const n=Number(value);if(!Number.isFinite(n)||n<0||n>100000)throw new Error('Padding must be between 0 and 100000');return axis==='horizontal'?{padding_left:n,padding_right:n}:{padding_top:n,padding_bottom:n};}
 export function installAutoLayoutInspector(current,change,{document:read=()=>({variables:{values:[],collections:[]}}),bind=()=>{}}={}){
- const $=id=>document.getElementById(id),el=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
+ const $=id=>editorDOM.getElementById(id),el=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text)e.textContent=text;return e;};
  const host=$('auto-layout-panel'),settings=$('layout-settings'),direction=$('layout-direction'),legacy=direction.closest('label');legacy.classList.add('layout-legacy');
  const flow=el('div','layout-flow');flow.setAttribute('role','group');flow.setAttribute('aria-label','Layout type');
  for(const [value,label] of [['none','Freeform'],['vertical','Vertical'],['horizontal','Horizontal'],['grid','Grid']]){const b=el('button','');b.innerHTML=icon('layout-'+value);b.type='button';b.title=label;b.setAttribute('aria-label',label);b.dataset.flow=value;b.onclick=()=>{direction.value=value;direction.onchange();};flow.append(b);}legacy.after(flow);

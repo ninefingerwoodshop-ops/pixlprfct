@@ -1,7 +1,8 @@
 import {element} from './inspector-settings.js';
+import {icon} from './icons.js';
 
 export function localRecovery({session,host,download,load,report}){
- const trigger=element('button','local-recovery-trigger','Recover unsaved changes');trigger.hidden=true;host.append(trigger);
+ const trigger=element('button','local-recovery-trigger');trigger.setAttribute('aria-label','Recover unsaved changes');trigger.title='Recover unsaved changes';trigger.innerHTML='<span class="panel-action-glyph" aria-hidden="true">'+icon('warning')+'</span><span class="panel-action-label">Recover unsaved changes</span>';trigger.hidden=true;host.append(trigger);
  const dialog=element('dialog','cloud-dialog local-recovery-dialog');dialog.setAttribute('aria-label','Recover local changes');
  const heading=element('h2','','Local changes couldn’t be saved'),message=element('p','cloud-info'),actions=element('div','cloud-actions');message.setAttribute('role','status');
  const button=(label,run)=>{const b=element('button','',label);b.type='button';b.onclick=async()=>{for(const n of actions.children)n.disabled=true;try{await run();}catch(error){message.textContent=error.message;report(error.message);}finally{for(const n of actions.children)n.disabled=false;}};actions.append(b);return b;};

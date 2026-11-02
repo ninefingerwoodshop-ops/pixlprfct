@@ -6,7 +6,7 @@ import {showContextMenu} from './context-menu.js';
 export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,playing,report,addKey,destination=()=>null,editable=()=>true}){
  const el=(tag,cls,text)=>{const n=document.createElement(tag);n.className=cls??'';if(text)n.textContent=text;return n;};
  const button=(name,glyph,run)=>{const n=el('button');n.type='button';n.title=name;n.setAttribute('aria-label',name);n.innerHTML=icon(glyph);n.onclick=run;return n;};
- const panel=el('section');panel.id='motion-timeline';panel.setAttribute('aria-label','SVG animation timeline');
+ const panel=el('section');panel.id='motion-timeline';panel.dataset.detachablePanel='timeline';panel.dataset.panelLabel='Timeline';panel.setAttribute('aria-label','SVG animation timeline');
  const grip=el('div','motion-resize');grip.setAttribute('role','separator');grip.tabIndex=0;grip.setAttribute('aria-label','Resize Motion timeline');grip.setAttribute('aria-orientation','horizontal');
  const controls=el('div','timeline-controls'),toggle=button('Play','play',play),reset=button('Go to start','skip-back',()=>seek(0)),box=el('div','timeline-time'),clock=el('input'),duration=el('input'),unit=el('span','','ms');
  for(const [input,name] of [[clock,'Current time'],[duration,'Duration']]){input.type='number';input.min='0';input.max='60000';input.setAttribute('aria-label',name);}
@@ -19,7 +19,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  const snapGuide=el('div','svg-timeline-snap-guide');snapGuide.hidden=true;snapGuide.setAttribute('aria-hidden','true');
  ruler.tabIndex=0;ruler.setAttribute('role','slider');ruler.setAttribute('aria-label','Timeline scrubber');ruler.setAttribute('aria-valuemin','0');content.append(ruler,tracks,head,snapGuide);viewport.append(content);
  const zooms=el('div','timeline-zoom');zooms.append(button('Zoom out on timeline','minus',()=>zoom(1/1.5)),button('Zoom in on timeline','plus',()=>zoom(1.5)));
- panel.append(grip,controls,collapse,labels,viewport,zooms,status);document.body.append(panel);
+ panel.append(grip,controls,collapse,labels,viewport,zooms,status,el('div','panel-tear-heading'));document.body.append(panel);
  let height=200,collapsed=false,magnification=1,selection=[],active=null,dragging=false,clipboard=null,sourceSvg=read().svg;
  const safe=fn=>{try{fn();}catch(e){report(e.message);render();}};
  const scale=()=>Math.max(.001,(viewport.clientWidth-32)/read().duration)*magnification;
@@ -73,14 +73,14 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
    {separator:true},
    {label:'Previous keyframe',shortcut:'Alt/⌥ ←',enabled:!dragging&&adjacentKeyframeTime(read(),time(),-1)!==null,run:()=>navigate(-1)},
    {label:'Next keyframe',shortcut:'Alt/⌥ →',enabled:!dragging&&adjacentKeyframeTime(read(),time(),1)!==null,run:()=>navigate(1)},
-  ],viewport,{label:'Keyframe actions',heading:`${selection.length} keyframe${selection.length===1?'':'s'} selected`,anchor:event.type==='keydown'?document.activeElement:null,onShortcut:navigationShortcut});
+  ],viewport,{label:'Keyframe actions',heading:`${selection.length} keyframe${selection.length===1?'':'s'} selected`,container:panel.ownerDocument.body,anchor:event.type==='keydown'?panel.ownerDocument.activeElement:null,onShortcut:navigationShortcut});
  }
- function layout(){document.body.style.setProperty('--timeline-height',(collapsed?48:height)+'px');panel.classList.toggle('timeline-collapsed',collapsed);grip.setAttribute('aria-valuenow',String(height));collapse.setAttribute('aria-label',collapsed?'Expand Motion timeline':'Collapse Motion timeline');render();}
+ function layout(){document.body.style.setProperty('--timeline-height',(panel.ownerDocument!==document?40:collapsed?48:height)+'px');panel.classList.toggle('timeline-collapsed',collapsed);grip.setAttribute('aria-valuenow',String(height));collapse.setAttribute('aria-label',collapsed?'Expand Motion timeline':'Collapse Motion timeline');render();}
  function zoom(factor){magnification=Math.max(1,Math.min(32,magnification*factor));render();}
  clock.onchange=()=>seek(Number(clock.value));duration.onchange=()=>safe(()=>change(resizeDuration(read(),Number(duration.value))));
  viewport.onscroll=()=>{labels.scrollTop=viewport.scrollTop;};viewport.addEventListener('wheel',e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();zoom(e.deltaY<0?1.15:1/1.15);}},{passive:false});
  function pointerDrag(target,event,onMove,onDone=()=>{},onCancel=()=>{}){
-  target.setPointerCapture(event.pointerId);dragging=true;
+  const window=target.ownerDocument.defaultView;target.setPointerCapture(event.pointerId);dragging=true;
   const move=ev=>{if(ev.pointerId===event.pointerId)onMove(ev);},finish=ev=>{if(ev.pointerId!==event.pointerId)return;cleanup();onDone();},cancel=()=>{cleanup();onCancel();},escape=e=>{if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();cancel();}};
   const cleanup=()=>{dragging=false;target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',finish);target.removeEventListener('pointercancel',cancel);target.removeEventListener('lostpointercapture',cancel);window.removeEventListener('keydown',escape,true);if(target.hasPointerCapture(event.pointerId))target.releasePointerCapture(event.pointerId);};
   target.addEventListener('pointermove',move);target.addEventListener('pointerup',finish);target.addEventListener('pointercancel',cancel);target.addEventListener('lostpointercapture',cancel);window.addEventListener('keydown',escape,true);
@@ -142,7 +142,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
  });
  function update(){
   const a=read(),isPlaying=playing(),label=isPlaying?'Pause':'Play';
-  if(document.activeElement!==clock)clock.value=Math.round(time());if(document.activeElement!==duration)duration.value=a.duration;
+  if(clock.ownerDocument.activeElement!==clock)clock.value=Math.round(time());if(duration.ownerDocument.activeElement!==duration)duration.value=a.duration;
   head.style.left=16+time()*scale()+'px';ruler.setAttribute('aria-valuenow',String(Math.round(time())));ruler.setAttribute('aria-valuemax',String(a.duration));
   // Keep the icon mounted between pointerdown and pointerup during playback.
   if(toggle.getAttribute('aria-label')!==label){toggle.setAttribute('aria-label',label);toggle.title=label;toggle.innerHTML=icon(isPlaying?'pause':'play');}
@@ -167,7 +167,7 @@ export function installSvgTimeline({read,layers,change,selectKey,seek,time,play,
   if(!a.tracks.length)tracks.append(el('p','svg-timeline-empty','Select an element and add an animator to start.'));
   paintSelection();
  }
- const observer=new ResizeObserver(()=>render());observer.observe(viewport);layout();return {render,update,
+ const observer=new ResizeObserver(()=>render());observer.observe(viewport);layout();return {render,update,layout,
   retime(keys,start,duration,primary){
    if(!canChange())return;
    const index=keys.findIndex(key=>keyframeId(key)===keyframeId(primary)),result=retimeKeyframes(read(),keys,start,duration);

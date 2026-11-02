@@ -35,4 +35,8 @@ function sameWorkspace(url, base) {
  try{return !new URL(url).username&&!new URL(url).password&&new URL(url).origin===serverURL(new URL(base).origin);}catch{return false;}
 }
 function partitionFor(base) {return isLocalURL(base)?'persist:pixlprfct-local':'persist:workspace-'+createHash('sha256').update(serverURL(new URL(base).origin)).digest('hex').slice(0,24);}
-module.exports={APP_URL,CSP,contentSecurityPolicy,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor};
+function isPanelWindow(value,base,frameName){
+ if(!sameWorkspace(value,base)||!/^pixl-panel-[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/.test(frameName??''))return false;
+ try{const url=new URL(value);return url.pathname==='/editor/panel.html'&&!url.search&&!url.hash;}catch{return false;}
+}
+module.exports={APP_URL,CSP,contentSecurityPolicy,isLocalURL,serverURL,assetPath,externalURL,sameWorkspace,partitionFor,isPanelWindow};

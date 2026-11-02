@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {paintMode,paints,paintEdit,paintBinding,addPaint,updatePaint,removePaint,movePaint} from './paints.js';
 import {icon} from './icons.js';
 const selection=new Map();
@@ -7,7 +8,7 @@ export function editingPaint(shape,channel){return shape?paintEdit(shape,channel
 const el=(tag,cls)=>{const n=document.createElement(tag);n.className=cls;return n;};
 const button=(label,glyph,click)=>{const b=el('button','inspector-icon');b.type='button';b.title=label;b.setAttribute('aria-label',label);b.innerHTML=icon(glyph);b.onclick=click;return b;};
 export function installPaintStacks(current,change,{document:read,bind,hosts=null,idPrefix=''}){
- const sync=[],$=id=>document.getElementById(id);
+ const sync=[],$=id=>editorDOM.getElementById(id);
  for(const channel of hosts?Object.keys(hosts):['fill','stroke']){
   const fill=channel==='fill',title=fill?'Fill':'Stroke',host=hosts?.[channel]??(fill?$('paint-label').closest('section'):$('stroke-section')),heading=host.querySelector('h3'),header=el('div','paint-section-heading'),list=el('div','paint-stack');host.classList.add('paint-section');list.setAttribute('aria-label',title+' paints');
   const add=button('Add '+channel,'plus',()=>{const s=addPaint(current(),channel);selectPaint(s,channel,paints(s,channel)[0].id);change(s);});add.classList.add('paint-add');heading.before(header);header.append(heading,add);header.after(list);

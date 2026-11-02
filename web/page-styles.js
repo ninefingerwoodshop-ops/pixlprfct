@@ -1,10 +1,11 @@
+import {editorDOM} from './editor-dom.js';
 import {icon} from './icons.js';
 import {element,action,settingsMenu} from './inspector-settings.js';
 import {paintPreview} from './paint-preview.js';
 
 // Figma's unselected Page inspector: categories, slash groups and 32px style rows.
 export function installPageStyles({document:read,open,save,remove,textLayout}){
- const host=document.getElementById('page-styles'),heading=element('div','setting-section-heading'),title=element('h3','','Styles'),menu=settingsMenu(host,'Style actions');heading.append(title);host.append(heading);
+ const host=editorDOM.getElementById('page-styles'),heading=element('div','setting-section-heading'),title=element('h3','','Styles'),menu=settingsMenu(host,'Style actions');heading.append(title);host.append(heading);
  const create=action('Create style','plus',()=>menu.show(create,[['text','Text'],['color','Color'],['effect','Effect']].map(([kind,label])=>({label,glyph:kind==='effect'?'drop':kind,run:()=>open(kind,null,create)}))));create.setAttribute('aria-haspopup','menu');heading.append(create);
  const definitions=[['text','Text styles','text_styles'],['color','Color styles','color_styles'],['effect','Effect styles','effect_styles']],categories=new Map(),collapsed=new Set();let signature='';
  for(const [kind,label] of definitions){const section=element('div','page-style-category'),head=element('div','page-style-category-heading'),list=element('div','page-style-list');head.append(element('span','',label),action('Create '+kind+' style','plus',()=>open(kind,null,head)));section.append(head,list);host.append(section);categories.set(kind,list);}

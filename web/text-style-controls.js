@@ -1,3 +1,4 @@
+import {editorDOM} from './editor-dom.js';
 import {textStyle,letterSpacing,textTransform} from './typography.js';
 import {fontInput} from './google-fonts.js';
 import {element,action,settingRow,syncInput,settingsPopover,settingsMenu,choose,numberField} from './inspector-settings.js';
@@ -10,14 +11,14 @@ export function parseLetterSpacing(value){
 const spacingValue=t=>(t.letter_spacing??0)+(t.letter_spacing_unit==='%'?'%':'px');
 const cases=[['','As typed'],['upper','Uppercase'],['lower','Lowercase'],['title','Title case']];
 export function installTextStyleControls({current,change,document:read,save,apply,remove}){
- const host=document.getElementById('text-section'),heading=element('div','setting-section-heading typography-heading'),title=host.querySelector('h3');title.before(heading);heading.append(title);host.classList.add('setting-section');
+ const host=editorDOM.getElementById('text-section'),heading=element('div','setting-section-heading typography-heading'),title=host.querySelector('h3');title.before(heading);heading.append(title);host.classList.add('setting-section');
  const library=settingsPopover(host,'Text styles',{width:216}),editor=settingsPopover(host,'Edit text style',{width:304}),type=settingsPopover(host,'Type settings',{width:304});
  library.panel.classList.add('effect-style-picker','text-style-picker');editor.panel.classList.add('effect-style-editor','text-style-editor');
  const menu=settingsMenu(library.panel,'Text style actions');let shape=null,draft=null,query='',pageEditor=false;
  const styles=()=>read().text_styles??[],linked=()=>styles().find(s=>s.id===shape?.text_style);
  const pick=action('Apply text style','styles',()=>{library.show('styles',heading);renderLibrary();library.body.querySelector('input')?.focus();});pick.setAttribute('aria-haspopup','dialog');heading.append(pick);
  const chip=element('div','setting-item text-style-chip'),name=element('button','effect-edit'),edit=action('Edit text style','edit',()=>openEditor(linked())),detach=action('Detach text style','detach',()=>apply(0));name.type='button';name.onclick=()=>pick.click();chip.append(name,edit,detach);heading.after(chip);
- const line=document.getElementById('line-height').closest('.type-grid'),label=element('label','','Letter spacing'),spacing=element('input');spacing.id='letter-spacing';spacing.type='text';spacing.setAttribute('aria-label','Letter spacing');label.append(spacing);line.append(label);
+ const line=editorDOM.getElementById('line-height').closest('.type-grid'),label=element('label','','Letter spacing'),spacing=element('input');spacing.id='letter-spacing';spacing.type='text';spacing.setAttribute('aria-label','Letter spacing');label.append(spacing);line.append(label);
  spacing.oninput=()=>spacing.setCustomValidity('');spacing.onchange=()=>{try{const s=current();if(s)change({...s,typography:{...textStyle(s),...parseLetterSpacing(spacing.value)}});}catch(error){spacing.setCustomValidity(error.message);spacing.reportValidity();}};
  const typeButton=action('Type settings','',()=>{type.show('type',typeButton);renderType();});typeButton.innerHTML='<svg class="setting-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M8 12h11M5 17h14M9 5v4M15 10v4M10 15v4"/></svg>';typeButton.setAttribute('aria-haspopup','dialog');typeButton.classList.add('type-settings-trigger');host.querySelector('.text-align-tools').append(typeButton);
  function patchType(value){const s=current();if(s)change({...s,typography:{...textStyle(s),...value}});}

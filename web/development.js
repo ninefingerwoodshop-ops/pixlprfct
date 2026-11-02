@@ -1,14 +1,15 @@
+import {editorDOM} from './editor-dom.js';
 import {controlPreviewStates} from './controls.js';
 import {snippets,createBehavior,validateBehavior,behaviorSource} from './behaviors.js';
 import {cssExport} from './css-renderer.js';
 import {exportShapes} from './export.js';
 const el=(tag,text,attrs={})=>{const node=document.createElement(tag);if(text)node.textContent=text;for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);return node;};
 export function installDevelopment({getDocument,getSelection,save,textLayout}){
- const panel=document.querySelector('.right-panel'),tabs=panel.querySelector('.inspector-tabs');
- const design=document.querySelector('#design-inspector'),prototype=document.querySelector('#prototype-inspector');
- const prototypeEmpty=document.querySelector('#prototype-empty');
+ const panel=editorDOM.querySelector('.right-panel'),tabs=panel.querySelector('.inspector-tabs');
+ const design=editorDOM.querySelector('#design-inspector'),prototype=editorDOM.querySelector('#prototype-inspector');
+ const prototypeEmpty=editorDOM.querySelector('#prototype-empty');
  const dev=el('div',null,{id:'inspector-development',class:'inspector-content',role:'tabpanel',hidden:''});panel.append(dev);
- const caption=document.querySelector('#selection-caption'),zoom=tabs.querySelector('.zoom-control');
+ const caption=editorDOM.querySelector('#selection-caption'),zoom=tabs.querySelector('.zoom-control');
  if(zoom)panel.querySelector('.inspector-top').append(zoom);
  tabs.replaceChildren();tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Inspector mode');
  const inspect=el('div',null,{id:'inspector-inspect',class:'inspector-content',role:'tabpanel',hidden:''});panel.append(inspect);
@@ -28,7 +29,7 @@ export function installDevelopment({getDocument,getSelection,save,textLayout}){
   try{const output=cssExport(shapes,{variables:doc.variables,pageModes:doc.pages.find(p=>p.id===doc.active_page)?.variable_modes,sourceShapes:doc.shapes,textLayout});
    for(const [label,value] of [['CSS',output.css],['HTML',output.html]]){const details=el('details',null,{class:'behavior-card',...(label==='CSS'?{open:''}:{})});details.append(el('summary',label));const code=el('textarea',null,{readonly:'',rows:'12',class:'behavior-code','aria-label':label+' code',spellcheck:'false'});code.value=value;const copy=el('button','Copy '+label,{class:'wide-button'});copy.onclick=async()=>{try{await navigator.clipboard.writeText(value);copy.textContent='Copied';}catch{code.focus();code.select();copy.textContent='Select and copy the code';}};details.append(code,copy);section.append(details);}
    for(const warning of output.warnings??[])section.append(el('p',warning));
-  }catch(error){section.append(el('p',error.message));}const exportButton=el('button','Export project…',{class:'wide-button'});exportButton.onclick=()=>document.getElementById('export').click();section.append(exportButton);inspect.append(section);
+  }catch(error){section.append(el('p',error.message));}const exportButton=el('button','Export project…',{class:'wide-button'});exportButton.onclick=()=>editorDOM.getElementById('export').click();section.append(exportButton);inspect.append(section);
  }
  caption.classList.add('development-caption');tabs.after(caption);
  function flush(){clearTimeout(timer);timer=null;const draft=pending;pending=null;if(draft){const shape=getDocument().shapes.find(s=>s.id===draft.id);if(shape)save({...shape,behaviors:draft.behaviors});}}
@@ -57,7 +58,7 @@ export function installDevelopment({getDocument,getSelection,save,textLayout}){
   const key=JSON.stringify(shape?.behaviors??[]);
   if(!force&&key===signature&&dev.childNodes.length)return;
   // Do not replace an editor during a save while the user is typing.
-  if(!force&&dev.contains(document.activeElement)&&pending===null&&selected===shape?.id){signature=key;return;}
+  if(!force&&dev.contains(editorDOM.activeElement)&&pending===null&&selected===shape?.id){signature=key;return;}
   signature=key;dev.replaceChildren();
   if(!shape){dev.append(el('p',selection.length?'Select one item to edit its JavaScript.':'Select an item to attach a behavior.',{class:'development-empty'}));return;}
   const intro=el('section',null,{class:'development-section'});intro.append(el('h3','Behaviors'),el('p','Attach portable JavaScript to '+shape.name+'. Runs in preview and web exports.'));
