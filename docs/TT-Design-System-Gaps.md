@@ -532,6 +532,17 @@ by this planning pass, and no new editor feature was implemented or shipped.
     read-only protection. Evidence: `.local/svg-path-joining/{targets,joined}.png`.
     Local source only, not released; advanced joins, marquee/lasso and bulk anchor
     operations remain open. No TerritoryIQ code/design-file issue is resolved.
+  - [x] ~~B42l — Marquee anchor selection within one SVG base-path element.~~
+    Local resolution (2026-11-02): drag from the canvas or surrounding workspace
+    to select enclosed anchors across subpaths; Shift extends the selection.
+    Transforms/zoom, live highlights, keyboard group movement, empty selections,
+    Escape, pointer cancellation, lost capture, blur, zoom cancellation, outside
+    release, read-only documents and timed Morph exclusion are covered by five
+    new browser scenarios. Selection does not write artwork or history. Evidence:
+    `.local/svg-marquee/{marquee,live-preview,figma-anchor-selection}.png`.
+    This supersedes the marquee-only remainder in B42j/B42k; lasso, bulk anchor
+    operations, multi-object selection and advanced joins remain open. Local
+    source only, not alpha.21; no TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -720,3 +731,9 @@ B42k final verification (2026-11-02, local source): all 135 SVG browser scenario
 targeted lint and the editor asset build. The live sample was joined and undone;
 `.local/svg-path-joining/live-preview.png` shows it ready for endpoint selection.
 This updates PixlPrfct source only; release and remaining B42 work stay open.
+
+B42l final verification (2026-11-02, local source): 140 SVG Chromium browser
+scenarios, 61 SVG model tests, four responsive website checks, targeted lint,
+type checking, editor asset build and diff checks pass. In-app preview box
+selection verified on the sample curve; `.local/svg-marquee/live-preview.png`.
+No release or TerritoryIQ resolution is implied.

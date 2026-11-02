@@ -420,3 +420,14 @@ coordinate space. Escape cancels; one Undo restores both paths. Shared parent
 animation can stay; independent path/group animation and references to the target
 must be removed first. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--join-separate-path-elements-local-source).
 This is a source update, not part of the alpha.21 download.
+
+
+### Box-select base-path anchors (local source, not alpha.21)
+
+Use **Edit base path**, then drag a box around anchors to select a group. Hold
+Shift when starting the drag to add anchors; Shift-click toggles one anchor.
+The box can start outside the artboard and selects across subpaths within the
+current element. Drag the selected points or use arrow keys to move them together.
+Escape cancels a box and restores the previous selection. Box selection adds no
+Undo entry and does not edit timed Morph keys. Lasso and bulk anchor actions
+remain open. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--marquee-anchor-selection-local-source).

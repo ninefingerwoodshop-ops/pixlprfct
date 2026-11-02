@@ -212,3 +212,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Model | Interface | Verification | Limitations |
 | --- | --- | --- | --- |
 | Affine conversion of all target subpaths and handles; retained first identity/appearance, straight or coincident seam, obsolete target-origin cleanup | Existing Join endpoints control exposes other paths' endpoint targets; click/Enter/Space, Escape and one-step history | Seven new browser scenarios and three model tests; transforms, metadata, native persistence/export, history, read-only, animation/reference/geometry guards | Independent animation, referenced targets and collapsed transforms rejected; no smooth join or multi-object selection. Local source only, not alpha.21 |
+
+
+### SVG anchor marquee — 2026-11-02, local source
+
+| Engine / data | Browser UI | Verification | Remaining |
+| --- | --- | --- | --- |
+| Transient anchor selection; existing atomic group translation carries handles | Drag a box across subpaths in one base path; Shift extends, Escape restores; live transformed/zoomed hit testing | Five browser scenarios cover selection, group keyboard movement/Undo, cancellation, outside release, read-only and Morph guards; visible in-app preview checked | Lasso, bulk anchor operations, multi-object editing; exact transient-box visual parity unverified. Not alpha.21 |

@@ -65,7 +65,7 @@ also ships in Design in the first release remains a scope decision.
 | Direct Selection | Select, move and nudge anchors and handles independently | Implemented locally for ordinary path geometry |
 | Add/Delete Anchor | Add an anchor while preserving the curve; remove selected anchors with predictable geometry | Midpoint insertion/deletion in alpha.21; arbitrary segment double-click insertion verified locally (November 2) |
 | Convert Anchor | Switch corner/smooth behavior; separate or reconnect handles | Corner/smooth conversion; independent, angle-only and angle-and-length mirroring verified locally (November 2) |
-| Split/Join | Cut at an anchor, open a closed path, and join compatible endpoints | Implemented locally within one SVG path element; joining separate elements remains open |
+| Split/Join | Cut at an anchor, open a closed path, and join compatible endpoints | Implemented locally within and across compatible SVG path elements; independent animation/references remain guarded |
 | Pencil | Draw editable freehand paths with adjustable smoothing | Implemented locally; 0–100% smoothing, Shift constraint, round ends and editable cubic handles |
 | Smooth | Refine an existing path without redrawing the whole object | Proposed detail; exact gesture to discuss |
 | Brush | Expressive strokes, potentially including pressure, width and presets | Accepted candidate; behavior and release scope not set |
@@ -200,3 +200,21 @@ no implicit animation baking or reference rewriting is claimed. Existing
 within-element joining still supports the previously documented animation scope.
 Native reopening, export, Undo/Redo, Escape and read-only protection are verified.
 Next bounded vector step: marquee anchor selection within one base-path element.
+
+
+## 2026-11-02 — Marquee anchor selection (local source)
+
+Direct Selection now supports dragging a rectangular selection from either the
+artboard or surrounding canvas. It selects enclosed anchors across subpaths of
+one base-path element, with live highlights; Shift adds to the existing group.
+The resulting group supports existing transformed dragging and keyboard nudging.
+Escape, pointer cancellation, lost capture, blur, zoom and document/mode changes
+cancel the gesture. Selection never changes the document or enters Undo history.
+Join-target mode, timed Morph paths and read-only documents cannot start it.
+
+Five browser scenarios cover the new interactions. Live Figma box selection and
+selected-anchor appearance were inspected before implementation; transient box
+opacity and Shift-box equivalence were not independently measured. Evidence:
+`.local/svg-marquee/{marquee,live-preview,figma-anchor-selection}.png`.
+Not in alpha.21 downloads. Next bounded vector scope: bulk anchor operations;
+lasso selection and multi-object editing remain open.

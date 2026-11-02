@@ -1060,3 +1060,33 @@ pass. The sample was also joined and undone in the visible in-app browser; it is
 left ready to choose the second endpoint, with Pen tools docked out of the way.
 Screenshot: `.local/svg-path-joining/live-preview.png`. These results cover local
 Chromium, not a new packaged release or full cross-browser parity.
+
+
+## 2026-11-02 — Marquee anchor selection (local source)
+
+In **Edit base path / Direct Selection**, drag a box to select enclosed anchors.
+The box works in either direction, across subpaths within the selected element,
+and through artwork transforms and zoom. Start in the artboard or its surrounding
+canvas. Hold Shift when starting the box to extend the current selection; use
+Shift-click to toggle individual anchors. Handles and other elements do not count
+as anchor hits. The selected group uses the existing drag and arrow-key movement.
+
+Highlights update while dragging. Escape, pointer cancellation, loss of pointer
+capture, window blur, zoom or document/mode changes restore the prior selection.
+An empty box clears the anchor selection but keeps Direct Selection active.
+Selection is transient and creates no document history entry. Existing segment
+insertion, anchor/handle dragging and Join endpoints retain their gestures.
+Read-only documents and paths with timed Morph tracks do not start this gesture.
+
+Five browser scenarios cover transformed/reverse boxes, subpaths/Shift extension,
+keyboard group movement/one-step Undo, cancellation, outside release, empty and
+handle-only boxes, join mode, read-only protection and timed Morph isolation.
+Evidence: `.local/svg-marquee/{marquee,live-preview}.png`. This completes the
+marquee portion of the earlier selection remainder; lasso, bulk anchor operations
+and multi-object selection remain open. Local source only, not alpha.21.
+
+Marquee verification (2026-11-02): all 140 SVG Chromium browser scenarios and
+61 SVG model tests pass; four responsive website checks, targeted lint, type
+checking, editor asset build and diff checks pass. The in-app browser also
+selected both endpoints of the sample curve with a box. Local/unreleased;
+cross-browser and complete visual parity remain unverified.
