@@ -1,4 +1,5 @@
 {
+  "projectName": "Pxl Prfct",
   "objective": "Browser-first Figma replacement with a Rust document engine",
   "completionPolicy": "Individual feature deployments are progress, not completion of the replacement.",
   "implemented": [
