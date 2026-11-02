@@ -1040,3 +1040,19 @@ blue/white selected-point treatment. Existing dark inspector/palette controls ar
 retained. This batch implements group movement, not Figma's entire vector toolbar,
 alignment, mixed-coordinate inspector, lasso or bulk operations. Local rendered
 proof: `.local/roadmap-pr/multi-anchor.png`; exact overall parity remains open.
+
+## Joining vectors — 2026-11-02
+
+Inspected live Figma vector-edit mode and its Actions search. The results expose
+Join selection (Cmd+J) and Smooth join selection (Shift+Cmd+J), in 32 px action
+rows inside the dark Actions surface. The vector canvas retains circular endpoint
+markers and the existing dark vector toolbelt. Reference screenshot:
+`.local/svg-path-joining/figma-join-reference.png`; no user artwork was changed.
+
+PixlPrfct extends its existing Join endpoints workflow to other SVG path elements.
+It reuses the current 32 px palette button and circular 3 px-radius anchor glyphs
+with 8 px hit radii; target endpoints are pointer- and keyboard-accessible. No new
+panel, dropdown or native select was introduced. This verifies the inspected
+command and reused vector treatment, not full equivalence to Figma's selection,
+smooth-join, shortcut or multi-object workflow. Local rendered evidence:
+`.local/svg-path-joining/targets.png` and `joined.png`.

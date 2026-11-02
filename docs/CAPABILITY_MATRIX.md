@@ -206,3 +206,9 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Model | Interface | Verification | Limitations |
 | --- | --- | --- | --- |
 | Atomic translation of selected anchors and handles across subpaths; preserved mirroring metadata | Shift-click/Shift+Enter toggle, transformed drag, arrow/Shift-arrow nudges, Escape cancellation and isolated single-anchor controls | Three new browser scenarios and two model tests; undo/redo, native persistence, export, bounds and selection isolation | One base-path element; no marquee/lasso, bulk anchor operations or multi-object editing. Local only, not alpha.21 |
+
+### Joining separate SVG paths — 2026-11-02 (local source)
+
+| Model | Interface | Verification | Limitations |
+| --- | --- | --- | --- |
+| Affine conversion of all target subpaths and handles; retained first identity/appearance, straight or coincident seam, obsolete target-origin cleanup | Existing Join endpoints control exposes other paths' endpoint targets; click/Enter/Space, Escape and one-step history | Seven new browser scenarios and three model tests; transforms, metadata, native persistence/export, history, read-only, animation/reference/geometry guards | Independent animation, referenced targets and collapsed transforms rejected; no smooth join or multi-object selection. Local source only, not alpha.21 |

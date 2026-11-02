@@ -183,3 +183,20 @@ anchor operations, multi-object selection and joining separate elements remain
 open. Verified with three browser scenarios and two model tests; see
 [the delivery record](SVG_ANIMATION.md#2026-11-02--group-anchor-movement-local-source).
 Not in the alpha.21 download. Next vector scope: joining separate path elements.
+
+## Joining separate path elements — 2026-11-02 (local source)
+
+The next vector step now works through the existing Join endpoints control:
+select an open endpoint, activate Join, then click or keyboard-activate an endpoint
+on another path. All of that target's subpaths transfer into the starting path's
+coordinates; its appearance, ID and stacking position are retained. Existing
+curves/handles stay in place, a gap receives a straight bridge, and coincident ends
+merge. The target element is removed in the same undoable change.
+
+Shared parent animation remains intact. Paths with independent animation on
+either path or an exclusive ancestor, targets referenced by other artwork, and
+collapsed transforms are rejected without edits. These limitations remain open;
+no implicit animation baking or reference rewriting is claimed. Existing
+within-element joining still supports the previously documented animation scope.
+Native reopening, export, Undo/Redo, Escape and read-only protection are verified.
+Next bounded vector step: marquee anchor selection within one base-path element.

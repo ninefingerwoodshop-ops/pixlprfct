@@ -410,3 +410,13 @@ Single-anchor actions are disabled until one anchor is selected. Selection stays
 inside one path element; marquee/lasso and bulk anchor actions remain open.
 See the [dated delivery record](../SVG_ANIMATION.md#2026-11-02--group-anchor-movement-local-source).
 This builds on merged PR #58 and is not in the alpha.21 download.
+
+### Local November 2 addition: joining separate paths
+
+Select an open endpoint in Edit base path, choose Join endpoints, then click an
+endpoint on another path (or Tab and Enter). The joined artwork keeps the first
+path's appearance and converts the second path's curves and handles into its
+coordinate space. Escape cancels; one Undo restores both paths. Shared parent
+animation can stay; independent path/group animation and references to the target
+must be removed first. See the [delivery record](../SVG_ANIMATION.md#2026-11-02--join-separate-path-elements-local-source).
+This is a source update, not part of the alpha.21 download.

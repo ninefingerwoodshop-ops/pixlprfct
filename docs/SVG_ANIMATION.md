@@ -1025,3 +1025,38 @@ website at 390/768/1280 px. All 58 SVG model tests, typecheck, targeted ESLint a
 editor build passed. The preceding batch also passed 143 combined SVG, panel,
 toolbar and website scenarios. These are local Chromium results, not packaged or
 cross-browser release verification.
+
+## 2026-11-02 — Join separate path elements (local source)
+
+In Edit base path, select an open endpoint and choose Join endpoints. Other
+artwork paths show circular endpoint targets; click one, or Tab to it and press
+Enter/Space. Escape cancels. Existing same-element joins continue to work.
+
+The first path retains its ID, appearance, parent, transform and stacking position.
+Every subpath of the second path is transformed into its local coordinates, with
+cubic handles and mirroring metadata retained. A gap gets a straight bridge;
+coincident endpoints merge. The second element and its obsolete origin records
+are removed atomically. Undo restores both elements and Redo restores the join.
+Other subpaths are retained and native reopening/SVG export preserve the result.
+
+Joining supports shared ancestor animation. Independent tracks on either path or
+an exclusive ancestor are rejected; remove that animation before joining. Targets
+referenced by other SVG artwork and collapsed/noninvertible transforms are also
+rejected without mutation. Motion routes assigned to other objects remain their
+existing captured snapshots. No automatic animation baking, reference retargeting
+or preservation of two different paint appearances is claimed.
+
+Seven new browser cases cover transformed geometry and metadata, first-path paint,
+subpaths, one-step history, native reopening/export, keyboard targets, cancellation,
+shared versus independent animation, references, collapsed transforms and read-only
+files. Three model tests exercise all endpoint orientations, coincident seams,
+transformed handles, unrelated subpaths, immutability and coordinate/topology limits.
+Evidence: `.local/svg-path-joining/{targets,joined}.png`. Local source only; not in
+alpha.21 downloads. Marquee/lasso and bulk anchor operations remain open.
+
+Final local verification: all 135 SVG browser scenarios, 61 SVG model tests,
+four responsive product-site checks, typecheck, targeted lint and asset build
+pass. The sample was also joined and undone in the visible in-app browser; it is
+left ready to choose the second endpoint, with Pen tools docked out of the way.
+Screenshot: `.local/svg-path-joining/live-preview.png`. These results cover local
+Chromium, not a new packaged release or full cross-browser parity.

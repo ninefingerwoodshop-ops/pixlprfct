@@ -522,6 +522,16 @@ by this planning pass, and no new editor feature was implemented or shipped.
     bulk anchor actions and multi-object editing remain open. Evidence:
     `.local/roadmap-pr/multi-anchor.png` and `figma-multi-anchor.png`.
     Local source only, not released; no TerritoryIQ issue is resolved.
+  - [x] ~~B42k — Join endpoints across separate base-path elements.~~ Local
+    resolution (2026-11-02): existing Join endpoints exposes the other paths'
+    endpoints; all target subpaths/handles convert into the starting path's
+    coordinates while retaining its appearance. Shared ancestor animation stays;
+    independent animation, referenced targets and collapsed transforms are
+    rejected without mutation. Seven browser cases and three model tests cover
+    geometry, metadata, Undo/Redo, reopening/export, keyboard/cancellation and
+    read-only protection. Evidence: `.local/svg-path-joining/{targets,joined}.png`.
+    Local source only, not released; advanced joins, marquee/lasso and bulk anchor
+    operations remain open. No TerritoryIQ code/design-file issue is resolved.
 - [ ] **B43 — Design and SVG Animation lack a direct editable handoff.** The
   separate document/motion models require manual artwork exchange. SVG also
   lacks Design's coediting, comments, libraries and MCP access. Scope each
@@ -704,3 +714,9 @@ B42j final verification (2026-11-02, local source): 128 SVG browser regressions,
 seven final anchor/site cases and all 58 SVG model tests pass. Types, targeted
 lint, build and diff checks pass. The follow-up to PR #58 contains the local implementation and
 updated roadmap/Dev Log; installation, release and full vector parity remain open.
+
+B42k final verification (2026-11-02, local source): all 135 SVG browser scenarios,
+61 SVG model tests and four responsive website cases pass, along with typecheck,
+targeted lint and the editor asset build. The live sample was joined and undone;
+`.local/svg-path-joining/live-preview.png` shows it ready for endpoint selection.
+This updates PixlPrfct source only; release and remaining B42 work stay open.
