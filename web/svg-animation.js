@@ -33,6 +33,7 @@ import {pickSvgElement} from './svg-animation-picking.js';
 import {installElementSelection} from './svg-animation-selection.js';
 import {normalizeElementSelection,toggleElementSelection,rangeElementSelection} from './svg-animation-selection-model.js';
 import {duplicateSvgElements} from './svg-animation-duplicate.js';
+import {groupSvgElements,svgGroupingAvailability} from './svg-animation-group.js';
 import {showContextMenu} from './context-menu.js';
 
 let panels,panelDocks;
@@ -80,17 +81,27 @@ function selectLayerEvent(id,event){
  if(!event.shiftKey)layerAnchor=id;selectElements(ids);$('svg-layers').querySelector(`[data-element="${id}"]`)?.focus({preventScroll:true});
 }
 function objectSelectionReady(){return selectionIds.length>0&&!running&&!drawing?.active&&!morphEditing&&!transformEditor?.dragging&&!nodeEditor?.dragging&&!elementSelection?.dragging;}
-function duplicateElements(fromLayers=false){
+function objectShortcut(event){
+ if(!(event.metaKey||event.ctrlKey)||event.altKey)return null;
+ const key=event.key.toLowerCase();return key==='d'&&!event.shiftKey?'duplicate':key==='g'?(event.shiftKey?'ungroup':'group'):null;
+}
+function editSelectedObjects(action,fromLayers=false){
  if(!objectSelectionReady()||!canEdit())return;
- const result=duplicateSvgElements(doc,selectionIds);commit(result.document);selectElements(result.selected);layerAnchor=result.selected.at(-1);
- const focus=fromLayers?$('svg-layers').querySelector(`[data-element="${layerAnchor}"]`):$('svg-stage');focus?.focus({preventScroll:true});
+ const result=action==='duplicate'?duplicateSvgElements(doc,selectionIds):groupSvgElements(doc,selectionIds,{ungroup:action==='ungroup'});
+ if(action!=='duplicate')$('svg-search').value='';
+ commit(result.document);selectElements(result.selected);layerAnchor=result.selected.at(-1);
+ const focus=fromLayers?$('svg-layers').querySelector(`[data-element="${layerAnchor}"]`):null;(focus??$('svg-stage')).focus({preventScroll:true});
 }
 function objectMenu(event,id=null,fromLayers=false,keyboard=false){
  if(drawing?.active||morphEditing||transformEditor?.dragging||nodeEditor?.dragging||elementSelection?.dragging)return;
  event.preventDefault();event.stopPropagation();if(id&&!selectionIds.includes(id))selectLayer(id);
  const before=doc,ids=[...selectionIds],time=currentTime,focus=fromLayers?$('svg-layers').querySelector(`[data-element="${id}"]`):$('svg-stage');
- const run=safe(()=>{if(doc===before&&currentTime===time&&ids.join(',')===selectionIds.join(','))duplicateElements(fromLayers);});
- showContextMenu(event,[{label:'Duplicate',shortcut:/Mac/.test(navigator.platform)?'⌘D':'Ctrl+D',enabled:objectSelectionReady()&&(!team||team.editable()),run}],focus,{label:'SVG object actions',className:'svg-object-menu',anchor:keyboard?focus:null,onShortcut:e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='d'&&!e.shiftKey&&!e.altKey){e.preventDefault();e.stopPropagation();run();return true;}return false;}});
+ const run=action=>safe(()=>{if(doc===before&&currentTime===time&&ids.join(',')===selectionIds.join(','))editSelectedObjects(action,fromLayers);});
+ const ready=objectSelectionReady()&&(!team||team.editable()),availability=svgGroupingAvailability(sourceRoot,ids,animation()),mac=/Mac/.test(navigator.platform);
+ const actions=[{label:'Duplicate',shortcut:mac?'⌘D':'Ctrl+D',enabled:ready,run:run('duplicate')},{separator:true},
+  {label:'Group selection',shortcut:mac?'⌘G':'Ctrl+G',enabled:ready&&!availability.group,unavailable:availability.group,run:run('group')},
+  {label:'Ungroup',shortcut:mac?'⇧⌘G':'Ctrl+Shift+G',visible:ids.some(id=>sourceRoot.querySelector('#'+id)?.localName==='g'),enabled:ready&&!availability.ungroup,unavailable:availability.ungroup,run:run('ungroup')}];
+ showContextMenu(event,actions,focus,{label:'SVG object actions',className:'svg-object-menu',anchor:keyboard?focus:null,onShortcut:e=>{const action=objectShortcut(e);if(action){e.preventDefault();e.stopPropagation();if(!e.repeat)run(action)();return true;}return false;}});
 }
 function paint(){if(!preview)return;preview.seek(currentTime);paintSelection();nodeEditor?.update();drawing?.update();}
 function paintSelection(){transformEditor?.update();elementSelection?.update();}
@@ -275,9 +286,23 @@ async function start(){
  $('svg-home').onclick=home;$('svg-home').setAttribute('aria-label','All projects');$('svg-name').onchange=safe(()=>commit({...doc,name:$('svg-name').value.trim()||'Untitled animation'}));$('svg-name').onkeydown=e=>{if(e.key==='Enter')e.target.blur();};$('svg-search').oninput=renderLayers;
  $('svg-import').onclick=$('svg-empty-import').onclick=()=>$('svg-file').click();$('svg-file').onchange=safe(async()=>{const file=$('svg-file').files[0];try{await importSvg(file);}finally{$('svg-file').value='';}});$('svg-example').onclick=safe(example);$('svg-download').onclick=downloadProject;$('svg-dismiss').onclick=()=>{$('svg-notice').hidden=true;};
  $('workspace').ondragover=e=>{if(e.dataTransfer.types.includes('Files'))e.preventDefault();};$('workspace').ondrop=safe(e=>{e.preventDefault();return importSvg(e.dataTransfer.files[0]);});
- const canvasElement=(target,e)=>pickSvgElement(preview.root,layerList,target,e?.clientX,e?.clientY);
+ const canvasElement=(target,e)=>{
+  let hit=pickSvgElement(preview.root,layerList,target,e?.clientX,e?.clientY);
+  if(!hit||drawing?.active||morphEditing||e?.ctrlKey||e?.metaKey||e?.detail>1)return hit;
+  const node=preview.root.querySelector('#'+hit),ancestor=selectionIds.find(id=>preview.root.querySelector('#'+id)?.contains(node));if(ancestor)return ancestor;
+  const groups=new Set(layerList.filter(layer=>layer.kind==='g').map(layer=>layer.id));
+  for(let parent=node.parentElement;parent&&parent!==preview.root;parent=parent.parentElement)if(groups.has(parent.id))hit=parent.id;
+  return hit;
+ };
  $('svg-art').onclick=e=>{selectLayer(canvasElement(e.target,e));$('svg-stage').focus({preventScroll:true});};
- $('svg-stage').oncontextmenu=e=>{const hit=canvasElement(e.target,e),ancestor=selectionIds.find(id=>preview.root.querySelector('#'+id)?.contains(preview.root.querySelector('#'+hit)));objectMenu(e,ancestor??hit);};
+ $('svg-stage').ondblclick=e=>{
+  if(drawing?.active||morphEditing||running)return;
+  // Body drags capture the pointer on the stage, which also receives dblclick.
+  // Resolve the artwork beneath that captured target before entering the group.
+  const target=document.elementsFromPoint(e.clientX,e.clientY).find(node=>preview.root.contains(node));
+  if(target){selectLayer(pickSvgElement(preview.root,layerList,target,e.clientX,e.clientY));$('svg-stage').focus({preventScroll:true});}
+ };
+ $('svg-stage').oncontextmenu=e=>objectMenu(e,canvasElement(e.target,e));
  for(const [id,factor] of [['svg-zoom-out',1/1.25],['svg-zoom-in',1.25]])$(id).onclick=()=>{autoFit=false;zoom=Math.max(.05,Math.min(8,zoom*factor));fit();};$('svg-zoom-value').onclick=()=>{autoFit=true;fit();};
  const toolbar=$('svg-toolbox'),selectTool=button('Select element','select',()=>{drawing.setMode('select');$('svg-stage').focus({preventScroll:true});});selectTool.id='svg-select-tool';selectTool.title='Select element (V)';selectTool.setAttribute('aria-keyshortcuts','V');toolbar.append(selectTool,button('Add rectangle','rectangle',safe(()=>{drawing?.setMode('select');addShape('rect');})),button('Add ellipse','ellipse',safe(()=>{drawing?.setMode('select');addShape('ellipse');})));
  drawing=installSvgDrawing({restorePanel:()=>panels?.dock('pen'),host:$('svg-stage'),workspace:$('workspace'),toolbar,read:()=>({root:preview?.root,source:sourceRoot,selected,animation:animation(),running,busy:!!transformEditor?.dragging||!!nodeEditor?.dragging,enabled:selectionIds.length<=1&&(!team||team.editable()),defaults:drawingDefaults,paints:drawingPaints()}),select:selectLayer,change:(root,id,removed=[])=>{if(!canEdit())return;const result=sanitizeSvg(new XMLSerializer().serializeToString(root));setSelected(id);changeAnimation({...animation(),svg:result.svg,origins:Object.fromEntries(Object.entries(animation().origins).filter(([key])=>!removed.includes(key)))});},start:()=>{elementSelection?.cancel();transformEditor?.cancel();nodeEditor?.cancel();stop();morphEditing=false;},refresh:()=>{if(preview){$('svg-empty').hidden=layerList.length>0||drawing.active;renderInspector();paint();}},paint:changeDrawingPaint,remove:deleteSelectedPath,report});
@@ -286,14 +311,13 @@ async function start(){
  const exporter=installSvgExport({read:()=>doc,readTime:()=>currentTime,save:commit,editable:()=>!team||team.editable(),download,dropdowns:()=>dropdowns?.(),report,stop:()=>{stop();paint();}});$('svg-export').onclick=()=>exporter.show();
  transformEditor=installTransformHandles({host:$('svg-stage'),read:transformState,start:()=>{nodeEditor?.cancel();stop();},preview:previewTransform,restore:restoreTransform,change:keyTransform,report,tap:e=>{if(e.shiftKey)selectElements([]);},pick:(target,e)=>{
   if(drawing?.active||morphEditing||!$('svg-art').contains(target))return false;
-  // A selected group's children drag that group; otherwise select the hit layer.
-  const current=selected&&preview.root.querySelector('#'+selected),id=current?.contains(target)?selected:canvasElement(target,e);if(id!==selected)selectLayer(id);return !!id;
+  const id=canvasElement(target,e);if(id!==selected)selectLayer(id);return !!id;
  }});
  nodeEditor=installMorphNodes({host:$('svg-stage'),read:()=>morphEditing&&!running&&currentTrack('morph')?{node:preview.root.querySelector('#'+selected),value:valueAt('morph'),selection:morphPoint,enabled:!team||team.editable()}:null,select:(path,index)=>{morphPoint=[path,index];renderInspector();},change:safe(value=>keyValue('morph',value)),preview:value=>{preview.root.querySelector('#'+selected)?.setAttribute('d',morphData(value));paintSelection();},report});
  timeline=installSvgTimeline({read:animation,layers:()=>layerList,change:changeAnimation,editable:()=>!team||team.editable(),destination:()=>{const layer=currentLayer();return layer?{element:layer.id,origin:originFor(layer)}:null;},selectKey:(key,keys)=>{drawing?.suspend();transformEditor.cancel();nodeEditor.cancel();keySelection=key?{...key,keys}:null;if(key?.element&&selected!==key.element){setSelected(key.element);morphPoint=[0,0];morphEditing=false;}if(key?.property==='morph')morphEditing=true;renderLayers();renderInspector();renderMotionGuide();paint();},seek,time:()=>currentTime,play,playing:()=>running,report,addKey:(track,time)=>{setSelected(track.element);keyValue(track.property,trackValue(track,time),time);seek(time);}});
  dropdowns=installInspectorDropdowns(document.body);new ResizeObserver(()=>{if(preview)fit();}).observe($('workspace'));
- elementSelection=installElementSelection({host:$('svg-stage'),workspace:$('workspace'),read:()=>({root:preview?.root,layers:layerList,ids:selectionIds,document:doc,time:currentTime,editable:!team||team.editable(),active:!!preview&&!drawing?.active&&!morphEditing&&!running}),select:selectElements,pick:(target,e)=>{const id=canvasElement(target,e),ancestor=selectionIds.find(value=>preview.root.querySelector('#'+value)?.contains(preview.root.querySelector('#'+id)));return ancestor??id;}});
- const keydown=e=>{if(e.defaultPrevented||e.target.closest('input,textarea,select,[role=listbox],[role=menu],dialog,[popover],[contenteditable=true]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&!e.shiftKey&&!e.altKey&&(e.target===e.target.ownerDocument.body||e.target.closest('#svg-stage,.svg-layer'))){e.preventDefault();if(!e.repeat)safe(()=>duplicateElements(!!e.target.closest('.svg-layer')))();}else if((e.key==='ContextMenu'||e.shiftKey&&e.key==='F10')&&e.target===$('svg-stage')){objectMenu(e,null,false,true);}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'&&!e.shiftKey&&!e.altKey&&!drawing.active&&!morphEditing&&(e.target===e.target.ownerDocument.body||e.target.closest('#workspace,.svg-layer'))){e.preventDefault();selectElements(elementSelection.all());$('svg-stage').focus({preventScroll:true});}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo(e.shiftKey);}else if(['Delete','Backspace'].includes(e.key)&&!e.defaultPrevented&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!drawing.drafting&&currentLayer()?.kind==='path'&&(e.target===document.body||e.target.closest('#svg-stage,.svg-layer'))&&!e.target.closest('.svg-morph-point')){e.preventDefault();safe(deleteSelectedPath)();}else if(e.key===' '){e.preventDefault();play();}else if(e.key==='Escape'){selectLayer(null);}};
+ elementSelection=installElementSelection({host:$('svg-stage'),workspace:$('workspace'),read:()=>({root:preview?.root,layers:layerList,ids:selectionIds,document:doc,time:currentTime,editable:!team||team.editable(),active:!!preview&&!drawing?.active&&!morphEditing&&!running}),select:selectElements,pick:canvasElement});
+ const keydown=e=>{if(e.defaultPrevented||e.target.closest('input,textarea,select,[role=listbox],[role=menu],dialog,[popover],[contenteditable=true]'))return;if(objectShortcut(e)&&(e.target===e.target.ownerDocument.body||e.target.closest('#svg-stage,.svg-layer'))){e.preventDefault();if(!e.repeat)safe(()=>editSelectedObjects(objectShortcut(e),!!e.target.closest('.svg-layer')))();}else if((e.key==='ContextMenu'||e.shiftKey&&e.key==='F10')&&e.target===$('svg-stage')){objectMenu(e,null,false,true);}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'&&!e.shiftKey&&!e.altKey&&!drawing.active&&!morphEditing&&(e.target===e.target.ownerDocument.body||e.target.closest('#workspace,.svg-layer'))){e.preventDefault();selectElements(elementSelection.all());$('svg-stage').focus({preventScroll:true});}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo(e.shiftKey);}else if(['Delete','Backspace'].includes(e.key)&&!e.defaultPrevented&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!drawing.drafting&&currentLayer()?.kind==='path'&&(e.target===document.body||e.target.closest('#svg-stage,.svg-layer'))&&!e.target.closest('.svg-morph-point')){e.preventDefault();safe(deleteSelectedPath)();}else if(e.key===' '){e.preventDefault();play();}else if(e.key==='Escape'){selectLayer(null);}};
  window.addEventListener('keydown',keydown);
  const panelLayout=()=>{panelDocks?.sync();const detached=panels?.isDetached('elements')??false;document.body.classList.toggle('svg-elements-detached',detached);$('svg-show-elements').hidden=!detached;$('svg-dock-elements').hidden=!detached;timeline.layout();drawing.update();};
  panels=installDetachablePanels({parentKeys:['elements','inspector','pen','timeline'],excludedKeys:['tools'],dropdowns:()=>dropdowns,keydown:e=>{drawing.keydown(e);if(!e.defaultPrevented)keydown(e);},report,changed:panelLayout});

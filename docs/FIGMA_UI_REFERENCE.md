@@ -1238,3 +1238,31 @@ menu did not contain Duplicate: placing it there in SVG Animation is an explicit
 quick-access extension, not a claim of identical command organization. No new
 inspector panel or inactive controls were added. Geometry/animation correctness
 is locally tested; complete Figma workflow/pixel parity remains open.
+
+
+## 2026-11-02 — SVG sibling grouping
+
+Read-only native Figma inspection in Capwah Components confirmed **Group selection
+⌘G** in the layer context menu for a single selected rectangle. The Object menu
+also exposes Group selection and disables Ungroup selection for that non-group.
+The context surface remains approximately 200 CSS px wide, with 24px rows, 12px
+labels, 8px outer padding, 16px text inset, 12px corners and the #1e1e1e dark
+surface observed for duplication. Private reference capture:
+`.local/svg-grouping/figma-context.png`. No grouping command or artwork mutation
+was performed; the selected rectangle's restored X/Y coordinates were unchanged.
+
+Figma's official [frames and groups guide](https://help.figma.com/hc/en-us/articles/360039832054-The-difference-between-frames-and-groups)
+confirms Group/Ungroup shortcuts, group selection, double-click child access and
+combined child bounds. Its [Ungroup API documentation](https://developers.figma.com/docs/plugins/api/properties/figma-ungroup/)
+describes removing the wrapper, moving children to its parent and replacing the
+selected group with its children. Structural editing on the live reference file
+was not exercised, so appearance preservation is verified against local SVG
+fixtures rather than claimed as complete Figma behavior parity.
+
+The implementation uses the existing shared custom context menu with measured
+compact rows and platform shortcuts. No new panel or native select is introduced.
+Group-first clicks, Command/Ctrl deep clicks, double-click child access, child
+selection after Ungroup and existing group controls work locally. Same-parent
+Group and neutral structural Ungroup are the verified scope; transformed, styled,
+animated or referenced wrappers remain guarded. General reparenting and complete
+Figma workflow/pixel parity remain open. Local source only, not alpha.21.
