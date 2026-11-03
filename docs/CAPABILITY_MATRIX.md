@@ -261,3 +261,10 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 |---|---|---|---|
 | Sample actual cubics in screen space; shared Pencil reduction/handles extended to closed rings; open endpoints, compact contours and non-collinear loop area retained | Session-only 0–100% Smoothing and explicit Smooth path in the existing Path inspector, including detached Inspector; one Undo | Six model and six browser workflows; four shared Pencil regressions; transformed geometry, cyclic seams, no-ops, atomic failure, guards, focus, history, reopening/export | One base-path element, no timed Morph; 4,096 samples; only replace contours with fewer points. Reference Simplify algorithm/slider parity unverified. Local only, not alpha.21 |
+
+
+### SVG multi-object selection — 2026-11-02, local source
+
+| Core | UI | Verification | Boundary |
+|---|---|---|---|
+| Transient ordered selection, ancestor deduplication, filtered ranges and transformed polygon/box intersection | Shift-click, box/Shift extension, Command/Ctrl deep box, layer modifiers/keyboard, Select All/Escape, individual/aggregate outlines and count heading; detached Elements | Six browser workflows and four model tests; history/file/export neutrality, read-only, nesting, zoom, cancellation, keyboard scope and existing Shift-drag/anchor-selection regressions | Selection only; one object required for properties/animation. Duplication, grouping and batch transforms/paint/deletion remain open. Bounds-based marquee, not exact clipped/masked paint. Local only, not alpha.21; full Figma inspector/pixel parity unverified |

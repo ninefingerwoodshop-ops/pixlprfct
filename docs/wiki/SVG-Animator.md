@@ -523,3 +523,18 @@ settings and existing animation stay attached to the element. Read-only files,
 playback, active gestures, Join and timed Morph paths cannot apply smoothing.
 This also works from a detached Inspector. This completes the earlier smoothing
 remainder locally, not in alpha.21. Multi-object selection is next.
+
+
+### Select multiple objects — local development, November 2
+
+Shift-click artwork to toggle it, or drag from blank canvas to select a region.
+Shift adds to the box; Command/Ctrl selects nested objects. In Elements, Shift
+selects a range and Command/Ctrl toggles rows, including in separate windows.
+Command/Ctrl+A selects visible roots from the canvas or Elements; Escape or a
+blank click clears the selection. A single selected object's Shift-drag still
+constrains movement. Selection changes no artwork or undo history.
+
+Blue outlines and the inspector count show the group. Select one object to edit
+its properties or animation. Box selection uses transformed bounds, with hidden
+and out-of-viewport objects excluded. Batch transforms, paints, deletion and
+grouping remain open; duplication is next. Local source only, not alpha.21.

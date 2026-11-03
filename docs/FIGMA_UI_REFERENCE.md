@@ -1186,3 +1186,31 @@ the existing Pencil reduction policy to existing open/closed artwork; it is not
 a verified facsimile of Figma's Simplify slider or an interactive smoothing brush.
 The wider reference-parity gap remains open. Local evidence:
 `.local/svg-path-smoothing/{smoothed,live-preview}.png`.
+
+
+## 2026-11-02 — Multiple object selection
+
+Live Figma object selection was inspected in the native app. The reference shows
+individual and aggregate blue 1px outlines, approximately 7px white corner handles
+with blue edges, 24px selected layer rows within a 32px pitch, and an “N selected”
+heading in a 240px right inspector with 16px inset and 24px fields. Mixed position,
+dimension, alignment and paint controls remain visible for multiple objects.
+Shift layer ranges and Command-click toggles were exercised. Official gesture
+semantics were also checked against [Select layers and objects](https://help.figma.com/hc/en-us/articles/360040449873-Select-layers-and-objects).
+Reference geometry was restored after inspection and checked against its original
+coordinates. Private reference evidence: `.local/svg-object-selection/figma-restored.png`.
+
+The local bounded step reuses the existing layer rows, inspector typography and
+blue selection accent. It adds individual/aggregate outlines, the count heading,
+Shift-click, box/Shift extension, Command/Ctrl deep box, layer ranges/toggles and
+Select All. Shift-click is distinguished from constrained single-object dragging.
+Selection remains separate from saved artwork and edit history.
+
+This does not certify full Figma parity: group resize/rotate handles, alignment,
+mixed property editing and group paints are not implemented. No inactive lookalike
+controls are presented as working features. Box selection intersects transformed
+geometry bounds, not exact clipped/masked painted regions. The current single-
+object inspector returns when one object is selected. Local preview:
+`.local/svg-object-selection/live-preview.png`; six browser cases and four model
+tests cover the implemented selection workflow. Batch object editing, duplication
+and grouping remain explicit roadmap work. Local only, not alpha.21.

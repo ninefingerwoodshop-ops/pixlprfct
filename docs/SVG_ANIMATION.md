@@ -1324,3 +1324,54 @@ closed ring from 96 to 16, retaining the compact two-anchor subpath. One Undo
 restores the original; native keyboard amount editing and reapplication work.
 Editor and updated Dev Log previews remain open. Evidence:
 `.local/svg-path-smoothing/{before-anchors,live-preview,dev-log}.png`.
+
+
+## 2026-11-02 — Select multiple objects (local source)
+
+- In Select mode, Shift-click artwork to toggle it. Drag from blank canvas or
+  workspace to select intersecting objects; Shift adds to the current group.
+  Command/Ctrl while starting a box reaches nested non-group elements. Default
+  boxes select root elements/groups. Shift-drag on one selected object still
+  constrains its movement, while a Shift-click without movement deselects it.
+- In Elements, Shift selects a range; Command/Ctrl toggles individual rows.
+  Modified Enter/Space supports the same actions. Ranges follow the filtered list,
+  and these controls also work in a detached Elements window.
+- Command/Ctrl+A selects visible roots from the canvas or Elements. Text fields
+  retain their normal Select All. Escape or a blank click clears object selection.
+- Each selected object and the combined bounds get a blue outline; the inspector
+  shows the count. Select one element to edit properties or animation. Group
+  transforms, paints, deletion, duplication and grouping are still open work.
+
+A group and its descendants cannot be selected together. Box selection uses
+transformed geometry bounds, including thin lines, at the current zoom. Hidden,
+fully transparent and fully out-of-viewport bounds are excluded from box/Select
+All; clipping/mask painted-area accuracy remains open. Selection changes no
+artwork, animation, history, saved file or SVG export and is cleared on reopening.
+Read-only files permit selection without writes. Escape, pointer/capture loss,
+blur, zoom, seeking, playback and mode changes cancel pending boxes. Timeline
+key selection and base-path editing retain their single-element workflows.
+
+Six new browser cases and four model tests cover these controls, nesting, ranges,
+transformed intersections, field scope, history/file neutrality, cancellation,
+read-only files and detached panels. Existing Shift-drag, anchor box and Lasso
+checks cover interaction regressions. Visible local evidence:
+`.local/svg-object-selection/{live-preview,dev-log}.png`. The live Figma reference
+was inspected for selection outlines, rows and count heading; its complete group
+inspector/transform workflow is not implemented or certified pixel-identical.
+This supersedes earlier multi-object-selection remainders locally, not in alpha.21.
+Next: duplication; grouping and batch object editing remain separate steps.
+
+
+### Final verification — multi-object selection, 2026-11-02
+
+177 SVG Chromium browser scenarios and four responsive product-site checks pass,
+including six new selection workflows. All 88 SVG model tests plus three shared
+selection tests pass. TypeScript, the editor build and diff checks pass; targeted
+ESLint reports no errors and one pre-existing navigation warning. Live in-app
+Command-click, canvas Shift-click and box selection show matching layer states,
+individual/aggregate outlines and the count heading. The refreshed website entry
+records selection as local development and duplication as next.
+
+Evidence: `.local/svg-object-selection/{final-browser,models,types,lint}.log` and
+`{live-preview,dev-log}.png`. Selection-only changes retain saved artwork and
+history; group property/transform editing remains open. Not in alpha.21.

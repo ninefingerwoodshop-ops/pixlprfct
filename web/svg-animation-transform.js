@@ -29,7 +29,7 @@ export function resizedValues(values,bounds,origin,handle,delta,{center=false,un
  const next={...values,scaleX:clamp(values.scaleX*fx,'scaleX'),scaleY:clamp(values.scaleY*fy,'scaleY')};
  return anchored(values,next,anchor,origin);
 }
-export function installTransformHandles({host,read,start,preview,restore,change,report,pick}){
+export function installTransformHandles({host,read,start,preview,restore,change,report,pick,tap}){
  const overlay=document.createElementNS(NS,'svg');overlay.classList.add('svg-transform-handles');overlay.id='svg-selection';overlay.setAttribute('aria-label','Object transform handles');host.append(overlay);
  const make=(tag,attrs,parent=overlay)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);parent.append(n);return n;};
  const outline=make('path',{class:'svg-transform-outline'}),records=[];
@@ -78,7 +78,7 @@ export function installTransformHandles({host,read,start,preview,restore,change,
   };
   const clear=()=>{drag=null;host.removeEventListener('pointermove',move);host.removeEventListener('pointerup',done);host.removeEventListener('pointercancel',cancel);host.removeEventListener('lostpointercapture',cancel);window.removeEventListener('keydown',escape,true);window.removeEventListener('blur',cancel);if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);};
   const cancel=()=>{clear();restore();update();};
-  const done=event=>{if(event.pointerId!==e.pointerId)return;const allowed=valid(state);clear();restore();try{if(allowed&&moved)change(Object.fromEntries(Object.entries(next).map(([k,v])=>[k,clean(v)])));}catch(error){report(error.message);}update();};
+  const done=event=>{if(event.pointerId!==e.pointerId)return;const allowed=valid(state);clear();restore();try{if(allowed&&moved)change(Object.fromEntries(Object.entries(next).map(([k,v])=>[k,clean(v)])));else if(allowed)tap?.(e);}catch(error){report(error.message);}update();};
   const escape=event=>{if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();cancel();}};
   drag={cancel};host.addEventListener('pointermove',move);host.addEventListener('pointerup',done);host.addEventListener('pointercancel',cancel);host.addEventListener('lostpointercapture',cancel);window.addEventListener('keydown',escape,true);window.addEventListener('blur',cancel);
  });
