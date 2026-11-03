@@ -1,7 +1,7 @@
 # Pen workspace proposal
 
 Updated November 2, 2026. **Drawing foundation shipped in alpha.21; arbitrary
-segment insertion, group anchor actions, whole-subpath removal, smoothing and multi-object selection are verified
+segment insertion, group anchor actions, whole-subpath removal, smoothing, multi-object selection and duplication are verified
 in local source only.**
 
 The owner authorized roadmap development after the planning pass. Pen, core
@@ -401,3 +401,31 @@ export/reopening and detached Elements. Existing movement and anchor-selection
 regressions cover Shift-drag and box/Lasso isolation. Evidence:
 `.local/svg-object-selection/{live-preview,figma-restored}.png`.
 Local source only, not alpha.21. Next bounded vector step: duplication.
+
+
+## 2026-11-02 — Duplicate SVG objects (local source)
+
+Command/Ctrl+D duplicates selected objects or groups from the canvas and Elements,
+including detached Elements. The shared context menu adds Duplicate with its
+shortcut; Shift+F10 opens it from the focused stage or layer. Right-clicking an
+unselected object targets it; right-clicking a selected object retains the group.
+Copies remain at the same position and under the same parent, immediately after
+each source in stacking order. New roots become selected; one Undo removes the
+entire duplication.
+
+Every copied subtree node receives a unique ID. Internal and cross-selection
+references follow the copies; resources outside the copied set remain shared.
+Source transforms, inherited paint, path metadata, nested SVGs, animation tracks
+and origins are retained. Keyframe/morph/gradient/motion data are copied deeply;
+editing a copied paint detaches its shared resource through the existing editor.
+No preview animation wrappers enter the source. Stale selections and document
+budgets reject atomically; leases, playback, drawing, Morph and active gestures
+remain guarded. Fields and timeline keyframe duplication retain their own scope.
+
+Seven browser workflows and three DOM/model cases cover geometry, references,
+all animation value kinds, independent edits, history, focus, cancellation,
+permissions, reopening/export and detached Elements. Live Figma's Duplicate menu
+and compact context-menu styling were inspected read-only; see the reference
+record for measurements and the command-placement boundary. Local source only,
+not alpha.21. Grouping is next; batch object editing, Alt/Option-drag and repeated-
+transform duplication remain open.

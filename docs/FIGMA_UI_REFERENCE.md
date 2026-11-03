@@ -1214,3 +1214,27 @@ object inspector returns when one object is selected. Local preview:
 `.local/svg-object-selection/live-preview.png`; six browser cases and four model
 tests cover the implemented selection workflow. Batch object editing, duplication
 and grouping remain explicit roadmap work. Local only, not alpha.21.
+
+
+## 2026-11-02 — SVG object duplication
+
+Read-only native Figma inspection in Capwah Components confirmed **Duplicate ⌘D**
+in the Edit menu. At 2× capture, the Edit submenu is approximately 190 CSS px
+wide; the layer context menu is approximately 200 CSS px wide. Both use 24px rows,
+12px labels, about 8px outer padding and 16px text inset. The context surface is
+#1e1e1e with a 12px corner radius, white labels and muted shortcut text; focused
+rows use blue. Private evidence:
+`.local/svg-duplication/{figma-edit-menu,figma-context-menu}.png`.
+
+No reference artwork was duplicated or moved. Figma's official
+[Copy and paste objects](https://help.figma.com/hc/en-us/articles/4409078832791-Copy-and-paste-objects)
+documentation confirms Command/Ctrl+D and same-position ordinary object copies;
+top-level frame spacing, Alt/Option-drag and repeated transformations are separate
+behaviors. Only the ordinary same-position command is implemented in this step.
+
+The SVG action uses the shared custom menu, measured compact dimensions and dark
+palette, with Duplicate and its platform shortcut. The inspected Figma context
+menu did not contain Duplicate: placing it there in SVG Animation is an explicit
+quick-access extension, not a claim of identical command organization. No new
+inspector panel or inactive controls were added. Geometry/animation correctness
+is locally tested; complete Figma workflow/pixel parity remains open.

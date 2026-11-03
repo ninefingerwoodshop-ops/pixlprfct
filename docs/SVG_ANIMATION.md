@@ -1375,3 +1375,52 @@ records selection as local development and duplication as next.
 Evidence: `.local/svg-object-selection/{final-browser,models,types,lint}.log` and
 `{live-preview,dev-log}.png`. Selection-only changes retain saved artwork and
 history; group property/transform editing remains open. Not in alpha.21.
+
+
+## 2026-11-02 — Duplicate objects (local source)
+
+- Select one or several SVG elements or groups. Press **Command/Ctrl+D** from the
+  canvas or Elements, or right-click and choose **Duplicate**. **Shift+F10** opens
+  the same menu from a focused layer or stage; Escape dismisses it and restores
+  focus. Detached Elements supports both routes.
+- Copies start over their originals, immediately after each source under the same
+  parent. They become selected. One Undo removes all copies made by that action;
+  Redo, native saving/reopening and SVG exports preserve the result.
+- Groups copy their descendants once. Geometry, transforms, inherited paint,
+  path mirroring metadata, animation tracks and transform origins follow the copy.
+  Every subtree node gets a new ID; references within the copied selection follow
+  new IDs, while references to outside resources remain shared. The paint editor
+  detaches a shared resource when editing a copy, preserving the original.
+- Duplication uses source artwork, even at an animated playhead. It never saves
+  preview wrappers or bakes the current animated pose into the source. Animation
+  keys, Morph values, gradients and motion-route data are independent copies.
+
+Input fields and timeline keyframe duplication retain their existing shortcuts.
+Read-only leases, playback, drawing, timed Morph and active gestures block object
+duplication. Queued menus recheck document, time, selection and editing rights.
+Empty selection is a no-op; stale IDs, 5,000-element/1,000-track limits and the
+existing 2MB source limit reject without changing artwork or history.
+
+Seven new UI workflows and three browser DOM/model cases cover these contracts,
+including nested viewports, local/cross-selection/shared references, ordering,
+animation equivalence, independent edits and resource limits. Live Figma menus
+were inspected without duplicating reference artwork; the context action is an
+SVG quick-access extension. Exact whole-interface parity is not claimed.
+Alt/Option-drag and repeated-transform duplication remain open. Grouping is next,
+with batch transforms, paints and deletion separate. Local only, not alpha.21.
+
+
+### Final verification — object duplication, 2026-11-02
+
+All 205 Chromium checks pass: 187 SVG scenarios, 14 Design/panel/toolbar
+regressions and four responsive website checks. All 88 SVG model tests, three
+shared selection tests and two context-menu helpers pass. TypeScript, editor
+asset build and diff checks pass; targeted ESLint has zero errors and retains
+one pre-existing navigation warning.
+
+The visible in-app sample verifies native Command-D, single-step Undo/Redo,
+context-menu group duplication and independent copy movement. Copies were moved
+only after duplication to make the result visible. The Dev Log preview records
+local completion and grouping next. Evidence:
+`.local/svg-duplication/{final-browser,models,types,lint,build}.log` and
+`{live-menu,live-preview,dev-log}.png`. Not included in Windows alpha.21.
