@@ -282,3 +282,9 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | Core | UI | Verification | Boundary |
 | --- | --- | --- | --- |
 | Wrap sibling source roots once; preserve child geometry, paint, IDs/references, tracks and origins; neutral Ungroup with child selection; atomic budgets/history | Command/Ctrl+G, Command/Ctrl+Shift+G and shared menu; group-first/deep canvas picking, existing group transforms, search reveal, detached Elements and focus | Five DOM/model and seven UI cases: sampled animated/raster equality, stacking, nested SVG ancestry, references, safe rejection, leases/stale gestures, history, reopening and export | Same actual parent only; group occupies frontmost selected position and can change overlaps. Ungroup rejects styled/transformed/animated/referenced wrappers. Batch transforms next; full Figma parity open. Local only, not alpha.21 |
+
+### PDF export — 2026-11-04, branch source
+
+| Core | UI | Verification | Boundary |
+| --- | --- | --- | --- |
+| Dependency-free PDF 1.4 writer (`web/pdf-export.js`): one page per export job, 1 pt per pixel, lossless FlateDecode RGB image plus a DeviceGray soft mask when transparent; 14,400 pt page and 100-page limits; UTF-16 title metadata | Export dialog Format → PDF. Current page or selection gives one page; top-level frames or separate layers give one multi-page PDF instead of a ZIP. The summary states the page count and that pages are images at the chosen scale | 4 unit tests (xref offsets, inflate round trip, masks, limits); 2 Chromium tests check `qpdf --check`, `pdfinfo` page sizes, `pdftoppm` colors and mask presence | Pages are images: no vector paths and no selectable or searchable text. Not available through MCP (MCP export has no canvas). Not installed or released |
