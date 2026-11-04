@@ -183,3 +183,62 @@ frame, 5 warmups + 30 samples, median 56.7 ms, p95 65.8 ms; passes the existing
 100 ms acceptance gate. Evidence: `.local/team-next/evidence/browser-latency.json`.
 This includes browser rendering; it does not establish universal 60 fps. Shared
 presence uses one-second polling and document saves remain bounded to 5 MB.
+
+## Engine commit and snapshot follow-up — 2026-11-04 (branch source, not released)
+
+Profiling one width edit on the public 727-layer fixtures with native callgrind
+showed that serialization dominated each commit. A commit serialized the whole
+document twice for the 5 MB check, then the app's `snapshot()` serialized it a
+third time. A preview did the same and then serialized once more for its result.
+
+| Deterministic instruction count per operation (native, millions) | Before | After |
+| --- | ---: | ---: |
+| Synthetic fixture: commit (`update_many`) | 58.6 | 30.8 |
+| Synthetic fixture: edit + `snapshot()` (the app's path) | 71.0 | 30.9 |
+| Complex fixture (components, variants, variables): commit | 70.6 | 42.1 |
+| Complex fixture: edit + `snapshot()` | 83.1 | 42.2 |
+
+Native wall-clock medians on a 2-vCPU Linux container: width preview 14.2 → 7.5 ms,
+committed edit 12.5 → 5.8 ms. **These are native numbers. The WebAssembly build
+was not rebuilt or measured for this change** because the toolchain download was
+blocked where the change was made. Rebuild and rerun `npm run benchmark:editor`
+and the browser gate before quoting browser or desktop results.
+
+Changes:
+
+- A commit serializes the final document once. That string is both the 5 MB
+  check and the cached result of the next `snapshot()`. The duplicate early check
+  is removed; the limit and its message are unchanged. The cache is cleared on
+  every other assignment to the document (load-time text refresh, page
+  selection, undo and redo). Debug builds compare the cache against a fresh
+  serialization on every read.
+- `parents_first` computes the order on indices and returns early when the
+  document is already ordered (the usual case after the first commit).
+- Layout geometry no longer clones each visited layer to read six fields.
+- Hierarchy validation uses a small vector instead of a hash set per layer.
+- In the browser, `sceneToWorld` indexes the scene once instead of rebuilding
+  a map of every layer for every layer (O(n²) → O(n)). In a profiled run this cut
+  its cost from 74 ms to 6 ms across 35 edits.
+
+Equivalence: `tests/engine_sequences.rs` drives 200 seeds × 150 pseudo-random
+operations (frames, groups, auto layout, components and instances, constraints,
+previews, undo/redo). The digest of every result and snapshot is identical
+before and after (`b7cb82d80293a627`). The final documents include 1,009
+auto-layout frames, 834 groups and 687 components. A short version runs under
+`cargo test`.
+
+Profiling also showed what remains on the main thread for each edit. The two
+largest costs, in container measurements:
+
+1. **Local persistence.** On every edit, the recovery copy (current body plus
+   base) is written to session storage. The asynchronous durable save then
+   rewrites the drafts store and removes the recovery copy. Together this
+   cost about as much as the engine. A coalescing experiment did not change the
+   measured gate and broke a save-timing test, so it was removed. Reducing this
+   cost changes the save or recovery format and needs an owner decision.
+2. **Canvas text layout.** Each full redraw lays out every visible text layer
+   again.
+
+The container's software-rendered Chromium measured about 4× slower than the
+Mac (about 230 ms median), with ±15 ms run-to-run noise. Its browser numbers
+are not comparable with the gate results above. B33 remains open.

@@ -17,6 +17,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let copies = staged.duplicate_many(json)?;
         let ids: Vec<u32> = serde_json::from_str(&copies).map_err(|e| e.to_string())?;
@@ -58,6 +59,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         for id in ordered {
             staged.drop_layer(id, target, position)?;

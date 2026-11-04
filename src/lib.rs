@@ -866,6 +866,11 @@ pub struct Editor {
     redo: Vec<Document>,
     next_id: u32,
     next_page_id: u32,
+    /// Serialized form of `document`, reused by `snapshot()`. Every assignment
+    /// to `self.document` must refresh or clear it (see `commit_validated_document`,
+    /// `refresh_text_layout`, `select_page`, `undo` and `redo`). Debug builds
+    /// verify it on every read.
+    snapshot_cache: std::cell::RefCell<Option<String>>,
 }
 
 // Legacy scalar fields remain a summary for layout bounds and older consumers.
@@ -893,6 +898,10 @@ fn sync_paint_stacks(document: &mut Document) {
         }
     }
 }
+
+const DOCUMENT_LIMIT_BYTES: usize = 5_000_000;
+const DOCUMENT_LIMIT_ERROR: &str =
+    "Document exceeds 5 MB; use smaller images or remove unused layers";
 
 fn validate(document: &Document) -> Result<(), String> {
     if document.component_order.len() > 11000
@@ -1162,9 +1171,13 @@ fn validate(document: &Document) -> Result<(), String> {
             }
         }
         let mut parent = shape.parent_id;
-        let mut seen = std::collections::HashSet::from([shape.id]);
+        // At most 129 entries; a small vector avoids hashing for every layer.
+        let mut seen = vec![shape.id];
         while parent != 0 {
-            if !seen.insert(parent) || seen.len() > 128 {
+            if seen.contains(&parent) || {
+                seen.push(parent);
+                seen.len() > 128
+            } {
                 return Err("Frame hierarchy contains a cycle or exceeds 128 levels".into());
             }
             let ancestor = by_id.get(&parent).ok_or("Parent frame not found")?;
@@ -1341,7 +1354,7 @@ impl Editor {
             let result = guard
                 .call3(
                     &JsValue::NULL,
-                    &JsValue::from_str(&serde_json::to_string(&self.document).unwrap()),
+                    &JsValue::from_str(&self.snapshot()),
                     &JsValue::from_str(&after),
                     &JsValue::from_bool(history),
                 )
@@ -1536,6 +1549,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let mut result: [Vec<u32>; 5] = std::array::from_fn(|_| vec![]);
         let mut hit = staged.hit_test(x, y);
@@ -1616,13 +1630,7 @@ impl Editor {
         sync_paint_stacks(&mut document);
         validate(&document)?;
         components::validate_links(&document)?;
-        if serde_json::to_string(&document)
-            .map_err(|e| e.to_string())?
-            .len()
-            > 5_000_000
-        {
-            return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
-        }
+        // The 5 MB limit is enforced once, on the final document, below.
         document_order::parents_first(&mut document.shapes);
         self.reflow_text(&mut document)?;
         let base = self.next_id.max(
@@ -1737,8 +1745,8 @@ impl Editor {
         validate(&document)?;
         components::validate_links(&document)?;
         let serialized = serde_json::to_string(&document).map_err(|e| e.to_string())?;
-        if serialized.len() > 5_000_000 {
-            return Err("Document exceeds 5 MB; use smaller images or remove unused layers".into());
+        if serialized.len() > DOCUMENT_LIMIT_BYTES {
+            return Err(DOCUMENT_LIMIT_ERROR.into());
         }
         self.check_write(&document, false, Some(&serialized))?;
         if next > base || containers_added {
@@ -1752,6 +1760,8 @@ impl Editor {
             }
             self.redo.clear();
         }
+        // `self.document` now equals the serialized document either way.
+        *self.snapshot_cache.get_mut() = Some(serialized);
         Ok(())
     }
 }
@@ -1790,11 +1800,18 @@ impl Editor {
             redo: vec![],
             next_id: 1,
             next_page_id: 2,
+            snapshot_cache: Default::default(),
         }
     }
 
     pub fn snapshot(&self) -> String {
-        serde_json::to_string(&self.document).unwrap()
+        if let Some(cached) = self.snapshot_cache.borrow().as_ref() {
+            debug_assert_eq!(cached, &serde_json::to_string(&self.document).unwrap());
+            return cached.clone();
+        }
+        let serialized = serde_json::to_string(&self.document).unwrap();
+        *self.snapshot_cache.borrow_mut() = Some(serialized.clone());
+        serialized
     }
 
     pub fn set_write_guard(&mut self, callback: Option<js_sys::Function>) {
@@ -1815,6 +1832,7 @@ impl Editor {
         validate(&document)?;
         self.next_id = next;
         self.document = document;
+        self.snapshot_cache.get_mut().take();
         Ok(())
     }
 
@@ -2454,6 +2472,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         staged.save_variables(variables)?;
         let id = staged.insert(json)?;
@@ -2587,6 +2606,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let mut pages: Vec<u32> = shapes.iter().map(|s| s.page_id).collect();
         pages.sort_unstable();
@@ -2613,6 +2633,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         staged.update_many(json)?;
         Ok(staged.snapshot())
@@ -2628,6 +2649,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         staged.update_many(json)?;
         let grid: serde_json::Value =
@@ -2727,6 +2749,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let use_containers = staged
             .document
@@ -2869,6 +2892,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         staged.drop_layers(&serde_json::to_string(&ordered).unwrap(), parent, "inside")?;
         let mut moved = vec![];
@@ -2914,6 +2938,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         if parent != 0 {
             staged.move_into_before(&serde_json::to_string(&ids).unwrap(), parent, before)?;
@@ -2967,6 +2992,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         staged.update_many(json)?;
         staged.reparent_many(&serde_json::to_string(&ids).unwrap(), parent)?;
@@ -3052,6 +3078,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let existing = ids.len() == 1
             && self
@@ -3689,6 +3716,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let copy = staged.duplicate_page(id)?;
         staged.reorder_page(copy, target, after)?;
@@ -3727,6 +3755,7 @@ impl Editor {
         }
         // Navigation is not an edit and must not consume undo or discard redo.
         self.document.active_page = id;
+        self.snapshot_cache.get_mut().take();
         Ok(())
     }
 
@@ -3766,6 +3795,7 @@ impl Editor {
         if let Some(document) = self.undo.pop() {
             self.redo
                 .push(std::mem::replace(&mut self.document, document));
+            self.snapshot_cache.get_mut().take();
         }
         Ok(())
     }
@@ -3776,6 +3806,7 @@ impl Editor {
         if let Some(document) = self.redo.pop() {
             self.undo
                 .push(std::mem::replace(&mut self.document, document));
+            self.snapshot_cache.get_mut().take();
         }
         Ok(())
     }
