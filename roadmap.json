@@ -116,7 +116,8 @@
     "SVG Animation Pen with icon cursor, corner/cubic drawing, open/closed paths and endpoint continuation; base-path anchors/handles, curve-preserving midpoint insertion, deletion and corner/smooth conversion; movable palette with shared fill/stroke controls, atomic undo, persistence and SVG export",
     "Independent panel windows in Design and SVG Animation, cursor-connected tear-out, saved window layouts, right-docked SVG Pen tools and compact SVG icon rail (local source)",
     "Parent-only panel tear-outs, persistent icon docks, icon-only tear-out return actions, inline expanded-header toggles and top collapsed-dock toggles and adjacent flyouts in Design and SVG Animation (local source)",
-    "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)"
+    "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
+    "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
@@ -127,7 +128,7 @@
     "Set-label overlap, slot rich descriptions/bulk authoring/native Figma slot metadata import",
     "Complete prototype parity: Smart Animate, sequential/conditional actions, drag and scroll interactions",
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
-    "PDF export and comprehensive accessibility/performance validation",
+    "Vector PDF export with selectable text, and comprehensive accessibility/performance validation",
     "Complex-document edit latency, real installed-app OS-sleep acceptance",
     "Cloud storage quotas and cleanup of unreferenced uploads",
     "Complete shared-variable integration, scopes, code syntax, RGBA, component/prototype bindings and bulk metadata editing"
