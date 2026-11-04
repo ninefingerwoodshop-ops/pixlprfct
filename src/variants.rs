@@ -214,6 +214,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         }
     }
     fn wrap_variant_set(&mut self, ids: &[u32], name: &str) -> Result<u32, String> {
@@ -440,6 +441,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let ids: Vec<u32> = serde_json::from_str(
             &staged.duplicate_many(&serde_json::to_string(&vec![id]).unwrap())?,

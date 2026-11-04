@@ -292,7 +292,24 @@ pub(crate) fn reflow(doc: &mut Document) {
         w: f64,
         h: f64,
     ) {
-        let old = shapes[i].clone();
+        // Only these fields of the pre-move shape are read below; copying them
+        // avoids cloning the whole layer for every visited descendant.
+        struct Old {
+            x: f64,
+            y: f64,
+            width: f64,
+            height: f64,
+            is_group: bool,
+            has_layout: bool,
+        }
+        let old = Old {
+            x: shapes[i].x,
+            y: shapes[i].y,
+            width: shapes[i].width,
+            height: shapes[i].height,
+            is_group: shapes[i].kind == "group",
+            has_layout: shapes[i].auto_layout.is_some(),
+        };
         shapes[i].x = x;
         shapes[i].y = y;
         shapes[i].width = w;
@@ -317,13 +334,13 @@ pub(crate) fn reflow(doc: &mut Document) {
         }
         let mut targets = children[i].clone();
         let mut groups = vec![];
-        if old.kind != "group" && old.auto_layout.is_none() {
+        if !old.is_group && !old.has_layout {
             targets.clear();
             constraint_children(shapes, children, i, &mut targets, &mut groups);
         }
         for &c in &targets {
             let s = &shapes[c];
-            let ((cx, cw), (cy, ch)) = if old.auto_layout.is_some() && !s.layout_item.absolute {
+            let ((cx, cw), (cy, ch)) = if old.has_layout && !s.layout_item.absolute {
                 ((s.x + x - old.x, s.width), (s.y + y - old.y, s.height))
             } else {
                 (
@@ -334,7 +351,7 @@ pub(crate) fn reflow(doc: &mut Document) {
                         old.width,
                         x,
                         w,
-                        if old.kind == "group" {
+                        if old.is_group {
                             &crate::Constraint::Scale
                         } else {
                             &s.constraints.horizontal
@@ -347,7 +364,7 @@ pub(crate) fn reflow(doc: &mut Document) {
                         old.height,
                         y,
                         h,
-                        if old.kind == "group" {
+                        if old.is_group {
                             &crate::Constraint::Scale
                         } else {
                             &s.constraints.vertical

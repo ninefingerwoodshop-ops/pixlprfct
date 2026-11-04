@@ -1054,6 +1054,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let id = staged.create_instance(master, x, y)?;
         if parent != 0 {
@@ -1402,6 +1403,7 @@ impl Editor {
             redo: vec![],
             next_id: self.next_id,
             next_page_id: self.next_page_id,
+            snapshot_cache: Default::default(),
         };
         let id = staged.add("frame", x, y)?;
         let index = staged
