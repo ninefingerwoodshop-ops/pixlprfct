@@ -28,7 +28,8 @@ export function rotateToAngle(shape,angle){
 
 export const rotateQuarterTurn=shape=>rotateToAngle(shape,(shape.rotation??0)-90);
 
-export function ancestorsOf(s,shapes){const byId=new Map(shapes.map(n=>[n.id,n])),chain=[];let p=byId.get(s.parent_id);while(p){chain.push(p);p=byId.get(p.parent_id);}return chain;}
-export function worldShape(s,shapes){let result={...s};for(const p of ancestorsOf(s,shapes)){result={...result,...worldPoint(p,result),rotation:(result.rotation??0)+(p.rotation??0)};}return result;}
-export function sceneToWorld(shapes){return shapes.map(s=>worldShape(s,shapes));}
+// `byId` lets callers that walk a whole scene index it once instead of per layer.
+export function ancestorsOf(s,shapes,byId=new Map(shapes.map(n=>[n.id,n]))){const chain=[];let p=byId.get(s.parent_id);while(p){chain.push(p);p=byId.get(p.parent_id);}return chain;}
+export function worldShape(s,shapes,byId){let result={...s};for(const p of ancestorsOf(s,shapes,byId)){result={...result,...worldPoint(p,result),rotation:(result.rotation??0)+(p.rotation??0)};}return result;}
+export function sceneToWorld(shapes){const byId=new Map(shapes.map(n=>[n.id,n]));return shapes.map(s=>worldShape(s,shapes,byId));}
 export function shapeToLocal(s,shapes){let result={...s};for(const p of ancestorsOf(s,shapes).reverse()){result={...result,...localPoint(p,result),rotation:(result.rotation??0)-(p.rotation??0)};}return result;}
