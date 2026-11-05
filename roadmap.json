@@ -117,7 +117,8 @@
     "Independent panel windows in Design and SVG Animation, cursor-connected tear-out, saved window layouts, right-docked SVG Pen tools and compact SVG icon rail (local source)",
     "Parent-only panel tear-outs, persistent icon docks, icon-only tear-out return actions, inline expanded-header toggles and top collapsed-dock toggles and adjacent flyouts in Design and SVG Animation (local source)",
     "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
-    "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)"
+    "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)",
+    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
@@ -130,7 +131,7 @@
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
     "Vector PDF export with selectable text, and comprehensive accessibility/performance validation",
     "Complex-document edit latency, real installed-app OS-sleep acceptance",
-    "Cloud storage quotas and cleanup of unreferenced uploads",
+    "Permanent delete and version-history retention so owners can free quota space",
     "Complete shared-variable integration, scopes, code syntax, RGBA, component/prototype bindings and bulk metadata editing"
   ],
   "deferred": [],

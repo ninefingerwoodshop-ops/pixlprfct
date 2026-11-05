@@ -5,6 +5,7 @@ import {workspaceAccess} from './workspace-access.mjs';
 import {libraryService} from './libraries.mjs';
 import QRCode from 'qrcode';
 import {databaseBodyStore} from './database.mjs';
+import {REFERENCE_TABLES} from '../lib/document-storage.mjs';
 import {versionApi} from '../lib/document-versions.mjs';
 import {adminData} from './admin.mjs';
 import {collaborationService} from './collaboration.mjs';
@@ -14,10 +15,12 @@ const json=(value,status=200)=>Response.json(value,{status,headers:{'cache-contr
 const isAdmin=(session,config)=>session?.user.emailVerified&&session.user.email.toLowerCase()===config.adminEmail;
 export function createApplication({config,db,auth,operations}) {
  const bodies=databaseBodyStore(db,config.engine);
+ // Optional per-owner (personal space or workspace) storage quota.
+ const storage={quota:config.storageQuota??null,tables:REFERENCE_TABLES.selfHosted,objects:'document_bodies'};
  async function sessionFor(request){const session=await auth.api.getSession({headers:request.headers});if(!session?.user.emailVerified)throw new DocumentError(401,'Sign in with a verified account to continue.');return session;}
  const libraries=libraryService(db,bodies,{canReadDocument:async(id,access)=>{try{await collaboration.accessFor(id,access);return true;}catch(error){if(error.status===403)return false;throw error;}}});
  const collaboration=collaborationService(db,config.engine);
- const live=liveEditing(db,bodies,collaboration,libraries,config.engine);
+ const live=liveEditing(db,bodies,collaboration,libraries,config.engine,storage);
  const activity=teamActivity(db,config.engine,collaboration);
  const accessFor=(request,session)=>workspaceAccess(db,session.user.id,new URL(request.url).searchParams.get('workspace')||'personal');
  async function documentOwner(request,session){return (await accessFor(request,session)).owner;}
@@ -113,7 +116,7 @@ export function createApplication({config,db,auth,operations}) {
        // Identity is derived from the verified session and membership on EVERY request.
        headers.set('oai-authenticated-user-id',owner);
        const internal=new Request(request,{headers});
-       const response=path.includes('/versions')?await versionApi(internal,db,match[1],match[2]??null,!!match[3],bodies,guard,fence):await documentApi(internal,db,match[1]??null,bodies,guard,{userId:session.user.id,manage:access.manage||!!isAdmin(session,config),fence});
+       const response=path.includes('/versions')?await versionApi(internal,db,match[1],match[2]??null,!!match[3],bodies,guard,fence,storage):await documentApi(internal,db,match[1]??null,bodies,guard,{userId:session.user.id,manage:access.manage||!!isAdmin(session,config),fence},storage);
        if(access.organizationId&&!path.includes('/versions')&&response.ok){
          const data=await response.json();
          if(Array.isArray(data.documents)){const visible=[];for(const item of data.documents){try{const rights=await collaboration.accessFor(item.id,access);visible.push({...item,role:rights.role,can_edit:rights.canEdit,can_delete:item.can_delete&&rights.canEdit});}catch(error){if(error.status!==403)throw error;}}data.documents=visible;}
