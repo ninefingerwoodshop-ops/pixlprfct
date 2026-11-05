@@ -76,16 +76,32 @@ export async function migrateDocuments(db, engine) {
   // A personal file has an unambiguous creator. Historical shared files have
   // no creator evidence and remain admin-only; never assign the last editor.
   await db.query("UPDATE documents SET created_by=substr(owner,6) WHERE created_by IS NULL AND owner LIKE 'user:%'",[],'run');
-  for (const [name,table,columns] of [['documents_owner_updated','documents','owner,updated_at'],['versions_document_created','document_versions','document_id,created_at,id'],['comments_document_created','document_comments','document_id,created_at,id'],['edit_requests_document_created','document_edit_requests','document_id,created_at']]) {
+  await migrateStorageAccounting(db,engine);
+  for (const [name,table,columns] of [['documents_owner_updated','documents','owner,updated_at'],['versions_document_created','document_versions','document_id,created_at,id'],['versions_owner','document_versions','owner'],['live_versions_owner','live_versions','owner'],['comments_document_created','document_comments','document_id,created_at,id'],['edit_requests_document_created','document_edit_requests','document_id,created_at']]) {
     if (engine==='mysql') { const indexes=await db.query(`SHOW INDEX FROM ${table} WHERE Key_name=?`,[name]);if(!indexes.length)await db.query(`CREATE INDEX ${name} ON ${table} (${columns})`,[],'run'); }
     else await db.query(`CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`,[],'run');
   }
 }
-export function databaseBodyStore(db,engine){
+const columnNames=async(db,engine,table)=>(engine==='sqlite'?await db.query(`PRAGMA table_info(${table})`):engine==='mysql'?await db.query(`SHOW COLUMNS FROM ${table}`):await db.query('SELECT column_name AS name FROM information_schema.columns WHERE table_schema=current_schema() AND table_name=?',[table])).map(c=>c.name??c.Field);
+export const byteLengthSQL=(engine,column)=>engine==='sqlite'?`length(CAST(${column} AS BLOB))`:engine==='postgres'?`octet_length(${column})`:`LENGTH(${column})`;
+// Stored byte counts support optional quotas; body touch times make removing
+// unreferenced large bodies safe against concurrent saves.
+export async function migrateStorageAccounting(db,engine){
+  for(const table of ['documents','document_versions','live_versions']){
+    if(!(await columnNames(db,engine,table)).includes('body_bytes'))await db.query(`ALTER TABLE ${table} ADD COLUMN body_bytes BIGINT`,[],'run');
+    await db.query(`UPDATE ${table} SET body_bytes=${byteLengthSQL(engine,'body')} WHERE body_bytes IS NULL`,[],'run');
+  }
+  const bodies=await columnNames(db,engine,'document_bodies');
+  if(!bodies.includes('bytes'))await db.query('ALTER TABLE document_bodies ADD COLUMN bytes BIGINT',[],'run');
+  if(!bodies.includes('touched_at'))await db.query('ALTER TABLE document_bodies ADD COLUMN touched_at BIGINT NOT NULL DEFAULT 0',[],'run');
+  await db.query(`UPDATE document_bodies SET bytes=${byteLengthSQL(engine,'body')} WHERE bytes IS NULL`,[],'run');
+}
+export function databaseBodyStore(db,engine,clock=()=>Date.now()){
   return {
+    // Every write refreshes touched_at, including when identical content already exists.
     async put(id,bytes){
-      const prefix=engine==='mysql'?'INSERT IGNORE':engine==='sqlite'?'INSERT OR IGNORE':'INSERT';
-      await db.query(`${prefix} INTO document_bodies (id,body) VALUES (?,?)${engine==='postgres'?' ON CONFLICT (id) DO NOTHING':''}`,[id,new TextDecoder('utf-8',{fatal:true}).decode(bytes)],'run');
+      const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes),upsert=engine==='mysql'?' ON DUPLICATE KEY UPDATE touched_at=VALUES(touched_at)':' ON CONFLICT (id) DO UPDATE SET touched_at=excluded.touched_at';
+      await db.query(`INSERT INTO document_bodies (id,body,bytes,touched_at) VALUES (?,?,?,?)${upsert}`,[id,body,bytes.length,clock()],'run');
     },
     async get(id){const [row]=await db.query('SELECT body FROM document_bodies WHERE id=?',[id]);return row?{text:async()=>row.body}:null;},
   };
