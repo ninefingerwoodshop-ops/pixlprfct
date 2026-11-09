@@ -1,3 +1,4 @@
+import {quotaFromMegabytes} from '../lib/document-storage.mjs';
 const loopback = host => ['localhost', '127.0.0.1', '[::1]'].includes(host);
 export const providers = Object.freeze({sqlite:'sqlite',postgres:'postgres',supabase:'postgres',render:'postgres',neon:'postgres',mysql:'mysql',mariadb:'mysql'});
 export function readConfig(env = process.env) {
@@ -26,5 +27,6 @@ export function readConfig(env = process.env) {
   const adminEmail = (env.PIXL_ADMIN_EMAIL || '').trim().toLowerCase();
   if(!Number.isInteger(Number(env.PORT||4174))||Number(env.PORT||4174)<1||Number(env.PORT||4174)>65535)throw new Error('PORT must be an integer from 1 to 65535.');
   if (!local && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) throw new Error('Set PIXL_ADMIN_EMAIL to the installation administrator’s email.');
-  return {backups:env.PIXL_BACKUPS==='true',backupDirectory:env.PIXL_BACKUP_DIRECTORY||'./data/backups',provider,engine,databaseUrl,databaseTLS,databaseSchema,databaseCAFile,sqlitePath:env.PIXL_SQLITE_PATH || './data/pixlprfct.sqlite',baseURL:url.origin,secret:env.BETTER_AUTH_SECRET,local,adminEmail,smtpUrl:env.SMTP_URL,smtpFrom:env.SMTP_FROM,registration:env.PIXL_REGISTRATION !== 'closed',port:Number(env.PORT || 4174),host:local?'127.0.0.1':(env.HOST || '0.0.0.0')};
+  const storageQuota=quotaFromMegabytes(env.PIXL_STORAGE_QUOTA_MB);
+  return {storageQuota,backups:env.PIXL_BACKUPS==='true',backupDirectory:env.PIXL_BACKUP_DIRECTORY||'./data/backups',provider,engine,databaseUrl,databaseTLS,databaseSchema,databaseCAFile,sqlitePath:env.PIXL_SQLITE_PATH || './data/pixlprfct.sqlite',baseURL:url.origin,secret:env.BETTER_AUTH_SECRET,local,adminEmail,smtpUrl:env.SMTP_URL,smtpFrom:env.SMTP_FROM,registration:env.PIXL_REGISTRATION !== 'closed',port:Number(env.PORT || 4174),host:local?'127.0.0.1':(env.HOST || '0.0.0.0')};
 }

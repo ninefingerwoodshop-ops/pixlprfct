@@ -1,5 +1,6 @@
 import {DocumentError} from '../lib/documents.mjs';
 import {readBody,storeBody} from '../lib/document-bodies.mjs';
+import {utf8Bytes,assertStorageQuota,currentBodyBytes} from '../lib/document-storage.mjs';
 import {automaticCheckpoint} from '../lib/automatic-history.mjs';
 import {readJSON} from './input.mjs';
 import {mergeDocuments} from '../web/document-merge.js';
@@ -12,9 +13,9 @@ async function normalize(body){
  if(!engine){engine=(async()=>{const {readFile}=await import('node:fs/promises'),m=await import('../web/pkg/pixlprfct_core.js');m.initSync({module:await readFile(new URL('../web/pkg/pixlprfct_core_bg.wasm',import.meta.url))});return m;})();}
  const {Editor}=await engine,e=new Editor();try{e.load(JSON.stringify(body));return JSON.parse(e.snapshot());}catch{throw new DocumentError(400,'These combined edits are not a valid design. Keep a local copy and resolve the overlapping structural changes.');}finally{e.free();}
 }
-export function liveEditing(db,bodies,collaboration,libraries,engine){
+export function liveEditing(db,bodies,collaboration,libraries,engine,storage=null){
  const ignored=engine==='mysql'?'INSERT IGNORE':engine==='sqlite'?'INSERT OR IGNORE':'INSERT',suffix=engine==='postgres'?' ON CONFLICT (id) DO NOTHING':'';
- async function archive(row){await db.query(`${ignored} INTO live_versions(id,document_id,owner,revision,body) VALUES(?,?,?,?,?)${suffix}`,[row.id+':'+row.revision,row.id,row.owner,row.revision,row.body],'run');}
+ async function archive(row){await db.query(`${ignored} INTO live_versions(id,document_id,owner,revision,body,body_bytes) VALUES(?,?,?,?,?,?)${suffix}`,[row.id+':'+row.revision,row.id,row.owner,row.revision,row.body,row.body_bytes??utf8Bytes(row.body)],'run');}
  async function current(id,access){const [r]=await db.query('SELECT * FROM documents WHERE id=? AND owner=? AND deleted_at IS NULL',[id,access.owner]);if(!r)throw new DocumentError(404,'File not found.');return r;}
  async function response(id,access,client,since){
   const row=await current(id,access);await archive(row);
@@ -61,13 +62,14 @@ export function liveEditing(db,bodies,collaboration,libraries,engine){
    const before=JSON.parse(await readBody(row.body,bodies)),original=JSON.parse(await readBody(base.body,bodies)),local=await normalize(value.document),merged=mergeDocuments(original,local,before);
    if(merged.conflicts.length)return json({error:'Overlapping edits need your choice.',conflicts:merged.conflicts,revision:row.revision,body:JSON.stringify(before)},409);
    const after=await normalize(merged.document);await libraries.guard({id,before,after,method:'PUT'},access);
-   const stamp=Date.now(),body=await storeBody(JSON.stringify(after),bodies),fence=rights.fence;
+   const serialized=JSON.stringify(after);if(storage?.quota)await assertStorageQuota(db,access.owner,utf8Bytes(serialized)-await currentBodyBytes(db,id,access.owner,storage),storage);
+   const stamp=Date.now(),body=await storeBody(serialized,bodies),fence=rights.fence;
    await archive(row);
    try{
     await db.batch([
      automaticCheckpoint(db,{id,owner:access.owner,revision:row.revision,now:stamp,fence}),
      db.prepare('INSERT INTO live_mutations(id,document_id,revision) VALUES(?,?,?)').bind(mutation,id,row.revision+1),
-     db.prepare('UPDATE documents SET body=?,name=?,revision=revision+1,updated_at=? WHERE id=? AND owner=? AND revision=? AND deleted_at IS NULL'+fence.sql).bind(body,after.name,stamp,id,access.owner,row.revision,...fence.args),
+     db.prepare('UPDATE documents SET body=?,body_bytes=?,name=?,revision=revision+1,updated_at=? WHERE id=? AND owner=? AND revision=? AND deleted_at IS NULL'+fence.sql).bind(body,utf8Bytes(body),after.name,stamp,id,access.owner,row.revision,...fence.args),
     ],{requireLastChange:true});
     return json(await response(id,access,client,0));
    }catch(error){if(error.status!==409&&!['23505','SQLITE_CONSTRAINT_PRIMARYKEY','ERR_SQLITE_ERROR','ER_DUP_ENTRY'].includes(error.code))throw error;if(attempt===4)throw new DocumentError(409,'The file is busy. Your changes are retained; retry saving.');}
