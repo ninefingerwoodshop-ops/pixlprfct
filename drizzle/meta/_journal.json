@@ -29,6 +29,13 @@
       "when": 1793294401362,
       "tag": "0003_project_creators",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793880208582,
+      "tag": "0004_storage_accounting",
+      "breakpoints": true
     }
   ]
 }

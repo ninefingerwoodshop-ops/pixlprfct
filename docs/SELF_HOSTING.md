@@ -123,6 +123,24 @@ backed up and migrated without changing its existing design content or revision.
 SQLite restart/backup restoration was exercised with disposable verified accounts;
 this does not substitute for the managed provider’s restore drill.
 
+### Storage quotas and unreferenced bodies (2026-11-04)
+
+Set `PIXL_STORAGE_QUOTA_MB` to limit the stored data of each personal space or
+workspace. Leave it unset for no limit, which is the default. Stored data is inline document
+and version bodies plus each referenced large body once. Trash and version
+history count. A save, named version or restore that would exceed the limit
+returns HTTP 507. The editor keeps the local copy and shows "Cloud storage full".
+The limit is checked before each write, so concurrent saves can pass it slightly.
+Raising the quota is currently the only way to make room, because there is no
+permanent delete or history retention limit.
+
+Once a day the server removes large bodies (`document_bodies`) that no file,
+version or live-editing base references and that no save has written in the
+last 24 hours. Every body write refreshes `touched_at`, and the delete re-checks
+references in the same statement. The admin status reports the last run, the
+bodies removed and the bytes freed. `npm run selfhost:migrate` adds `body_bytes`,
+`bytes` and `touched_at` columns and fills them for existing rows.
+
 ### Backups and operations (2026-10-30)
 
 Enable daily consistent snapshots with `PIXL_BACKUPS=true` and choose a private

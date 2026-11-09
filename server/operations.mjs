@@ -5,10 +5,11 @@ import {smtpOptions,createDelivery} from './auth.mjs';
 import nodemailer from 'nodemailer';
 import {workspaceAccess} from './workspace-access.mjs';
 import {collaborationService} from './collaboration.mjs';
+import {sweepDatabaseBodies} from '../lib/document-storage.mjs';
 
 export function operations(config,db,{deliver,now=Date.now}={}){
  const startedAt=now(),failures=[],directory=path.resolve(config.backupDirectory??'data/backups'),send=createDelivery(config,deliver),collaboration=collaborationService(db,config.engine);
- let backupBusy=false,mailBusy=false,lastBackup=null,lastMailError=null;
+ let backupBusy=false,mailBusy=false,lastBackup=null,lastMailError=null,storageBusy=false,lastSweep=null;
  const failure=(route,status)=>{failures.push({at:now(),route:route.replace(/[0-9a-f-]{36}/gi,':id'),status});if(failures.length>50)failures.shift();};
  async function backupTick(){
   if(config.backups===false||backupBusy||!['sqlite','postgres'].includes(config.engine))return;backupBusy=true;
@@ -41,11 +42,18 @@ export function operations(config,db,{deliver,now=Date.now}={}){
    }
   }catch{failure('notification-delivery',503);}finally{mailBusy=false;}
  }
+ // Large bodies that no saved row references are removed once a day, after a
+ // grace period that protects saves in progress.
+ async function storageTick(){
+  if(storageBusy||lastSweep&&now()-lastSweep.at<24*60*60*1000)return;storageBusy=true;
+  try{const result=await sweepDatabaseBodies(db,{now:now()});lastSweep={at:now(),...result};}
+  catch{failure('storage-maintenance',503);}finally{storageBusy=false;}
+ }
  async function status(){
   await db.query('SELECT 1 AS ready');let restore=null;if(lastBackup?.folder)try{restore=JSON.parse(await readFile(path.join(lastBackup.folder,'restore-proof.json'),'utf8'));}catch{}
-  return {database:'ready',uptimeSeconds:Math.floor((now()-startedAt)/1000),backup:{enabled:config.backups!==false,busy:backupBusy,lastAt:lastBackup?.at??null,bytes:lastBackup?.bytes??null,verifiedRestore:restore?.verifiedAt??null},mail:{configured:!!config.smtpUrl,lastFailureAt:lastMailError},recentFailures:failures};
+  return {database:'ready',uptimeSeconds:Math.floor((now()-startedAt)/1000),backup:{enabled:config.backups!==false,busy:backupBusy,lastAt:lastBackup?.at??null,bytes:lastBackup?.bytes??null,verifiedRestore:restore?.verifiedAt??null},mail:{configured:!!config.smtpUrl,lastFailureAt:lastMailError},storage:{quotaBytes:config.storageQuota??null,lastSweepAt:lastSweep?.at??null,removedBodies:lastSweep?.deleted??null,freedBytes:lastSweep?.freed??null},recentFailures:failures};
  }
  async function verifyMail(){if(!config.smtpUrl)return {configured:false,verified:false};const transport=nodemailer.createTransport(smtpOptions(config));try{await transport.verify();return {configured:true,verified:true,deliveryTested:false};}finally{transport.close();}}
  const tasks=new Set();const track=fn=>{const task=fn();tasks.add(task);task.finally(()=>tasks.delete(task));return task;};
- let timers=[];return {failure,status,verifyMail,backupTick,mailTick,start(){timers=[setInterval(()=>track(backupTick),3600000),setInterval(()=>track(mailTick),15000)];for(const t of timers)t.unref();track(backupTick);},async stop(){for(const t of timers)clearInterval(t);await Promise.allSettled([...tasks]);}};
+ let timers=[];return {failure,status,verifyMail,backupTick,mailTick,storageTick,start(){timers=[setInterval(()=>track(backupTick),3600000),setInterval(()=>track(mailTick),15000),setInterval(()=>track(storageTick),3600000)];for(const t of timers)t.unref();track(backupTick);track(storageTick);},async stop(){for(const t of timers)clearInterval(t);await Promise.allSettled([...tasks]);}};
 }
