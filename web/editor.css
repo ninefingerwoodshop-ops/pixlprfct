@@ -666,3 +666,28 @@ dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-foot{display:flex;gap:0;padding:8px;border-top:1px solid var(--ui-border)}
 dialog#prototype-interaction-modal#prototype-interaction-modal button:focus-visible,#prototype-panel :is(.prototype-chip,.prototype-add,.prototype-chip-remove):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}
 dialog#prototype-interaction-modal#prototype-interaction-modal label.long{grid-template-columns:minmax(0,1fr);height:auto!important;gap:4px}
+
+/* Sidebar Grid panel for selected grid tracks. Measured in Figma on 2026-11-11
+   (CSS px, 240 px sidebar): 13px/550 title with a 24px close button, 11px/550
+   section titles, 24px rows 32px apart: 16px number, two 76px controls and a
+   24px remove button, 8px gaps, 16px side padding. */
+/* The editor moves inspector sections into .inspector-content at start-up; the panel replaces its siblings there, and the tabs stay. */
+.right-panel.grid-tracks-open .inspector-content>:not(#grid-track-panel){display:none!important}
+#grid-track-panel{flex:1;overflow:auto;padding:0;font:var(--ui-regular) 11px/16px var(--ui-font);color:var(--ui-text-color)}
+#grid-track-panel[hidden]{display:none}
+#grid-track-panel .grid-track-panel-head{display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 8px 0 16px;border-top:1px solid var(--ui-border);border-bottom:1px solid var(--ui-border)}
+#grid-track-panel .grid-track-panel-head h2{margin:0!important;font:550 13px/22px var(--ui-font)!important;letter-spacing:0}
+#grid-track-panel .grid-track-panel-section{padding:8px 0 12px;border-bottom:1px solid var(--ui-border)}
+#grid-track-panel .grid-track-panel-title{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 8px 0 16px}
+#grid-track-panel .grid-track-panel-title h3{margin:0!important;font:550 11px/16px var(--ui-font)!important;letter-spacing:0;text-transform:none}
+#grid-track-panel .grid-track-panel-note{margin:4px 16px;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent)}
+#grid-track-panel#grid-track-panel :is(.grid-track-panel-close,.grid-track-panel-add,.grid-track-panel-remove){flex:none;width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);display:inline-grid;place-items:center;cursor:pointer}
+#grid-track-panel .grid-track-panel-row{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px 0 16px}
+#grid-track-panel .grid-track-panel-row.selected{background:color-mix(in srgb,var(--ui-accent) 28%,transparent)}
+#grid-track-panel#grid-track-panel .grid-track-panel-index{flex:none;width:16px!important;min-width:16px!important;height:16px!important;min-height:16px!important;padding:0!important;border:0!important;background:transparent!important;color:color-mix(in srgb,var(--ui-text-color) 40%,transparent);font:550 11px/16px var(--ui-font);text-align:center;cursor:pointer}
+#grid-track-panel#grid-track-panel .grid-track-panel-row.selected .grid-track-panel-index{color:var(--ui-text-color)}
+#grid-track-panel#grid-track-panel .grid-track-panel-row>:is(select,input,.inspector-select-trigger){flex:1 1 76px;width:76px!important;min-width:0;height:24px!important;min-height:24px!important;box-sizing:border-box;padding:0 8px;border:1px solid var(--ui-border);border-radius:5px;background:var(--ui-field);color:var(--ui-text-color);font:450 11px/16px var(--ui-font)}
+#grid-track-panel#grid-track-panel .grid-track-panel-row.selected>:is(select,input,.inspector-select-trigger){border-color:var(--ui-accent)}
+#grid-track-panel .grid-track-panel-remove{visibility:hidden}
+#grid-track-panel .grid-track-panel-row:is(.selected,:hover,:focus-within) .grid-track-panel-remove{visibility:visible}
+#grid-track-panel :is(button,input,select):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}
