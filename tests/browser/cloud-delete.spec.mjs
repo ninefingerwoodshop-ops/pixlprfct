@@ -24,24 +24,24 @@ test('self-hosted editor: delete a saved version and delete a trashed file forev
   const versions=async()=>ok(await f.owner.call(f.path(id,'/versions'))).versions.map(v=>v.label).sort();
   // Cancel keeps the version.
   await rows.filter({hasText:'Remove this'}).getByRole('button',{name:'Delete',exact:true}).click();
-  let confirm=page.getByRole('alertdialog',{name:'Delete this version?'});await expect(confirm).toContainText('“Remove this”');await expect(confirm).toContainText('The current design is not changed.');
+  let confirm=page.getByRole('alertdialog',{name:'Permanently delete version'});await expect(confirm).toContainText('permanently delete the version Remove this');await expect(confirm).toContainText('The current design is not changed.');
   await confirm.getByRole('button',{name:'Cancel'}).click();await expect(rows).toHaveCount(2);expect(await versions()).toEqual(['Keep this','Remove this']);
   await rows.filter({hasText:'Remove this'}).getByRole('button',{name:'Delete',exact:true}).click();
-  await page.getByRole('alertdialog',{name:'Delete this version?'}).getByRole('button',{name:'Delete version'}).click();
+  await page.getByRole('alertdialog',{name:'Permanently delete version'}).getByRole('button',{name:'Permanently delete'}).click();
   await expect(rows).toHaveCount(1);await expect(rows).toContainText('Keep this');await expect(history.locator('.cloud-info')).toHaveText('Version deleted.');
   expect(await versions()).toEqual(['Keep this']);
   // Nothing here is older than 30 days, so pruning removes nothing.
   await history.getByRole('button',{name:'Delete automatic backups older than 30 days'}).click();
-  await page.getByRole('alertdialog',{name:'Delete old automatic backups?'}).getByRole('button',{name:'Delete backups'}).click();
+  await page.getByRole('alertdialog',{name:'Permanently delete old backups'}).getByRole('button',{name:'Permanently delete'}).click();
   await expect(history.locator('.cloud-info')).toHaveText('No automatic backups are older than 30 days.');expect(await versions()).toEqual(['Keep this']);
   await history.getByRole('button',{name:'Close history'}).click();
   // Trash in the files dialog: delete the other file forever.
   await files.getByRole('button',{name:'Show Trash'}).click();
   const doomedRow=files.locator('.cloud-row').filter({hasText:'Doomed file'});await expect(doomedRow).toBeVisible();
-  await doomedRow.getByRole('button',{name:'Delete forever'}).click();
-  confirm=page.getByRole('alertdialog',{name:'Delete forever?'});await expect(confirm).toContainText('“Doomed file” and its version history will be permanently deleted.');
+  await doomedRow.getByRole('button',{name:'Permanently delete'}).click();
+  confirm=page.getByRole('alertdialog',{name:'Permanently delete file'});await expect(confirm).toContainText('permanently delete the file Doomed file and its version history');
   await confirm.getByRole('button',{name:'Cancel'}).click();await expect(doomedRow).toBeVisible();expect((await f.owner.call(f.path(doomed))).status).toBe(200);
-  await doomedRow.getByRole('button',{name:'Delete forever'}).click();await page.getByRole('alertdialog',{name:'Delete forever?'}).getByRole('button',{name:'Delete forever'}).click();
+  await doomedRow.getByRole('button',{name:'Permanently delete'}).click();await page.getByRole('alertdialog',{name:'Permanently delete file'}).getByRole('button',{name:'Permanently delete'}).click();
   await expect(doomedRow).toHaveCount(0);await expect(files).toContainText('Trash is empty.');
   expect((await f.owner.call(f.path(doomed))).status).toBe(404);
   expect((await f.db.query('SELECT id FROM document_versions WHERE document_id=?',[doomed])).length).toBe(0);

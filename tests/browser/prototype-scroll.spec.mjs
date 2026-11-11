@@ -55,15 +55,15 @@ test('the presented screen scrolls from the keyboard',async({page})=>{
 });
 test('overflow scrolling and pinning are set in the Prototype inspector',async({page})=>{
  const data=await seed(page,scrolling()),shape=async id=>(await saved(page)).shapes.find(s=>s.id===id);
- const choose=(label,value)=>page.getByLabel(label,{exact:true}).evaluate((node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));},value);
+ const panel=page.locator('#prototype-panel'),choose=(label,value)=>panel.getByLabel(label,{exact:true}).evaluate((node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));},value);
  await select(page,data.list);await page.getByRole('tab',{name:'Prototype',exact:true}).click();
- await expect(page.getByLabel('Overflow scrolling',{exact:true})).toHaveValue('vertical');await expect(page.getByLabel('Position when scrolling',{exact:true})).toHaveCount(0);
- await choose('Overflow scrolling','both');await expect.poll(async()=>(await shape(data.list)).overflow_scroll).toBe('both');
+ await expect(panel.getByLabel('Overflow',{exact:true})).toHaveValue('vertical');await expect(panel.getByRole('heading',{name:'Scroll behavior'})).toBeVisible();await expect(panel.getByLabel('Overflow',{exact:true}).locator('option')).toHaveText(['No scrolling','Horizontal','Vertical','Both directions']);await expect(panel.getByLabel('Position',{exact:true})).toHaveCount(0);
+ await choose('Overflow','both');await expect.poll(async()=>(await shape(data.list)).overflow_scroll).toBe('both');
  await select(page,data.header);await page.getByRole('tab',{name:'Prototype',exact:true}).click();
- await expect(page.getByLabel('Position when scrolling',{exact:true})).toHaveValue('fixed');await expect(page.getByLabel('Overflow scrolling',{exact:true})).toHaveCount(0);
- await choose('Position when scrolling','scroll');await expect.poll(async()=>(await shape(data.header)).scroll_fixed??false).toBe(false);
+ await expect(panel.getByLabel('Position',{exact:true})).toHaveValue('fixed');await expect(panel.getByLabel('Overflow',{exact:true})).toHaveCount(0);
+ await choose('Position','scroll');await expect.poll(async()=>(await shape(data.header)).scroll_fixed??false).toBe(false);
  // Turning scrolling off removes the pinning choice from the children.
- await select(page,data.list);await page.getByRole('tab',{name:'Prototype',exact:true}).click();await choose('Overflow scrolling','none');
+ await select(page,data.list);await page.getByRole('tab',{name:'Prototype',exact:true}).click();await choose('Overflow','none');
  await expect.poll(async()=>(await shape(data.list)).overflow_scroll??'none').toBe('none');
- await select(page,data.red);await page.getByRole('tab',{name:'Prototype',exact:true}).click();await expect(page.getByLabel('Position when scrolling',{exact:true})).toHaveCount(0);
+ await select(page,data.red);await page.getByRole('tab',{name:'Prototype',exact:true}).click();await expect(panel.getByLabel('Position',{exact:true})).toHaveCount(0);
 });

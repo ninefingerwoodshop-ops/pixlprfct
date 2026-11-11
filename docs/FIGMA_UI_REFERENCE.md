@@ -1277,3 +1277,99 @@ selection after Ungroup and existing group controls work locally. Same-parent
 Group and neutral structural Ungroup are the verified scope; transformed, styled,
 animated or referenced wrappers remain guarded. General reparenting and complete
 Figma workflow/pixel parity remain open. Local source only, not alpha.21.
+
+
+## 2026-11-11 — Prototype tab, grid track handles and Trash, inspected live
+
+Inspected in a scratch draft ("PixlPrfct parity scratch (trash test)") in the
+live Figma web app at a 1513 × 784 viewport, dark theme. The file holds two
+frames, a button, tall content and a 3 × 2 grid auto-layout frame. It was moved
+to Trash to read the Trash menu and dialogs, then restored; nothing was
+permanently deleted and no other file was touched.
+
+### Trash (file browser)
+
+- A file card's menu ends with **Move to trash**. Choosing it opens a dialog
+  titled **Move file to trash**: "You're about to move the file **Name** to
+  trash." / "You can always restore it later from the **Trash** section."
+  Buttons, right-aligned: **Cancel** (outlined) and **Move file to trash** (blue).
+- In Trash the card reads "Trashed by you just now" and its menu is
+  **Duplicate to drafts**, a divider, **Restore**, **Permanently delete**.
+- **Permanently delete** opens **Permanently delete file**: "You're about to
+  permanently delete the file **Name**. You won't be able to restore it."
+  Buttons: **Cancel** and a red **Permanently delete**.
+- Both dialogs are about 268 px wide and 120 px tall: a title bar of about
+  34 px with a close ✕ and a divider, the message, a divider, and a footer of
+  about 34 px. Text is 11 px. Restoring shows a toast "File restored · Show in Drafts".
+
+PixlPrfct now matches the wording (with "project" for "file" on the Projects
+page), the title bar, close button, dividers, 268 px width, 34 px header,
+24 px buttons, the blue move button and the red delete button, and asks before
+moving to Trash. Still different: there is no **Duplicate to drafts**; the
+card does not say who trashed it or when; there is no "restored" toast link;
+body spacing is close but not measured to the pixel.
+
+### Prototype tab
+
+- With a layer selected the tab shows **Interactions** with a **+**, then
+  **Scroll behavior**. For a frame: **Overflow** with No scrolling,
+  Horizontal, Vertical, Both directions. For a child: **Position** with
+  Scroll with parent, Fixed (stay in place), Sticky (stop at top edge).
+  A frame also shows **Flow starting point** above Interactions.
+- **+** adds an interaction row shown as a chip, "Click ⊘ None" and then
+  "Click → Screen B", and opens a floating **Interaction** panel beside the
+  sidebar with **Trigger** and **Action** rows.
+- Trigger menu: None | On click, On drag, While hovering, While pressing,
+  Key/Gamepad | Mouse enter, Mouse leave, Mouse down, Mouse up | After delay.
+- Action menu: None | Navigate to, Change to, Back, Scroll to, Open link |
+  Set variable, Set variable mode, Conditional | Open overlay, Swap overlay,
+  Close overlay | Play/Pause animation, Set playhead.
+- After a destination is chosen: **Destination**, **Animation** (Instant,
+  Dissolve, Smart animate | Move in, Move out, Push, Slide in, Slide out),
+  then **Easing** (Ease out by default) and **Duration** (300ms) with a small
+  animated preview, and a collapsed **State** section.
+- The **+** in the Interaction panel's title bar opens the action menu to add
+  another action to the same trigger. With two or more actions the panel widens
+  to two columns: the trigger and an ordered action list ("Navigate to Screen B",
+  "Set variable") with **+** and **−** below on the left, and the selected
+  action's fields on the right.
+- **Set variable** shows **Target** (a searchable variable picker with
+  "Add new") and **Value**.
+- **Conditional** is an action of its own. The list shows an **if** row with a
+  "Write condition" expression field and variable picker, an indented
+  "Add action", then **else** with its own "Add action".
+
+PixlPrfct now matches the section title Scroll behavior, the labels Overflow
+and Position, the Overflow option order, and the names Navigate to, Back,
+Mouse down and Mouse up. Still different, and structural rather than wording:
+
+- Interactions are inline blocks with "Add interaction" and "Delete
+  interaction" buttons, not chips with a floating Interaction panel.
+- Follow-up actions are "Then" blocks added with "Add follow-up action", not
+  an action list added from a **+** menu in a two-column panel.
+- Conditions are a "Run: Always / Only when" setting on each action, not a
+  Conditional action with if/else blocks and a written expression.
+- Set variable uses its own fields rather than Target and Value with Figma's picker.
+- Missing triggers: While hovering, While pressing, Key/Gamepad. Missing
+  actions: Change to, Scroll to, Open link, Set variable mode, Play/Pause
+  animation, Set playhead. Missing position: Sticky. Missing animations:
+  Move in, Move out, Push, Slide in/out (PixlPrfct has Slide left/right/up/down).
+- No animation preview and no State section.
+
+### Grid auto-layout track handles
+
+- With a grid frame selected, hovering a cell shows a small light-blue pill
+  centered above that cell's column and another to the left of its row, about
+  28 px outside the frame at 246% zoom.
+- Hovering a pill expands it to a blue chip with a grip icon, the track size
+  ("1fr") and a chevron.
+- Clicking the chip selects the track, outlines it on the canvas and replaces
+  the right sidebar with a **Grid** panel: **Columns** and **Rows** lists, each
+  row showing its index, a sizing menu (Fill) and a value menu (1fr), a **−**
+  on the selected row and a **+** in each list header.
+
+PixlPrfct's track headers are different: a header lane drawn for every track
+in spacing-edit mode, not a per-hover pill and chip, and selection does not
+open a Grid panel in the sidebar. Dragging a chip to reorder and multi-track
+selection were **not** exercised in Figma, so that behaviour is still
+unverified. Slots and set labels were not inspected in this pass.
