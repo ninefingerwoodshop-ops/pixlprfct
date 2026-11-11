@@ -119,7 +119,9 @@
     "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
     "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)",
     "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)",
-    "Smart animate prototype transition for navigate and back: layers paired by name, kind and hierarchy blend position, size, rotation, colors, opacity, radius and type size while unpaired layers fade, with duration, easing and reduced-motion support; On drag trigger with a 10 px threshold and click suppression (branch source; not compared against live Figma)"
+    "Smart animate prototype transition for navigate and back: layers paired by name, kind and hierarchy blend position, size, rotation, colors, opacity, radius and type size while unpaired layers fade, with duration, easing and reduced-motion support; On drag trigger with a 10 px threshold and click suppression (branch source; not compared against live Figma)",
+    "Slot authoring: formatted descriptions (bold, italic, code, links, lists) with toolbar and preview; save or remove a slot across every variant of a component set in one undo step with a skipped-variant report; native Figma SLOT definitions and settings imported from .fig, per variant for set-level definitions (branch source; not verified against live Figma or a real slot-bearing export)",
+    "Canvas grid track headers in spacing edit mode: drag a column or row header to reorder with a drop line; click, Shift-range and Ctrl/Command-toggle multi-track selection shared with the inspector cards; grouped moves and Alt+arrow block shifts keep connected spans whole, propagate to instances and commit as one undo step (branch source; pointer-only selection, not compared against Figma)"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
@@ -127,6 +129,7 @@
     "Broader SVG import and external vector clipboard interoperability",
     "Masks, Boolean operations, advanced corner smoothing and slice workflows require capability-specific acceptance",
     "Direct drag grid track reordering and multi-track selection",
+    "Set-label placement parity against live Figma; Figma verification of slot description formatting, across-variant slot authoring and native slot import with a real export",
     "Set-label overlap, slot rich descriptions/bulk authoring/native Figma slot metadata import",
     "Complete prototype parity: sequential/conditional actions, scroll interactions, pointer-following drag transitions, Smart Animate for overlays and verification of Smart Animate matching against live Figma",
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",

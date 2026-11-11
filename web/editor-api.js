@@ -665,6 +665,30 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "move_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and insertion boundary before (track count appends). Selected tracks gather at the boundary in their current order; connected spans move together in one undo step. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "before",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "move_into",
     "readOnly": false,
     "description": "Pass an array of complete Shapes with desired world coordinates, then destination parent ID (0 = root).",
@@ -1017,6 +1041,18 @@ export const engineCommands=[
     "returns": "void"
   },
   {
+    "name": "remove_slot_across_variants",
+    "readOnly": false,
+    "description": "Slot property ID. Removes it and the same-named slot properties of the other variants in its component set. Returns the number removed.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "number"
+  },
+  {
     "name": "remove_text_style",
     "readOnly": false,
     "description": "Delete a text style and detach linked layers without changing their appearance.",
@@ -1277,6 +1313,18 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "save_slot_across_variants",
+    "readOnly": false,
+    "description": "Slot component property (json, as for save_component_property). Saves it and gives every other variant in its component set a same-named slot with the same settings, bound to layers matched by name and then by position. One undo step. Returns a JSON report string: id, created, updated, unchanged and skipped variants with reasons.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "save_text_style",
     "readOnly": false,
     "description": "Create/update TextStyle {id,name,description?,typography}. ID 0 creates. layer_id 0 saves without binding; otherwise applies across pages. Shares family, size, weight and line height, preserving alignment, wrapping and sizing.",
@@ -1435,6 +1483,30 @@ export const engineCommands=[
       }
     ],
     "returns": "number"
+  },
+  {
+    "name": "shift_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and -1 or 1. The selection shifts one position as a block. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "delta",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
   },
   {
     "name": "sort_components",
@@ -1765,6 +1837,16 @@ export const modelReference={
     "file": "src/slots.rs",
     "kind": "struct",
     "declaration": "#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]\npub struct SlotState {\n    pub property: u32,\n    #[serde(default)]\n    pub modified: bool,\n}"
+  },
+  "VariantSlotReport": {
+    "file": "src/slots.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Default, Serialize)]\npub struct VariantSlotReport {\n    pub id: u32,\n    pub created: u32,\n    pub updated: u32,\n    pub unchanged: u32,\n    pub skipped: Vec<SkippedVariant>,\n}"
+  },
+  "SkippedVariant": {
+    "file": "src/slots.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Serialize)]\npub struct SkippedVariant {\n    pub component_id: u32,\n    pub name: String,\n    pub reason: String,\n}"
   },
   "TextStyle": {
     "file": "src/text_styles.rs",

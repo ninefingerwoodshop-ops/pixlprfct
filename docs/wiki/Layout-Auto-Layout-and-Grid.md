@@ -139,7 +139,8 @@ Set in the Constraints inspector (`#constraint-horizontal/vertical`, multi-selec
 | [grid-canvas.js](../../web/grid-canvas.js) | `gridTracks`, `gridCellAt`, `gridDropTarget`, `drawGridCells`, `gridSpanResize`, `gridArrowMove` (arrow keys move an item one cell), `gridCreationPlacement` (new shapes join the cell under the pointer). |
 | [grid-areas.js](../../web/grid-areas.js) | Named-area editing: `areaFromDrag`, `moveArea`, `resizeArea`, `nudgeArea`, `validArea`/`areasOverlap`, `nextAreaName`, `cycleArea`/`pageArea`, `drawAreaEditing`, history-aware selection restore. |
 | [grid-ux.js](../../web/grid-ux.js), [grid-picker-drag.js](../../web/grid-picker-drag.js) | Visual placement picker cells/window and drag-to-span. |
-| [grid-track-sort.js](../../web/grid-track-sort.js) | Drag-reorder track cards in the inspector (commits only on drop). |
+| [grid-track-sort.js](../../web/grid-track-sort.js) | Drag-reorder track cards in the inspector (commits only on drop); a selected card carries the whole track selection. |
+| [grid-track-selection.js](../../web/grid-track-selection.js) | Canvas track headers in spacing edit mode: hit testing, click/Shift/Ctrl selection, drop boundary and drop line, drawing. |
 | [grid-stack-drop.js](../../web/grid-stack-drop.js) | Pointer-based drop into an occupied cell's wrapper (stacking). |
 | [grid-resize-feedback.js](../../web/grid-resize-feedback.js) | Limit boxes and warnings while resizing bounded tracks/areas; auto-scroll of the track list with pause and Alt/Option+R resume. |
 | [grid-measurement.js](../../web/grid-measurement.js) | `measuredGridPlacement`: derive cells from the browser's resolved CSS grid (used when the CSS canvas is active). |
@@ -201,7 +202,7 @@ Frames carry `layout_grids: Vec<LayoutGrid>` (`kind` `columns`/`rows`/`grid`, `c
 |---|---|
 | Flex engine | `layout` (4), `layout-sizing` (5), `layout-wrap` (6), `layout-baseline` (5), `layout-distribution` (3), `layout-overlap` (5), `layout-strokes` (5), `layout-stacking` (8), `layout-spacing` (4), `layout-keyboard` (2) |
 | Inference/parity | `figma-layout-parity` (23), `constraints` (3), `parent-alignment` (2), `frame-enclosure` (8) |
-| Grid | `grid-advanced` (35), `grid-resize-feedback` (16), `grid-areas` (13), `grid-canvas` (10), `grid-reorder` (9), `grid-area-track-values` (8), `grid-layout` (6), `grid-picker-drag` (5), `grid-track-sort` (5), `responsive-grid-areas` (5), `grid-ux` (4), `grid-bounded-tracks`, `grid-delete`, `grid-measurement`, `grid-stack-drop` (3 each), `masonry` (2) |
+| Grid | `grid-advanced` (35), `grid-resize-feedback` (16), `grid-areas` (13), `grid-canvas` (10), `grid-reorder` (15), `grid-area-track-values` (8), `grid-layout` (6), `grid-picker-drag` (5), `grid-track-sort` (8), `grid-track-selection` (7), `responsive-grid-areas` (5), `grid-ux` (4), `grid-bounded-tracks`, `grid-delete`, `grid-measurement`, `grid-stack-drop` (3 each), `masonry` (2) |
 | CSS/responsive | `layout-css` (10), `layout-class` (6), `layer-style` (7), `css-renderer` (4), `breakpoint-preview` (6), `device-chrome` (12) |
 | Guides | `layout-guides` (4), `guide-snap` (4), `guide-styles` (4) |
 
@@ -212,9 +213,10 @@ Rust has only three unit tests (`src/lib.rs` `mod tests`); layout is verified th
 - Inference is a set of measured heuristics, with documented limits; arbitrary compositions may infer differently.
 - Canvas breakpoints use frame width; general CSS media queries in custom layer CSS use the browser viewport.
 - design-file import maps horizontal/vertical stacks only; Imported grid layouts import with fixed positions.
-- Multi-track selection is not implemented.
+- Canvas multi-track selection is pointer-only (click, Shift-range, Ctrl/Command-toggle on track headers); there is no keyboard path to build a multi-track selection.
+- Track headers are a PixlPrfct addition and have not been compared against Figma's grid UI.
 
-> **Note:** README "Grid auto layout" says direct drag reordering and direct track deletion of grid tracks are pending. Code has inspector drag reordering ([grid-track-sort.js](../../web/grid-track-sort.js)) and `Editor::delete_grid_track` (README's "Inspector and toolbar" section documents Delete row/column). Canvas-edge drag reordering of tracks is still not implemented.
+> **Note:** README "Grid auto layout" says direct drag reordering and direct track deletion of grid tracks are pending. Code has inspector drag reordering ([grid-track-sort.js](../../web/grid-track-sort.js)) and `Editor::delete_grid_track` (README's "Inspector and toolbar" section documents Delete row/column). Canvas drag reordering and multi-track selection are implemented by track headers in spacing edit mode ([grid-track-selection.js](../../web/grid-track-selection.js), `Editor::move_grid_tracks` / `shift_grid_tracks`).
 
 ## Related pages
 
