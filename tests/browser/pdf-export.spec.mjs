@@ -71,3 +71,49 @@ test('transparent selection exports keep an alpha mask and opaque backgrounds do
  const start=solidPdf.indexOf('stream\n',solidPdf.indexOf('/ColorSpace /DeviceRGB'))+7,length=Number(solidPdf.toString('latin1').match(/\/ColorSpace \/DeviceRGB \/BitsPerComponent 8 \/Filter \/FlateDecode \/Length (\d+)/)[1]);
  expect(inflateSync(solidPdf.subarray(start,start+length)).length).toBe(Number(header[1])*Number(header[2])*3);
 });
+
+function words(){
+ const e=createHeadlessEditor(),doc=()=>JSON.parse(e.snapshot()),get=id=>doc().shapes.find(s=>s.id===id),edit=(id,p)=>e.update(JSON.stringify({...get(id),...p}));
+ const type={font_family:'Arial',font_size:14,font_weight:400,align:'left',line_height:1.2,wrap:false,sizing:'fixed'};
+ try{
+  const frame=e.add('frame',0,0);edit(frame,{name:'Sheet',width:400,height:300,fill:'#ffffff',clip_content:true});
+  const text=(name,props)=>{const id=e.add('text',props.x,props.y);edit(id,{name,fill:'#000000',width:300,height:60,...props});e.reparent_many(JSON.stringify([id]),frame);return id;};
+  text('Title',{x:40,y:30,text:'Selectable',typography:{...type,font_size:40}});
+  text('Body',{x:40,y:120,width:150,height:120,text:'The quick brown fox jumps over the lazy dog',typography:{...type,wrap:true}});
+  text('Shout',{x:220,y:120,width:160,height:30,text:'loud ünïcode 日本',typography:{...type,text_case:'upper',align:'right'}});
+  text('Side',{x:340,y:290,width:120,height:30,text:'Sideways',rotation:90,typography:{...type,font_size:20}});
+  text('Hidden',{x:220,y:160,text:'Secret',hidden:true});
+  text('Outside',{x:520,y:40,text:'Clipped'});
+  const body=doc();body.name='PDF text';return {body:JSON.stringify(body)};
+ }finally{e.free();}
+}
+
+test('exported PDF text can be extracted and lines up with the painted glyphs',async({page},info)=>{
+ await seed(page,words());
+ const {path}=await exportAs(page,{format:'pdf',scope:'frames',scale:'2',transparent:false},info,'text.pdf');
+ execFileSync('qpdf',['--check',path]);
+ expect(execFileSync('pdffonts',[path]).toString()).toMatch(/PixlPrfctGlyphless\s+CID TrueType\s+Identity-H\s+yes no\s+yes/);
+ const plain=execFileSync('pdftotext',[path,'-']).toString().replace(/\s+/g,' ');
+ for(const phrase of ['Selectable','The quick brown fox jumps over the lazy dog','LOUD ÜNÏCODE 日本','Sideways'])expect(plain).toContain(phrase);
+ expect(plain).not.toContain('Secret');expect(plain).not.toContain('Clipped');
+ const boxes=[...execFileSync('pdftotext',['-bbox',path,'-']).toString().matchAll(/<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]+)<\/word>/g)].map(([,x0,y0,x1,y1,word])=>({word,x0:+x0,y0:+y0,x1:+x1,y1:+y1}));
+ const box=word=>boxes.find(b=>b.word===word);
+ // Render the page and find where the ink actually is; the invisible words must cover it.
+ const out=info.outputPath('text');execFileSync('pdftoppm',['-r','72','-gray',path,out]);
+ const pgm=await readFile(out+'-1.pgm'),[,w,h]=pgm.subarray(0,20).toString('latin1').match(/^P5\s+(\d+)\s+(\d+)\s+255\s/),pixels=pgm.subarray(pgm.length-w*h);
+ const ink=(x0,y0,x1,y1)=>{let left=Infinity,right=-1,top=Infinity,bottom=-1;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(pixels[y*w+x]<140){left=Math.min(left,x);right=Math.max(right,x+1);top=Math.min(top,y);bottom=Math.max(bottom,y+1);}return {left,right,top,bottom};};
+ expect([Number(w),Number(h)]).toEqual([400,300]);
+ const title=box('Selectable'),titleInk=ink(0,20,400,100);
+ expect(Math.abs(title.x0-titleInk.left)).toBeLessThan(4);expect(Math.abs(title.x1-titleInk.right)).toBeLessThan(4);
+ expect(title.y0).toBeLessThanOrEqual(titleInk.top+2);expect(title.y1).toBeGreaterThanOrEqual(titleInk.bottom-10);
+ // Wrapped lines keep their painted order and positions; each word starts where its ink starts.
+ const fox=box('fox'),lazy=box('lazy');expect(lazy.y0).toBeGreaterThan(fox.y0);
+ for(const word of ['The','jumps','dog']){const b=box(word),found=ink(Math.floor(b.x0)-3,Math.floor(b.y0),Math.ceil(b.x1)+3,Math.ceil(b.y1));expect(Math.abs(found.left-b.x0),word).toBeLessThan(3);expect(Math.abs(found.right-b.x1),word).toBeLessThan(3);}
+ // Right-aligned text ends at its layer edge (220 + 160).
+ expect(Math.abs(box('日本').x1-380)).toBeLessThan(1.5);
+ // Rotated 90° counter-clockwise: the word runs up the page, taller than wide, over its ink.
+ const side=box('Sideways'),sideInk=ink(330,150,390,300);
+ expect(side.y1-side.y0).toBeGreaterThan(3*(side.x1-side.x0));
+ expect(Math.abs(side.y0-sideInk.top)).toBeLessThan(4);expect(Math.abs(side.y1-sideInk.bottom)).toBeLessThan(4);
+ expect(side.x0).toBeLessThanOrEqual(sideInk.left+2);expect(side.x1).toBeGreaterThanOrEqual(sideInk.right-6);
+});

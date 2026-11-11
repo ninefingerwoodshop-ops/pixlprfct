@@ -106,6 +106,7 @@ import {inspectorRenderer} from './inspector-focus.js';
 import {exportJobs,zipFiles} from './batch-export.js';
 import {rasterSettings} from './export.js';
 import {pdfDocument,pdfImagePage,pdfPageSize} from './pdf-export.js';
+import {pdfTextRuns} from './pdf-text.js';
 import {smoothPencil} from './pencil.js';
 import {connectionHit,connectionAt,connectionTarget,connectedShape,drawConnections} from './prototype-connections.js';
 import {prototypeFrames,renderPrototypeControls,presentPrototype} from './prototype.js';
@@ -1073,7 +1074,7 @@ function pasteLayerText(text,overSelection=false,replace=false,frames=false){
 function exportOptions(){return{format:$('export-format').value,scope:$('export-scope').value,scale:Number($('export-scale').value),quality:Number($('export-quality').value),background:$('export-format').value!=='jpeg'&&$('export-transparent').checked?null:$('export-background').value};}
 function exportSummary(){
  const jpeg=$('export-format').value==='jpeg';$('export-transparent').disabled=jpeg;$('export-transparent').closest('label').hidden=jpeg;$('export-quality-row').hidden=!jpeg;
- try{const o=exportOptions();if(o.format==='png'||o.format==='jpeg')rasterSettings(o.format,o.background,o.quality);const jobs=exportJobs(pageShapes(),[...selectedIds],o,activePage().name),batch=['frames','layers'].includes(o.scope);$('export-summary').textContent=o.format==='pdf'?(jobs.length===1?'1 page':jobs.length+' pages in one PDF')+' · '+(jobs.length===1?Math.round(jobs[0].box.width)+' × '+Math.round(jobs[0].box.height)+' pt · ':'')+'pages are images at '+o.scale+'× (text is not selectable)':batch?jobs.length+' separate '+o.format.toUpperCase()+' files in a ZIP':jobs[0].size.width+' × '+jobs[0].size.height+' px · '+jobs[0].shapes.length+' layers';$('export-download').disabled=false;}catch(error){$('export-summary').textContent=String(error);$('export-download').disabled=true;}
+ try{const o=exportOptions();if(o.format==='png'||o.format==='jpeg')rasterSettings(o.format,o.background,o.quality);const jobs=exportJobs(pageShapes(),[...selectedIds],o,activePage().name),batch=['frames','layers'].includes(o.scope);$('export-summary').textContent=o.format==='pdf'?(jobs.length===1?'1 page':jobs.length+' pages in one PDF')+' · '+(jobs.length===1?Math.round(jobs[0].box.width)+' × '+Math.round(jobs[0].box.height)+' pt · ':'')+'pages are images at '+o.scale+'× with selectable text':batch?jobs.length+' separate '+o.format.toUpperCase()+' files in a ZIP':jobs[0].size.width+' × '+jobs[0].size.height+' px · '+jobs[0].shapes.length+' layers';$('export-download').disabled=false;}catch(error){$('export-summary').textContent=String(error);$('export-download').disabled=true;}
  $('export-background').disabled=$('export-format').value!=='jpeg'&&$('export-transparent').checked;
 }
 async function exportArtwork(){
@@ -1090,7 +1091,7 @@ async function exportArtwork(){
     if(options.background&&!/^#[0-9a-f]{6}$/i.test(options.background))throw new Error('Invalid export background');
     const page=pdfPageSize(box),surface=new OffscreenCanvas(size.width,size.height),output=surface.getContext('2d');if(options.background){output.fillStyle=options.background;output.fillRect(0,0,size.width,size.height);}output.setTransform(options.scale,0,0,options.scale,-box.x*options.scale,-box.y*options.scale);drawScene(shapes,output,drawShape);
     const rgba=output.getImageData(0,0,size.width,size.height).data;surface.width=1;surface.height=1;
-    const pdfPage=await pdfImagePage({...page,pixelWidth:size.width,pixelHeight:size.height,rgba});bytes+=pdfPage.image.rgb.length+(pdfPage.image.alpha?.length??0);if(bytes>134217728)throw new Error('PDF export exceeds 128 MB. Export fewer pages or reduce scale.');pages.push(pdfPage);
+    const pdfPage=await pdfImagePage({...page,pixelWidth:size.width,pixelHeight:size.height,rgba,text:pdfTextRuns(shapes,box,(shape,value)=>{measureCtx.font=fontCss(textStyle(shape));return measureCtx.measureText(value).width;},shape=>fontBaseline(textStyle(shape),measureCtx))});bytes+=pdfPage.image.rgb.length+(pdfPage.image.alpha?.length??0);if(bytes>134217728)throw new Error('PDF export exceeds 128 MB. Export fewer pages or reduce scale.');pages.push(pdfPage);
    }
    else{const raster=rasterSettings(options.format,options.background,options.quality),entries=shapes.filter(s=>s.image).map(s=>rasterEntry(s.image.data_url));await Promise.all(entries.map(e=>e.promise));if(entries.some(e=>!e.ready))throw new Error('An embedded image could not be decoded');
     const surface=new OffscreenCanvas(size.width,size.height),output=surface.getContext('2d');if(raster.background){output.fillStyle=raster.background;output.fillRect(0,0,size.width,size.height);}output.setTransform(options.scale,0,0,options.scale,-box.x*options.scale,-box.y*options.scale);drawScene(shapes,output,drawShape);blob=await surface.convertToBlob({type:raster.type,quality:raster.quality});surface.width=1;surface.height=1;if(blob.type!==raster.type)throw new Error('This browser cannot encode '+options.format.toUpperCase());extension=raster.extension;

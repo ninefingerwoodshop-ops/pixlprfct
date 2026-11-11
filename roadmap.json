@@ -118,7 +118,8 @@
     "Parent-only panel tear-outs, persistent icon docks, icon-only tear-out return actions, inline expanded-header toggles and top collapsed-dock toggles and adjacent flyouts in Design and SVG Animation (local source)",
     "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
     "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)",
-    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)"
+    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)",
+    "Selectable PDF text: an invisible text layer over each exported PDF page (embedded glyphless font with a ToUnicode map), one run per word following wrapping, alignment, letter spacing, text case, rotation, visibility and frame clipping; pages remain images (branch source)"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
@@ -129,7 +130,7 @@
     "Set-label overlap, slot rich descriptions/bulk authoring/native Figma slot metadata import",
     "Complete prototype parity: Smart Animate, sequential/conditional actions, drag and scroll interactions",
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
-    "Vector PDF export with selectable text, and comprehensive accessibility/performance validation",
+    "Vector PDF export (paths and real fonts instead of page images; the selectable text layer exists), and comprehensive accessibility/performance validation",
     "Complex-document edit latency, real installed-app OS-sleep acceptance",
     "Permanent delete and version-history retention so owners can free quota space",
     "Complete shared-variable integration, scopes, code syntax, RGBA, component/prototype bindings and bulk metadata editing"
