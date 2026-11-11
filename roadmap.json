@@ -119,6 +119,7 @@
     "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
     "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)",
     "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)",
+    "Permanent delete from Trash for local and cloud projects with confirmation, revision checks and dependent-row cleanup; deletion of single saved versions and of automatic backups older than 30 days (branch source)",
     "Selectable PDF text: an invisible text layer over each exported PDF page (embedded glyphless font with a ToUnicode map), one run per word following wrapping, alignment, letter spacing, text case, rotation, visibility and frame clipping; pages remain images (branch source)",
     "Prototype overflow scrolling: vertical, horizontal or both on frames with wheel, touch-drag and keyboard scrolling, nested scroll chaining, fixed children drawn above scrolling content, and hit testing that follows the scrolled content (branch source; not compared against live Figma)",
     "Smart animate prototype transition for navigate and back: layers paired by name, kind and hierarchy blend position, size, rotation, colors, opacity, radius and type size while unpaired layers fade, with duration, easing and reduced-motion support; On drag trigger with a 10 px threshold and click suppression (branch source; not compared against live Figma)",
@@ -140,7 +141,7 @@
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
     "Vector PDF export (paths and real fonts instead of page images; the selectable text layer exists), and comprehensive accessibility/performance validation",
     "Complex-document edit latency, real installed-app OS-sleep acceptance",
-    "Permanent delete and version-history retention so owners can free quota space",
+    "Empty Trash, automatic Trash expiry and scheduled version-history retention; permanent delete of published library sources (manual permanent delete and version deletion exist)",
     "Complete shared-variable integration, scopes, code syntax, RGBA, component/prototype bindings and bulk metadata editing"
   ],
   "deferred": [],

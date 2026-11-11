@@ -61,6 +61,16 @@ export class LocalDrafts {
   // autosaves rather than silently resurrecting itself as a different project.
   this.write(data,this.activeId);return next;
  }
+ // Only a project already in Trash can be removed for good. `cleared` records
+ // that the list was emptied on purpose, so an old single-file backup is not
+ // imported again as if this were a first visit.
+ remove(id,expectedBody){
+  const data=this.read(),file=data.files.find(f=>f.id===id);if(!file)throw new Error('This draft is no longer available.');
+  if(!file.deletedAt)throw new Error('Move this project to Trash before deleting it permanently.');
+  if(expectedBody!==undefined&&file.body!==expectedBody)throw new Error('This project changed in another tab. Refresh the project list and try again.');
+  data.files=data.files.filter(f=>f.id!==id);if(!data.files.length)data.cleared=true;
+  this.write(data,this.activeId);
+ }
  detach(){this.activeId=null;this.base=null;}
 }
 
