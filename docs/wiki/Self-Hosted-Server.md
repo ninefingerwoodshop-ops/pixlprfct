@@ -480,7 +480,8 @@ sequenceDiagram
 
 ## Known limitations and risks
 
-- No retention or cleanup for `live_versions` (one full body copy per revision reached while a live file is polled), `live_mutations`, expired `live_clients`, `team_notifications`, or unreferenced `document_bodies`. Long-lived live-mode files will grow the database.
+- Permanently deleting a file from Trash removes its `document_versions`, `live_versions`, `live_mutations`, `live_clients`, `document_collaboration`, `document_edit_requests`, `document_comments`, `document_reviews` and `team_notifications` rows. Files that are published libraries cannot be permanently deleted.
+- Otherwise, no retention or cleanup for `live_versions` (one full body copy per revision reached while a live file is polled), `live_mutations`, expired `live_clients`, `team_notifications`, or unreferenced `document_bodies`. Long-lived live-mode files will grow the database.
 - List endpoints filter shared-workspace results after the SQL page is fetched (`accessFor` per row), so pages can contain fewer than 40 items and cost one query per file.
 - MySQL/MariaDB has no application backup or restore verification. SELF_HOSTING.md says PostgreSQL providers other than Supabase, MySQL, real SMTP and the Docker image have not been integration-tested.
 - SELF_HOSTING.md still states updates "support shared saved documents, not simultaneous cursor presence or live merging". Since alpha.14 the code implements opt-in simultaneous editing with presence ([TEAM_WORKFLOWS.md](../TEAM_WORKFLOWS.md), "Alpha.14 additions"); the older paragraph is outdated.

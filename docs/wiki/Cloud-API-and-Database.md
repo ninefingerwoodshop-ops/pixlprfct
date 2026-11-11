@@ -25,8 +25,8 @@ Each `route.ts` imports `env` from `cloudflare:workers`, sets `dynamic='force-dy
 | --- | --- | --- |
 | [app/api/documents/route.ts](../../app/api/documents/route.ts) | `GET`, `POST` (`POST = GET`, same handler) | `documentApi(request, env.DB, null, env.BUCKET)` |
 | [app/api/documents/[id]/route.ts](../../app/api/documents/%5Bid%5D/route.ts) | `GET`, `PUT`, `DELETE`, `PATCH` | `documentApi(request, env.DB, id, env.BUCKET)` |
-| [app/api/documents/[id]/versions/route.ts](../../app/api/documents/%5Bid%5D/versions/route.ts) | `GET`, `POST` | `versionApi(request, env.DB, id, null, false, env.BUCKET)` |
-| [app/api/documents/[id]/versions/[version]/route.ts](../../app/api/documents/%5Bid%5D/versions/%5Bversion%5D/route.ts) | `GET` | `versionApi(..., id, version, false, ...)` |
+| [app/api/documents/[id]/versions/route.ts](../../app/api/documents/%5Bid%5D/versions/route.ts) | `GET`, `POST`, `DELETE` | `versionApi(request, env.DB, id, null, false, env.BUCKET)` |
+| [app/api/documents/[id]/versions/[version]/route.ts](../../app/api/documents/%5Bid%5D/versions/%5Bversion%5D/route.ts) | `GET`, `DELETE` | `versionApi(..., id, version, false, ...)` |
 | [app/api/documents/[id]/versions/[version]/restore/route.ts](../../app/api/documents/%5Bid%5D/versions/%5Bversion%5D/restore/route.ts) | `POST` | `versionApi(..., id, version, true, ...)` |
 
 ### Behavior by request
@@ -39,6 +39,9 @@ Each `route.ts` imports `env` from `cloudflare:workers`, sets `dynamic='force-dy
 | `PUT /api/documents/:id` | `If-Match: <revision>`, design JSON | 409 if revision differs or the file is in Trash. Otherwise one batch: `automaticCheckpoint(...)` then `UPDATE documents SET body,name,revision=revision+1,updated_at WHERE id,owner,revision AND deleted_at IS NULL`. Returns `{id,revision,updated_at,deleted_at:null}`. |
 | `DELETE /api/documents/:id` | `If-Match` | Soft delete: sets `deleted_at`, bumps revision. Requires creator or `manage`. |
 | `PATCH /api/documents/:id` | `If-Match` | Restore from Trash: clears `deleted_at`, bumps revision. Same permission as delete. |
+| `DELETE /api/documents/:id?permanent=1` | `If-Match` | Permanent delete. Only for a file already in Trash (`409` otherwise) and with the same permission as delete. One batch deletes the `documents` row guarded by revision, then every row keyed by `document_id` in `storage.dependents` (`document_versions` on Sites) only if the file is gone. A row in a `storage.protected` table (self-hosted `component_libraries`) refuses with `409`. Returns `{id, deleted:true}`. |
+| `DELETE /api/documents/:id/versions/:vid` | — | Deletes one version. `404` if it does not belong to this file and owner. Creator or administrator only (`403`). Returns `{id, deleted:true}`. |
+| `DELETE /api/documents/:id/versions?automatic=1&before=<ms>` | — | Deletes automatic backups of this file created before the timestamp. Both parameters are required (`400`). Named versions are never matched. Returns `{deleted:<count>}`. |
 | `GET /api/documents/:id/versions?before=…` | — | `{versions:[{id,label,name,revision,created_at,kind}], next}` (40 per page, cursor `[created_at,id]`). |
 | `POST /api/documents/:id/versions` | `If-Match`, `x-version-label: <URI-encoded, 1–256 bytes>` | Copies the current row into `document_versions` (kind `named`) using `INSERT … SELECT … WHERE revision=?`. No body is accepted. 201 `{id,label,revision,created_at}`. |
 | `GET /api/documents/:id/versions/:vid` | — | Version row with resolved `body`. |
@@ -218,7 +221,7 @@ No PixlPrfct route calls `connectorsForRequest()`. The connector code is inert i
 - **Ownership is in every `WHERE`.** A file owned by another user is a 404, never a 403, so IDs do not leak.
 - **Revision is the only concurrency control.** The server never merges in the personal-file path. Clients must send the revision they last saw; the self-hosted live-editing path is the only place that merges ([Teams-Libraries-and-Collaboration](Teams-Libraries-and-Collaboration.md)).
 - **D1 `batch()` ignores the `{requireLastChange:true}` option** the handlers pass (that option is implemented only by the self-hosted adapter). The handlers therefore also check `meta.changes` of the update explicitly. The checkpoint and update share the same `revision` condition, so a lost race inserts no checkpoint either.
-- **Trash is reversible only.** There is no permanent delete endpoint ([PROJECT_DELETION.md](../PROJECT_DELETION.md)).
+- **Permanent delete is manual and per file.** There is no Empty Trash, no Trash expiry and no scheduled history retention ([PROJECT_DELETION.md](../PROJECT_DELETION.md)). Object-stored bodies are freed by the daily sweep, not at delete time.
 - **5 MB limit** applies to the JSON body; bodies above 1.5 MB require an R2 binding or the request fails with 503.
 - **`can_delete` is computed on read**; the UI uses it to decide which actions to show, but the server rechecks on `DELETE`/`PATCH`.
 

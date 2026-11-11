@@ -5,6 +5,7 @@ import {staticHost} from './static-host.js';
 import {readDesignFile} from './design-import.js';
 import {icon} from './icons.js';
 import {showContextMenu} from './context-menu.js';
+import {confirmDestructive} from './confirm-dialog.js';
 import {LocalDrafts,DRAFTS_KEY,withDraftLock} from './local-drafts.js';
 import {installDesignCreator} from './design-browser.js';
 import {projectUrl,visibleProjects} from './project-navigation.js';
@@ -82,7 +83,7 @@ function render(){
   const meta=el('div','project-meta'),title=el('strong',null,file.name),details=el('span','project-details'),place=el('span',null,file.kind==='cloud'?'Cloud':'On this device'),date=el('time');date.dateTime=new Date(file.updatedAt).toISOString();date.textContent='Edited '+new Date(file.updatedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'});
   try{if(file.body&&isSvgAnimation(JSON.parse(file.body)))details.append(el('span',null,'SVG Animation'));}catch{/* A damaged file can still be listed and recovered. */}
   details.append(place,date);meta.append(title,details);link.append(preview,meta);card.append(link);
-  const actions=[...(!trash?[{label:'Open',run:()=>location.assign(projectUrl({...file,workspace}))}]:[]),...(file.can_delete===true?[...(!trash?[{separator:true}]:[]),{label:trash?'Restore':'Move to trash',enabled:!changingProject,run:()=>changeProjectTrash(file,!trash)}]:[])];
+  const actions=[...(!trash?[{label:'Open',run:()=>location.assign(projectUrl({...file,workspace}))}]:[]),...(file.can_delete===true?[...(!trash?[{separator:true}]:[]),{label:trash?'Restore':'Move to trash',enabled:!changingProject,run:()=>changeProjectTrash(file,!trash)},...(trash?[{separator:true},{label:'Delete forever',enabled:!changingProject,run:()=>deleteProjectForever(file)}]:[])]:[])];
   if(actions.length){const menu=el('button','project-menu-button');menu.type='button';menu.innerHTML=icon('more-horizontal');menu.setAttribute('aria-label','Actions for '+file.name);menu.setAttribute('aria-haspopup','menu');menu.setAttribute('aria-expanded','false');
    const open=(event,anchor)=>{menu.setAttribute('aria-expanded','true');closeProjectMenu=showContextMenu(event,actions,menu,{label:'Project actions',anchor,onClose:()=>menu.setAttribute('aria-expanded','false')});};
    menu.onclick=event=>open(event,menu);card.oncontextmenu=event=>open(event,null);card.append(menu);
@@ -94,6 +95,18 @@ function render(){
   const text=el('p',null,searching?'Try another name or clear your search.':scope==='trash'?'Deleted projects appear here. Their creator or an administrator can restore them.':scope==='cloud'?'Save a project to the cloud from its editor to see it here.':'Start with a blank canvas or a frame sized for desktop or mobile.');empty.append(symbol,heading,text);
   if(!['cloud','trash'].includes(scope)&&!searching){const start=el('button','primary','New design');start.onclick=()=>creator.showNew();empty.append(start);}cards.append(empty);
  }
+}
+async function deleteProjectForever(file){
+ if(changingProject||disposed)return;
+ const local=file.kind==='local';
+ if(!await confirmDestructive({title:'Delete forever?',message:`“${file.name}” ${local?'will be permanently deleted from this device':'and its version history will be permanently deleted'}. This cannot be undone.`,confirm:'Delete forever'})||changingProject||disposed)return;
+ changingProject=true;$('home-error').hidden=true;$('home-status').hidden=true;
+ try{
+  if(local)await withDraftLock(()=>drafts.remove(file.id,file.body));
+  else{await cloudRequest('/'+encodeURIComponent(file.id)+'?permanent=1',{method:'DELETE',headers:{'if-match':String(file.revision)}});cloud=cloud.filter(item=>item.id!==file.id);}
+  if(disposed)return;previews.delete(file.id);$('home-status').textContent=`“${file.name}” permanently deleted.`;$('home-status').hidden=false;
+ }catch(error){report(error);if(!local)await fetchCloud();}
+ finally{changingProject=false;if(!disposed){render();($('project-cards').querySelector('a,button')??$('home-new')).focus();}}
 }
 async function changeProjectTrash(file,trash){
  if(changingProject||disposed)return;changingProject=true;const startedScope=scope;$('home-error').hidden=true;$('home-status').hidden=true;
@@ -113,7 +126,7 @@ async function fetchCloud(more=false){
 }
 for(const button of root.querySelectorAll('[data-scope]'))button.onclick=()=>{
  closeProjectMenu();const wasTrash=scope==='trash';scope=button.dataset.scope;for(const b of root.querySelectorAll('[data-scope]')){if(b===button)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
- $('home-title').textContent=scope==='all'?'All projects':scope==='local'?'On this device':scope==='trash'?'Trash':'Cloud projects';$('collection-title').textContent=scope==='trash'?'Deleted projects':'Your designs';$('home-description').textContent=scope==='trash'?'Restore projects moved to Trash.':scope==='cloud'?'Designs saved to your account.':'Create a design or pick up where you left off.';
+ $('home-title').textContent=scope==='all'?'All projects':scope==='local'?'On this device':scope==='trash'?'Trash':'Cloud projects';$('collection-title').textContent=scope==='trash'?'Deleted projects':'Your designs';$('home-description').textContent=scope==='trash'?'Restore projects moved to Trash, or delete them forever.':scope==='cloud'?'Designs saved to your account.':'Create a design or pick up where you left off.';
  if(wasTrash!==(scope==='trash')){cloud=[];next=null;fetchCloud();}render();
 };
 $('project-search').oninput=render;$('project-sort').onchange=render;
@@ -144,7 +157,7 @@ async function loadWorkspace(){
 
 async function start(){
 try{
- if(!drafts.read().files.length){const legacy=storage?.getItem('pixlprfct.document.v1');if(legacy){const normalized=await normalize(legacy);await withDraftLock(()=>{if(!drafts.read().files.length)drafts.create(normalized);});}}
+ if(!drafts.read().files.length&&!drafts.read().cleared){const legacy=storage?.getItem('pixlprfct.document.v1');if(legacy){const normalized=await normalize(legacy);await withDraftLock(()=>{if(!drafts.read().files.length&&!drafts.read().cleared)drafts.create(normalized);});}}
 }catch(error){report(error);}
 if(disposed)return;await loadWorkspace();if(disposed)return;render();await fetchCloud();if(disposed)return;
 if(window.pixlDesktop?.local){

@@ -80,3 +80,25 @@ test('same-file stale tabs preserve the newer body and reject conflicting edits'
  assert.throws(()=>b.save(newDesign('Conflict')),/another tab/);assert.equal(a.get(first.id).name,'Newer');
  b.activate(first.id);b.save(newDesign('Resolved'));assert.equal(a.get(first.id).name,'Resolved');
 });
+test('permanent removal needs Trash first, rejects stale data and leaves other projects alone',()=>{
+ const storage=memory(),drafts=library(storage),keep=drafts.create(newDesign('Keep')),file=drafts.create(newDesign('Remove me'));
+ assert.throws(()=>drafts.remove(file.id,file.body),/Move this project to Trash/);assert.equal(drafts.list().length,2);
+ drafts.setTrashed(file.id,true,file.body);
+ assert.throws(()=>drafts.remove(file.id,newDesign('Other')),/changed in another tab/);assert.throws(()=>drafts.remove('missing'),/no longer available/);
+ assert.equal(drafts.list({trash:true}).length,1);
+ drafts.remove(file.id,file.body);
+ assert.deepEqual(drafts.read().files.map(f=>f.id),[keep.id]);assert.equal(drafts.list({trash:true}).length,0);assert.equal(drafts.read().cleared,undefined);
+ assert.throws(()=>drafts.setTrashed(file.id,false),/no longer available/);
+ // A tab that still has the removed project open cannot save it back.
+ const stale=library(storage);stale.activeId=file.id;stale.base=file.body;assert.throws(()=>stale.save(newDesign('Edit')),/no longer available/);
+ assert.equal(drafts.read().files.length,1);
+});
+test('removing the last project marks the list as cleared, and storage failures remove nothing',()=>{
+ const storage=memory(),drafts=library(storage),file=drafts.create(newDesign('Only'));drafts.setTrashed(file.id,true,file.body);
+ const saved=storage.getItem(DRAFTS_KEY),write=storage.setItem;storage.setItem=()=>{throw new Error('QuotaExceeded');};
+ assert.throws(()=>drafts.remove(file.id,file.body),/Could not save/);assert.equal(storage.getItem(DRAFTS_KEY),saved);
+ storage.setItem=write;drafts.remove(file.id,file.body);
+ assert.deepEqual(drafts.read().files,[]);assert.equal(drafts.read().cleared,true);
+ // New work still saves normally afterwards.
+ assert.equal(drafts.create(newDesign('Next')).name,'Next');assert.equal(drafts.list().length,1);
+});

@@ -5,3 +5,4 @@ export const dynamic='force-dynamic';
 async function handle(request:Request,context:{params:Promise<{id:string}>}){const {bucket,storage}=cloudStorage(env);return afterCloudWrite(request,await versionApi(request,env.DB,(await context.params).id,null,false,bucket,null,null,storage),env);}
 export const GET=handle;
 export const POST=handle;
+export const DELETE=handle;

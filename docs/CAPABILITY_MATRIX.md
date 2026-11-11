@@ -289,6 +289,12 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | --- | --- | --- | --- |
 | Dependency-free PDF 1.4 writer (`web/pdf-export.js`): one page per export job, 1 pt per pixel, lossless FlateDecode RGB image plus a DeviceGray soft mask when transparent; 14,400 pt page and 100-page limits; UTF-16 title metadata | Export dialog Format → PDF. Current page or selection gives one page; top-level frames or separate layers give one multi-page PDF instead of a ZIP. The summary states the page count and that pages are images at the chosen scale | 4 unit tests (xref offsets, inflate round trip, masks, limits); 2 Chromium tests check `qpdf --check`, `pdfinfo` page sizes, `pdftoppm` colors and mask presence | Pages are images: no vector paths and no selectable or searchable text. Not available through MCP (MCP export has no canvas). Not installed or released |
 
+### Permanent delete and version deletion — 2026-11-11, branch source
+
+| Core | UI | Verification | Boundary |
+| --- | --- | --- | --- |
+| `DELETE /api/documents/:id?permanent=1` for files already in Trash (revision-guarded batch; dependent rows removed only once the file is gone; published libraries refused on self-hosted); `DELETE …/versions/:vid`; `DELETE …/versions?automatic=1&before=`; creator/administrator permission for all three; `LocalDrafts.remove()` with a `cleared` marker | Projects → Trash → **Delete forever** and the editor's Cloud files → Show Trash, both behind a shared confirmation dialog (`web/confirm-dialog.js`, Cancel focused); Version history **Delete** per version and **Delete automatic backups older than 30 days** | 6 API tests (D1 schema and a self-hosted SQLite team fixture), 2 local-storage tests, 3 Chromium project-browser tests and 1 Chromium test against a running self-hosted server | No Empty Trash, Trash expiry or scheduled retention. Object-stored bodies are freed by the daily sweep after 24 hours, not at once. Rows of files removed before this change are not cleaned. Self-hosted statements were run on SQLite only, not PostgreSQL or MySQL. The menu item and dialog were not compared against Figma. Not installed or released |
+
 ### Storage quotas and unreferenced bodies — 2026-11-04, branch source
 
 | Core | UI | Verification | Boundary |

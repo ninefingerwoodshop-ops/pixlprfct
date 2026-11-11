@@ -25,6 +25,13 @@ dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.p
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary:hover:not(:disabled){background-color:var(--ui-accent-text)!important}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary:active:not(:disabled){background-color:var(--ui-primary-pressed)!important}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.danger{color:var(--ui-danger)}
+.confirm-dialog{width:360px}.confirm-dialog p{overflow-wrap:anywhere}
+.confirm-dialog-actions{display:flex;justify-content:flex-end;gap:var(--ui-space-2);margin-top:var(--ui-space-4)}
+dialog.confirm-dialog .confirm-dialog-actions button{min-height:var(--ui-control-height);padding:4px 12px;background-color:transparent!important;color:var(--ui-text-color)!important;border:1px solid var(--ui-border);cursor:pointer}
+dialog.confirm-dialog .confirm-dialog-actions button:hover{background-color:var(--ui-hover)!important}
+dialog.confirm-dialog .confirm-dialog-actions button.danger{background-color:#f24822!important;border-color:transparent;color:white!important;font-weight:var(--ui-semibold)}
+dialog.confirm-dialog .confirm-dialog-actions button.danger:hover{filter:brightness(1.1)}
+.confirm-dialog-actions button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) .dialog-icon{display:inline-flex;align-items:center;justify-content:center;flex:none}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) .app-icon{width:16px!important;height:16px!important;flex:none}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) h2{font:var(--ui-semibold) var(--ui-title)/20px var(--ui-font);letter-spacing:0;margin:0 0 var(--ui-space-4)}
