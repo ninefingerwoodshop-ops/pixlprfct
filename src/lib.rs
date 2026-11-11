@@ -378,12 +378,38 @@ pub struct Prototype {
     pub duration: u32,
     #[serde(default = "default_easing")]
     pub easing: String,
+    /// For `set-variable`: the variable, how to change it (`set`, `add` for
+    /// numbers, `toggle` for booleans) and the literal used by `set` and `add`.
+    /// The change lasts for the presentation and never edits the document.
+    #[serde(default, skip_serializing_if = "is_zero_id")]
+    pub variable: u32,
+    #[serde(default = "default_operation", skip_serializing_if = "is_set")]
+    pub operation: String,
+    #[serde(default, skip_serializing_if = "serde_json::Value::is_null")]
+    pub value: serde_json::Value,
+    /// When present, the action runs only if the comparison holds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub condition: Option<PrototypeCondition>,
     /// Further actions run in order after this one, on the same trigger.
     /// Their own trigger and delay are ignored and they cannot nest.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub then: Vec<Prototype>,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PrototypeCondition {
+    pub variable: u32,
+    /// `==`, `!=`, and for numbers `<`, `<=`, `>`, `>=`.
+    pub operator: String,
+    pub value: serde_json::Value,
+}
+
+fn default_operation() -> String {
+    "set".into()
+}
+fn is_set(operation: &String) -> bool {
+    operation == "set"
+}
 fn default_trigger() -> String {
     "click".into()
 }
@@ -1045,13 +1071,22 @@ fn validate(document: &Document) -> Result<(), String> {
             {
                 return Err("Invalid prototype transition, duration or easing".into());
             }
-            if !["navigate", "back", "overlay", "close", "swap"].contains(&p.action.as_str())
+            variables::validate_action(document, p)?;
+            if ![
+                "navigate",
+                "back",
+                "overlay",
+                "close",
+                "swap",
+                "set-variable",
+            ]
+            .contains(&p.action.as_str())
                 || (["navigate", "overlay", "swap"].contains(&p.action.as_str())
                     && !document
                         .shapes
                         .iter()
                         .any(|s| s.id == p.target && s.kind == "frame"))
-                || (["back", "close"].contains(&p.action.as_str()) && p.target != 0)
+                || (["back", "close", "set-variable"].contains(&p.action.as_str()) && p.target != 0)
                 || ![
                     "center",
                     "manual",
@@ -1904,10 +1939,14 @@ impl Editor {
                 }
                 copy.variable_bindings.clear();
                 copy.variable_modes.clear();
+                // Variables do not travel with a portable copy, so neither do the
+                // actions and conditions that name them.
                 copy.retain_interactions(|p| {
-                    !["navigate", "overlay", "swap"].contains(&p.action.as_str())
-                        || ids.contains(&p.target)
+                    p.action != "set-variable"
+                        && (!["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                            || ids.contains(&p.target))
                 });
+                copy.each_action_mut(|p| p.condition = None);
                 if !ids.contains(&copy.parent_id) {
                     copy.parent_id = 0;
                 }

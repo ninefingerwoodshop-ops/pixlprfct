@@ -66,7 +66,9 @@ export function mergeLibrary(document,release) {
  allocate('sets',source.component_sets??[],doc.component_sets);allocate('properties',source.component_properties??[],doc.component_properties);allocate('guides',source.guide_styles??[],doc.guide_styles);allocate('effects',source.effect_styles??[],doc.effect_styles);allocate('texts',source.text_styles??[],doc.text_styles);allocate('colors',source.color_styles??[],doc.color_styles);
  const present=new Set(source.shapes.map(s=>maps.shapes[s.id])),oldIds=new Set(Object.values(maps.shapes));
  if(doc.shapes.some(s=>s.component?.type==='instance'&&!oldIds.has(s.id)&&oldIds.has(s.component.master)&&!present.has(s.component.master)))throw new Error('This update removes a component used in this project. Remove its instances before accepting the update.');
- const remapInteraction=p=>p?{...p,target:maps.shapes[p.target]??0,...(p.then?.length?{then:p.then.map(remapInteraction)}:{})}:p;
+ // Destinations and variables take their imported ids; an action whose variable did not come along is dropped, and a condition on one is cleared.
+ const remapAction=p=>{const next={...p,target:maps.shapes[p.target]??0};if(p.action==='set-variable'){if(!maps.variables[p.variable])return null;next.variable=maps.variables[p.variable];}if(p.condition){if(maps.variables[p.condition.variable])next.condition={...p.condition,variable:maps.variables[p.condition.variable]};else delete next.condition;}return next;};
+ const remapInteraction=p=>{if(!p)return p;const {then=[],...head}=p,steps=[remapAction(head),...then.map(remapAction)].filter(Boolean);if(!steps.length)return null;const [first,...rest]=steps;return {...first,trigger:head.trigger,delay:head.delay,...(rest.length?{then:rest}:{})};};
  const shapes=source.shapes.map(original=>{
   const s=clone(original);s.id=maps.shapes[s.id];s.page_id=link.page_id;s.parent_id=maps.shapes[s.parent_id]??0;s.layout_class='';s.layout_class_generated=true;
   if(s.slot)s.slot.property=maps.properties[s.slot.property];if(s.slot_origin)s.slot_origin=maps.shapes[s.slot_origin]??0;
@@ -74,7 +76,7 @@ export function mergeLibrary(document,release) {
   s.variable_bindings=Object.fromEntries(Object.entries(s.variable_bindings??{}).map(([path,id])=>[path,maps.variables[id]]));s.variable_modes=modeMap(s.variable_modes,maps);
   s.guide_style=maps.guides[s.guide_style]??0;s.effect_style=maps.effects[s.effect_style]??0;s.text_style=maps.texts[s.text_style]??0;s.fill_style=maps.colors[s.fill_style]??0;s.stroke_style=maps.colors[s.stroke_style]??0;for(const shadow of s.appearance?.shadows??[])shadow.color_variable=maps.variables[shadow.color_variable]??0;if(s.control?.base_collection)s.control.base_collection=maps.collections[s.control.base_collection]??0;
   for(const paint of [...(s.appearance?.fills??[]),...(s.appearance?.strokes??[])])if(paint.pattern?.source_id)paint.pattern.source_id=maps.shapes[paint.pattern.source_id]??0;
-  s.prototype=remapInteraction(s.prototype);s.additional_interactions=(s.additional_interactions??[]).map(remapInteraction);return s;
+  {const kept=[s.prototype,...(s.additional_interactions??[])].map(remapInteraction).filter(Boolean);s.prototype=kept[0]??null;s.additional_interactions=kept.slice(1);}return s;
  });
  const replace=(old,added,key)=>old.filter(s=>!Object.values(maps[key]).includes(s.id)).concat(added);
  doc.shapes=replace(doc.shapes,shapes,'shapes');

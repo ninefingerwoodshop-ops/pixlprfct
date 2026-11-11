@@ -216,6 +216,78 @@ pub fn property_kind(path: &str) -> Option<&'static str> {
         _ => None,
     }
 }
+// A literal a prototype may compare a variable with or store in it.
+fn prototype_literal<'a>(doc: &'a Document, variable: u32, value: &Value) -> Option<&'a str> {
+    let v = doc.variables.values.iter().find(|v| v.id == variable)?;
+    let fits = match v.kind.as_str() {
+        "number" => value
+            .as_f64()
+            .is_some_and(|n| n.is_finite() && n.abs() <= 1_000_000_000.0),
+        "boolean" => value.is_boolean(),
+        "color" => color(value),
+        "string" => value.as_str().is_some_and(|s| s.len() <= 1_000),
+        _ => false,
+    };
+    fits.then_some(v.kind.as_str())
+}
+fn condition_ok(doc: &Document, c: &PrototypeCondition) -> bool {
+    match prototype_literal(doc, c.variable, &c.value) {
+        Some("number") => ["==", "!=", "<", "<=", ">", ">="].contains(&c.operator.as_str()),
+        Some(_) => ["==", "!="].contains(&c.operator.as_str()),
+        None => false,
+    }
+}
+fn set_variable_ok(doc: &Document, p: &Prototype) -> bool {
+    let kind = doc
+        .variables
+        .values
+        .iter()
+        .find(|v| v.id == p.variable)
+        .map(|v| v.kind.as_str());
+    match p.operation.as_str() {
+        "set" => prototype_literal(doc, p.variable, &p.value).is_some(),
+        "add" => kind == Some("number") && prototype_literal(doc, p.variable, &p.value).is_some(),
+        "toggle" => kind == Some("boolean") && p.value.is_null(),
+        _ => false,
+    }
+}
+/// The variable parts of one prototype action: its condition, and for
+/// `set-variable` the variable, operation and literal.
+pub fn validate_action(doc: &Document, p: &Prototype) -> Result<(), String> {
+    if p.condition.as_ref().is_some_and(|c| !condition_ok(doc, c)) {
+        return Err("Invalid prototype condition: check the variable, comparison and value".into());
+    }
+    let ok = if p.action == "set-variable" {
+        set_variable_ok(doc, p)
+    } else {
+        p.variable == 0 && p.operation == "set" && p.value.is_null()
+    };
+    if !ok {
+        return Err("Invalid Set variable action: check the variable, operation and value".into());
+    }
+    Ok(())
+}
+/// After variables change: a Set variable action that no longer fits is
+/// removed, and a condition that no longer fits is cleared so its action
+/// runs unconditionally, like a layer property that loses its token.
+pub fn prune_actions(doc: &mut Document) {
+    let reference = doc.clone();
+    for shape in &mut doc.shapes {
+        shape.retain_interactions(|p| p.action != "set-variable" || set_variable_ok(&reference, p));
+        shape.each_action_mut(|p| {
+            if p.condition
+                .as_ref()
+                .is_some_and(|c| !condition_ok(&reference, c))
+            {
+                p.condition = None;
+            }
+        });
+    }
+}
+/// A variable's value in each collection's default mode, aliases followed.
+pub fn default_value(doc: &Document, id: u32) -> Result<Value, String> {
+    resolved(&doc.variables, id, &BTreeMap::new(), &mut HashSet::new())
+}
 fn resolved(
     vars: &Variables,
     id: u32,
@@ -730,6 +802,11 @@ pub fn detach_edited(old: &Shape, new: &mut Shape) {
 }
 #[wasm_bindgen]
 impl Editor {
+    /// A variable's current value as JSON, in its collection's default mode.
+    /// The prototype player uses it to test conditions and apply Set variable.
+    pub fn prototype_variable_value(&self, id: u32) -> Result<String, String> {
+        Ok(default_value(&self.document, id)?.to_string())
+    }
     pub fn save_variables(&mut self, json: &str) -> Result<(), String> {
         if json.len() > 1_000_000 {
             return Err("Variable definitions too large".into());
@@ -737,6 +814,7 @@ impl Editor {
         let vars: Variables = serde_json::from_str(json).map_err(|e| e.to_string())?;
         let mut doc = self.document.clone();
         doc.variables = vars;
+        prune_actions(&mut doc);
         for shape in &mut doc.shapes {
             if let Some(a) = &mut shape.appearance {
                 for shadow in &mut a.shadows {

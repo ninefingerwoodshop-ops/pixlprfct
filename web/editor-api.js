@@ -921,6 +921,18 @@ export const engineCommands=[
     "returns": "string"
   },
   {
+    "name": "prototype_variable_value",
+    "readOnly": false,
+    "description": "prototype variable value",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "push_style_overrides",
     "readOnly": false,
     "description": "push style overrides",
@@ -1674,7 +1686,12 @@ export const modelReference={
   "Prototype": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Prototype {\n    #[serde(default = \"default_trigger\")]\n    pub trigger: String,\n    #[serde(default = \"default_delay\")]\n    pub delay: u32,\n    pub action: String,\n    #[serde(default)]\n    pub target: u32,\n    #[serde(default)]\n    pub close_on_outside: bool,\n    #[serde(default = \"default_overlay_position\")]\n    pub overlay_position: String,\n    #[serde(default)]\n    pub overlay_x: f64,\n    #[serde(default)]\n    pub overlay_y: f64,\n    #[serde(default = \"default_backdrop_color\")]\n    pub backdrop_color: String,\n    #[serde(default = \"default_backdrop_opacity\")]\n    pub backdrop_opacity: f64,\n    #[serde(default = \"default_transition\")]\n    pub transition: String,\n    #[serde(default = \"default_duration\")]\n    pub duration: u32,\n    #[serde(default = \"default_easing\")]\n    pub easing: String,\n    /// Further actions run in order after this one, on the same trigger.\n    /// Their own trigger and delay are ignored and they cannot nest.\n    #[serde(default, skip_serializing_if = \"Vec::is_empty\")]\n    pub then: Vec<Prototype>,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Prototype {\n    #[serde(default = \"default_trigger\")]\n    pub trigger: String,\n    #[serde(default = \"default_delay\")]\n    pub delay: u32,\n    pub action: String,\n    #[serde(default)]\n    pub target: u32,\n    #[serde(default)]\n    pub close_on_outside: bool,\n    #[serde(default = \"default_overlay_position\")]\n    pub overlay_position: String,\n    #[serde(default)]\n    pub overlay_x: f64,\n    #[serde(default)]\n    pub overlay_y: f64,\n    #[serde(default = \"default_backdrop_color\")]\n    pub backdrop_color: String,\n    #[serde(default = \"default_backdrop_opacity\")]\n    pub backdrop_opacity: f64,\n    #[serde(default = \"default_transition\")]\n    pub transition: String,\n    #[serde(default = \"default_duration\")]\n    pub duration: u32,\n    #[serde(default = \"default_easing\")]\n    pub easing: String,\n    /// For `set-variable`: the variable, how to change it (`set`, `add` for\n    /// numbers, `toggle` for booleans) and the literal used by `set` and `add`.\n    /// The change lasts for the presentation and never edits the document.\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub variable: u32,\n    #[serde(default = \"default_operation\", skip_serializing_if = \"is_set\")]\n    pub operation: String,\n    #[serde(default, skip_serializing_if = \"serde_json::Value::is_null\")]\n    pub value: serde_json::Value,\n    /// When present, the action runs only if the comparison holds.\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub condition: Option<PrototypeCondition>,\n    /// Further actions run in order after this one, on the same trigger.\n    /// Their own trigger and delay are ignored and they cannot nest.\n    #[serde(default, skip_serializing_if = \"Vec::is_empty\")]\n    pub then: Vec<Prototype>,\n}"
+  },
+  "PrototypeCondition": {
+    "file": "src/lib.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct PrototypeCondition {\n    pub variable: u32,\n    /// `==`, `!=`, and for numbers `<`, `<=`, `>`, `>=`.\n    pub operator: String,\n    pub value: serde_json::Value,\n}"
   },
   "AutoLayout": {
     "file": "src/lib.rs",
