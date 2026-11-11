@@ -665,6 +665,30 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "move_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and insertion boundary before (track count appends). Selected tracks gather at the boundary in their current order; connected spans move together in one undo step. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "before",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "move_into",
     "readOnly": false,
     "description": "Pass an array of complete Shapes with desired world coordinates, then destination parent ID (0 = root).",
@@ -1435,6 +1459,30 @@ export const engineCommands=[
       }
     ],
     "returns": "number"
+  },
+  {
+    "name": "shift_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and -1 or 1. The selection shifts one position as a block. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "delta",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
   },
   {
     "name": "sort_components",

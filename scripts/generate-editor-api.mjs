@@ -55,6 +55,8 @@ const notes={
  distribute_many:'Array of layer IDs and horizontal/vertical.',
  shift_grid_track:'Grid frame ID, columns/rows, zero-based index, and -1 or 1.',
  move_grid_track:'Grid frame ID, columns/rows, zero-based source index, and insertion boundary before (track count appends). Connected spans move together in one undo step.',
+ shift_grid_tracks:'Grid frame ID, columns/rows, json array of zero-based track indices, and -1 or 1. The selection shifts one position as a block. Returns the new indices as a JSON array string.',
+ move_grid_tracks:'Grid frame ID, columns/rows, json array of zero-based track indices, and insertion boundary before (track count appends). Selected tracks gather at the boundary in their current order; connected spans move together in one undo step. Returns the new indices as a JSON array string.',
  delete_grid_track:'Grid frame ID, columns/rows, zero-based index.',
 };
 const commands=[...types.slice(0,types.indexOf('export type InitInput')).matchAll(/^    (\w+)\(([^)]*)\): (\w+);$/gm)].filter(([,name])=>!excluded.has(name)).map(([,name,args,returns])=>({name,readOnly:readOnly.has(name),description:notes[name]??name.replaceAll('_',' '),args:args?args.split(', ').map(part=>{const [name,type]=part.split(': ');return {name,type:jsonNames.has(name)?'json':type};}):[],returns}));
