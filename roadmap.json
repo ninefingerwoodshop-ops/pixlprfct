@@ -118,12 +118,13 @@
     "Parent-only panel tear-outs, persistent icon docks, icon-only tear-out return actions, inline expanded-header toggles and top collapsed-dock toggles and adjacent flyouts in Design and SVG Animation (local source)",
     "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
     "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)",
-    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)"
+    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)",
+    "SVG import reads <style> sheets (element, class and id selectors with CSS cascade order) and all CSS named, hex-alpha, rgb() and hsl() colors (branch source)"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
     "Advanced typography including rich text and links; complete variable/style picker and metadata workflows",
-    "Broader SVG import and external vector clipboard interoperability",
+    "Broader SVG import (compound and even-odd fills, clipping, masks, text, images, complex CSS selectors; simple style sheets and CSS colors exist) and external vector clipboard interoperability",
     "Masks, Boolean operations, advanced corner smoothing and slice workflows require capability-specific acceptance",
     "Direct drag grid track reordering and multi-track selection",
     "Set-label overlap, slot rich descriptions/bulk authoring/native Figma slot metadata import",

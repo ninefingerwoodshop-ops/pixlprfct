@@ -289,6 +289,12 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | --- | --- | --- | --- |
 | Dependency-free PDF 1.4 writer (`web/pdf-export.js`): one page per export job, 1 pt per pixel, lossless FlateDecode RGB image plus a DeviceGray soft mask when transparent; 14,400 pt page and 100-page limits; UTF-16 title metadata | Export dialog Format → PDF. Current page or selection gives one page; top-level frames or separate layers give one multi-page PDF instead of a ZIP. The summary states the page count and that pages are images at the chosen scale | 4 unit tests (xref offsets, inflate round trip, masks, limits); 2 Chromium tests check `qpdf --check`, `pdfinfo` page sizes, `pdftoppm` colors and mask presence | Pages are images: no vector paths and no selectable or searchable text. Not available through MCP (MCP export has no canvas). Not installed or released |
 
+### SVG import: style sheets and CSS colors — 2026-11-11, branch source
+
+| Core | UI | Verification | Boundary |
+| --- | --- | --- | --- |
+| `web/svg-css.js` reads `<style>` sheets for element, class, id and universal selectors with specificity and source order between presentation attributes and inline style; `web/svg-colors.js` accepts all CSS named colors, hex with alpha, `rgb()` and `hsl()` in both syntaxes, folding alpha into fill/stroke opacity | No new interface: Place image or SVG, drop, paste and Icon library all use it | 10 unit tests (cascade, selector lists, `use`/symbol content, engine paste, refusals, colors); 1 Chromium test pasting an Illustrator-style file, undoing it and refusing a descendant selector | Descendant/child/attribute selectors, pseudo-classes, `@media`/`@import`/`@font-face` and `!important` are refused, as is any rule matching a gradient or stop. Transparent colors in gradient stops still need `stop-opacity`. Compound and even-odd fills, clipping, masks, text and images are still unsupported. Tested with hand-written files, not a corpus of real exports. The SVG Animator's separate importer is unchanged |
+
 ### Storage quotas and unreferenced bodies — 2026-11-04, branch source
 
 | Core | UI | Verification | Boundary |
