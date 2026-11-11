@@ -1,4 +1,4 @@
-import {reference,definitionName,registerReference,importVariables,importVariantSets} from './library-data.js';
+import {reference,definitionName,registerReference,importVariables,importVariantSets,importSlotProperties} from './library-data.js';
 const encoder=new TextEncoder();
 const number=(value,fallback=0)=>Number.isFinite(value)?value:fallback;
 const clamp=(value,min,max,fallback=min)=>Math.max(min,Math.min(max,number(value,fallback)));
@@ -142,13 +142,13 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
   const [a,b,c,d,tx,ty]=matrix(n.transform),sx=Math.hypot(a,b)*context.sx,sy=Math.hypot(c,d)*context.sy,rotation=-Math.atan2(b,a)*180/Math.PI;
   if(a*d-b*c<0||Math.abs(a*c+b*d)>.001)warn('Mirrored or skewed transforms may need adjustment.',n);
   const types={FRAME:'frame',SYMBOL:'frame',COMPONENT:'frame',INSTANCE:'frame',COMPONENT_SET:'frame',SECTION:'frame',GROUP:'group',RECTANGLE:'rectangle',ROUNDED_RECTANGLE:'rectangle',ELLIPSE:'ellipse',TEXT:'text',LINE:'line',VECTOR:'pen',BOOLEAN_GROUP:'pen',BOOLEAN_OPERATION:'pen',POLYGON:'pen',REGULAR_POLYGON:'pen',STAR:'pen'};
-  let kind=types[n.type];if(n.type==='FRAME'&&!n.isStateGroup&&n.resizeToFit&&!n.stackMode&&!n.fillPaints?.length)kind='group';
+  let kind=types[n.type];if(n.type==='FRAME'&&!n.isStateGroup&&!n.isSlot&&n.resizeToFit&&!n.stackMode&&!n.fillPaints?.length)kind='group';
   if(!kind){kind='frame';warn(`Unsupported ${n.type??'unknown'} layers were retained as empty containers.`,n);}
   const style=await appearance(n),s={id:next++,page_id:context.page,parent_id:parent,kind,name:name(n.name??n.type),x:context.x+tx*context.sx,y:context.y+ty*context.sy,width:Math.max(1,number(n.size?.x,100)*sx),height:Math.max(1,number(n.size?.y,100)*sy),rotation,fill:style.fills[0]?.color??'#d9d9d9',text:'',hidden:n.visible===false,locked:!!n.locked,appearance:style,stroke_width:clamp(n.strokeWeight,.1,100,1),clip_content:kind==='frame'&&!n.frameMaskDisabled,layout_item:{fill_width:false,fill_height:false,absolute:n.stackPositioning==='ABSOLUTE'},aspect_ratio_locked:!!n.proportionsConstrained};
   // Figma transforms rotate around the local origin; the editor rotates about the center.
   s.x+=(a*number(n.size?.x,100)+c*number(n.size?.y,100))*context.sx/2-s.width/2;
   s.y+=(b*number(n.size?.x,100)+d*number(n.size?.y,100))*context.sy/2-s.height/2;
-  if(n.componentPropDefs?.some(p=>p.type!=='VARIANT'))warn('Exposed component properties and slot metadata are not imported; their saved layers remain.',n);
+  if(n.componentPropDefs?.some(p=>p.type!=='VARIANT'&&p.type!=='SLOT'))warn('Exposed text, boolean and instance-swap component properties are not imported; their saved layers remain.',n);
   if(n.layoutGrids?.length)warn('Layout guides are not imported.',n);
   if(n.isMask)warn('Masks are imported as ordinary layers; their clipping behavior is not retained.',n);
   if(n.reactions?.length||n.transitionNodeID||n.prototypeInteractions?.length)warn('Prototype connections are not imported.',n);
@@ -194,6 +194,7 @@ export async function convertFigma(parsed,fileName='Figma design.fig',{prepareIm
  }
  for(const [i,page]of canvases.entries())for(const child of children.get(guid(page.guid))??[])await walk(child,0,{page:i+1,x:0,y:0,sx:1,sy:1,master:false},0,new Set());
  doc.component_sets=importVariantSets(nodes,children,mapped,warn);report.variables=doc.variables.values.length;report.styles=doc.color_styles.length+doc.effect_styles.length+doc.text_styles.length;report.variantSets=doc.component_sets.length;
+ doc.component_properties=importSlotProperties(nodes,children,mapped,warn);report.slotProperties=doc.component_properties.length;
  report.layers=doc.shapes.length;report.warnings=[...warningMap.values()];
  const body=JSON.stringify(doc);if(encoder.encode(body).length>5_000_000)throw new Error('The converted design exceeds the editor’s 5 MB project limit. Export a smaller selection or page from Figma.');
  return {body,report};

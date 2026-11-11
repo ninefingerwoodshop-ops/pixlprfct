@@ -3,7 +3,7 @@ let designPanels=null,editorKeydown=()=>{},updateCollapsible=()=>{};
 import {editorDOM,queryPanel} from './editor-dom.js';
 import {installTeamCollaboration} from './team-collaboration.js';
 function setTextIfChanged(node,value){const text=String(value);if(node.textContent!==text)node.textContent=text;}
-import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay} from './slots.js';
+import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay,slotDescription,variantReportMessage} from './slots.js';
 import {loadingMessage,finishLoading,failLoading} from './loading-screen.js';
 import {installDesktop} from './desktop-integration.js';
 import {readDesignFile} from './design-import.js';
@@ -364,16 +364,21 @@ function renameCanvasArea(){
   input.oninput=()=>input.setCustomValidity('');input.onblur=()=>close(false);input.focus();input.select();
 }
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
-function openComponentPropertyMenu(event,button){const rect=button.getBoundingClientRect(),save=p=>{editor.save_component_property(JSON.stringify(p));refresh();};showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Text',run:()=>editComponentProperty(doc,selected,null,save)},{label:'Boolean',run:()=>editComponentProperty(doc,selected,{id:0,component_id:selected,name:'Visible',kind:'boolean',targets:[]},save)},{label:'Slot',run:()=>editSlotProperty(doc,selected,null,save)}],button,{label:'Create property',heading:'Create property'});}
+function openComponentPropertyMenu(event,button){const rect=button.getBoundingClientRect(),save=saveProperty;showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Text',run:()=>editComponentProperty(doc,selected,null,save)},{label:'Boolean',run:()=>editComponentProperty(doc,selected,{id:0,component_id:selected,name:'Visible',kind:'boolean',targets:[]},save)},{label:'Slot',run:()=>editSlotProperty(doc,selected,null,saveProperty)}],button,{label:'Create property',heading:'Create property'});}
+// Slot dialogs pass {allVariants} when the property belongs to a component set.
+function saveProperty(p,{allVariants=false}={}){
+ if(p.kind!=='slot'||!allVariants){editor.save_component_property(JSON.stringify(p));refresh();return;}
+ const report=JSON.parse(editor.save_slot_across_variants(JSON.stringify(p)));refresh();toast(variantReportMessage(report));
+}
 function addSlotContent(slot){slotInstancePicker(doc,slot,master=>{editor.place_instance(master,slot.x,slot.y,slot.id);setSelection([slot.id]);refresh();},{preview:id=>assetAppearance(doc,id,textLayout)});}
 function convertSelectionToSlot(){safe(()=>{const owner=slotOwner(doc,current());if(!owner)throw new Error('Select layers inside a main component');let name='Slot',n=2;while((doc.component_properties??[]).some(p=>p.component_id===owner.id&&p.name===name))name='Slot '+n++;setSelection([editor.wrap_in_slot(selectionJson(),name)]);refresh();});}
-function assignSlotMenu(event,button){const shape=current(),owner=slotOwner(doc,shape);if(!owner)return;const rect=button.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[...(doc.component_properties??[]).filter(p=>p.component_id===owner.id&&p.kind==='slot').map(p=>({label:p.name,run:()=>safe(()=>{editor.save_component_property(JSON.stringify({...p,targets:[...new Set([...p.targets,shape.id])]}));refresh();})})),{label:'Create property…',run:()=>editSlotProperty(doc,owner.id,{id:0,component_id:owner.id,name:shape.name,kind:'slot',targets:[shape.id],slot_settings:{}},p=>{editor.save_component_property(JSON.stringify(p));refresh();})}],button,{label:'Convert to slot',heading:'Properties in '+owner.name});}
+function assignSlotMenu(event,button){const shape=current(),owner=slotOwner(doc,shape);if(!owner)return;const rect=button.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[...(doc.component_properties??[]).filter(p=>p.component_id===owner.id&&p.kind==='slot').map(p=>({label:p.name,run:()=>safe(()=>{editor.save_component_property(JSON.stringify({...p,targets:[...new Set([...p.targets,shape.id])]}));refresh();})})),{label:'Create property…',run:()=>editSlotProperty(doc,owner.id,{id:0,component_id:owner.id,name:shape.name,kind:'slot',targets:[shape.id],slot_settings:{}},saveProperty)}],button,{label:'Convert to slot',heading:'Properties in '+owner.name});}
 function renderSlotInspector(shape){let host=$('slot-inspector');if(!host){host=document.createElement('section');host.id='slot-inspector';host.className='property-section';$('component-panel').after(host);}host.replaceChildren();const property=slotProperty(doc,shape),owner=slotOwner(doc,shape);host.hidden=!property&&!(owner&&shape?.kind==='frame'&&!shape.component);if(host.hidden)return;
  if(!property){const convert=document.createElement('button');convert.textContent='Convert to slot';convert.onclick=event=>assignSlotMenu(event,convert);host.append(convert);return;}
  const header=document.createElement('div');header.className='slot-inspector-header';const name=document.createElement('strong');name.textContent=property.name;header.append(name);const action=(label,run)=>{const b=document.createElement('button');b.textContent=label;b.onclick=run;return b;};
  if(shape.component?.type==='instance'){header.append(action('＋',()=>addSlotContent(shape)));header.lastChild.setAttribute('aria-label','Add instances to '+property.name);const more=action('…',event=>{const rect=more.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Reset slot',enabled:shape.slot.modified,run:()=>safe(()=>{editor.reset_slot(shape.id);refresh();})},{label:'Delete contents',run:()=>safe(()=>{editor.clear_slot(shape.id);refresh();})}],more,{label:'Slot actions'});});more.setAttribute('aria-label','Slot actions');header.append(more);
- }else{const edit=action('Edit',()=>editSlotProperty(doc,property.component_id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}));edit.setAttribute('aria-label','Edit slot property');header.append(edit);}
- host.append(header);if(property.slot_settings?.description){const description=document.createElement('p');description.textContent=property.slot_settings.description;host.append(description);}const warnings=slotWarnings(doc,shape);if(warnings.length){const warning=document.createElement('p');warning.className='slot-inspector-warning';warning.textContent='Limits · '+warnings.join(' · ');host.append(warning);}
+ }else{const edit=action('Edit',()=>editSlotProperty(doc,property.component_id,property,saveProperty));edit.setAttribute('aria-label','Edit slot property');header.append(edit);}
+ host.append(header);if(property.slot_settings?.description)host.append(slotDescription(property.slot_settings.description));const warnings=slotWarnings(doc,shape);if(warnings.length){const warning=document.createElement('p');warning.className='slot-inspector-warning';warning.textContent='Limits · '+warnings.join(' · ');host.append(warning);}
 }
 let slotOverlay=null;
 function selectionActions(){
@@ -662,12 +667,13 @@ function renderComponentProperties(shape){
   renderExposedProperties($('exposed-properties'),doc,shape,{
     change:(property,value)=>safe(()=>{editor.set_component_property(selected,property,JSON.stringify(value));refresh();}),
     reset:property=>safe(()=>{editor.reset_component_property(selected,property);refresh();}),
-    edit:property=>editComponentProperty(doc,shape.id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}),
+    edit:property=>editComponentProperty(doc,shape.id,property,saveProperty),
     create:openComponentPropertyMenu,
     selectSlot:id=>{if(id){setSelection([id]);refresh(false);}},
     addSlot:addSlotContent,
     clearSlot:id=>safe(()=>{editor.clear_slot(id);refresh();}),
-    remove:property=>safe(()=>{editor.remove_component_property(property);refresh();})
+    remove:property=>safe(()=>{editor.remove_component_property(property);refresh();}),
+    removeAcrossVariants:property=>safe(()=>{const removed=editor.remove_slot_across_variants(property);refresh();toast(`Slot removed from ${removed} ${removed===1?'variant':'variants'}`);})
   });
   $('component-panel').hidden=!selectedIds.size||!!shape?.slot;
   $('instance-actions').hidden=!linked&&!master&&!setFrame;
