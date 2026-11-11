@@ -978,6 +978,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 "afterdelay",
                 "mousedown",
                 "mouseup",
+                "drag",
             ]
             .contains(&p.trigger.as_str())
             {
@@ -997,12 +998,13 @@ fn validate(document: &Document) -> Result<(), String> {
                 "slide-right",
                 "slide-up",
                 "slide-down",
+                "smart-animate",
             ]
             .contains(&p.transition.as_str())
                 || p.duration > 10_000
                 || !["linear", "ease-in", "ease-out", "ease-in-out"].contains(&p.easing.as_str())
                 || (["overlay", "close", "swap"].contains(&p.action.as_str())
-                    && p.transition.starts_with("slide-"))
+                    && (p.transition.starts_with("slide-") || p.transition == "smart-animate"))
             {
                 return Err("Invalid prototype transition, duration or easing".into());
             }
@@ -1518,7 +1520,7 @@ impl Editor {
             .map(|s| s.id)
             .collect()
     }
-    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 5] {
+    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 6] {
         let Some(frame) = self
             .document
             .shapes
@@ -1551,14 +1553,21 @@ impl Editor {
             next_page_id: self.next_page_id,
             snapshot_cache: Default::default(),
         };
-        let mut result: [Vec<u32>; 5] = std::array::from_fn(|_| vec![]);
+        let mut result: [Vec<u32>; 6] = std::array::from_fn(|_| vec![]);
         let mut hit = staged.hit_test(x, y);
         while hit != 0 {
             let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
             for p in s.interactions() {
-                if let Some(index) = ["click", "mouseenter", "mouseleave", "mousedown", "mouseup"]
-                    .iter()
-                    .position(|t| *t == p.trigger)
+                if let Some(index) = [
+                    "click",
+                    "mouseenter",
+                    "mouseleave",
+                    "mousedown",
+                    "mouseup",
+                    "drag",
+                ]
+                .iter()
+                .position(|t| *t == p.trigger)
                 {
                     result[index].push(s.id);
                 }
@@ -3523,7 +3532,7 @@ impl Editor {
 
     pub fn prototype_pointer_hits(&self, root: u32, x: f64, y: f64) -> String {
         let ids = self.prototype_hit_ids(root, x, y);
-        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0)}).to_string()
+        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0),"drag":ids[5].first().copied().unwrap_or(0)}).to_string()
     }
 
     pub fn hit_test(&self, x: f64, y: f64) -> u32 {

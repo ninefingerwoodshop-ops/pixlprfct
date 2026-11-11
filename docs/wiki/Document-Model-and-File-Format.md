@@ -227,8 +227,8 @@ Like variables, style values are copied onto linked layers on every commit; edit
 ```
 
 - `action` is required: `navigate`, `overlay`, `swap` (need a `target` frame ID, any page), `back`, `close` (`target` must be 0).
-- `trigger`: `click` (default), `mouseenter`, `mouseleave`, `mousedown`, `mouseup`, `afterdelay` (frames only, `delay` 1–600,000 ms). Each trigger at most once per layer; `prototype` is the first interaction and `additional_interactions` holds up to 5 more.
-- `transition`: `instant`, `dissolve`, `slide-left/right/up/down` (slides not allowed for overlay/close/swap); `duration` ≤ 10,000 ms; `easing`: `linear`, `ease-in`, `ease-out`, `ease-in-out`.
+- `trigger`: `click` (default), `mouseenter`, `mouseleave`, `mousedown`, `mouseup`, `drag`, `afterdelay` (frames only, `delay` 1–600,000 ms). Each trigger at most once per layer; `prototype` is the first interaction and `additional_interactions` holds up to 5 more.
+- `transition`: `instant`, `dissolve`, `slide-left/right/up/down`, `smart-animate` (slides and smart animate not allowed for overlay/close/swap); `duration` ≤ 10,000 ms; `easing`: `linear`, `ease-in`, `ease-out`, `ease-in-out`.
 - `flow_name` (frames only, ≤ 128 bytes) marks a flow starting point.
 - Links to deleted frames are removed automatically on commit; links are remapped on duplicate, paste and library import. See [Prototyping-Behaviors-and-Controls](Prototyping-Behaviors-and-Controls.md).
 
