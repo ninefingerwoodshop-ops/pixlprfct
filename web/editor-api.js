@@ -945,6 +945,30 @@ export const engineCommands=[
     "returns": "string"
   },
   {
+    "name": "prototype_pointer_hits_scrolled",
+    "readOnly": false,
+    "description": "prototype pointer hits scrolled",
+    "args": [
+      {
+        "name": "root",
+        "type": "number"
+      },
+      {
+        "name": "x",
+        "type": "number"
+      },
+      {
+        "name": "y",
+        "type": "number"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "prototype_variable_value",
     "readOnly": false,
     "description": "prototype variable value",
@@ -1713,7 +1737,7 @@ export const modelReference={
   "Shape": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shape {\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub slot: Option<slots::SlotState>,\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub slot_origin: u32,\n    #[serde(default)]\n    pub layout_class: String,\n    #[serde(default)]\n    pub layout_class_generated: bool,\n    #[serde(default)]\n    pub layout_media: Vec<serde_json::Value>,\n    #[serde(default, skip_serializing_if = \"String::is_empty\")]\n    pub custom_css: String,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub breakpoint_original: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome: String,\n    #[serde(default)]\n    pub device_chrome_breakpoints: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome_hidden: bool,\n    #[serde(default)]\n    pub control: Option<Control>,\n    #[serde(default)]\n    pub control_state: String,\n    #[serde(default)]\n    pub behaviors: Vec<Behavior>,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub editor_meta: Option<editor_tools::EditorMeta>,\n    #[serde(default)]\n    pub border_widths: Option<[f64; 4]>,\n    #[serde(default)]\n    pub rotation: f64,\n    #[serde(default)]\n    pub aspect_ratio_locked: bool,\n    #[serde(default)]\n    pub variable_bindings: std::collections::BTreeMap<String, u32>,\n    #[serde(default)]\n    pub variable_modes: std::collections::BTreeMap<u32, u32>,\n    pub id: u32,\n    #[serde(default = \"first_page\")]\n    pub page_id: u32,\n    #[serde(default)]\n    pub parent_id: u32,\n    #[serde(default)]\n    pub clip_content: bool,\n    #[serde(default)]\n    pub image: Option<RasterImage>,\n    #[serde(default)]\n    pub constraints: Constraints,\n    #[serde(default)]\n    pub appearance: Option<Appearance>,\n    #[serde(default)]\n    pub auto_layout: Option<AutoLayout>,\n    #[serde(default)]\n    pub layout_grids: Vec<LayoutGrid>,\n    #[serde(default)]\n    pub guide_style: u32,\n    #[serde(default)]\n    pub effect_style: u32,\n    #[serde(default)]\n    pub text_style: u32,\n    #[serde(default)]\n    pub fill_style: u32,\n    #[serde(default)]\n    pub stroke_style: u32,\n    #[serde(default)]\n    pub prototype: Option<Prototype>,\n    #[serde(default)]\n    pub additional_interactions: Vec<Prototype>,\n    #[serde(default)]\n    pub flow_name: String,\n    #[serde(default)]\n    pub layout_item: LayoutItem,\n    pub kind: String,\n    pub name: String,\n    pub x: f64,\n    pub y: f64,\n    pub width: f64,\n    pub height: f64,\n    pub fill: String,\n    pub text: String,\n    pub hidden: bool,\n    #[serde(default)]\n    pub locked: bool,\n    #[serde(default)]\n    pub component: Option<components::Component>,\n    #[serde(default)]\n    pub typography: Option<Typography>,\n    #[serde(skip)]\n    pub measured_baseline: Option<f64>,\n    #[serde(default)]\n    pub points: Vec<[f64; 2]>,\n    #[serde(default)]\n    pub handles: Vec<[[f64; 2]; 2]>,\n    #[serde(default)]\n    pub closed: bool,\n    #[serde(default = \"default_stroke\")]\n    pub stroke_width: f64,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shape {\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub slot: Option<slots::SlotState>,\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub slot_origin: u32,\n    #[serde(default)]\n    pub layout_class: String,\n    #[serde(default)]\n    pub layout_class_generated: bool,\n    #[serde(default)]\n    pub layout_media: Vec<serde_json::Value>,\n    #[serde(default, skip_serializing_if = \"String::is_empty\")]\n    pub custom_css: String,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub breakpoint_original: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome: String,\n    #[serde(default)]\n    pub device_chrome_breakpoints: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome_hidden: bool,\n    #[serde(default)]\n    pub control: Option<Control>,\n    #[serde(default)]\n    pub control_state: String,\n    #[serde(default)]\n    pub behaviors: Vec<Behavior>,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub editor_meta: Option<editor_tools::EditorMeta>,\n    #[serde(default)]\n    pub border_widths: Option<[f64; 4]>,\n    #[serde(default)]\n    pub rotation: f64,\n    #[serde(default)]\n    pub aspect_ratio_locked: bool,\n    #[serde(default)]\n    pub variable_bindings: std::collections::BTreeMap<String, u32>,\n    #[serde(default)]\n    pub variable_modes: std::collections::BTreeMap<u32, u32>,\n    pub id: u32,\n    #[serde(default = \"first_page\")]\n    pub page_id: u32,\n    #[serde(default)]\n    pub parent_id: u32,\n    #[serde(default)]\n    pub clip_content: bool,\n    #[serde(default)]\n    pub image: Option<RasterImage>,\n    #[serde(default)]\n    pub constraints: Constraints,\n    #[serde(default)]\n    pub appearance: Option<Appearance>,\n    #[serde(default)]\n    pub auto_layout: Option<AutoLayout>,\n    #[serde(default)]\n    pub layout_grids: Vec<LayoutGrid>,\n    #[serde(default)]\n    pub guide_style: u32,\n    #[serde(default)]\n    pub effect_style: u32,\n    #[serde(default)]\n    pub text_style: u32,\n    #[serde(default)]\n    pub fill_style: u32,\n    #[serde(default)]\n    pub stroke_style: u32,\n    #[serde(default)]\n    pub prototype: Option<Prototype>,\n    #[serde(default)]\n    pub additional_interactions: Vec<Prototype>,\n    #[serde(default)]\n    pub flow_name: String,\n    /// Prototype overflow scrolling for a frame: `none`, `vertical`,\n    /// `horizontal` or `both`. Content beyond the frame scrolls in presentations.\n    #[serde(default = \"no_overflow\", skip_serializing_if = \"is_no_overflow\")]\n    pub overflow_scroll: String,\n    /// Stays in place when the frame directly containing it scrolls.\n    #[serde(default, skip_serializing_if = \"is_not_fixed\")]\n    pub scroll_fixed: bool,\n    #[serde(default)]\n    pub layout_item: LayoutItem,\n    pub kind: String,\n    pub name: String,\n    pub x: f64,\n    pub y: f64,\n    pub width: f64,\n    pub height: f64,\n    pub fill: String,\n    pub text: String,\n    pub hidden: bool,\n    #[serde(default)]\n    pub locked: bool,\n    #[serde(default)]\n    pub component: Option<components::Component>,\n    #[serde(default)]\n    pub typography: Option<Typography>,\n    #[serde(skip)]\n    pub measured_baseline: Option<f64>,\n    #[serde(default)]\n    pub points: Vec<[f64; 2]>,\n    #[serde(default)]\n    pub handles: Vec<[[f64; 2]; 2]>,\n    #[serde(default)]\n    pub closed: bool,\n    #[serde(default = \"default_stroke\")]\n    pub stroke_width: f64,\n}"
   },
   "Behavior": {
     "file": "src/lib.rs",
