@@ -22,10 +22,13 @@ PixlPrfct has four separate ways to make designs interactive, and they live in d
 
 | Field | Values / default |
 |---|---|
-| `trigger` | `click` (default), `mouseenter`, `mouseleave`, `afterdelay`, `mousedown`, `mouseup` |
+| `trigger` | `click` (default), `mouseenter`, `mouseleave`, `afterdelay`, `mousedown`, `mouseup`, `drag` |
 | `delay` | ms, 1–600,000 (default 800); `afterdelay` only on frames |
-| `action` | `navigate`, `overlay`, `swap` (need a frame `target`), `back`, `close` (`target` must be 0) |
-| `transition` | `instant` (default), `dissolve`, `slide-left/right/up/down` (slides not allowed for overlay/close/swap) |
+| `action` | `navigate`, `overlay`, `swap` (need a frame `target`), `back`, `close`, `set-variable` (`target` must be 0) |
+| `variable`, `operation`, `value` | `set-variable` only: variable id; `set` (default), `add` (numbers) or `toggle` (booleans, no `value`); a literal matching the variable's kind. Omitted otherwise |
+| `condition` | Optional `{variable, operator, value}`; `==`/`!=` for any supported kind, `<`,`<=`,`>`,`>=` for numbers. The action is skipped when it does not hold |
+| `then` | Up to 7 follow-up actions run in order after this one on the same trigger. Each is a `Prototype` validated like any action; its own `trigger`/`delay` are ignored and it cannot have a `then`. Omitted from JSON when empty |
+| `transition` | `instant` (default), `dissolve`, `slide-left/right/up/down`, `smart-animate` (slides and smart animate not allowed for overlay/close/swap) |
 | `duration`, `easing` | ≤10,000 ms (default 300); `linear`, `ease-in`, `ease-out`, `ease-in-out` (default) |
 | `overlay_position`, `overlay_x/y` | `center` (default), `manual`, corner positions; offsets ≤1e6 |
 | `close_on_outside`, `backdrop_color`, `backdrop_opacity` | overlay modal settings (default `#000000`, 0.4) |
@@ -64,7 +67,12 @@ sequenceDiagram
 - **Hover** ([web/prototype-hover.js](../../web/prototype-hover.js)): `prototypeHover()` latches entered regions so moving across children does not re-fire `mouseenter`, and drops pending `mouseleave` when the screen changes.
 - **Press** ([web/prototype-press.js](../../web/prototype-press.js)): `prototypePress()` tracks the primary pointer; a handled mousedown/mouseup suppresses the compatibility click. A press can open a menu overlay and the release can activate an item in it.
 - **Timers** ([web/prototype-timers.js](../../web/prototype-timers.js)): `timedInteractions(scene)` lists visible frames with an `afterdelay` interaction; `prototypeTimers(fire)` owns one "visit" per screen, pauses elapsed time during repaint/animation, and invalidates callbacks on navigation (epoch counter).
+- **Overflow scrolling** ([web/prototype-scroll.js](../../web/prototype-scroll.js)): `Shape.overflow_scroll` (`none`, `vertical`, `horizontal`, `both`; frames only) and `Shape.scroll_fixed`, both omitted from JSON when unused and synced to component instances. The player keeps offsets per frame id; `scrollExtent` measures content past the frame, `scrollBy` applies a wheel/drag delta to the innermost scrollable frame under the pointer and chains the remainder outward, and `scrolledScene` returns the shapes to draw (content shifted, frame clipping, pinned subtrees moved to the top of the stack). `Editor::prototype_pointer_hits_scrolled` applies the same offsets and pinning to a staged copy for hit testing. Offsets reset when the presented screen changes. Not compared against Figma.
 - **Transitions** ([web/prototype-transition.js](../../web/prototype-transition.js)): `transitionSpec(config, reduced)` maps to Web Animations keyframes (dissolve = opacity, slides = translate ±100%); `canvasTransitions` snapshots the old canvas into a ghost element and animates both. `prefers-reduced-motion` makes every transition instant.
+- **Smart animate** ([web/prototype-smart-animate.js](../../web/prototype-smart-animate.js)): `matchLayers(from, to)` pairs layers top-down by name, same-name ordinal and kind under paired parents; `smartScene(from, to, t, match)` returns the shapes to draw at progress `t` in the destination frame's coordinate space (paired layers blended, arriving layers faded in, departing subtrees re-parented with negative ids and faded out). `canvasTransitions.tween` redraws the base scene each animation frame with `easeProgress`; the document is never changed. Not compared against Figma's Smart Animate.
+- **Sequences**: `actionSteps(p)` is `[p, ...p.then]`. The player's `activate` runs them in order through `perform`, awaiting each render (and so its transition); an action that cannot apply is skipped, and a change of `visit` from Back, Restart or the frame chooser stops the rest. `Shape::each_action_mut` remaps targets of every step on duplicate/paste, and `retain_interactions` drops only steps whose target is gone, promoting the next step (keeping trigger and delay) when the first goes. Canvas connections are drawn for the first action only.
+- **Variables** ([web/prototype-variables.js](../../web/prototype-variables.js), `src/variables.rs`): supported kinds are number, boolean, string and color. `variables::validate_action` checks conditions and Set variable literals against the variable's kind; `prune_actions` runs in `save_variables` and removes actions/conditions that no longer fit. The player keeps an `overrides` map; `perform` tests `conditionHolds` first, and a `set-variable` stores `nextValue` and redraws. `prototypeOrientationDocument` applies `sessionVariables` to the preview editor only, so bound layers re-resolve without touching the document. `Editor::prototype_variable_value` supplies default-mode values. Not compared against Figma.
+- **On drag** ([web/prototype-press.js](../../web/prototype-press.js)): `press.move` fires once after `DRAG_DISTANCE` (10 px) of travel from a press on a layer with a `drag` interaction and suppresses the following click. `prototype_pointer_hits` reports the `drag` target.
 - **Device chrome / orientation**: `prototypeViewport` fits the frame plus optional device chrome ([web/device-chrome.js](../../web/device-chrome.js)); `prototypeOrientationDocument` re-lays out a rotated copy in a separate preview `Editor` so orientation changes never touch the real document.
 - **Overlay placement**: `overlayPlacement(base, frame, position, x, y)`.
 
@@ -158,7 +166,9 @@ flowchart LR
 
 ## Known limitations
 
-- No smart-animate, scroll/overflow behaviors, variables-in-prototypes or conditional logic in prototypes (README lists variable-driven prototypes as pending).
+- Overflow scrolling has no scroll-to action, sticky positioning, scroll triggers, momentum or scrollbars, and the presented screen does not scroll inside a device viewport.
+- No smart-animate, variables-in-prototypes or conditional logic in prototypes (README lists variable-driven prototypes as pending).
+- Smart animate covers navigate and back only, switches text, images, gradients and path shapes instead of morphing them, and is unverified against Figma. On drag fires once at a threshold; the transition does not follow the pointer. Conditions compare one variable with one literal; there are no expressions, nested condition blocks or Set variable mode. A layout redraw from the player's `ResizeObserver` (for example the keyboard interaction list changing height) cancels a running transition. No scroll/overflow behaviors (README lists variable-driven prototypes as pending).
 - Behaviors are not available in the prototype player or Rust export; JSX/imports/framework syntax are rejected as bodies.
 - Motion supports linear interpolation only and a fixed property set; there is no Motion-specific test file.
 - Full framework production builds and screen-reader audits for controls were not performed (starter-controls.md, dropdown-starter.md).

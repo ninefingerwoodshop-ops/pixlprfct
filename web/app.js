@@ -3,7 +3,7 @@ let designPanels=null,editorKeydown=()=>{},updateCollapsible=()=>{};
 import {editorDOM,queryPanel} from './editor-dom.js';
 import {installTeamCollaboration} from './team-collaboration.js';
 function setTextIfChanged(node,value){const text=String(value);if(node.textContent!==text)node.textContent=text;}
-import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay} from './slots.js';
+import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay,slotDescription,variantReportMessage} from './slots.js';
 import {loadingMessage,finishLoading,failLoading} from './loading-screen.js';
 import {installDesktop} from './desktop-integration.js';
 import {readDesignFile} from './design-import.js';
@@ -88,6 +88,7 @@ import {installActionPanel} from './action-panel.js';
 import {renderGridControls,renderGridCell,defaultGrid} from './grid-controls.js';
 import {drawAlignedStroke} from './stroke-alignment.js';
 import {spacingHandles,spacingHit,changeSpacing,drawSpacing} from './layout-spacing.js';
+import {trackHeaderHit,selectTrack,validTrackSelection,trackDropBoundary,trackDropMoves,drawTrackHeaders,trackSelectionLabel} from './grid-track-selection.js';
 import {drawVectorStroke} from './stroke-render.js';
 import {cloudFiles} from './cloud-files.js';
 import {staticHost} from './static-host.js';
@@ -188,7 +189,7 @@ const assetDragToken=crypto.randomUUID();let assetDrag=null;
 function clearAssetDrag(){assetDrag=null;draw();}
 function startAssetDrag(event,master){if(!event.dataTransfer)return;event.dataTransfer.setData(ASSET_MIME,assetDragPayload(assetDragToken,master));event.dataTransfer.effectAllowed='copy';assetDrag={master,point:null,parent:0};}
 let editingPath = 0;
-let editingLayout=0,activeSpacing=null;
+let editingLayout=0,activeSpacing=null,trackSelection=null;
 let editingGridAreas=0,activeGridArea=null,tooltips=null;
 let activeNode=-1;
 let lastPasted='',pasteCount=0,pasteInPlace=false,pasteReplace=false,pasteFrames=false;
@@ -199,7 +200,7 @@ let editingGradient=0,activeGradient=null,gradientChannel='fill';
 const gradientField=()=>gradientChannel==='stroke'?'stroke_gradient':'gradient';
 const gradientShape=()=>editingPaint(current(),gradientChannel);
 document.addEventListener('paint-selection',()=>{editingGradient=0;activeGradient=null;renderProperties();draw();});
-function setSelection(ids,{preservePrototypeLink=false}={}) { if(textEditing&&(ids.length!==1||ids[0]!==textEditing.id)&&!finishText({render:false}))return; if(!preservePrototypeLink||ids.length!==1||ids[0]!==selected)prototypeLinkSelected=false; if(ids.length!==1||ids[0]!==selected)prototypeInteraction=0; gridPickerPreview=null; if(ids.length!==1||ids[0]!==editingGridAreas){tooltips?.hideFor($('grid-area-status'));editingGridAreas=0;activeGridArea=null;} if(ids.length!==1||ids[0]!==editingLayout){editingLayout=0;activeSpacing=null;} selectedIds = new Set([...selectionRoots(pageShapes(),ids),...ids.filter(id=>!pageShapes().some(s=>s.id===id))]); pasteContext.select([...selectedIds]); selected = [...selectedIds].at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} if(ids.length!==1||ids[0]!==editingGradient){editingGradient=0;activeGradient=null;} }
+function setSelection(ids,{preservePrototypeLink=false}={}) { if(textEditing&&(ids.length!==1||ids[0]!==textEditing.id)&&!finishText({render:false}))return; if(!preservePrototypeLink||ids.length!==1||ids[0]!==selected)prototypeLinkSelected=false; if(ids.length!==1||ids[0]!==selected)prototypeInteraction=0; gridPickerPreview=null; if(ids.length!==1||ids[0]!==editingGridAreas){tooltips?.hideFor($('grid-area-status'));editingGridAreas=0;activeGridArea=null;} if(ids.length!==1||ids[0]!==editingLayout){editingLayout=0;activeSpacing=null;trackSelection=null;} selectedIds = new Set([...selectionRoots(pageShapes(),ids),...ids.filter(id=>!pageShapes().some(s=>s.id===id))]); pasteContext.select([...selectedIds]); selected = [...selectedIds].at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} if(ids.length!==1||ids[0]!==editingGradient){editingGradient=0;activeGradient=null;} }
 function previewText(value){
   if(!textEditing)return;
   try{textEditing.preview(value);inlineText.invalid(false);$('text').value=value;draw();}
@@ -364,16 +365,21 @@ function renameCanvasArea(){
   input.oninput=()=>input.setCustomValidity('');input.onblur=()=>close(false);input.focus();input.select();
 }
 function renameSelection(){if(!current())return;$('shape-name').focus();$('shape-name').select();$('shape-name').scrollIntoView({block:'nearest'});}
-function openComponentPropertyMenu(event,button){const rect=button.getBoundingClientRect(),save=p=>{editor.save_component_property(JSON.stringify(p));refresh();};showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Text',run:()=>editComponentProperty(doc,selected,null,save)},{label:'Boolean',run:()=>editComponentProperty(doc,selected,{id:0,component_id:selected,name:'Visible',kind:'boolean',targets:[]},save)},{label:'Slot',run:()=>editSlotProperty(doc,selected,null,save)}],button,{label:'Create property',heading:'Create property'});}
+function openComponentPropertyMenu(event,button){const rect=button.getBoundingClientRect(),save=saveProperty;showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Text',run:()=>editComponentProperty(doc,selected,null,save)},{label:'Boolean',run:()=>editComponentProperty(doc,selected,{id:0,component_id:selected,name:'Visible',kind:'boolean',targets:[]},save)},{label:'Slot',run:()=>editSlotProperty(doc,selected,null,saveProperty)}],button,{label:'Create property',heading:'Create property'});}
+// Slot dialogs pass {allVariants} when the property belongs to a component set.
+function saveProperty(p,{allVariants=false}={}){
+ if(p.kind!=='slot'||!allVariants){editor.save_component_property(JSON.stringify(p));refresh();return;}
+ const report=JSON.parse(editor.save_slot_across_variants(JSON.stringify(p)));refresh();toast(variantReportMessage(report));
+}
 function addSlotContent(slot){slotInstancePicker(doc,slot,master=>{editor.place_instance(master,slot.x,slot.y,slot.id);setSelection([slot.id]);refresh();},{preview:id=>assetAppearance(doc,id,textLayout)});}
 function convertSelectionToSlot(){safe(()=>{const owner=slotOwner(doc,current());if(!owner)throw new Error('Select layers inside a main component');let name='Slot',n=2;while((doc.component_properties??[]).some(p=>p.component_id===owner.id&&p.name===name))name='Slot '+n++;setSelection([editor.wrap_in_slot(selectionJson(),name)]);refresh();});}
-function assignSlotMenu(event,button){const shape=current(),owner=slotOwner(doc,shape);if(!owner)return;const rect=button.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[...(doc.component_properties??[]).filter(p=>p.component_id===owner.id&&p.kind==='slot').map(p=>({label:p.name,run:()=>safe(()=>{editor.save_component_property(JSON.stringify({...p,targets:[...new Set([...p.targets,shape.id])]}));refresh();})})),{label:'Create property…',run:()=>editSlotProperty(doc,owner.id,{id:0,component_id:owner.id,name:shape.name,kind:'slot',targets:[shape.id],slot_settings:{}},p=>{editor.save_component_property(JSON.stringify(p));refresh();})}],button,{label:'Convert to slot',heading:'Properties in '+owner.name});}
+function assignSlotMenu(event,button){const shape=current(),owner=slotOwner(doc,shape);if(!owner)return;const rect=button.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[...(doc.component_properties??[]).filter(p=>p.component_id===owner.id&&p.kind==='slot').map(p=>({label:p.name,run:()=>safe(()=>{editor.save_component_property(JSON.stringify({...p,targets:[...new Set([...p.targets,shape.id])]}));refresh();})})),{label:'Create property…',run:()=>editSlotProperty(doc,owner.id,{id:0,component_id:owner.id,name:shape.name,kind:'slot',targets:[shape.id],slot_settings:{}},saveProperty)}],button,{label:'Convert to slot',heading:'Properties in '+owner.name});}
 function renderSlotInspector(shape){let host=$('slot-inspector');if(!host){host=document.createElement('section');host.id='slot-inspector';host.className='property-section';$('component-panel').after(host);}host.replaceChildren();const property=slotProperty(doc,shape),owner=slotOwner(doc,shape);host.hidden=!property&&!(owner&&shape?.kind==='frame'&&!shape.component);if(host.hidden)return;
  if(!property){const convert=document.createElement('button');convert.textContent='Convert to slot';convert.onclick=event=>assignSlotMenu(event,convert);host.append(convert);return;}
  const header=document.createElement('div');header.className='slot-inspector-header';const name=document.createElement('strong');name.textContent=property.name;header.append(name);const action=(label,run)=>{const b=document.createElement('button');b.textContent=label;b.onclick=run;return b;};
  if(shape.component?.type==='instance'){header.append(action('＋',()=>addSlotContent(shape)));header.lastChild.setAttribute('aria-label','Add instances to '+property.name);const more=action('…',event=>{const rect=more.getBoundingClientRect();showContextMenu({preventDefault:()=>event.preventDefault(),clientX:rect.left,clientY:rect.bottom},[{label:'Reset slot',enabled:shape.slot.modified,run:()=>safe(()=>{editor.reset_slot(shape.id);refresh();})},{label:'Delete contents',run:()=>safe(()=>{editor.clear_slot(shape.id);refresh();})}],more,{label:'Slot actions'});});more.setAttribute('aria-label','Slot actions');header.append(more);
- }else{const edit=action('Edit',()=>editSlotProperty(doc,property.component_id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}));edit.setAttribute('aria-label','Edit slot property');header.append(edit);}
- host.append(header);if(property.slot_settings?.description){const description=document.createElement('p');description.textContent=property.slot_settings.description;host.append(description);}const warnings=slotWarnings(doc,shape);if(warnings.length){const warning=document.createElement('p');warning.className='slot-inspector-warning';warning.textContent='Limits · '+warnings.join(' · ');host.append(warning);}
+ }else{const edit=action('Edit',()=>editSlotProperty(doc,property.component_id,property,saveProperty));edit.setAttribute('aria-label','Edit slot property');header.append(edit);}
+ host.append(header);if(property.slot_settings?.description)host.append(slotDescription(property.slot_settings.description));const warnings=slotWarnings(doc,shape);if(warnings.length){const warning=document.createElement('p');warning.className='slot-inspector-warning';warning.textContent='Limits · '+warnings.join(' · ');host.append(warning);}
 }
 let slotOverlay=null;
 function selectionActions(){
@@ -662,12 +668,13 @@ function renderComponentProperties(shape){
   renderExposedProperties($('exposed-properties'),doc,shape,{
     change:(property,value)=>safe(()=>{editor.set_component_property(selected,property,JSON.stringify(value));refresh();}),
     reset:property=>safe(()=>{editor.reset_component_property(selected,property);refresh();}),
-    edit:property=>editComponentProperty(doc,shape.id,property,p=>{editor.save_component_property(JSON.stringify(p));refresh();}),
+    edit:property=>editComponentProperty(doc,shape.id,property,saveProperty),
     create:openComponentPropertyMenu,
     selectSlot:id=>{if(id){setSelection([id]);refresh(false);}},
     addSlot:addSlotContent,
     clearSlot:id=>safe(()=>{editor.clear_slot(id);refresh();}),
-    remove:property=>safe(()=>{editor.remove_component_property(property);refresh();})
+    remove:property=>safe(()=>{editor.remove_component_property(property);refresh();}),
+    removeAcrossVariants:property=>safe(()=>{const removed=editor.remove_slot_across_variants(property);refresh();toast(`Slot removed from ${removed} ${removed===1?'variant':'variants'}`);})
   });
   $('component-panel').hidden=!selectedIds.size||!!shape?.slot;
   $('instance-actions').hidden=!linked&&!master&&!setFrame;
@@ -811,7 +818,7 @@ function renderPropertiesNow() {
     remove:id=>safe(()=>{editor.remove_guide_style(id);refresh();})
   });
   if (!shape){updateFigmaInspector(shape);return;}
-  if(editingLayout&&!shape.auto_layout){editingLayout=0;activeSpacing=null;}
+  if(editingLayout&&!shape.auto_layout){editingLayout=0;activeSpacing=null;trackSelection=null;}
   const areaOverride=gridAreaEditingOverridden(shape,pageShapes());
   if(shape.auto_layout?.direction!=='grid'||shape.auto_layout.grid?.masonry||areaOverride){editingGridAreas=0;activeGridArea=null;}
   const areaButton=$('edit-grid-areas');areaButton.hidden=!!shape.auto_layout?.grid?.masonry;
@@ -820,7 +827,7 @@ function renderPropertiesNow() {
   setTextIfChanged(areaButton,editingGridAreas===shape.id?'Finish editing areas':'Draw areas on canvas');areaButton.setAttribute('aria-pressed',String(editingGridAreas===shape.id));areaButton.disabled=!canvasEditable()||shape.component?.type==='instance'||areaOverride;
   setTextIfChanged($('edit-layout-spacing'),editingLayout===shape.id?'Finish spacing edits':'Edit spacing on canvas');$('edit-layout-spacing').disabled=!canvasEditable();$('edit-layout-spacing').setAttribute('aria-pressed',String(editingLayout===shape.id));
   $('auto-layout-panel').hidden=shape.kind!=='frame';$('layout-direction').value=shape.auto_layout?.direction??'none';$('layout-settings').hidden=!shape.auto_layout||shape.auto_layout.direction==='grid';$('layout-text_baseline').parentElement.hidden=shape.auto_layout?.direction!=='horizontal';
-  renderGridControls($('grid-frame-controls'),shape,update,(axis,index,delta)=>safe(()=>{shiftGridTrack(shape.id,axis,index,delta,true);}),gridPlan(shape),(axis,index)=>safe(()=>{editor.delete_grid_track(shape.id,axis,index);activeSpacing=null;refresh();toast('Grid track deleted · all layers kept');}),(oldName,newName)=>{editor.rename_grid_area(shape.id,oldName,newName);if(activeGridArea===oldName)activeGridArea=newName;refresh();},name=>safe(()=>{editor.delete_grid_area(shape.id,name);if(activeGridArea===name)activeGridArea=null;refresh();toast('Area deleted · items kept in their cells');}),(axis,index,before)=>safe(()=>{const next=editor.move_grid_track(shape.id,axis,index,before);activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;refresh();focusGridTrack(axis,next);}));const gridFlow=shape.auto_layout?.direction==='grid';for(const id of ['layout-wrap','layout-align_content','layout-align','layout-justify'])$(id).parentElement.hidden=gridFlow;
+  renderGridControls($('grid-frame-controls'),shape,update,(axis,index,delta)=>safe(()=>{shiftGridTrack(shape.id,axis,index,delta,true);}),gridPlan(shape),(axis,index)=>safe(()=>{editor.delete_grid_track(shape.id,axis,index);activeSpacing=null;trackSelection=null;refresh();toast('Grid track deleted · all layers kept');}),(oldName,newName)=>{editor.rename_grid_area(shape.id,oldName,newName);if(activeGridArea===oldName)activeGridArea=newName;refresh();},name=>safe(()=>{editor.delete_grid_area(shape.id,name);if(activeGridArea===name)activeGridArea=null;refresh();toast('Area deleted · items kept in their cells');}),(axis,index,before)=>safe(()=>{const next=editor.move_grid_track(shape.id,axis,index,before);trackSelection=null;activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;refresh();focusGridTrack(axis,next);}),{selection:gridTrackSelection(shape),select:(axis,index,event)=>{if(editingLayout!==shape.id){editingGridAreas=0;setTool('select');editingLayout=shape.id;}selectGridTracks(shape,selectTrack(gridTrackSelection(shape),axis,index,{shiftKey:event.shiftKey,toggle:event.ctrlKey||event.metaKey}));renderProperties();draw();},move:(axis,indices,before)=>safe(()=>{moveGridTracks(shape,{axis,indices,anchor:indices[0]},before);})});const gridFlow=shape.auto_layout?.direction==='grid';for(const id of ['layout-wrap','layout-align_content','layout-align','layout-justify'])$(id).parentElement.hidden=gridFlow;
   setTextIfChanged($('layout-gap-caption'),gridFlow?'Column gap':'Gap');setTextIfChanged($('layout-cross-gap-caption'),gridFlow?'Row gap':'Row / column gap');$('layout-gap').min=$('layout-cross_gap').min=gridFlow?'0':'-100000';
   if(shape.auto_layout)for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap','strokes_included','text_baseline','canvas_stacking']){const el=$('layout-'+key);if((key.startsWith('hug')||key==='wrap'||key==='strokes_included'||key==='text_baseline'))el.checked=shape.auto_layout[key];else el.value=shape.auto_layout[key]??'';}
   if(shape.auto_layout)for(const [key,mode] of [['gap','justify'],['cross_gap','align_content']]){const el=$('layout-'+key),auto=shape.auto_layout.direction!=='grid'&&['between','around','evenly'].includes(shape.auto_layout[mode]);el.disabled=auto;el.placeholder=auto?'Auto':key==='cross_gap'?'Use main gap':'';if(auto)el.value='';}
@@ -879,7 +886,14 @@ function drawShape(shape, target=ctx) {
   ctx.restore();
 }
 function focusGridTrack(axis,index){$('grid-'+axis+'-section')?.querySelectorAll('.grid-track-grip')[index]?.focus({preventScroll:true});}
-function shiftGridTrack(id,axis,index,delta,focus=false){const next=editor.shift_grid_track(id,axis,index,delta);activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;const old=$('grid-'+axis+'-'+index),target=$('grid-'+axis+'-'+next);if(old?.open){old.open=false;if(target)target.open=true;}refresh();if(focus)focusGridTrack(axis,next);}
+const gridTrackKey=(axis,index)=>'grid-'+(axis==='columns'?'column':'row')+'-'+index;
+// Canvas and inspector share one multi-track selection for the frame being edited.
+function gridTrackSelection(frame=current()){const editing=frame&&editingLayout===frame.id;return trackSelection=validTrackSelection(trackSelection,editing?frame:null,editing?gridPlan(frame):null);}
+function selectGridTracks(frame,next){trackSelection=next?{...next,frameId:frame.id}:null;if(next)activeSpacing=gridTrackKey(next.axis,next.anchor??next.indices[0]);}
+function followGridTracks(frame,selection,moved){const anchor=moved[Math.max(0,selection.indices.indexOf(selection.anchor))];selectGridTracks(frame,{axis:selection.axis,indices:[...moved].sort((a,b)=>a-b),anchor});refresh();}
+function moveGridTracks(frame,selection,before){followGridTracks(frame,selection,JSON.parse(editor.move_grid_tracks(frame.id,selection.axis,JSON.stringify(selection.indices),before)));}
+function shiftGridTracks(frame,selection,delta){followGridTracks(frame,selection,JSON.parse(editor.shift_grid_tracks(frame.id,selection.axis,JSON.stringify(selection.indices),delta)));}
+function shiftGridTrack(id,axis,index,delta,focus=false){const next=editor.shift_grid_track(id,axis,index,delta);if(trackSelection)trackSelection=trackSelection.frameId===id&&trackSelection.axis===axis&&trackSelection.indices.length===1&&trackSelection.indices[0]===index?{...trackSelection,indices:[next],anchor:next}:null;activeSpacing='grid-'+(axis==='columns'?'column':'row')+'-'+next;const old=$('grid-'+axis+'-'+index),target=$('grid-'+axis+'-'+next);if(old?.open){old.open=false;if(target)target.open=true;}refresh();if(focus)focusGridTrack(axis,next);}
 function gridPlan(frame){if(gesture?.gridParentId===frame?.id&&gesture.grid)return {...gesture.grid,...(frame._gridLayout??{})};if(gridPickerPreview?.parentId===frame?.id)return {...gridPickerPreview.grid,...(frame._gridLayout??{})};return frame?.auto_layout?.direction==='grid'?{...JSON.parse(editor.grid_layout(frame.id)),...(frame._gridLayout??{})}:null;}
 function gridSpanParent(shape){
  if(!shape||shape.layout_item?.absolute)return null;
@@ -965,7 +979,7 @@ function draw() {
   }
   if(editingGradient&&gradientShape()?.appearance?.[gradientField()])drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:gradientShape(),zoom,activeGradient,gradientField());
   if(prototypeConnections&&!editingPath&&!editingGradient)drawConnections(ctx,scene,selectedIds.size===1?scene.find(s=>s.id===selected):null,zoom,gesture,tool==='select'&&canvasEditable(),prototypeInteraction);
-  if(editingLayout===current()?.id&&tool==='select'&&canvasEditable()){const frame=scene.find(s=>s.id===editingLayout);if(frame&&visibleInTree(frame,scene)){ctx.save();for(const clip of clippingFrames(frame,scene)){ctx.beginPath();ctx.roundRect(clip.x,clip.y,clip.width,clip.height,radii(clip));ctx.clip();}drawSpacing(ctx,frame,scene,zoom,activeSpacing,gesture?.grid??gridPlan(frame));ctx.restore();}}
+  if(editingLayout===current()?.id&&tool==='select'&&canvasEditable()){const frame=scene.find(s=>s.id===editingLayout);if(frame&&visibleInTree(frame,scene)){ctx.save();for(const clip of clippingFrames(frame,scene)){ctx.beginPath();ctx.roundRect(clip.x,clip.y,clip.width,clip.height,radii(clip));ctx.clip();}if(frame.auto_layout?.direction==='grid')drawTrackHeaders(ctx,frame,gesture?.grid??gridPlan(frame),zoom,gridTrackSelection(frame),gesture?.type==='grid-track-drag'&&gesture.moved?{axis:gesture.axis,before:gesture.before,moves:trackDropMoves(gesture.indices,gesture.before)}:null);drawSpacing(ctx,frame,scene,zoom,activeSpacing,gesture?.grid??gridPlan(frame));ctx.restore();}}
   if(editingGridAreas===current()?.id&&tool==='select'){const frame=transformGeometry(current());drawAreaEditing(ctx,frame,gesture?.type==='grid-area'?gesture.plan:gridPlan(frame),current().auto_layout?.grid?.areas??[],activeGridArea,gesture?.type==='grid-area'?gesture.area:null,gesture?.valid!==false,zoom);}
   const areaStatus=editingGridAreas===current()?.id&&tool==='select'?areaSelectionStatus(current().auto_layout?.grid?.areas??[],activeGridArea):null;
   const resizeConstraints=gesture?.type==='resize'?areaResizeConstraints(gesture.original,gesture.preview,pageShapes().find(s=>s.id===gesture.original.parent_id),gesture.grid):[];
@@ -1051,7 +1065,7 @@ function setTool(value) {
   if(team?.active()&&!team.editable()&&!['select','hand','comment'].includes(value)){toast('Start editing or request a handoff to change this file.');return;}
   if(value==='comment'&&team?.active()){team.showComments();return;}
   if(!finishText())return;
-  prototypeLinkSelected=false;penPoints=[]; gesture=null; editingLayout=0;activeSpacing=null;editingPath=0;editingGradient=0;activeGradient=null;
+  prototypeLinkSelected=false;penPoints=[]; gesture=null; editingLayout=0;activeSpacing=null;trackSelection=null;editingPath=0;editingGradient=0;activeGradient=null;
   editorDOM.querySelectorAll('.tool-group').forEach(el=>el.open=false);
   $('pencil-options').hidden=value!=='pencil';
   tool = value;updateToolbelt(tool); editorDOM.querySelectorAll('[data-tool]').forEach(button => { const active = button.dataset.tool === tool; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active)); });
@@ -1203,7 +1217,7 @@ function bind() {
   $('add-auto-layout').onclick=()=>safe(()=>{setSelection([editor.auto_layout_selection(selectionJson())]);refresh();});
   for(const key of ['min_width','max_width','min_height','max_height'])$('limit-'+key).onchange=()=>{const s=current();if(s){const value=$('limit-'+key).value;update({...s,layout_item:{...s.layout_item,[key]:value===''?null:Number(value)}});renderProperties();}};
   $('edit-grid-areas').onclick=()=>{const s=current();if(s?.auto_layout?.direction!=='grid'||!canvasEditable()||s.component?.type==='instance'||gridAreaEditingOverridden(s,pageShapes()))return;const was=editingGridAreas===s.id;setTool('select');editingGridAreas=was?0:s.id;editingLayout=0;activeGridArea=null;renderProperties();draw();canvas.focus();if(!was)toast('Tab selects areas · Enter / F2 renames · Drag empty cells to draw · Drag areas or use arrows to move · Drag edges or Shift + arrows to resize · Escape cancels');};
-  $('edit-layout-spacing').onclick=()=>{const s=current();if(!s?.auto_layout||!canvasEditable())return;const was=editingLayout===s.id;editingGridAreas=0;setTool('select');editingLayout=was?0:s.id;activeSpacing=was?null:'padding_left';renderProperties();draw();canvas.focus();if(!was)toast('Drag spacing handles · Tab to choose · Arrow keys to adjust · Alt links opposite padding · Escape cancels');};
+  $('edit-layout-spacing').onclick=()=>{const s=current();if(!s?.auto_layout||!canvasEditable())return;const was=editingLayout===s.id;editingGridAreas=0;setTool('select');editingLayout=was?0:s.id;activeSpacing=was?null:'padding_left';trackSelection=null;renderProperties();draw();canvas.focus();if(!was)toast(s.auto_layout.direction==='grid'?'Drag spacing handles · Drag a column or row header to reorder · Shift or Ctrl/Command-click selects several · Escape cancels':'Drag spacing handles · Tab to choose · Arrow keys to adjust · Alt links opposite padding · Escape cancels');};
   $('layout-direction').onchange=()=>{const s=current();if(s)update({...s,auto_layout:$('layout-direction').value==='none'?null:{...layoutDefaults,...s.auto_layout,direction:$('layout-direction').value,...($('layout-direction').value==='grid'?{grid:s.auto_layout?.grid??defaultGrid(),gap:Math.max(0,s.auto_layout?.gap??16),cross_gap:s.auto_layout?.cross_gap==null?null:Math.max(0,s.auto_layout.cross_gap),wrap:false}: {})}});};
   for(const key of ['gap','cross_gap','padding_top','padding_right','padding_bottom','padding_left','align','justify','align_content','hug_width','hug_height','wrap','strokes_included','text_baseline','canvas_stacking'])$('layout-'+key).onchange=()=>{const s=current();if(s?.auto_layout){const el=$('layout-'+key),value=(key.startsWith('hug')||key==='wrap'||key==='strokes_included'||key==='text_baseline')?el.checked:['align','justify','align_content','canvas_stacking'].includes(key)?el.value:key==='cross_gap'&&el.value===''?null:Number(el.value);update({...s,auto_layout:{...s.auto_layout,[key]:value}});renderProperties();}};
   for(const key of ['fill_width','fill_height','absolute'])$('layout-item-'+key).onchange=()=>{const s=current();if(s)update({...s,layout_item:{fill_width:false,fill_height:false,absolute:false,...s.layout_item,[key]:$('layout-item-'+key).checked}});};
@@ -1628,7 +1642,17 @@ function bind() {
       const segment=nearestSegment(shape,p);if(segment&&segment.distance<10/zoom){activeNode=-1;renderProperties();draw();return;}
       editingPath=0;activeNode=-1;
     }
-    if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}}
+    if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;trackSelection=null;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}
+      const header=trackHeaderHit(shape,gridPlan(shape),p,zoom);
+      if(header){
+        // Modifiers edit the selection; a plain press on a selected track keeps
+        // the set so it can be dragged, and collapses to that track on release.
+        const toggle=event.ctrlKey||event.metaKey,held=gridTrackSelection(shape),inside=!!held&&held.axis===header.axis&&held.indices.includes(header.index);
+        const next=event.shiftKey||toggle?selectTrack(held,header.axis,header.index,{shiftKey:event.shiftKey,toggle}):inside?held:selectTrack(null,header.axis,header.index);
+        selectGridTracks(shape,next);if(next&&next.indices.length>1)toast(trackSelectionLabel(next)+' · drag a selected header to reorder');
+        gesture=next?.indices.includes(header.index)?{type:'grid-track-drag',frame:shape,axis:header.axis,index:header.index,indices:next.indices,start:p,moved:false,before:null,collapse:inside&&!event.shiftKey&&!toggle}:null;
+        renderProperties();draw();return;
+      }}
     if (shape && (shape.component?.type!=='instance'||gridSpanParent(shape)) && !shape.hidden && canvasEditable()) {
       const measured=transformGeometry(shape);
       const handle=resizeHandleAt(measured,p,zoom,!!gridSpanParent(shape));
@@ -1657,6 +1681,7 @@ function bind() {
     if (!gesture) {
       if(tool==='text'){const p=point(event),hit=pageShapes().find(s=>s.id===canvasHit(p.x,p.y));canvas.style.cursor=hit?.kind==='text'?'text':'crosshair';return;}
       if(tool==='select'&&editingGridAreas===current()?.id){const frame=transformGeometry(current()),hit=areaHit(frame,gridPlan(frame),current().auto_layout.grid?.areas??[],point(event),zoom,activeGridArea);canvas.style.cursor=hit?.cx!=null?resizeCursor(frame,[hit.cx,hit.cy]):hit?'grab':'crosshair';return;}
+      if(tool==='select'&&editingLayout&&editingLayout===current()?.id&&current().auto_layout?.direction==='grid'&&canvasEditable()&&trackHeaderHit(current(),gridPlan(current()),point(event),zoom)){canvas.style.cursor='grab';return;}
       if(tool==='select'&&prototypeConnections&&!editingPath&&!editingGradient){const p=point(event),shape=current();if((shape&&canvasEditable()&&connectionHit(transformGeometry(shape),p,zoom))||connectionAt(pageShapes().map(transformGeometry),p,zoom)){canvas.style.cursor='pointer';return;}}
       if(tool==='select'&&!editingPath&&!editingGradient){const s=current(),measured=s&&transformGeometry(s),p=point(event),handle=measured&&(s.component?.type!=='instance'||gridSpanParent(s))&&canvasEditable()?resizeHandleAt(measured,p,zoom,!!gridSpanParent(s)):null;canvas.style.cursor=handle?resizeCursor(measured,handle):measured&&s.component?.type!=='instance'&&canvasEditable()&&rotationHandleAt(measured,p,zoom)?rotateCursor:'default';}
       return;
@@ -1664,6 +1689,10 @@ function bind() {
     if (gesture.type === 'pan') {
       pan.x = gesture.pan.x + event.clientX - gesture.x; pan.y = gesture.pan.y + event.clientY - gesture.y; scheduleViewportDraw(); return; }
     const p = point(event), original = gesture.original, snap = Math.round;
+    if(gesture.type==='grid-track-drag'){
+      if(!gesture.moved&&Math.hypot(p.x-gesture.start.x,p.y-gesture.start.y)<4/zoom)return;
+      gesture.moved=true;gesture.before=trackDropBoundary(gesture.frame,gridPlan(gesture.frame),gesture.axis,p);canvas.style.cursor='grabbing';scheduleViewportDraw();return;
+    }
     if(gesture.type==='text-create'){gesture.preview=drawnText(gesture.start,p,zoom);scheduleViewportDraw();return;}
     if(gesture.type==='grid-area'){canvas.style.cursor=gesture.initial&&gesture.cx==null?'grabbing':canvas.style.cursor;gesture.area=gesture.initial?(gesture.cx==null?moveArea(gesture.frame,gesture.plan,gesture.initial,gesture.start,p):resizeArea(gesture.frame,gesture.plan,gesture.initial,p,gesture.cx,gesture.cy)):areaFromDrag(gesture.frame,gesture.plan,gesture.start,p,gesture.name);gesture.valid=validArea(gesture.areas,gesture.area);
       const areaKey=JSON.stringify(gesture.area);
@@ -1747,6 +1776,11 @@ function bind() {
       if(gesture.kind!=='pencil' && shape.width<3 && shape.height<3) shape=drawnShape(gesture.kind,gesture.start,{x:gesture.start.x+160,y:gesture.start.y+(gesture.kind==='line'||gesture.kind==='arrow'?0:120)});
       const start=gesture.start;gesture=null; safe(()=>{setSelection([insertAt(shape,start)]); setTool('select'); refresh();if(editorRole(shape)){development.activate('design');renderToolInspector.focus();}}); return;
     }
+    if(gesture?.type==='grid-track-drag'){
+      const g=gesture;gesture=null;canvas.style.cursor='default';
+      if(!g.moved){if(g.collapse){selectGridTracks(g.frame,selectTrack(null,g.axis,g.index));renderProperties();}draw();return;}
+      safe(()=>{moveGridTracks(g.frame,{axis:g.axis,indices:g.indices,anchor:g.index},g.before);});draw();return;
+    }
     const preview = gesture?.preview, previews = gesture?.previews,type=gesture?.type,dropTargets=gesture?.targets,stackDrop=gesture?.stackDrop;
     const parent=type==='move'&&previews?dropParent(gesture.targets??pageShapes(),previews,[...selectedIds]):null;
     const moved=type==='move'&&previews?.some(s=>{const old=pageShapes().find(o=>o.id===s.id);return old&&(old.x!==s.x||old.y!==s.y);});
@@ -1763,7 +1797,7 @@ function bind() {
   // Previews never touch the document: discard them before other Escape handlers
   // can clear the selection or let a later pointerup commit the preview.
   window.addEventListener('keydown',event=>{
-    if(event.key!=='Escape'||!['move','grid-span','resize','prototype-link'].includes(gesture?.type))return;
+    if(event.key!=='Escape'||!['move','grid-span','resize','prototype-link','grid-track-drag'].includes(gesture?.type))return;
     event.preventDefault();event.stopImmediatePropagation();
     cancelGesture();canvas.style.cursor='default';canvas.focus({preventScroll:true});
   },{capture:true});
@@ -1864,9 +1898,10 @@ function bind() {
       return;
     }
     if(editingLayout&&!mod){
-      if(key==='escape'||key==='enter'){event.preventDefault();const preview=gesture?.type==='layout-spacing'?gesture.preview:null;gesture=null;if(key==='enter'&&preview)update(preview);if(key==='enter'||!preview){editingLayout=0;activeSpacing=null;}renderProperties();draw();return;}
-      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=spacingHandles(current(),pageShapes(),gridPlan(current())).filter((h,i,a)=>a.findIndex(v=>v.key===h.key)===i),index=handles.findIndex(h=>h.key===activeSpacing);activeSpacing=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length]?.key;draw();return;}
-      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();if(!canvasEditable()||gesture)return;const h=spacingHandles(current(),pageShapes(),gridPlan(current())).find(h=>h.key===activeSpacing);if(h){const direction=event.key==='ArrowLeft'||event.key==='ArrowUp'?-1:1;if(event.altKey&&h.track){safe(()=>{shiftGridTrack(current().id,h.track.axis,h.track.index,direction);});}else update(changeSpacing(current(),h,direction*(event.shiftKey?10:1),{altKey:event.altKey}));}return;}
+      if(key==='escape'&&!gesture&&gridTrackSelection()){event.preventDefault();trackSelection=null;renderProperties();draw();return;}
+      if(key==='escape'||key==='enter'){event.preventDefault();const preview=gesture?.type==='layout-spacing'?gesture.preview:null;gesture=null;if(key==='enter'&&preview)update(preview);if(key==='enter'||!preview){editingLayout=0;activeSpacing=null;trackSelection=null;}renderProperties();draw();return;}
+      if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=spacingHandles(current(),pageShapes(),gridPlan(current())).filter((h,i,a)=>a.findIndex(v=>v.key===h.key)===i),index=handles.findIndex(h=>h.key===activeSpacing);activeSpacing=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length]?.key;trackSelection=null;renderProperties();draw();return;}
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();if(!canvasEditable()||gesture)return;const h=spacingHandles(current(),pageShapes(),gridPlan(current())).find(h=>h.key===activeSpacing);if(h){const direction=event.key==='ArrowLeft'||event.key==='ArrowUp'?-1:1;if(event.altKey&&h.track){const held=gridTrackSelection();if(held&&held.indices.length>1&&held.axis===h.track.axis&&held.indices.includes(h.track.index))safe(()=>{shiftGridTracks(current(),held,direction);});else safe(()=>{shiftGridTrack(current().id,h.track.axis,h.track.index,direction);});}else update(changeSpacing(current(),h,direction*(event.shiftKey?10:1),{altKey:event.altKey}));}return;}
     }
     if(editingGradient&&!mod){
       if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=gradientHandles(gradientShape(),zoom,gradientField()),index=handles.findIndex(h=>h.part===activeGradient?.part&&(h.part!=='stop'||h.index===activeGradient.index));activeGradient=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length];renderProperties();draw();return;}

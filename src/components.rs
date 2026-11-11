@@ -34,6 +34,8 @@ const FIELDS: &[&str] = &[
     "handles",
     "closed",
     "clip_content",
+    "overflow_scroll",
+    "scroll_fixed",
     "aspect_ratio_locked",
     "auto_layout",
     "layout_grids",

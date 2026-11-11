@@ -17,7 +17,7 @@ function parseInWorker(bytes,name){
 }
 function reviewImport(report,{library=false}={}){
  return new Promise(resolve=>{
-  const dialog=modal('Figma import summary'),summary=el('p',`${report.pages} page${report.pages===1?'':'s'} · ${report.layers} editable layers · ${report.components} components · ${report.images} images`);dialog.append(summary);
+  const dialog=modal('Figma import summary'),summary=el('p',`${report.pages} page${report.pages===1?'':'s'} · ${report.layers} editable layers · ${report.components} components${report.slotProperties?` · ${report.slotProperties} slot ${report.slotProperties===1?'property':'properties'}`:''} · ${report.images} images`);dialog.append(summary);
   dialog.append(el('p',library?'Import adds a reusable library. Your open project stays in place.':'Import creates a new project. Your original file stays unchanged.'));
   if(report.warnings.length){const heading=el('h3','Items to review'),list=el('ul');for(const warning of report.warnings){const item=el('li',warning.message+` (${warning.count})`);if(warning.layers.length)item.append(el('small',warning.layers.join(', ')));list.append(item);}dialog.append(heading,list);}
   else dialog.append(el('p','No unsupported features were detected in this file.'));

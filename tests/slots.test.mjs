@@ -25,3 +25,75 @@ test('slot defaults reject host property bindings, and detaching the host preser
 test('font-layout refresh preserves generated CSS identities of default slot content',()=>{
  const {e,copy}=fixture();try{const ids=children(e,copy).map(s=>({id:s.id,layout_class:s.layout_class}));e.refresh_text_layout();assert.deepEqual(children(e,copy).map(s=>({id:s.id,layout_class:s.layout_class})),ids);assert.equal(get(e,copy).slot.modified,false);}finally{e.free();}
 });
+// A two- or three-variant set whose variants are structural copies of one card.
+function variantFixture(count=2){
+ const e=new Editor(),master=e.add('frame',0,0),body=e.add('frame',20,20),footer=e.add('frame',20,140),label=e.add('text',30,30);
+ edit(e,master,{name:'Card',width:300,height:240});edit(e,body,{name:'Body area',width:200,height:100});edit(e,footer,{name:'Footer area',width:200,height:60});
+ e.reparent_many(JSON.stringify([body,footer]),master);e.reparent_many(JSON.stringify([label]),body);e.create_component(master);
+ const masters=[master];for(let i=1;i<count;i++)masters.push(JSON.parse(e.duplicate_many(JSON.stringify([master])))[0]);
+ e.save_component_set(JSON.stringify({id:0,name:'Card',properties:['State'],variants:masters.map((component_id,i)=>({component_id,values:['State '+i]}))}));
+ const part=(m,name)=>children(e,m).find(s=>s.name===name)?.id,slots=m=>doc(e).component_properties.filter(p=>p.component_id===m&&p.kind==='slot');
+ return {e,masters,body,footer,part,slots};
+}
+const acrossVariants=(e,p)=>JSON.parse(e.save_slot_across_variants(JSON.stringify(p)));
+test('a new slot is authored in every variant in one undo step, matched by name or position',()=>{
+ const {e,masters,body,part,slots}=variantFixture(3),before=e.snapshot();
+ const settings={description:'**Main** content',min_children:1,max_children:4,preferred_instances:[],only_preferred_instances:false,display_empty:true,fill_counter_axis:false};
+ const report=acrossVariants(e,{id:0,component_id:masters[0],name:'Body',kind:'slot',targets:[body],slot_settings:settings});
+ assert.deepEqual([report.created,report.updated,report.unchanged,report.skipped],[2,0,0,[]]);
+ for(const m of masters){const [p]=slots(m);assert.equal(p.name,'Body');assert.deepEqual(p.slot_settings,settings);assert.equal(p.targets.length,1);assert.equal(get(e,p.targets[0]).parent_id,m);assert.equal(get(e,p.targets[0]).slot.property,p.id);}
+ // New slot frames take the slot name, as when wrapping a selection.
+ assert.equal(get(e,slots(masters[1])[0].targets[0]).name,'Body');assert.equal(get(e,part(masters[1],'Footer area')).slot,undefined);
+ e.undo();assert.equal(e.snapshot(),before);e.redo();assert.equal(slots(masters[2]).length,1);
+ const reload=new Editor();reload.load(e.snapshot());assert.equal(reload.snapshot(),e.snapshot());reload.free();e.free();
+});
+test('saving again updates settings everywhere, keeps each variant\'s own targets, and reports no change when equal',()=>{
+ const {e,masters,body,part,slots}=variantFixture();
+ acrossVariants(e,{id:0,component_id:masters[0],name:'Body',kind:'slot',targets:[body],slot_settings:{}});
+ // The second variant also exposes its footer through the same slot.
+ const other=slots(masters[1])[0],extra=part(masters[1],'Footer area');
+ e.save_component_property(JSON.stringify({...other,targets:[...other.targets,extra]}));
+ const source=slots(masters[0])[0],report=acrossVariants(e,{...source,slot_settings:{...source.slot_settings,description:'Use for *content*',max_children:3}});
+ assert.deepEqual([report.created,report.updated,report.unchanged],[0,1,0]);
+ assert.equal(slots(masters[1])[0].slot_settings.max_children,3);assert.deepEqual(slots(masters[1])[0].targets,[...other.targets,extra]);
+ const settled=e.snapshot(),again=acrossVariants(e,slots(masters[0])[0]);
+ assert.deepEqual([again.created,again.updated,again.unchanged],[0,0,1]);assert.equal(e.snapshot(),settled);e.free();
+});
+test('renaming a slot follows it into the other variants instead of creating a second property',()=>{
+ const {e,masters,body,slots}=variantFixture(3);
+ acrossVariants(e,{id:0,component_id:masters[0],name:'Body',kind:'slot',targets:[body],slot_settings:{}});
+ const report=acrossVariants(e,{...slots(masters[0])[0],name:'Content'});
+ assert.equal(report.created,0);for(const m of masters)assert.deepEqual(slots(m).map(p=>p.name),['Content']);e.free();
+});
+test('variants without a matching layer or with a clashing property are skipped with a reason, never failed',()=>{
+ const {e,masters,body,part,slots}=variantFixture(3),label=children(e,part(masters[2],'Body area'))[0].id;
+ // Variant 1 loses its layers; variant 2 already has a text property named Body.
+ e.remove_many(JSON.stringify(children(e,masters[1]).map(s=>s.id)));
+ e.save_component_property(JSON.stringify({id:0,component_id:masters[2],name:'Body',kind:'text',targets:[label]}));
+ const report=acrossVariants(e,{id:0,component_id:masters[0],name:'Body',kind:'slot',targets:[body],slot_settings:{}});
+ assert.equal(report.created,0);assert.deepEqual(report.skipped.map(s=>[s.component_id,s.reason]),[[masters[1],'no matching layer'],[masters[2],'another property already uses this name']]);
+ assert.equal(slots(masters[0]).length,1);assert.equal(slots(masters[1]).length,0);assert.equal(slots(masters[2]).length,0);e.free();
+});
+test('a layer already bound to another slot, or nested inside one, is not taken over',()=>{
+ const {e,masters,body,part,slots}=variantFixture();
+ e.save_component_property(JSON.stringify({id:0,component_id:masters[1],name:'Existing',kind:'slot',targets:[part(masters[1],'Body area')],slot_settings:{}}));
+ const report=acrossVariants(e,{id:0,component_id:masters[0],name:'Body',kind:'slot',targets:[body],slot_settings:{}});
+ assert.deepEqual(report.skipped.map(s=>s.reason),['no matching layer']);assert.deepEqual(slots(masters[1]).map(p=>p.name),['Existing']);e.free();
+});
+test('across-variant commands reject non-slot properties and components outside a set, leaving the document alone',()=>{
+ const {e,master,slot}=fixture(),p=doc(e).component_properties[0],before=e.snapshot();
+ assert.throws(()=>acrossVariants(e,p),/inside a component set/);assert.throws(()=>acrossVariants(e,{...p,kind:'text'}),/Only slot properties/);
+ assert.throws(()=>e.save_slot_across_variants('not json'));assert.throws(()=>e.remove_slot_across_variants(999),/not found/);
+ assert.equal(e.snapshot(),before);assert.ok(get(e,slot).slot);assert.ok(master);
+ // Outside a set, removal still removes the one property.
+ assert.equal(e.remove_slot_across_variants(p.id),1);assert.equal(doc(e).component_properties.length,0);e.free();
+});
+test('removing across variants clears the same-named slots in one undo step and resets instance content',()=>{
+ const {e,masters,body,slots}=variantFixture(3);
+ acrossVariants(e,{id:0,component_id:masters[0],name:'Body',kind:'slot',targets:[body],slot_settings:{}});
+ e.save_component_property(JSON.stringify({id:0,component_id:masters[1],name:'Other',kind:'slot',targets:[],slot_settings:{}}));
+ const instance=e.create_instance(masters[2],900,0),copy=children(e,instance).find(s=>s.slot).id;edit(e,children(e,copy)[0].id,{text:'Custom'});
+ const before=e.snapshot();assert.equal(e.remove_slot_across_variants(slots(masters[0])[0].id),3);
+ assert.deepEqual(doc(e).component_properties.map(p=>p.name),['Other']);assert.equal(get(e,copy).slot,undefined);
+ e.undo();assert.equal(e.snapshot(),before);e.free();
+});
