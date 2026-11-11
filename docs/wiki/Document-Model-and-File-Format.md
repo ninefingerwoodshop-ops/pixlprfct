@@ -228,6 +228,7 @@ Like variables, style values are copied onto linked layers on every commit; edit
 
 - `action` is required: `navigate`, `overlay`, `swap` (need a `target` frame ID, any page), `back`, `close` (`target` must be 0).
 - `trigger`: `click` (default), `mouseenter`, `mouseleave`, `mousedown`, `mouseup`, `drag`, `afterdelay` (frames only, `delay` 1–600,000 ms). Each trigger at most once per layer; `prototype` is the first interaction and `additional_interactions` holds up to 5 more.
+- `variable`/`operation`/`value` (for `set-variable`) and optional `condition: {variable, operator, value}`; all omitted when unused.
 - `then`: optional array of up to 7 follow-up actions (same object shape, no nested `then`), run in order after the first.
 - `transition`: `instant`, `dissolve`, `slide-left/right/up/down`, `smart-animate` (slides and smart animate not allowed for overlay/close/swap); `duration` ≤ 10,000 ms; `easing`: `linear`, `ease-in`, `ease-out`, `ease-in-out`.
 - `flow_name` (frames only, ≤ 128 bytes) marks a flow starting point.
