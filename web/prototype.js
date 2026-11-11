@@ -6,9 +6,11 @@ import {prototypePress} from './prototype-press.js';
 import {prototypeHover} from './prototype-hover.js';
 import {canvasTransitions,smartSpec} from './prototype-transition.js';
 import {matchLayers,smartScene} from './prototype-smart-animate.js';
-import {prototypeVariables,operatorsFor,operatorLabels,operationsFor,operationLabels,defaultLiteral,conditionHolds,conditionLabel,nextValue,sessionVariables} from './prototype-variables.js';
+import {prototypeVariables,operatorsFor,operatorLabels,operationsFor,operationLabels,defaultLiteral,conditionHolds,nextValue,sessionVariables} from './prototype-variables.js';
 import {scrolls,scrollExtent,clampScroll,scrolledScene,scrollJson,scrollBy,keyboardScrollFrame,keyScrollDelta} from './prototype-scroll.js';
 import {descendants,visibleInTree} from './selection.js';
+import {icon} from './icons.js';
+import {showContextMenu} from './context-menu.js';
 import {drawScene,radii,roundedContains} from './appearance.js';
 export function prototypeFrames(doc){return doc.shapes.filter(s=>s.kind==='frame'&&!(doc.libraries??[]).some(l=>l.page_id===s.page_id)&&visibleInTree(s,doc.shapes));}
 export function prototypeScene(doc,root){return descendants(doc.shapes,[root]).map(s=>s.id===root?{...s,parent_id:0,clip_content:true}:s);}
@@ -20,34 +22,47 @@ export function overlayPlacement(base,frame,position='center',x=0,y=0){
  if(position==='manual')return{x,y};
  return{x:position.endsWith('left')?0:position.endsWith('right')?base.width-frame.width:(base.width-frame.width)/2,y:position.startsWith('top')?0:position.startsWith('bottom')?base.height-frame.height:(base.height-frame.height)/2};
 }
+// Which interaction's floating panel is open, kept across re-renders of the
+// inspector. Layout follows Figma's Prototype tab (inspected 2026-11-11): a
+// chip per interaction in the sidebar and an "Interaction" panel beside it.
+const panel={shape:0,open:false,index:0,action:0,draft:false,draftTrigger:''};
+const MODAL_ID='prototype-interaction-modal';
+export function closePrototypeInteraction(){panel.open=false;panel.draft=false;globalThis.document?.getElementById(MODAL_ID)?.remove();}
+// Used when a connection is picked or drawn on the canvas: show that interaction's panel on the next render.
+export function openPrototypeInteraction(shapeId,index){Object.assign(panel,{shape:shapeId,open:true,draft:false,index,action:0});}
+const chipTrigger={click:'Click',drag:'Drag',mouseenter:'Mouse enter',mouseleave:'Mouse leave',mousedown:'Mouse down',mouseup:'Mouse up',afterdelay:'After delay'};
+const actionChoices=doc=>[['navigate','Navigate to'],['back','Back'],['overlay','Open overlay'],['swap','Swap overlay'],['close','Close overlay'],...(prototypeVariables(doc).length?[['set-variable','Set variable']]:[])];
+const actionIcon=action=>({navigate:'arrow-right',back:'undo',overlay:'layers',swap:'repeat',close:'close','set-variable':'variable'}[action]??'minus-circle');
 export function renderPrototypeControls(host,shape,doc,change,present,{activeIndex=0,select=()=>{}}={}){
- host.replaceChildren();host.hidden=!shape;if(!shape)return;
- const heading=document.createElement('h3');heading.textContent='Interactions';host.append(heading);
+ host.replaceChildren();host.hidden=!shape;if(!shape){closePrototypeInteraction();return;}
+ if(panel.shape!==shape.id){closePrototypeInteraction();Object.assign(panel,{shape:shape.id,index:0,action:0,draftTrigger:''});}
+ const document=host.ownerDocument,el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=text;return node;};
+ const rerender=()=>renderPrototypeControls(host,shape,doc,change,present,{activeIndex,select});
  const field=(name,input)=>{const label=document.createElement('label');label.append(document.createTextNode(name),input);input.setAttribute('aria-label',name);host.append(label);};
- const frames=prototypeFrames(doc),list=interactions(shape),items=list.length?list:[null];
- const intro=document.createElement('p');intro.className='prototype-layer-caption';intro.textContent=list.length?`Interactions for ${shape.name}`:'No interactions yet. Choose an action below to get started.';host.append(intro);
- items.forEach((p,index)=>{
-  const group=document.createElement('fieldset');group.className='prototype-interaction';group.id=`prototype-interaction-${index}`;group.tabIndex=-1;group.classList.toggle('active',!!p&&index===activeIndex);const legend=document.createElement('legend');legend.textContent='Interaction '+(index+1);group.append(legend);host.append(group);
-  const activate=()=>{for(const card of host.querySelectorAll('.prototype-interaction'))card.classList.toggle('active',!!p&&card===group);select(index);};group.onpointerdown=activate;group.onfocusin=activate;
-  if(p){const summary=document.createElement('p');summary.className='prototype-connection-summary';const frameName=id=>frames.find(f=>f.id===id)?.name,variableName=id=>prototypeVariables(doc).find(v=>v.id===id)?.name;summary.textContent=(triggerLabels[p.trigger??'click']??'On click')+' → '+(p.action==='set-variable'?sequenceLabel({...p,then:[],condition:null},frameName,variableName):frameName(p.target)??({back:'Go back',close:'Close overlay'}[p.action]??'Choose a destination'))+(p.condition?' ('+conditionLabel(p.condition,variableName)+')':'')+((p.then?.length)?', then '+p.then.map(step=>sequenceLabel(step,frameName,variableName)).join(', then '):'');group.append(summary);}
-  const body=document.createElement('div');group.append(body);
-  renderInteractionControls(body,{...shape,prototype:p},doc,updated=>{const next=[...list];if(updated.prototype)next[index]=updated.prototype;else next.splice(index,1);change(withInteractions(shape,next));},list.filter((_,i)=>i!==index).map(p=>p.trigger??'click'));
-  for(const field of body.querySelectorAll('[aria-label]'))field.id=`prototype-${shape.id}-${index}-${field.getAttribute('aria-label').replace(/[^a-z0-9]/gi,'-')}`;
-  if(p){
-   // Follow-up actions run after this one, in order, on the same trigger.
-   const steps=p.then??[],setSteps=then=>{const next=[...list],rest={...p};delete rest.then;next[index]=then.length?{...rest,then}:rest;change(withInteractions(shape,next));};
-   steps.forEach((step,at)=>{
-    const box=document.createElement('fieldset');box.className='prototype-follow-up';const legend=document.createElement('legend');legend.textContent='Then';box.append(legend);const fields=document.createElement('div');box.append(fields);
-    renderInteractionControls(fields,{...shape,prototype:step},doc,updated=>setSteps(updated.prototype?steps.map((s,i)=>i===at?updated.prototype:s):steps.filter((_,i)=>i!==at)),[],`Then ${at+1}: `);
-    const drop=document.createElement('button');drop.type='button';drop.className='delete-interaction';drop.textContent='Remove action';drop.setAttribute('aria-label',`Remove follow-up action ${at+1} of interaction ${index+1}`);drop.onclick=()=>setSteps(steps.filter((_,i)=>i!==at));box.append(drop);group.append(box);
-   });
-   const more=document.createElement('button');more.type='button';more.className='wide-button';more.textContent='Add follow-up action';more.setAttribute('aria-label','Add follow-up action to interaction '+(index+1));more.disabled=steps.length>=MAX_FOLLOW_UPS;
-   more.onclick=()=>{const target=frames.find(f=>f.id!==shape.id);setSteps([...steps,{action:target?'navigate':'back',target:target?.id??0}]);};group.append(more);
-  }
-  if(p){const remove=document.createElement('button');remove.type='button';remove.className='delete-interaction';remove.textContent='Delete interaction';remove.setAttribute('aria-label','Delete interaction '+(index+1));remove.onclick=()=>{select(Math.max(0,index-1));change(withInteractions(shape,list.filter((_,i)=>i!==index)));};group.append(remove);}
- });
+ const frames=prototypeFrames(doc),list=interactions(shape),frameName=id=>frames.find(f=>f.id===id)?.name,variableName=id=>prototypeVariables(doc).find(v=>v.id===id)?.name;
  const unused=Object.keys(triggerLabels).find(t=>(shape.kind==='frame'||t!=='afterdelay')&&!list.some(p=>(p.trigger??'click')===t));
- const add=document.createElement('button');add.textContent='Add interaction';add.className='wide-button';add.disabled=!unused;add.onclick=()=>{const target=frames.find(f=>f.id!==shape.id);select(list.length);change(withInteractions(shape,[...list,{trigger:unused,action:target?'navigate':'back',target:target?.id??0}]));};host.append(add);
+ if(panel.draft&&!unused)panel.draft=false;
+ if(!panel.draft)panel.index=Math.min(panel.index,Math.max(0,list.length-1));
+ if(panel.open&&!panel.draft&&!list.length)panel.open=false;
+ const head=el('div','prototype-section-header'),heading=el('h3',null,'Interactions'),add=el('button','prototype-add');
+ add.type='button';add.innerHTML=icon('plus');add.setAttribute('aria-label','Add interaction');add.disabled=!unused||panel.draft;
+ add.onclick=()=>{Object.assign(panel,{open:true,draft:true,index:list.length,action:0,draftTrigger:unused});rerender();};
+ head.append(heading,add);host.append(head);
+ const chipText=p=>p?(p.action==='set-variable'?sequenceLabel({...p,then:[],condition:null},frameName,variableName):frameName(p.target)??({back:'Back',close:'Close overlay'}[p.action]??'None')):'None';
+ const rows=[...list,...(panel.draft?[null]:[])];
+ rows.forEach((p,index)=>{
+  const row=el('div','prototype-interaction-row'),chip=el('button','prototype-chip'),remove=el('button','prototype-chip-remove');
+  const open=panel.open&&panel.index===index,steps=p?actionSteps(p):[];
+  chip.type='button';chip.id=`prototype-interaction-${index}`;chip.setAttribute('aria-expanded',String(open));chip.classList.toggle('active',open);
+  const summary=(chipTrigger[p?.trigger??(panel.draftTrigger||'click')]??'Click')+' → '+chipText(p);
+  chip.setAttribute('aria-label',`Interaction ${index+1}: ${p?(triggerLabels[p.trigger??'click']??'On click')+' → '+steps.map(step=>sequenceLabel({...step,then:[]},frameName,variableName)).join(', then '):summary}`);
+  const glyph=el('span','prototype-chip-icon');glyph.innerHTML=icon(actionIcon(p?.action));
+  chip.append(el('span','prototype-chip-trigger',chipTrigger[p?.trigger??(panel.draftTrigger||'click')]??'Click'),glyph,el('span','prototype-chip-target',chipText(p)+(steps.length>1?` +${steps.length-1}`:'')));
+  chip.onclick=()=>{if(open)closePrototypeInteraction();else{if(index<list.length)panel.draft=false;Object.assign(panel,{open:true,index,action:0});select(Math.min(index,Math.max(0,list.length-1)));}rerender();};
+  remove.type='button';remove.innerHTML=icon('minus');remove.setAttribute('aria-label','Remove interaction '+(index+1));
+  remove.onclick=()=>{if(panel.index===index||!p)closePrototypeInteraction();else if(panel.index>index)panel.index--;if(p){select(Math.max(0,index-1));change(withInteractions(shape,list.filter((_,i)=>i!==index)));}else rerender();};
+  row.append(chip,remove);host.append(row);
+ });
  const choice=(options,value,save)=>{const select=document.createElement('select');for(const [key,text] of options){const o=document.createElement('option');o.value=key;o.textContent=text;select.append(o);}select.value=value;select.onchange=()=>save(select.value);return select;};
  // Section, labels, options and their order follow Figma's Prototype tab (inspected 2026-11-11).
  const pinnable=scrolls(doc.shapes.find(s=>s.id===shape.parent_id));
@@ -57,12 +72,59 @@ export function renderPrototypeControls(host,shape,doc,change,present,{activeInd
  if(pinnable)field('Position',choice([['scroll','Scroll with parent'],['fixed','Fixed (stay in place)']],shape.scroll_fixed?'fixed':'scroll',value=>change({...shape,scroll_fixed:value==='fixed'})));
  if(shape.kind==='frame'){const flow=document.createElement('input');flow.type='text';flow.maxLength=128;flow.placeholder='Not a flow start';flow.value=shape.flow_name??'';flow.onchange=()=>change({...shape,flow_name:flow.value.trim()});field('Flow starting point',flow);}
  const play=document.createElement('button');play.className='wide-button';play.textContent='Present prototype';play.disabled=!frames.length;play.onclick=present;host.append(play);
+
+ // The floating Interaction panel.
+ document.getElementById(MODAL_ID)?.remove();
+ if(!panel.open)return;
+ const index=panel.index,p=panel.draft?null:list[index]??null,steps=p?actionSteps(p):[];panel.action=Math.min(panel.action,Math.max(0,steps.length-1));
+ const modal=el('dialog','prototype-interaction-modal');modal.id=MODAL_ID;modal.setAttribute('aria-label','Interaction');modal.classList.toggle('wide',steps.length>1);
+ const bar=el('header'),more=el('button','prototype-modal-add'),shut=el('button','prototype-modal-close');
+ more.type=shut.type='button';more.innerHTML=icon('plus');more.setAttribute('aria-label','Add action');shut.innerHTML=icon('close');shut.setAttribute('aria-label','Close');
+ shut.onclick=()=>{closePrototypeInteraction();rerender();};
+ const setBase=next=>{const all=[...list];if(next)all[index]=next;else all.splice(index,1);change(withInteractions(shape,all));};
+ const setSteps=then=>{const rest={...p};delete rest.then;setBase(then.length?{...rest,then}:rest);};
+ const addAction=event=>showContextMenu(event,actionChoices(doc).map(([action,label])=>({label,run:()=>{const target=frames.find(f=>f.id!==shape.id)?.id??frames[0]?.id??0,needsTarget=['navigate','overlay','swap'].includes(action),variable=prototypeVariables(doc)[0];
+  const step={action,target:needsTarget?target:0,...(action==='set-variable'?{variable:variable.id,operation:'set',value:defaultLiteral(variable.kind)}:{})};panel.action=steps.length;setSteps([...(p.then??[]),step]);}})),event.currentTarget,{label:'Add action',anchor:event.currentTarget});
+ const removeAction=()=>{const at=panel.action;if(at===0){const [next,...rest]=p.then;const base={...next,trigger:p.trigger??'click',delay:p.delay};setBase(rest.length?{...base,then:rest}:base);}else setSteps(p.then.filter((_,i)=>i!==at-1));panel.action=Math.max(0,at-1);};
+ more.hidden=!p||steps.length>1;more.disabled=steps.length>MAX_FOLLOW_UPS;more.onclick=addAction;
+ bar.append(el('h2',null,'Interaction'),more,shut);modal.append(bar);
+ const fields=el('div','prototype-modal-fields'),triggerBox=el('div','prototype-modal-trigger');
+ const used=list.filter((_,i)=>i!==index).map(other=>other.trigger??'click');
+ if(panel.action===0||!p){
+  renderInteractionControls(fields,{...shape,prototype:p},doc,updated=>{if(!updated.prototype&&!p){rerender();return;}if(!updated.prototype&&p){Object.assign(panel,{draft:true,index:list.length-1,draftTrigger:p.trigger??'click'});}else if(updated.prototype&&!p)panel.draft=false;setBase(updated.prototype);},used,'',panel.draftTrigger||unused||'click');
+  // A trigger picked before any action exists only lives in this panel.
+  if(!p)modal.addEventListener('change',event=>{if(event.target.getAttribute?.('aria-label')==='Trigger')panel.draftTrigger=event.target.value;},true);
+ }else{
+  const at=panel.action-1,then=p.then;
+  renderInteractionControls(fields,{...shape,prototype:then[at]},doc,updated=>setSteps(updated.prototype?then.map((s,i)=>i===at?updated.prototype:s):then.filter((_,i)=>i!==at)),[],`Then ${at+1}: `);
+ }
+ for(const control of fields.querySelectorAll('[aria-label]'))control.id=`prototype-${shape.id}-${index}-${control.getAttribute('aria-label').replace(/[^a-z0-9]/gi,'-')}`;
+ // The trigger (and its delay) sit above the actions, as in Figma.
+ for(const name of ['Trigger','Delay'])for(const control of fields.querySelectorAll(`[aria-label="${name}"]`))triggerBox.append(control.closest('label'));
+ if(steps.length>1){
+  const left=el('div','prototype-modal-actions'),items=el('div','prototype-modal-list'),foot=el('div','prototype-modal-foot'),plus=el('button'),minus=el('button');
+  items.setAttribute('role','listbox');items.setAttribute('aria-label','Actions');
+  if(panel.action!==0){const holder=el('div');renderInteractionControls(holder,{...shape,prototype:p},doc,updated=>{if(updated.prototype)setBase(updated.prototype);},used);for(const name of ['Trigger','Delay'])for(const control of holder.querySelectorAll(`[aria-label="${name}"]`))triggerBox.append(control.closest('label'));}
+  // In the action list layout the trigger menu stands alone, without its caption.
+  const bare=triggerBox.querySelector('[aria-label="Trigger"]');if(bare){const caption=bare.closest('label');caption.replaceWith(bare);}
+  steps.forEach((step,at)=>{const item=el('button','prototype-modal-action');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(at===panel.action));item.classList.toggle('active',at===panel.action);const glyph=el('span','prototype-chip-icon');glyph.innerHTML=icon(actionIcon(step.action));
+   item.append(glyph,el('span',null,(step.action==='navigate'?'Navigate to ':'')+sequenceLabel({...step,then:[]},frameName,variableName).replace(/^Go back/,'Back')));item.onclick=()=>{panel.action=at;rerender();};items.append(item);});
+  plus.type=minus.type='button';plus.innerHTML=icon('plus');plus.setAttribute('aria-label','Add action');plus.disabled=steps.length>MAX_FOLLOW_UPS;plus.onclick=addAction;
+  minus.innerHTML=icon('minus');minus.setAttribute('aria-label','Remove action');minus.onclick=removeAction;foot.append(plus,minus);
+  left.append(triggerBox,items,foot);const body=el('div','prototype-modal-columns');body.append(left,fields);modal.append(body);
+ }else{if(triggerBox.children.length)modal.append(triggerBox);modal.append(fields);}
+ modal.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closePrototypeInteraction();rerender();document.getElementById(`prototype-interaction-${index}`)?.focus();}});
+ modal.addEventListener('cancel',event=>event.preventDefault());
+ document.body.append(modal);modal.show();
+ // Beside the sidebar, level with the interaction's chip.
+ const side=(host.closest('.right-panel')??host).getBoundingClientRect(),chip=document.getElementById(`prototype-interaction-${index}`)?.getBoundingClientRect(),box=modal.getBoundingClientRect(),view=document.defaultView;
+ modal.style.left=Math.max(8,side.left-box.width-2)+'px';modal.style.top=Math.max(8,Math.min(view.innerHeight-box.height-8,(chip?.top??side.top+80)-12))+'px';
 }
 // `step` is the accessible-name prefix of a follow-up action ("Then 1: "); a
 // follow-up has no trigger or delay of its own.
-function renderInteractionControls(host,shape,doc,change,usedTriggers=[],step=''){
+function renderInteractionControls(host,shape,doc,change,usedTriggers=[],step='',defaultTrigger='click'){
  host.replaceChildren();host.hidden=!shape;if(!shape)return;
- const field=(name,select)=>{const label=document.createElement('label');label.append(document.createTextNode(name),select);select.setAttribute('aria-label',step+name);host.append(label);};
+ const field=(name,select)=>{const label=document.createElement('label');label.classList.toggle('long',name.length>11);label.append(document.createTextNode(name),select);select.setAttribute('aria-label',step+name);host.append(label);};
  const action=document.createElement('select');for(const [value,text] of [['none','None'],['navigate','Navigate to'],['back','Back'],['overlay','Open overlay'],['swap','Swap overlay'],['close','Close overlay'],...(prototypeVariables(doc).length||shape.prototype?.action==='set-variable'?[['set-variable','Set variable']]:[])]){const o=document.createElement('option');o.value=value;o.textContent=text;action.append(o);}action.value=shape.prototype?.action??'none';field('Action',action);
  // Variable pickers and literal inputs shared by Set variable and conditions.
  const variables=prototypeVariables(doc),kindOf=id=>variables.find(v=>v.id===Number(id))?.kind;
@@ -70,22 +132,22 @@ function renderInteractionControls(host,shape,doc,change,usedTriggers=[],step=''
  const literal=(kind,value)=>{value=typeof value===({number:'number',boolean:'boolean'}[kind]??'string')?value:defaultLiteral(kind);if(kind==='boolean'){const select=document.createElement('select');for(const text of ['true','false']){const o=document.createElement('option');o.value=text;o.textContent=text;select.append(o);}select.value=String(value);return {input:select,read:()=>select.value==='true'};}const input=document.createElement('input');if(kind==='number'){input.type='number';input.min=-1e9;input.max=1e9;input.step='any';input.value=value;return {input,read:()=>Number.isFinite(Number(input.value))?Number(input.value):0};}if(kind==='color'){input.type='color';input.value=value;return {input,read:()=>input.value};}input.type='text';input.maxLength=1000;input.value=value;return {input,read:()=>input.value};};
  const setting=shape.prototype?.action==='set-variable'?shape.prototype:null,setVariable=variablePicker(setting?.variable,null),setKind=kindOf(setVariable.value),operation=document.createElement('select');for(const value of operationsFor(setKind)){const o=document.createElement('option');o.value=value;o.textContent=operationLabels[value];operation.append(o);}operation.value=setting&&operationsFor(setKind).includes(setting.operation??'set')?setting.operation??'set':'set';const setValue=literal(setKind,setting?.value);
  const guard=shape.prototype?.condition??null,guardVariable=variablePicker(guard?.variable,'Always run'),guardKind=kindOf(guardVariable.value),operator=document.createElement('select');for(const value of operatorsFor(guardKind)){const o=document.createElement('option');o.value=value;o.textContent=operatorLabels[value];operator.append(o);}operator.value=guard&&operatorsFor(guardKind).includes(guard.operator)?guard.operator:'==';const guardValue=literal(guardKind,guard?.value);
- const trigger=document.createElement('select');for(const [value,text] of Object.entries(triggerLabels).filter(([value])=>shape.kind==='frame'||value!=='afterdelay')){const o=document.createElement('option');o.value=value;o.textContent=text;o.disabled=usedTriggers.includes(value);trigger.append(o);}trigger.value=shape.prototype?.trigger??'click';if(action.value!=='none'&&!step)field('Trigger',trigger);
- const frames=prototypeFrames(doc),target=document.createElement('select');for(const f of frames){const o=document.createElement('option');o.value=f.id;o.textContent=`${doc.pages.find(p=>p.id===f.page_id)?.name??''} / ${f.name}`;target.append(o);}target.value=shape.prototype?.target??frames[0]?.id??'';if(!target.value&&frames.length)target.value=frames[0].id;
+ const trigger=document.createElement('select');for(const [value,text] of Object.entries(triggerLabels).filter(([value])=>shape.kind==='frame'||value!=='afterdelay')){const o=document.createElement('option');o.value=value;o.textContent=text;o.disabled=usedTriggers.includes(value);trigger.append(o);}trigger.value=shape.prototype?.trigger??defaultTrigger;if(!step)field('Trigger',trigger);
+ const frames=prototypeFrames(doc),target=document.createElement('select');for(const f of frames){const o=document.createElement('option');o.value=f.id;o.textContent=f.page_id===shape.page_id?f.name:`${doc.pages.find(p=>p.id===f.page_id)?.name??''} / ${f.name}`;target.append(o);}target.value=shape.prototype?.target??frames.find(f=>f.id!==shape.id&&f.id!==shape.parent_id)?.id??frames[0]?.id??'';if(!target.value&&frames.length)target.value=frames[0].id;
  const position=document.createElement('select');for(const value of ['center','top-left','top-right','bottom-left','bottom-right','manual']){const o=document.createElement('option');o.value=value;o.textContent=value.replaceAll('-',' ');position.append(o);}position.value=shape.prototype?.overlay_position??'center';const outside=document.createElement('input');outside.type='checkbox';outside.checked=!!shape.prototype?.close_on_outside;
  const number=(value,min,max)=>{const n=document.createElement('input');n.type='number';n.min=min;n.max=max;n.value=value;return n;};
- const delay=number(shape.prototype?.delay??800,1,600000);if(action.value!=='none'&&trigger.value==='afterdelay'&&!step)field('Delay (ms)',delay);
+ const delay=number(shape.prototype?.delay??800,1,600000);if(trigger.value==='afterdelay'&&!step)field('Delay',delay);
  const offsetX=number(shape.prototype?.overlay_x??0,-1000000,1000000),offsetY=number(shape.prototype?.overlay_y??0,-1000000,1000000),backdropOpacity=number((shape.prototype?.backdrop_opacity??.4)*100,0,100),backdropColor=document.createElement('input');backdropColor.type='color';backdropColor.value=shape.prototype?.backdrop_color??'#000000';
- const transition=document.createElement('select');const kinds=[['instant','Instant'],['dissolve','Dissolve'],...(['overlay','close','swap'].includes(action.value)?[]:[['smart-animate','Smart animate'],['slide-left','Slide left'],['slide-right','Slide right'],['slide-up','Slide up'],['slide-down','Slide down']])];for(const [value,text] of kinds){const o=document.createElement('option');o.value=value;o.textContent=text;transition.append(o);}transition.value=shape.prototype?.transition??'instant';if(!transition.value)transition.value='dissolve';const duration=document.createElement('input');duration.type='number';duration.min=0;duration.max=10000;duration.value=shape.prototype?.duration??300;const easing=document.createElement('select');for(const value of ['linear','ease-in','ease-out','ease-in-out']){const o=document.createElement('option');o.value=value;o.textContent=value;easing.append(o);}easing.value=shape.prototype?.easing??'ease-in-out';
+ const transition=document.createElement('select');const kinds=[['instant','Instant'],['dissolve','Dissolve'],...(['overlay','close','swap'].includes(action.value)?[]:[['smart-animate','Smart animate'],['slide-left','Slide left'],['slide-right','Slide right'],['slide-up','Slide up'],['slide-down','Slide down']])];for(const [value,text] of kinds){const o=document.createElement('option');o.value=value;o.textContent=text;transition.append(o);}transition.value=shape.prototype?.transition??'instant';if(!transition.value)transition.value='dissolve';const duration=document.createElement('input');duration.type='number';duration.min=0;duration.max=10000;duration.value=shape.prototype?.duration??300;const easing=document.createElement('select');for(const [value,text] of [['linear','Linear'],['ease-in','Ease in'],['ease-out','Ease out'],['ease-in-out','Ease in and out']]){const o=document.createElement('option');o.value=value;o.textContent=text;easing.append(o);}easing.value=shape.prototype?.easing??'ease-in-out';
  // Picking a variable of another type starts again from that type's default comparison and value.
  const setFields=()=>{const kind=kindOf(setVariable.value),fresh=kind!==setKind,how=fresh?'set':operation.value;return {variable:Number(setVariable.value),operation:how,...(how==='toggle'?{}:{value:fresh?defaultLiteral(kind):setValue.read()})};};
  const guardFields=()=>{const kind=kindOf(guardVariable.value),fresh=kind!==guardKind;return {variable:Number(guardVariable.value),operator:fresh?'==':operator.value,value:fresh?defaultLiteral(kind):guardValue.read()};};
  const save=()=>{const targets=['navigate','overlay','swap'].includes(action.value);if(targets&&!target.value)return;if(action.value==='set-variable'&&!Number(setVariable.value))return;change({...shape,prototype:action.value==='none'?null:{trigger:trigger.value,delay:Number(delay.value),action:action.value,target:targets?Number(target.value):0,overlay_position:position.value,overlay_x:Number(offsetX.value),overlay_y:Number(offsetY.value),backdrop_color:backdropColor.value,backdrop_opacity:Number(backdropOpacity.value)/100,close_on_outside:outside.checked,transition:['overlay','close','swap'].includes(action.value)&&(transition.value.startsWith('slide-')||transition.value==='smart-animate')?'dissolve':transition.value,duration:Number(duration.value),easing:easing.value,...(action.value==='set-variable'?setFields():{}),...(Number(guardVariable.value)?{condition:guardFields()}:{}),...(!step&&shape.prototype?.then?.length?{then:shape.prototype.then}:{})}});};action.onchange=save;
  if(action.value==='set-variable'){if(!variables.length){const note=document.createElement('p');note.textContent='Create a number, boolean, text or color variable first.';host.append(note);}else{field('Variable',setVariable);field('Operation',operation);if(operation.value!=='toggle')field(operation.value==='add'?'Amount':'Value',setValue.input);}}
- for(const control of [setVariable,operation,setValue.input,guardVariable,operator,guardValue.input])control.onchange=save;trigger.onchange=save;delay.onchange=save;target.onchange=save;position.onchange=save;outside.onchange=save;if(['navigate','overlay','swap'].includes(action.value))field('Destination frame',target);if(action.value==='overlay'){field('Overlay position',position);if(position.value==='manual'){field('Overlay X',offsetX);field('Overlay Y',offsetY);}field('Backdrop color',backdropColor);field('Backdrop opacity (%)',backdropOpacity);field('Close when clicking outside',outside);}
+ for(const control of [setVariable,operation,setValue.input,guardVariable,operator,guardValue.input])control.onchange=save;trigger.onchange=save;delay.onchange=save;target.onchange=save;position.onchange=save;outside.onchange=save;if(['navigate','overlay','swap'].includes(action.value))field('Destination',target);if(action.value==='overlay'){field('Overlay position',position);if(position.value==='manual'){field('Overlay X',offsetX);field('Overlay Y',offsetY);}field('Backdrop color',backdropColor);field('Backdrop opacity (%)',backdropOpacity);field('Close when clicking outside',outside);}
  for(const input of [offsetX,offsetY,backdropColor,backdropOpacity])input.onchange=save;
  if(action.value==='swap'){const note=document.createElement('p');note.textContent='Replaces the top overlay, keeping its placement, backdrop and dismissal settings. Requires an open overlay.';host.append(note);}
- transition.onchange=save;duration.onchange=save;easing.onchange=save;if(action.value!=='none'&&action.value!=='set-variable'){field('Animation',transition);if(transition.value!=='instant'){field('Duration (ms)',duration);field('Easing',easing);}}
+ transition.onchange=save;duration.onchange=save;easing.onchange=save;if(action.value!=='none'&&action.value!=='set-variable'){field('Animation',transition);if(transition.value!=='instant'){field('Easing',easing);field('Duration',duration);}}
  if(action.value!=='none'&&(variables.length||guard)){field('Run',guardVariable);if(Number(guardVariable.value)){field('Comparison',operator);field('Compared with',guardValue.input);}}
 
 }

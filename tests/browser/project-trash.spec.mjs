@@ -75,8 +75,8 @@ test('moving a project to Trash asks first, as Figma does, and Cancel keeps it',
  let dialog=await ask();
  await expect(dialog.locator('.confirm-dialog-body')).toHaveText('You’re about to move the project Keep to trash.You can always restore it later from the Trash section.');
  await expect(dialog.locator('strong')).toHaveText('Keep');await expect(dialog.getByRole('button',{name:'Cancel'})).toBeFocused();
- // Figma's dialog is 268 px wide with a blue, not red, confirm button.
- expect((await dialog.boundingBox()).width).toBe(268);await expect(dialog.getByRole('button',{name:'Move project to trash'})).toHaveClass('primary');
+ // Figma's dialog is 320 px wide with a blue, not red, confirm button.
+ expect((await dialog.boundingBox()).width).toBe(320);await expect(dialog.getByRole('button',{name:'Move project to trash'})).toHaveClass('primary');
  await dialog.getByRole('button',{name:'Cancel'}).click();expect(await stored()).toEqual(['old']);await expect(card(page,'Keep')).toBeVisible();
  dialog=await ask();await dialog.getByRole('button',{name:'Move project to trash'}).click();
  await expect(page.locator('#home-status')).toHaveText('“Keep” moved to Trash.');expect((await stored()).sort()).toEqual(['keep','old']);

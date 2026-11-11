@@ -25,16 +25,16 @@ dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.p
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary:hover:not(:disabled){background-color:var(--ui-accent-text)!important}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.primary:active:not(:disabled){background-color:var(--ui-primary-pressed)!important}
 dialog:not(:where(.prototype-player,.variables-page,.assets-workspace)) button.danger{color:var(--ui-danger)}
-/* Confirmation dialog, measured against Figma's "Permanently delete file" dialog (2026-11-11): 268px wide, title bar, message, right-aligned actions. */
-dialog#confirm-dialog.confirm-dialog{width:268px;padding:0!important;font-size:11px;line-height:16px}
-dialog#confirm-dialog.confirm-dialog header{display:flex;align-items:center;justify-content:space-between;min-height:33px;padding:0 4px 0 12px;border-bottom:1px solid var(--ui-border)}
+/* Confirmation dialog, measured against Figma's "Permanently delete file" dialog (2026-11-11): 320px wide, 40px title bar, message, 40px footer with 24px buttons. Earlier 268px figures came from a scaled screenshot. */
+dialog#confirm-dialog.confirm-dialog{width:320px;padding:0!important;font-size:11px;line-height:16px}
+dialog#confirm-dialog.confirm-dialog header{display:flex;align-items:center;justify-content:space-between;min-height:39px;padding:0 8px 0 16px;border-bottom:1px solid var(--ui-border)}
 dialog#confirm-dialog.confirm-dialog header h2{margin:0!important;font:var(--ui-semibold) 11px/16px var(--ui-font)!important;letter-spacing:0}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-close{width:24px;height:24px;padding:0;border:0;background:transparent!important;color:var(--ui-text-color)!important;font-size:16px;line-height:1;cursor:pointer}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-close:hover{background:var(--ui-hover)!important}
-dialog#confirm-dialog.confirm-dialog .confirm-dialog-body{padding:8px 12px}
+dialog#confirm-dialog.confirm-dialog .confirm-dialog-body{padding:8px 16px}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-body p{margin:4px 0!important;font-size:11px!important;line-height:16px!important;color:var(--ui-text-color);overflow-wrap:anywhere}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-body strong{font-weight:var(--ui-semibold)}
-dialog#confirm-dialog.confirm-dialog .confirm-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:4px 8px;margin:0;border-top:1px solid var(--ui-border)}
+dialog#confirm-dialog.confirm-dialog .confirm-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:8px;margin:0;border-top:1px solid var(--ui-border)}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-actions button{box-sizing:border-box!important;height:24px!important;min-height:24px!important;padding:0 8px!important;font:var(--ui-regular) 11px/16px var(--ui-font)!important;background-color:transparent!important;color:var(--ui-text-color)!important;border:1px solid color-mix(in srgb,var(--ui-text-color) 22%,transparent)!important;border-radius:5px!important;cursor:pointer}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-actions button:hover{background-color:var(--ui-hover)!important}
 dialog#confirm-dialog.confirm-dialog .confirm-dialog-actions button.danger{background-color:#dc3412!important;border-color:transparent!important;color:white!important}
