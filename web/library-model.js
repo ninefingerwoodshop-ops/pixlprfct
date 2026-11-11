@@ -38,8 +38,11 @@ export function librarySnapshot(doc) {
    while(parent&&!seen.has(parent.id)){seen.add(parent.id);chain.unshift(parent);parent=doc.shapes.find(p=>p.id===parent.parent_id);}
    s.parent_id=0;s.variable_modes=Object.assign({},doc.pages.find(p=>p.id===s.page_id)?.variable_modes??{},...chain.map(n=>n.variable_modes??{}));
   }
-  s.prototype=s.prototype&&(!['navigate','overlay','swap'].includes(s.prototype.action)||ids.has(s.prototype.target))?s.prototype:null;
-  s.additional_interactions=(s.additional_interactions??[]).filter(p=>!['navigate','overlay','swap'].includes(p.action)||ids.has(p.target));return s;
+  // Actions that leave the copied set are dropped; a follow-up takes over when the first action goes.
+  const stays=p=>!['navigate','overlay','swap'].includes(p.action)||ids.has(p.target);
+  const prune=p=>{const {then=[],...head}=p,rest=then.filter(stays);if(stays(head))return rest.length?{...head,then:rest}:head;if(!rest.length)return null;const [next,...later]=rest;return {...next,trigger:head.trigger,delay:head.delay,...(later.length?{then:later}:{})};};
+  const kept=[...(s.prototype?[s.prototype]:[]),...(s.additional_interactions??[])].map(prune).filter(Boolean);
+  s.prototype=kept[0]??null;s.additional_interactions=kept.slice(1);return s;
  });
  // Foreign collection modes are irrelevant after rejecting foreign bindings.
  for(const item of [...source.pages,...source.shapes])if(item.variable_modes)item.variable_modes=Object.fromEntries(Object.entries(item.variable_modes).filter(([id])=>!foreignCollections.has(Number(id))));
@@ -63,7 +66,7 @@ export function mergeLibrary(document,release) {
  allocate('sets',source.component_sets??[],doc.component_sets);allocate('properties',source.component_properties??[],doc.component_properties);allocate('guides',source.guide_styles??[],doc.guide_styles);allocate('effects',source.effect_styles??[],doc.effect_styles);allocate('texts',source.text_styles??[],doc.text_styles);allocate('colors',source.color_styles??[],doc.color_styles);
  const present=new Set(source.shapes.map(s=>maps.shapes[s.id])),oldIds=new Set(Object.values(maps.shapes));
  if(doc.shapes.some(s=>s.component?.type==='instance'&&!oldIds.has(s.id)&&oldIds.has(s.component.master)&&!present.has(s.component.master)))throw new Error('This update removes a component used in this project. Remove its instances before accepting the update.');
- const remapInteraction=p=>p?{...p,target:maps.shapes[p.target]??0}:p;
+ const remapInteraction=p=>p?{...p,target:maps.shapes[p.target]??0,...(p.then?.length?{then:p.then.map(remapInteraction)}:{})}:p;
  const shapes=source.shapes.map(original=>{
   const s=clone(original);s.id=maps.shapes[s.id];s.page_id=link.page_id;s.parent_id=maps.shapes[s.parent_id]??0;s.layout_class='';s.layout_class_generated=true;
   if(s.slot)s.slot.property=maps.properties[s.slot.property];if(s.slot_origin)s.slot_origin=maps.shapes[s.slot_origin]??0;

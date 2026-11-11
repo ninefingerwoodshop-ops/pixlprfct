@@ -310,13 +310,37 @@ impl Shape {
             .iter_mut()
             .chain(self.additional_interactions.iter_mut())
     }
+    /// Every action, including the ones that follow a trigger's first action.
+    fn each_action_mut(&mut self, mut f: impl FnMut(&mut Prototype)) {
+        for p in self.interactions_mut() {
+            f(p);
+            p.then.iter_mut().for_each(&mut f);
+        }
+    }
     fn retain_interactions(&mut self, keep: impl Fn(&Prototype) -> bool) {
         let mut interactions: Vec<_> = self
             .prototype
             .take()
             .into_iter()
             .chain(self.additional_interactions.drain(..))
-            .filter(keep)
+            .filter_map(|mut p| {
+                // When the first action goes, the next one takes over its trigger.
+                let mut rest: Vec<_> = std::mem::take(&mut p.then)
+                    .into_iter()
+                    .filter(&keep)
+                    .collect();
+                if !keep(&p) {
+                    if rest.is_empty() {
+                        return None;
+                    }
+                    let (trigger, delay) = (p.trigger, p.delay);
+                    p = rest.remove(0);
+                    p.trigger = trigger;
+                    p.delay = delay;
+                }
+                p.then = rest;
+                Some(p)
+            })
             .collect();
         self.prototype = if interactions.is_empty() {
             None
@@ -354,6 +378,10 @@ pub struct Prototype {
     pub duration: u32,
     #[serde(default = "default_easing")]
     pub easing: String,
+    /// Further actions run in order after this one, on the same trigger.
+    /// Their own trigger and delay are ignored and they cannot nest.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub then: Vec<Prototype>,
 }
 
 fn default_trigger() -> String {
@@ -967,9 +995,18 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Additional interactions require a primary interaction; at most six triggers are supported".into());
         }
         let mut triggers = std::collections::HashSet::new();
-        for p in shape.interactions() {
-            if !triggers.insert(&p.trigger) {
+        for (first, p) in shape
+            .interactions()
+            .flat_map(|p| std::iter::once((true, p)).chain(p.then.iter().map(|step| (false, step))))
+        {
+            if first && !triggers.insert(&p.trigger) {
                 return Err("Each prototype trigger may occur only once per layer".into());
+            }
+            if p.then.len() > 7 || (!first && !p.then.is_empty()) {
+                return Err(
+                    "A trigger runs at most eight actions, and follow-up actions cannot nest"
+                        .into(),
+                );
             }
             if ![
                 "click",
@@ -2016,11 +2053,11 @@ impl Editor {
             if payload.origin == self.clipboard_origin {
                 s.component = payload.components.get(&s.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
             }
-            for p in s.interactions_mut() {
+            s.each_action_mut(|p| {
                 if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                     p.target = ids[&p.target];
                 }
-            }
+            });
             paint::remap_sources(&mut s, &ids, payload.origin == self.clipboard_origin);
             s.id = ids[&s.id];
             s.page_id = document.active_page;
@@ -2116,11 +2153,11 @@ impl Editor {
                 } else {
                     s.parent_id = mapping[&s.parent_id];
                 }
-                for p in s.interactions_mut() {
+                s.each_action_mut(|p| {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = mapping[&p.target];
                     }
-                }
+                });
                 document.shapes.push(s);
             }
             next = end;
@@ -2206,11 +2243,11 @@ impl Editor {
                     } else {
                         s.parent_id = ids[&source.parent_id];
                     }
-                    for p in s.interactions_mut() {
+                    s.each_action_mut(|p| {
                         if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                             p.target = ids[&p.target];
                         }
-                    }
+                    });
                     document.shapes.push(s);
                 }
                 next = end;
@@ -2700,11 +2737,11 @@ impl Editor {
                 let mut copy = shape.clone();
                 copy.id = self.next_id + created.len() as u32;
                 copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
-                for p in copy.interactions_mut() {
+                copy.each_action_mut(|p| {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
-                }
+                });
                 copy.x += x;
                 copy.y += y;
                 created.push(copy.id);
@@ -3693,13 +3730,13 @@ impl Editor {
             shape.id = mapping[&shape.id];
             shape.page_id = page.id;
             shape.parent_id = *mapping.get(&shape.parent_id).unwrap_or(&shape.parent_id);
-            for interaction in shape.interactions_mut() {
+            shape.each_action_mut(|interaction| {
                 if ["navigate", "overlay", "swap"].contains(&interaction.action.as_str()) {
                     interaction.target = *mapping
                         .get(&interaction.target)
                         .unwrap_or(&interaction.target);
                 }
-            }
+            });
         }
         document.active_page = page.id;
         document.pages.insert(index + 1, page);

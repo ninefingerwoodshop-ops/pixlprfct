@@ -622,3 +622,5 @@ body .layout-css-window textarea.layout-css-source{font-family:ui-monospace,SFMo
 .canvas-text-input{all:initial;display:block;box-sizing:border-box;position:relative;border:0;padding:0;outline:0;background:transparent;cursor:text;user-select:text;-webkit-user-select:text;caret-color:#0d99ff;color:transparent;tab-size:4;font-kerning:auto}
 .canvas-text-input::selection{background:#0d99ff55;color:transparent}
 .canvas-text-input[aria-invalid="true"]{outline:1px solid #d34a43;color:#d34a43}
+
+.prototype-follow-up{min-width:0;margin:8px 0;padding:8px;border:1px dashed var(--line);border-radius:6px}.prototype-follow-up legend{font-size:11px;font-weight:600;padding:0 4px}
