@@ -16,7 +16,7 @@ Parsing runs locally in a cancelable worker. Review the page/layer count and con
 
 ## Conversion limits
 
-This is an initial importer, not full Figma fidelity. Mixed text runs/italics, compound-vector holes, masks, skew/reflection, custom image crops/filters, grid auto layout, layout guides, variable/style bindings, component properties/variants, prototypes and advanced paints may need rebuilding. Unsupported features detected by the converter appear in the review report. Compound paths become separate editable paths; unsupported paints become gray fills. Files referencing absent library components or image bytes cannot recover that missing content.
+This is an initial importer, not full Figma fidelity. Mixed text runs/italics, compound-vector holes, masks, skew/reflection, custom image crops/filters, grid auto layout, layout guides, variable/style bindings, text/boolean/instance-swap component properties, slot overrides inside instances, prototypes and advanced paints may need rebuilding. Unsupported features detected by the converter appear in the review report. Compound paths become separate editable paths; unsupported paints become gray fills. Files referencing absent library components or image bytes cannot recover that missing content.
 
 Only Figma Design `.fig` archives are supported, including `fig-kiwi` data with deflate and Zstandard messages. `.jam`, `.deck`, Figma URLs and REST API JSON are not supported. `.pixl` and existing native project JSON imports keep their previous behavior. This does not add Figma export.
 

@@ -46,3 +46,54 @@ export function importVariantSets(nodes,children,mapped,warn){
  }
  return sets;
 }
+
+// Native slot metadata. Figma stores a SLOT definition on the component (or
+// on the variant set), and each slot frame references it through
+// componentPropRefs with the SLOT_CONTENT_ID node field. PixlPrfct keeps one
+// slot property per main component, so a set-level definition becomes one
+// property in every variant that uses it.
+export function importSlotProperties(nodes,children,mapped,warn){
+ const properties=[],keys=new Map(),slotTargets=new Set(),byReference=new Map(nodes.map(n=>[reference(n.guid),n]));
+ const isMaster=n=>mapped.get(reference(n.guid))?.component?.type==='master';
+ for(const n of nodes.filter(isMaster))if(n.key)keys.set(n.key,mapped.get(reference(n.guid)).id);
+ // A preferred variant set stands for its first variant.
+ for(const n of nodes.filter(n=>n.key&&(n.isStateGroup||n.type==='COMPONENT_SET'))){const first=(children.get(reference(n.guid))??[]).find(isMaster);if(first)keys.set(n.key,mapped.get(reference(first.guid)).id);}
+ const limit=value=>Number.isInteger(value)&&value>0&&value<=10_000?value:null;
+ const within=(root,visit)=>{const stack=[...(children.get(reference(root.guid))??[])];while(stack.length){const n=stack.pop();visit(n);if(n.type!=='INSTANCE')stack.push(...(children.get(reference(n.guid))??[]));}};
+ for(const owner of nodes){
+  const defs=(owner.componentPropDefs??[]).filter(d=>d.type==='SLOT'&&!d.isDeleted);if(!defs.length)continue;
+  const set=owner.isStateGroup||owner.type==='COMPONENT_SET',masters=set?(children.get(reference(owner.guid))??[]).filter(isMaster):isMaster(owner)?[owner]:[];
+  if(!masters.length){warn('Slot properties outside an imported main component were not imported.',owner);continue;}
+  for(const def of defs){
+   const config=def.slotPropConfig??{},min=limit(config.minChildren);let max=limit(config.maxChildren);
+   if(min!=null&&max!=null&&min>max)max=null;
+   const preferred=[],wanted=def.preferredValues?.instanceSwapValues??[];
+   for(const value of wanted.slice(0,1000)){const id=keys.get(value?.key);if(id&&!preferred.includes(id))preferred.push(id);}
+   if(preferred.length<wanted.length)warn('Preferred slot instances that are not main components in this file were not imported.',owner);
+   let description=String(def.description??'');
+   if(bytes.encode(description).length>10_000){description='';warn('A slot description longer than 10 KB was not imported.',owner);}
+   const settings={description,min_children:min,max_children:max,preferred_instances:preferred,only_preferred_instances:!!config.allowPreferredValuesOnly&&preferred.length===wanted.length,display_empty:!!config.displayByDefault,fill_counter_axis:!!config.stretchChildOnInsert};
+   let used=false;
+   for(const master of masters){
+    const component=mapped.get(reference(master.guid)),targets=[];
+    within(master,n=>{
+     if(!(n.componentPropRefs??[]).some(r=>!r.isDeleted&&reference(r.defID)===reference(def.id)&&(r.componentPropNodeField==='SLOT_CONTENT_ID'||n.isSlot)))return;
+     const shape=mapped.get(reference(n.guid));
+     if(!shape||shape.kind!=='frame'||shape.component){warn('A Figma slot on a layer that is not a plain frame was not imported.',n);return;}
+     targets.push({shape,node:n});
+    });
+    // The editor has no slot inside a slot; keep the outer one.
+    const nested=t=>{for(let p=byReference.get(reference(t.node.parentIndex?.guid));p&&p!==master;p=byReference.get(reference(p.parentIndex?.guid))){const s=mapped.get(reference(p.guid));if(s&&(slotTargets.has(s.id)||targets.some(o=>o.shape===s)))return true;}return false;};
+    const kept=targets.filter(t=>{if(slotTargets.has(t.shape.id))return false;if(nested(t)){warn('A slot nested inside another slot was imported as an ordinary frame.',t.node);return false;}return true;});
+    if(!kept.length)continue;
+    let name=definitionName(String(def.name??'Slot').replace(/#[^#]*$/,'')),n=2;const base=name;
+    while(properties.some(p=>p.component_id===component.id&&p.name===name))name=definitionName(`${base} ${n++}`);
+    // Loading a document does not derive slot state, so the frames carry it.
+    for(const t of kept){slotTargets.add(t.shape.id);t.shape.slot={property:properties.length+1,modified:false};}
+    properties.push({id:properties.length+1,component_id:component.id,name,kind:'slot',targets:kept.map(t=>t.shape.id),slot_settings:structuredClone(settings)});used=true;
+   }
+   if(!used)warn('A slot property that no layer uses was not imported.',owner);
+  }
+ }
+ return properties;
+}

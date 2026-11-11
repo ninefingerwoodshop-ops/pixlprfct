@@ -665,6 +665,30 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "move_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and insertion boundary before (track count appends). Selected tracks gather at the boundary in their current order; connected spans move together in one undo step. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "before",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "move_into",
     "readOnly": false,
     "description": "Pass an array of complete Shapes with desired world coordinates, then destination parent ID (0 = root).",
@@ -921,6 +945,42 @@ export const engineCommands=[
     "returns": "string"
   },
   {
+    "name": "prototype_pointer_hits_scrolled",
+    "readOnly": false,
+    "description": "prototype pointer hits scrolled",
+    "args": [
+      {
+        "name": "root",
+        "type": "number"
+      },
+      {
+        "name": "x",
+        "type": "number"
+      },
+      {
+        "name": "y",
+        "type": "number"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "string"
+  },
+  {
+    "name": "prototype_variable_value",
+    "readOnly": false,
+    "description": "prototype variable value",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "push_style_overrides",
     "readOnly": false,
     "description": "push style overrides",
@@ -1015,6 +1075,18 @@ export const engineCommands=[
       }
     ],
     "returns": "void"
+  },
+  {
+    "name": "remove_slot_across_variants",
+    "readOnly": false,
+    "description": "Slot property ID. Removes it and the same-named slot properties of the other variants in its component set. Returns the number removed.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "number"
   },
   {
     "name": "remove_text_style",
@@ -1277,6 +1349,18 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "save_slot_across_variants",
+    "readOnly": false,
+    "description": "Slot component property (json, as for save_component_property). Saves it and gives every other variant in its component set a same-named slot with the same settings, bound to layers matched by name and then by position. One undo step. Returns a JSON report string: id, created, updated, unchanged and skipped variants with reasons.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "save_text_style",
     "readOnly": false,
     "description": "Create/update TextStyle {id,name,description?,typography}. ID 0 creates. layer_id 0 saves without binding; otherwise applies across pages. Shares family, size, weight and line height, preserving alignment, wrapping and sizing.",
@@ -1435,6 +1519,30 @@ export const engineCommands=[
       }
     ],
     "returns": "number"
+  },
+  {
+    "name": "shift_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and -1 or 1. The selection shifts one position as a block. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "delta",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
   },
   {
     "name": "sort_components",
@@ -1629,7 +1737,7 @@ export const modelReference={
   "Shape": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shape {\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub slot: Option<slots::SlotState>,\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub slot_origin: u32,\n    #[serde(default)]\n    pub layout_class: String,\n    #[serde(default)]\n    pub layout_class_generated: bool,\n    #[serde(default)]\n    pub layout_media: Vec<serde_json::Value>,\n    #[serde(default, skip_serializing_if = \"String::is_empty\")]\n    pub custom_css: String,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub breakpoint_original: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome: String,\n    #[serde(default)]\n    pub device_chrome_breakpoints: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome_hidden: bool,\n    #[serde(default)]\n    pub control: Option<Control>,\n    #[serde(default)]\n    pub control_state: String,\n    #[serde(default)]\n    pub behaviors: Vec<Behavior>,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub editor_meta: Option<editor_tools::EditorMeta>,\n    #[serde(default)]\n    pub border_widths: Option<[f64; 4]>,\n    #[serde(default)]\n    pub rotation: f64,\n    #[serde(default)]\n    pub aspect_ratio_locked: bool,\n    #[serde(default)]\n    pub variable_bindings: std::collections::BTreeMap<String, u32>,\n    #[serde(default)]\n    pub variable_modes: std::collections::BTreeMap<u32, u32>,\n    pub id: u32,\n    #[serde(default = \"first_page\")]\n    pub page_id: u32,\n    #[serde(default)]\n    pub parent_id: u32,\n    #[serde(default)]\n    pub clip_content: bool,\n    #[serde(default)]\n    pub image: Option<RasterImage>,\n    #[serde(default)]\n    pub constraints: Constraints,\n    #[serde(default)]\n    pub appearance: Option<Appearance>,\n    #[serde(default)]\n    pub auto_layout: Option<AutoLayout>,\n    #[serde(default)]\n    pub layout_grids: Vec<LayoutGrid>,\n    #[serde(default)]\n    pub guide_style: u32,\n    #[serde(default)]\n    pub effect_style: u32,\n    #[serde(default)]\n    pub text_style: u32,\n    #[serde(default)]\n    pub fill_style: u32,\n    #[serde(default)]\n    pub stroke_style: u32,\n    #[serde(default)]\n    pub prototype: Option<Prototype>,\n    #[serde(default)]\n    pub additional_interactions: Vec<Prototype>,\n    #[serde(default)]\n    pub flow_name: String,\n    #[serde(default)]\n    pub layout_item: LayoutItem,\n    pub kind: String,\n    pub name: String,\n    pub x: f64,\n    pub y: f64,\n    pub width: f64,\n    pub height: f64,\n    pub fill: String,\n    pub text: String,\n    pub hidden: bool,\n    #[serde(default)]\n    pub locked: bool,\n    #[serde(default)]\n    pub component: Option<components::Component>,\n    #[serde(default)]\n    pub typography: Option<Typography>,\n    #[serde(skip)]\n    pub measured_baseline: Option<f64>,\n    #[serde(default)]\n    pub points: Vec<[f64; 2]>,\n    #[serde(default)]\n    pub handles: Vec<[[f64; 2]; 2]>,\n    #[serde(default)]\n    pub closed: bool,\n    #[serde(default = \"default_stroke\")]\n    pub stroke_width: f64,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Shape {\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub slot: Option<slots::SlotState>,\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub slot_origin: u32,\n    #[serde(default)]\n    pub layout_class: String,\n    #[serde(default)]\n    pub layout_class_generated: bool,\n    #[serde(default)]\n    pub layout_media: Vec<serde_json::Value>,\n    #[serde(default, skip_serializing_if = \"String::is_empty\")]\n    pub custom_css: String,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub breakpoint_original: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome: String,\n    #[serde(default)]\n    pub device_chrome_breakpoints: Option<serde_json::Value>,\n    #[serde(default)]\n    pub device_chrome_hidden: bool,\n    #[serde(default)]\n    pub control: Option<Control>,\n    #[serde(default)]\n    pub control_state: String,\n    #[serde(default)]\n    pub behaviors: Vec<Behavior>,\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub editor_meta: Option<editor_tools::EditorMeta>,\n    #[serde(default)]\n    pub border_widths: Option<[f64; 4]>,\n    #[serde(default)]\n    pub rotation: f64,\n    #[serde(default)]\n    pub aspect_ratio_locked: bool,\n    #[serde(default)]\n    pub variable_bindings: std::collections::BTreeMap<String, u32>,\n    #[serde(default)]\n    pub variable_modes: std::collections::BTreeMap<u32, u32>,\n    pub id: u32,\n    #[serde(default = \"first_page\")]\n    pub page_id: u32,\n    #[serde(default)]\n    pub parent_id: u32,\n    #[serde(default)]\n    pub clip_content: bool,\n    #[serde(default)]\n    pub image: Option<RasterImage>,\n    #[serde(default)]\n    pub constraints: Constraints,\n    #[serde(default)]\n    pub appearance: Option<Appearance>,\n    #[serde(default)]\n    pub auto_layout: Option<AutoLayout>,\n    #[serde(default)]\n    pub layout_grids: Vec<LayoutGrid>,\n    #[serde(default)]\n    pub guide_style: u32,\n    #[serde(default)]\n    pub effect_style: u32,\n    #[serde(default)]\n    pub text_style: u32,\n    #[serde(default)]\n    pub fill_style: u32,\n    #[serde(default)]\n    pub stroke_style: u32,\n    #[serde(default)]\n    pub prototype: Option<Prototype>,\n    #[serde(default)]\n    pub additional_interactions: Vec<Prototype>,\n    #[serde(default)]\n    pub flow_name: String,\n    /// Prototype overflow scrolling for a frame: `none`, `vertical`,\n    /// `horizontal` or `both`. Content beyond the frame scrolls in presentations.\n    #[serde(default = \"no_overflow\", skip_serializing_if = \"is_no_overflow\")]\n    pub overflow_scroll: String,\n    /// Stays in place when the frame directly containing it scrolls.\n    #[serde(default, skip_serializing_if = \"is_not_fixed\")]\n    pub scroll_fixed: bool,\n    #[serde(default)]\n    pub layout_item: LayoutItem,\n    pub kind: String,\n    pub name: String,\n    pub x: f64,\n    pub y: f64,\n    pub width: f64,\n    pub height: f64,\n    pub fill: String,\n    pub text: String,\n    pub hidden: bool,\n    #[serde(default)]\n    pub locked: bool,\n    #[serde(default)]\n    pub component: Option<components::Component>,\n    #[serde(default)]\n    pub typography: Option<Typography>,\n    #[serde(skip)]\n    pub measured_baseline: Option<f64>,\n    #[serde(default)]\n    pub points: Vec<[f64; 2]>,\n    #[serde(default)]\n    pub handles: Vec<[[f64; 2]; 2]>,\n    #[serde(default)]\n    pub closed: bool,\n    #[serde(default = \"default_stroke\")]\n    pub stroke_width: f64,\n}"
   },
   "Behavior": {
     "file": "src/lib.rs",
@@ -1674,7 +1782,12 @@ export const modelReference={
   "Prototype": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Prototype {\n    #[serde(default = \"default_trigger\")]\n    pub trigger: String,\n    #[serde(default = \"default_delay\")]\n    pub delay: u32,\n    pub action: String,\n    #[serde(default)]\n    pub target: u32,\n    #[serde(default)]\n    pub close_on_outside: bool,\n    #[serde(default = \"default_overlay_position\")]\n    pub overlay_position: String,\n    #[serde(default)]\n    pub overlay_x: f64,\n    #[serde(default)]\n    pub overlay_y: f64,\n    #[serde(default = \"default_backdrop_color\")]\n    pub backdrop_color: String,\n    #[serde(default = \"default_backdrop_opacity\")]\n    pub backdrop_opacity: f64,\n    #[serde(default = \"default_transition\")]\n    pub transition: String,\n    #[serde(default = \"default_duration\")]\n    pub duration: u32,\n    #[serde(default = \"default_easing\")]\n    pub easing: String,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Prototype {\n    #[serde(default = \"default_trigger\")]\n    pub trigger: String,\n    #[serde(default = \"default_delay\")]\n    pub delay: u32,\n    pub action: String,\n    #[serde(default)]\n    pub target: u32,\n    #[serde(default)]\n    pub close_on_outside: bool,\n    #[serde(default = \"default_overlay_position\")]\n    pub overlay_position: String,\n    #[serde(default)]\n    pub overlay_x: f64,\n    #[serde(default)]\n    pub overlay_y: f64,\n    #[serde(default = \"default_backdrop_color\")]\n    pub backdrop_color: String,\n    #[serde(default = \"default_backdrop_opacity\")]\n    pub backdrop_opacity: f64,\n    #[serde(default = \"default_transition\")]\n    pub transition: String,\n    #[serde(default = \"default_duration\")]\n    pub duration: u32,\n    #[serde(default = \"default_easing\")]\n    pub easing: String,\n    /// For `set-variable`: the variable, how to change it (`set`, `add` for\n    /// numbers, `toggle` for booleans) and the literal used by `set` and `add`.\n    /// The change lasts for the presentation and never edits the document.\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub variable: u32,\n    #[serde(default = \"default_operation\", skip_serializing_if = \"is_set\")]\n    pub operation: String,\n    #[serde(default, skip_serializing_if = \"serde_json::Value::is_null\")]\n    pub value: serde_json::Value,\n    /// When present, the action runs only if the comparison holds.\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub condition: Option<PrototypeCondition>,\n    /// Further actions run in order after this one, on the same trigger.\n    /// Their own trigger and delay are ignored and they cannot nest.\n    #[serde(default, skip_serializing_if = \"Vec::is_empty\")]\n    pub then: Vec<Prototype>,\n}"
+  },
+  "PrototypeCondition": {
+    "file": "src/lib.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct PrototypeCondition {\n    pub variable: u32,\n    /// `==`, `!=`, and for numbers `<`, `<=`, `>`, `>=`.\n    pub operator: String,\n    pub value: serde_json::Value,\n}"
   },
   "AutoLayout": {
     "file": "src/lib.rs",
@@ -1765,6 +1878,16 @@ export const modelReference={
     "file": "src/slots.rs",
     "kind": "struct",
     "declaration": "#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]\npub struct SlotState {\n    pub property: u32,\n    #[serde(default)]\n    pub modified: bool,\n}"
+  },
+  "VariantSlotReport": {
+    "file": "src/slots.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Default, Serialize)]\npub struct VariantSlotReport {\n    pub id: u32,\n    pub created: u32,\n    pub updated: u32,\n    pub unchanged: u32,\n    pub skipped: Vec<SkippedVariant>,\n}"
+  },
+  "SkippedVariant": {
+    "file": "src/slots.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Serialize)]\npub struct SkippedVariant {\n    pub component_id: u32,\n    pub name: String,\n    pub reason: String,\n}"
   },
   "TextStyle": {
     "file": "src/text_styles.rs",

@@ -215,6 +215,193 @@ pub fn build_content(
         .collect())
 }
 
+/// One step from a parent to a child layer: its name, its position among
+/// same-named siblings, and its position among all siblings.
+type PathStep = (String, usize, usize);
+
+fn layer_path(shapes: &[Shape], master: u32, id: u32) -> Option<Vec<PathStep>> {
+    let mut steps = vec![];
+    let mut current = shapes.iter().find(|s| s.id == id)?;
+    while current.id != master {
+        let siblings: Vec<_> = shapes
+            .iter()
+            .filter(|s| s.parent_id == current.parent_id)
+            .collect();
+        let index = siblings.iter().position(|s| s.id == current.id)?;
+        let ordinal = siblings[..index]
+            .iter()
+            .filter(|s| s.name == current.name)
+            .count();
+        steps.push((current.name.clone(), ordinal, index));
+        current = shapes.iter().find(|s| s.id == current.parent_id)?;
+    }
+    steps.reverse();
+    Some(steps)
+}
+
+// Variants are usually structural copies whose layers were renamed apart, so a
+// step that finds no layer by name falls back to the same sibling position.
+fn resolve_path(shapes: &[Shape], master: u32, path: &[PathStep]) -> Option<u32> {
+    let mut current = master;
+    for (name, ordinal, index) in path {
+        let siblings: Vec<_> = shapes.iter().filter(|s| s.parent_id == current).collect();
+        current = siblings
+            .iter()
+            .filter(|s| s.name == *name)
+            .nth(*ordinal)
+            .or_else(|| siblings.get(*index))?
+            .id;
+    }
+    Some(current)
+}
+
+#[derive(Default, Serialize)]
+pub struct VariantSlotReport {
+    pub id: u32,
+    pub created: u32,
+    pub updated: u32,
+    pub unchanged: u32,
+    pub skipped: Vec<SkippedVariant>,
+}
+#[derive(Serialize)]
+pub struct SkippedVariant {
+    pub component_id: u32,
+    pub name: String,
+    pub reason: String,
+}
+
+/// Give every other variant in the property's component set a slot property
+/// with the same name and settings, bound to the layers matching its targets.
+/// Existing same-named slot properties keep their own targets and gain matches.
+pub fn sync_variants(doc: &mut Document, property: u32) -> Result<VariantSlotReport, String> {
+    let source = doc
+        .component_properties
+        .iter()
+        .find(|p| p.id == property && p.kind == "slot")
+        .cloned()
+        .ok_or("Slot property not found")?;
+    let variants: Vec<u32> = doc
+        .component_sets
+        .iter()
+        .find(|set| {
+            set.variants
+                .iter()
+                .any(|v| v.component_id == source.component_id)
+        })
+        .ok_or("Slot properties apply across variants only inside a component set")?
+        .variants
+        .iter()
+        .map(|v| v.component_id)
+        .filter(|id| *id != source.component_id)
+        .collect();
+    let paths: Vec<_> = source
+        .targets
+        .iter()
+        .filter_map(|id| layer_path(&doc.shapes, source.component_id, *id))
+        .collect();
+    let mut report = VariantSlotReport {
+        id: property,
+        ..Default::default()
+    };
+    for variant in variants {
+        let name = doc
+            .shapes
+            .iter()
+            .find(|s| s.id == variant)
+            .map_or_else(String::new, |s| s.name.clone());
+        let mut skip = |reason: &str| {
+            report.skipped.push(SkippedVariant {
+                component_id: variant,
+                name: name.clone(),
+                reason: reason.into(),
+            })
+        };
+        let existing = doc
+            .component_properties
+            .iter()
+            .position(|p| p.component_id == variant && p.name == source.name);
+        if existing.is_some_and(|i| doc.component_properties[i].kind != "slot") {
+            skip("another property already uses this name");
+            continue;
+        }
+        let existing_id = existing.map(|i| doc.component_properties[i].id);
+        let slot_targets: HashSet<u32> = doc
+            .component_properties
+            .iter()
+            .filter(|p| p.kind == "slot" && Some(p.id) != existing_id)
+            .flat_map(|p| p.targets.iter().copied())
+            .collect();
+        let eligible = |id: u32| {
+            let Some(s) = doc.shapes.iter().find(|s| s.id == id) else {
+                return false;
+            };
+            if s.kind != "frame" || s.id == variant || s.component.is_some() {
+                return false;
+            }
+            // Neither another slot nor content nested inside one.
+            let mut at = id;
+            while at != variant && at != 0 {
+                if slot_targets.contains(&at) {
+                    return false;
+                }
+                at = doc
+                    .shapes
+                    .iter()
+                    .find(|s| s.id == at)
+                    .map_or(0, |s| s.parent_id);
+            }
+            at == variant
+        };
+        let mut targets =
+            existing.map_or_else(Vec::new, |i| doc.component_properties[i].targets.clone());
+        let mut matched = vec![];
+        for path in &paths {
+            if let Some(id) = resolve_path(&doc.shapes, variant, path).filter(|id| eligible(*id)) {
+                if !targets.contains(&id) {
+                    targets.push(id);
+                    matched.push(id);
+                }
+            }
+        }
+        match existing {
+            Some(i) => {
+                let p = &mut doc.component_properties[i];
+                if p.targets == targets && p.slot_settings == source.slot_settings {
+                    report.unchanged += 1;
+                } else {
+                    p.targets = targets;
+                    p.slot_settings = source.slot_settings.clone();
+                    report.updated += 1;
+                }
+            }
+            None if !paths.is_empty() && matched.is_empty() => skip("no matching layer"),
+            None => {
+                let id = doc
+                    .component_properties
+                    .iter()
+                    .map(|p| p.id)
+                    .max()
+                    .unwrap_or(0)
+                    .checked_add(1)
+                    .ok_or("Property ID limit reached")?;
+                doc.component_properties
+                    .push(component_properties::ComponentProperty {
+                        id,
+                        component_id: variant,
+                        targets: matched.clone(),
+                        ..source.clone()
+                    });
+                // As when wrapping a selection, a new slot frame takes the slot's name.
+                for s in doc.shapes.iter_mut().filter(|s| matched.contains(&s.id)) {
+                    s.name = source.name.clone();
+                }
+                report.created += 1;
+            }
+        }
+    }
+    Ok(report)
+}
+
 #[wasm_bindgen]
 impl Editor {
     pub fn clear_slot(&mut self, id: u32) -> Result<(), String> {
@@ -319,5 +506,103 @@ impl Editor {
         self.commit(staged.document)?;
         self.next_id = self.next_id.max(staged.next_id);
         Ok(frame)
+    }
+    /// Save a slot property and apply it to every variant of its component
+    /// set in one history entry. Returns a JSON report: the property id and
+    /// how many variants were created, updated, unchanged or skipped.
+    pub fn save_slot_across_variants(&mut self, json: &str) -> Result<String, String> {
+        if json.len() > 100_000 {
+            return Err("Component property is too large".into());
+        }
+        let mut p: component_properties::ComponentProperty =
+            serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if p.kind != "slot" {
+            return Err("Only slot properties are applied across variants".into());
+        }
+        p.name = p.name.trim().into();
+        let mut doc = self.document.clone();
+        if p.id == 0 {
+            p.id = doc
+                .component_properties
+                .iter()
+                .map(|p| p.id)
+                .max()
+                .unwrap_or(0)
+                .checked_add(1)
+                .ok_or("Property ID limit reached")?;
+            doc.component_properties.push(p.clone());
+        } else {
+            let old = doc
+                .component_properties
+                .iter_mut()
+                .find(|old| old.id == p.id && old.component_id == p.component_id)
+                .ok_or("Component property not found")?;
+            let previous = std::mem::replace(old, p.clone()).name;
+            // A rename follows the slot into the other variants, unless the new
+            // name is already taken there.
+            if previous != p.name {
+                let siblings: Vec<u32> = doc
+                    .component_sets
+                    .iter()
+                    .find(|set| {
+                        set.variants
+                            .iter()
+                            .any(|v| v.component_id == p.component_id)
+                    })
+                    .map_or_else(Vec::new, |set| {
+                        set.variants.iter().map(|v| v.component_id).collect()
+                    });
+                let taken: HashSet<u32> = doc
+                    .component_properties
+                    .iter()
+                    .filter(|q| q.name == p.name)
+                    .map(|q| q.component_id)
+                    .collect();
+                for q in doc.component_properties.iter_mut().filter(|q| {
+                    q.kind == "slot"
+                        && q.name == previous
+                        && q.component_id != p.component_id
+                        && siblings.contains(&q.component_id)
+                        && !taken.contains(&q.component_id)
+                }) {
+                    q.name = p.name.clone();
+                }
+            }
+        }
+        let report = sync_variants(&mut doc, p.id)?;
+        component_properties::validate_properties(&doc)?;
+        bind(&mut doc);
+        self.commit(doc)?;
+        serde_json::to_string(&report).map_err(|e| e.to_string())
+    }
+    /// Remove a slot property together with the same-named slot properties of
+    /// the other variants in its component set. Returns how many were removed.
+    pub fn remove_slot_across_variants(&mut self, id: u32) -> Result<u32, String> {
+        let mut doc = self.document.clone();
+        let p = doc
+            .component_properties
+            .iter()
+            .find(|p| p.id == id && p.kind == "slot")
+            .cloned()
+            .ok_or("Slot property not found")?;
+        let siblings: Vec<u32> = doc
+            .component_sets
+            .iter()
+            .find(|set| {
+                set.variants
+                    .iter()
+                    .any(|v| v.component_id == p.component_id)
+            })
+            .map_or_else(Vec::new, |set| {
+                set.variants.iter().map(|v| v.component_id).collect()
+            });
+        let before = doc.component_properties.len();
+        doc.component_properties.retain(|q| {
+            q.id != id
+                && !(q.kind == "slot" && q.name == p.name && siblings.contains(&q.component_id))
+        });
+        let removed = (before - doc.component_properties.len()) as u32;
+        self.commit(doc)?;
+        Ok(removed)
     }
 }
