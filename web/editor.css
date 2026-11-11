@@ -625,3 +625,44 @@ body .layout-css-window textarea.layout-css-source{font-family:ui-monospace,SFMo
 .canvas-text-input[aria-invalid="true"]{outline:1px solid #d34a43;color:#d34a43}
 
 .prototype-follow-up{min-width:0;margin:8px 0;padding:8px;border:1px dashed var(--line);border-radius:6px}.prototype-follow-up legend{font-size:11px;font-weight:600;padding:0 4px}
+
+/* Prototype tab: interaction chips and the floating Interaction panel.
+   Measured in Figma's web app on 2026-11-11 (CSS px): panel 240 wide, 440 with
+   an action list (199 + 241), 13px radius, 40px title bar, 24px controls on an
+   8px rhythm, 64px labels, 11px text. */
+#prototype-panel .prototype-section-header{display:flex;align-items:center;justify-content:space-between;min-height:24px}
+#prototype-panel .prototype-section-header h3{margin:0}
+#prototype-panel :is(.prototype-add,.prototype-chip-remove){flex:none;width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);display:inline-grid;place-items:center;cursor:pointer}
+#prototype-panel .prototype-interaction-row{display:flex;align-items:center;gap:8px;margin:8px 0 0}
+#prototype-panel .prototype-chip{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,auto) 16px minmax(0,1fr);align-items:center;gap:12px;height:24px!important;min-height:24px!important;padding:0 12px!important;border:1px solid var(--ui-border)!important;border-radius:5px!important;background:var(--ui-field);color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);text-align:left;cursor:pointer}
+#prototype-panel .prototype-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#prototype-panel .prototype-chip.active{border-color:var(--ui-accent)!important;background:color-mix(in srgb,var(--ui-accent) 28%,var(--ui-field))!important}
+#prototype-panel .prototype-chip-icon,#prototype-interaction-modal .prototype-chip-icon{display:inline-grid;place-items:center;width:16px;height:16px}
+#prototype-panel .prototype-chip-icon .app-icon,#prototype-interaction-modal .prototype-chip-icon .app-icon{width:12px!important;height:12px!important}
+#prototype-panel .prototype-chip-remove{visibility:hidden}
+#prototype-panel .prototype-interaction-row:is(:hover,:focus-within) .prototype-chip-remove,#prototype-panel .prototype-chip.active+.prototype-chip-remove{visibility:visible}
+#prototype-panel .prototype-scroll-title{margin-top:16px}
+dialog#prototype-interaction-modal#prototype-interaction-modal{position:fixed;z-index:60;margin:0;width:240px;max-width:none;padding:0!important;border:0;border-radius:13px;background:#2c2c2c;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);box-shadow:0 10px 24px #00000073,0 3px 5px #00000059,inset 0 .5px 0 #ffffff14,inset 0 0 .5px #ffffff59;overflow:visible}
+dialog#prototype-interaction-modal#prototype-interaction-modal.wide{width:440px}
+dialog#prototype-interaction-modal#prototype-interaction-modal header{display:flex;align-items:center;gap:0;height:40px;padding:0 8px 0 16px;border-bottom:1px solid var(--ui-border)}
+dialog#prototype-interaction-modal#prototype-interaction-modal header h2{flex:1;margin:0!important;font:550 11px/16px var(--ui-font)!important;letter-spacing:0}
+dialog#prototype-interaction-modal#prototype-interaction-modal :is(header button,.prototype-modal-foot button){width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);display:inline-grid;place-items:center;cursor:pointer}
+dialog#prototype-interaction-modal#prototype-interaction-modal header button[hidden]{display:none}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-trigger{display:grid;gap:8px;padding:12px 16px;border-bottom:1px solid var(--ui-border)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-fields{display:grid;gap:8px;padding:12px 16px;align-content:start;min-width:0}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-fields:empty{display:none}
+dialog#prototype-interaction-modal#prototype-interaction-modal label{display:grid!important;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:8px;margin:0!important;padding:0!important;height:24px!important;min-height:24px!important;font:var(--ui-regular) 11px/16px var(--ui-font);color:color-mix(in srgb,var(--ui-text-color) 70%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal label>:is(select,input:not([type=checkbox]):not([type=color]),.inspector-select-trigger){width:100%!important;min-width:0;height:24px!important;min-height:24px!important;box-sizing:border-box;color:var(--ui-text-color)}
+dialog#prototype-interaction-modal#prototype-interaction-modal label>input[type=checkbox]{justify-self:start}
+dialog#prototype-interaction-modal#prototype-interaction-modal p{margin:0;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent);font-size:11px;line-height:16px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-columns{display:grid;grid-template-columns:199px 241px;min-height:280px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-actions{display:flex;flex-direction:column;border-right:1px solid var(--ui-border);min-width:0}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-actions .prototype-modal-trigger{padding:8px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-actions .prototype-modal-trigger>:is(select,.inspector-select-trigger){width:100%!important;height:24px!important;min-height:24px!important;box-sizing:border-box}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-list{flex:1;display:grid;gap:8px;align-content:start;padding:8px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;height:24px!important;min-height:24px!important;padding:0 8px!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);text-align:left;cursor:pointer}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action.active{background:color-mix(in srgb,var(--ui-accent) 32%,transparent)!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-foot{display:flex;gap:0;padding:8px;border-top:1px solid var(--ui-border)}
+dialog#prototype-interaction-modal#prototype-interaction-modal button:focus-visible,#prototype-panel :is(.prototype-chip,.prototype-add,.prototype-chip-remove):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}
+dialog#prototype-interaction-modal#prototype-interaction-modal label.long{grid-template-columns:minmax(0,1fr);height:auto!important;gap:4px}

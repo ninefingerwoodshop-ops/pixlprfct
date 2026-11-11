@@ -50,16 +50,16 @@ test('variables changed by actions drive bound layers and conditions for one pre
 });
 test('Set variable and a condition are authored in the Prototype inspector',async({page})=>{
  const data=await seed(page,counter());await select(page,data.show);await page.getByRole('tab',{name:'Prototype',exact:true}).click();
- const proto=async()=>(await saved(page)).shapes.find(s=>s.id===data.show).prototype,choose=(label,value)=>page.getByLabel(label,{exact:true}).evaluate((node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));},value);
- await expect(page.locator('.prototype-connection-summary')).toHaveText('On click → Toggle Badge hidden');
- await expect(page.getByLabel('Animation',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Value',{exact:true})).toHaveCount(0);
+ const proto=async()=>(await saved(page)).shapes.find(s=>s.id===data.show).prototype,chip=page.locator('#prototype-panel .prototype-chip'),modal=page.getByRole('dialog',{name:'Interaction',exact:true}),choose=(label,value)=>modal.getByLabel(label,{exact:true}).evaluate((node,value)=>{node.value=value;node.dispatchEvent(new Event('change',{bubbles:true}));},value);
+ await expect(chip).toHaveAccessibleName('Interaction 1: On click → Toggle Badge hidden');await chip.click();
+ await expect(modal.getByLabel('Animation',{exact:true})).toHaveCount(0);await expect(modal.getByLabel('Value',{exact:true})).toHaveCount(0);
  // Switching to a number variable starts from Set to 0, then Add 5.
  await choose('Variable','1');await expect.poll(async()=>{const p=await proto();return [p.variable,p.operation??'set',p.value];}).toEqual([1,'set',0]);
- await choose('Operation','add');await page.getByLabel('Amount',{exact:true}).fill('5');await page.getByLabel('Amount',{exact:true}).blur();
+ await choose('Operation','add');await modal.getByLabel('Amount',{exact:true}).fill('5');await modal.getByLabel('Amount',{exact:true}).blur();
  await expect.poll(async()=>{const p=await proto();return [p.operation,p.value];}).toEqual(['add',5]);
  await choose('Run','2');await expect.poll(async()=>(await proto()).condition).toEqual({variable:2,operator:'==',value:true});
  await choose('Compared with','false');await choose('Comparison','!=');
  await expect.poll(async()=>(await proto()).condition).toEqual({variable:2,operator:'!=',value:false});
- await expect(page.locator('.prototype-connection-summary')).toHaveText('On click → Add 5 to Count (when Badge hidden is not false)');
+ await expect(chip).toHaveAccessibleName(/^Interaction 1: On click → Add 5 to Count.*Badge hidden is not false/);
  await choose('Run','0');await expect.poll(async()=>'condition' in (await proto())).toBe(false);
 });

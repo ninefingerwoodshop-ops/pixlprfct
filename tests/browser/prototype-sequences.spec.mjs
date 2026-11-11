@@ -30,18 +30,38 @@ test('one click runs its actions in order, waiting for each transition, and skip
 test('follow-up actions are added, edited and removed in the Prototype inspector',async({page})=>{
  const data=await seed(page,screens());await select(page,data.dot);await page.getByRole('tab',{name:'Prototype',exact:true}).click();
  const then=async()=>(await saved(page)).shapes.find(s=>s.id===data.dot).prototype.then??[];
- await expect(page.locator('.prototype-connection-summary')).toHaveText('On click → Detail, then Open overlay: Menu');
- await page.getByRole('button',{name:'Add follow-up action to interaction 1',exact:true}).click();
+ // One chip per interaction; clicking it opens the Interaction panel beside the sidebar.
+ const chip=page.locator('#prototype-panel .prototype-chip'),modal=page.getByRole('dialog',{name:'Interaction',exact:true});
+ await expect(chip).toHaveAccessibleName('Interaction 1: On click → Detail, then Open overlay: Menu');await expect(chip).toHaveText('Click'+'Detail +1');await expect(modal).toHaveCount(0);
+ await chip.click();await expect(chip).toHaveAttribute('aria-expanded','true');
+ // Two actions switch the panel to an action list with the selected action's fields beside it.
+ await expect(modal.getByRole('option')).toHaveText(['Navigate to Detail','Open overlay: Menu']);await expect(modal.getByRole('option').first()).toHaveAttribute('aria-selected','true');
+ expect((await modal.boundingBox()).width).toBe(440);
+ await modal.locator('.prototype-modal-foot').getByRole('button',{name:'Add action',exact:true}).click();
+ await expect(page.getByRole('menu',{name:'Add action'}).getByRole('menuitem')).toContainText(['Navigate to','Back','Open overlay','Swap overlay','Close overlay']);
+ await page.getByRole('menuitem',{name:'Navigate to',exact:true}).click();
  await expect.poll(async()=>(await then()).map(s=>s.action)).toEqual(['overlay','navigate']);
- // A follow-up has no trigger or delay of its own.
- await expect(page.getByLabel('Then 2: Action',{exact:true})).toHaveValue('navigate');await expect(page.getByLabel('Then 2: Trigger',{exact:true})).toHaveCount(0);
- await page.getByLabel('Then 2: Action',{exact:true}).evaluate(node=>{node.value='close';node.dispatchEvent(new Event('change',{bubbles:true}));});
+ // The new action is selected. A follow-up has no trigger or delay of its own; the trigger stays in the list column.
+ await expect(modal.getByRole('option').nth(2)).toHaveAttribute('aria-selected','true');
+ await expect(modal.getByLabel('Then 2: Action',{exact:true})).toHaveValue('navigate');await expect(modal.getByLabel('Then 2: Trigger',{exact:true})).toHaveCount(0);
+ await expect(modal.locator('.prototype-modal-actions').getByLabel('Trigger',{exact:true})).toHaveValue('click');
+ await modal.getByLabel('Then 2: Action',{exact:true}).evaluate(node=>{node.value='close';node.dispatchEvent(new Event('change',{bubbles:true}));});
  await expect.poll(async()=>(await then()).map(s=>[s.action,s.target])).toEqual([['overlay',data.menu],['close',0]]);
  // Editing the first action keeps its follow-ups.
- await page.getByLabel('Animation',{exact:true}).evaluate(node=>{node.value='instant';node.dispatchEvent(new Event('change',{bubbles:true}));});
+ await modal.getByRole('option').first().click();
+ await modal.getByLabel('Animation',{exact:true}).evaluate(node=>{node.value='instant';node.dispatchEvent(new Event('change',{bubbles:true}));});
  await expect.poll(async()=>{const p=(await saved(page)).shapes.find(s=>s.id===data.dot).prototype;return [p.transition,p.then.length];}).toEqual(['instant',2]);
- await page.getByRole('button',{name:'Remove follow-up action 1 of interaction 1',exact:true}).click();
+ // Remove the middle action with the minus under the list.
+ await modal.getByRole('option').nth(1).click();await modal.getByRole('button',{name:'Remove action',exact:true}).click();
  await expect.poll(async()=>(await then()).map(s=>s.action)).toEqual(['close']);
- await page.locator('#canvas').focus();await page.keyboard.press('Control+z');
- await expect.poll(async()=>(await then()).length).toBe(2);
+ // Removing the first action promotes the next one and keeps the trigger.
+ await modal.getByRole('option').first().click();await modal.getByRole('button',{name:'Remove action',exact:true}).click();
+ await expect.poll(async()=>{const p=(await saved(page)).shapes.find(s=>s.id===data.dot).prototype;return [p.trigger,p.action,(p.then??[]).length];}).toEqual(['click','close',0]);
+ // One action left: back to the single-column panel, 240 px wide, with + in the title bar.
+ await expect(modal.getByRole('option')).toHaveCount(0);expect((await modal.boundingBox()).width).toBe(240);await expect(modal.locator('header').getByRole('button',{name:'Add action',exact:true})).toBeVisible();
+ // Escape closes the panel and returns focus to the chip.
+ await modal.getByRole('button',{name:'Close',exact:true}).focus();await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);await expect(chip).toBeFocused();await expect(chip).toHaveAttribute('aria-expanded','false');
+ // Each removal was one undo step.
+ await page.locator('#canvas').focus();await page.keyboard.press('Control+z');await page.keyboard.press('Control+z');
+ await expect.poll(async()=>(await then()).map(s=>s.action)).toEqual(['overlay','close']);
 });

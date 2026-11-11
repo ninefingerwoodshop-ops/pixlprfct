@@ -12,7 +12,7 @@ PixlPrfct has four separate ways to make designs interactive, and they live in d
 
 ### User-visible behavior
 
-- The inspector's **Prototype** tab lists **Interactions** for the selected layer: up to six, one per trigger. Each has Trigger, Action (Navigate to frame, Open overlay, Swap overlay, Go back, Close overlay), destination, transition, duration, easing and overlay settings. Frames have a **Flow starting point** name.
+- The inspector's **Prototype** tab lists **Interactions** for the selected layer as chips ("Click → Screen B"), one per trigger. **+** adds one; hovering a chip shows **−** to remove it. Clicking a chip opens the floating **Interaction** panel beside the inspector (`renderPrototypeControls` in `web/prototype.js`; module state `panel` remembers which chip is open across re-renders). The panel has Trigger, Action (Navigate to, Back, Open overlay, Swap overlay, Close overlay, Set variable), Destination, Animation, Easing, Duration and overlay settings. Its title-bar **+** adds a further action; with two or more actions it becomes a two-column action list with **+** and **−**. Layout and sizes follow Figma; see `docs/FIGMA_UI_REFERENCE.md`. Frames have a **Flow starting point** name.
 - With prototype connections shown, a selected layer has a handle on its right edge; dragging it to a frame creates/retargets a connection (drawn as a bezier "noodle"; multiple interactions to the same target are offset).
 - **Present** opens a full-window player dialog: Back, Restart, frame chooser, flow chooser, device chrome toggle, orientation (portrait/landscape, preview only), Show hotspots, Close.
 

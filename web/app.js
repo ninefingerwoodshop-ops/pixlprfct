@@ -110,7 +110,7 @@ import {pdfDocument,pdfImagePage,pdfPageSize} from './pdf-export.js';
 import {pdfTextRuns} from './pdf-text.js';
 import {smoothPencil} from './pencil.js';
 import {connectionHit,connectionAt,connectionTarget,connectedShape,drawConnections} from './prototype-connections.js';
-import {prototypeFrames,renderPrototypeControls,presentPrototype} from './prototype.js';
+import {prototypeFrames,renderPrototypeControls,presentPrototype,closePrototypeInteraction,openPrototypeInteraction} from './prototype.js';
 import {interactions,withInteractions} from './prototype-interactions.js';
 import {drawLayoutGuides,renderGuideControls} from './layout-guides.js';
 import init, { Editor } from './pkg/pixlprfct_core.js';
@@ -810,7 +810,7 @@ function renderPropertiesNow() {
   }
   renderShadowControls($('shadow-section'),shape,next=>{if(effectBlur(next.appearance,'backdrop_blur')>0)cssCanvasEnabled=true;update(next);},effectStyleApi());
   prototypeInteraction=Math.min(prototypeInteraction,Math.max(0,(shape?interactions(shape).length:0)-1));
-  if(!$('prototype-inspector').hidden)renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype,{activeIndex:prototypeInteraction,select:index=>{prototypeInteraction=index;draw();}});
+  if(!$('prototype-inspector').hidden)renderPrototypeControls($('prototype-panel'),shape,doc,update,playPrototype,{activeIndex:prototypeInteraction,select:index=>{prototypeInteraction=index;draw();}});else closePrototypeInteraction();
   renderGuideControls($('layout-guides-panel'),shape,update,guidesVisible,()=>{guidesVisible=!guidesVisible;renderProperties();draw();},{
     styles:doc.guide_styles??[],
     save:(style,frame)=>safe(()=>{editor.save_guide_style(JSON.stringify(style),frame);refresh();}),
@@ -1052,7 +1052,7 @@ function zoomAt(factor, x = canvas.clientWidth / 2, y = canvas.clientHeight / 2,
 }
 function point(event) { const rect = canvas.getBoundingClientRect(); return { x: (event.clientX - rect.left - pan.x) / zoom, y: (event.clientY - rect.top - pan.y) / zoom }; }
 function openPrototypeInspector(index=prototypeInteraction){
- prototypeInteraction=index;development?.activate('prototype');renderProperties();
+ prototypeInteraction=index;if(selected&&interactions(current()??{}).length>index)openPrototypeInteraction(selected,index);development?.activate('prototype');renderProperties();
  requestAnimationFrame(()=>{
   const panel=$('prototype-panel');
   if(panel.classList.contains('inspector-collapsed'))panel.querySelector('.inspector-section-toggle')?.click();

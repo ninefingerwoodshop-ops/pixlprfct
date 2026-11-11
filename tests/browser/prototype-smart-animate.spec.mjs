@@ -66,11 +66,15 @@ test('Smart animate and On drag are offered in the Prototype inspector and saved
  const data=await seed(page,screens());
  const dot=(await saved(page)).shapes.find(s=>s.name==='Dot'&&s.parent_id===data.two);
  await select(page,dot.id);await page.getByRole('tab',{name:'Prototype',exact:true}).click();
- const animation=page.getByLabel('Animation',{exact:true}),trigger=page.getByLabel('Trigger',{exact:true});
+ await page.locator('#prototype-panel .prototype-chip').click();const modal=page.getByRole('dialog',{name:'Interaction',exact:true});
+ await expect(page.locator('#prototype-panel .prototype-chip')).toHaveText(/^Drag/);
+ const animation=modal.getByLabel('Animation',{exact:true}),trigger=modal.getByLabel('Trigger',{exact:true});
  await expect(trigger).toHaveValue('drag');await expect(trigger.locator('option[value="drag"]')).toHaveText('On drag');
  // The visible control is the shared custom dropdown; drive the field it wraps.
  await expect(animation.locator('option[value="smart-animate"]')).toHaveText('Smart animate');
  await animation.evaluate(node=>{node.value='smart-animate';node.dispatchEvent(new Event('change',{bubbles:true}));});
  await expect.poll(async()=>(await saved(page)).shapes.find(s=>s.id===dot.id).prototype.transition).toBe('smart-animate');
- await expect(page.getByLabel('Duration (ms)',{exact:true})).toBeVisible();
+ await expect(modal.getByLabel('Duration',{exact:true})).toBeVisible();await expect(modal.getByLabel('Easing',{exact:true}).locator('option')).toHaveText(['Linear','Ease in','Ease out','Ease in and out']);
+ // Figma's order: Trigger, Action, Destination, Animation, Easing, Duration.
+ await expect(modal.locator('label')).toContainText(['Trigger','Action','Destination','Animation','Easing','Duration']);
 });

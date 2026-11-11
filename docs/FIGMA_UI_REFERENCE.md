@@ -1298,12 +1298,13 @@ permanently deleted and no other file was touched.
 - **Permanently delete** opens **Permanently delete file**: "You're about to
   permanently delete the file **Name**. You won't be able to restore it."
   Buttons: **Cancel** and a red **Permanently delete**.
-- Both dialogs are about 268 px wide and 120 px tall: a title bar of about
-  34 px with a close ✕ and a divider, the message, a divider, and a footer of
-  about 34 px. Text is 11 px. Restoring shows a toast "File restored · Show in Drafts".
+- Both dialogs are 320 px wide and about 143 px tall: a 40 px title bar with
+  a close ✕ and a divider, the message, a divider, and a 40 px footer with
+  24 px buttons. Text is 11 px. (An earlier note here said 268 px; that was read
+  from a screenshot scaled to 84%. Sizes are now taken from the page's own layout.) Restoring shows a toast "File restored · Show in Drafts".
 
 PixlPrfct now matches the wording (with "project" for "file" on the Projects
-page), the title bar, close button, dividers, 268 px width, 34 px header,
+page), the title bar, close button, dividers, 320 px width, 40 px header,
 24 px buttons, the blue move button and the red delete button, and asks before
 moving to Trash. Still different: there is no **Duplicate to drafts**; the
 card does not say who trashed it or when; there is no "restored" toast link;
@@ -1339,22 +1340,42 @@ body spacing is close but not measured to the pixel.
   "Write condition" expression field and variable picker, an indented
   "Add action", then **else** with its own "Add action".
 
-PixlPrfct now matches the section title Scroll behavior, the labels Overflow
-and Position, the Overflow option order, and the names Navigate to, Back,
-Mouse down and Mouse up. Still different, and structural rather than wording:
+Measured from the page's own layout (CSS px): the Interaction panel is 240
+wide, or 440 with an action list (a 199 px list column and a 241 px settings
+column); 13 px corner radius; background #2c2c2c; a 40 px title bar with an
+11 px / 550 title and 24 px icon buttons; rows of 24 px controls on an 8 px
+rhythm with 12 px / 16 px section padding; 64 px labels at 70% white; controls
+137 px wide with a 1 px #444 border and 5 px radius. The panel sits 2 px left of
+the sidebar, about level with the interaction's chip. A chip is 24 px high and
+shows a **−** to its right on hover.
 
-- Interactions are inline blocks with "Add interaction" and "Delete
-  interaction" buttons, not chips with a floating Interaction panel.
-- Follow-up actions are "Then" blocks added with "Add follow-up action", not
-  an action list added from a **+** menu in a two-column panel.
+PixlPrfct now matches (rebuilt 2026-11-11): one chip per interaction with
+"Click → Screen B" text and a − on hover; **+** adds a "Click → None"
+interaction with its panel open; the floating Interaction panel with these
+sizes, title bar, **+** action menu and close button; the Trigger, Action,
+Destination, Animation, Easing, Duration order and names; the two-column
+action list with **+** and **−** once there are two or more actions; the
+section title Scroll behavior with Overflow and Position.
+
+Still different:
+
 - Conditions are a "Run: Always / Only when" setting on each action, not a
   Conditional action with if/else blocks and a written expression.
-- Set variable uses its own fields rather than Target and Value with Figma's picker.
+- Set variable uses Variable / Operation / Value fields rather than Target and
+  Value with Figma's searchable picker.
+- A chip with several actions shows the first action and "+N"; what Figma
+  shows there was not observed. Whether Figma keeps the − visible on the open
+  chip, and its exact chip padding, were read from a screenshot only.
+- A new interaction's Destination defaults to another frame; Figma starts at None.
+- Duration is a plain number field, not "300ms" with an icon. Dropdowns have
+  no leading icons. There is no animation preview and no State section.
+- Flow starting point sits below Scroll behavior rather than above Interactions,
+  and a Present prototype button remains in the tab.
+- The panel does not drag, and stays where it opens.
 - Missing triggers: While hovering, While pressing, Key/Gamepad. Missing
   actions: Change to, Scroll to, Open link, Set variable mode, Play/Pause
   animation, Set playhead. Missing position: Sticky. Missing animations:
   Move in, Move out, Push, Slide in/out (PixlPrfct has Slide left/right/up/down).
-- No animation preview and no State section.
 
 ### Grid auto-layout track handles
 
