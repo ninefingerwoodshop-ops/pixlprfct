@@ -295,6 +295,12 @@ Release source validation: 3 Rust + 1,053 JavaScript tests, 143 browser workflow
 | --- | --- | --- | --- |
 | `DELETE /api/documents/:id?permanent=1` for files already in Trash (revision-guarded batch; dependent rows removed only once the file is gone; published libraries refused on self-hosted); `DELETE …/versions/:vid`; `DELETE …/versions?automatic=1&before=`; creator/administrator permission for all three; `LocalDrafts.remove()` with a `cleared` marker | Projects → Trash → **Delete forever** and the editor's Cloud files → Show Trash, both behind a shared confirmation dialog (`web/confirm-dialog.js`, Cancel focused); Version history **Delete** per version and **Delete automatic backups older than 30 days** | 6 API tests (D1 schema and a self-hosted SQLite team fixture), 2 local-storage tests, 3 Chromium project-browser tests and 1 Chromium test against a running self-hosted server | No Empty Trash, Trash expiry or scheduled retention. Object-stored bodies are freed by the daily sweep after 24 hours, not at once. Rows of files removed before this change are not cleaned. Self-hosted statements were run on SQLite only, not PostgreSQL or MySQL. The menu item and dialog were not compared against Figma. Not installed or released |
 
+### SVG import: style sheets and CSS colors — 2026-11-11, branch source
+
+| Core | UI | Verification | Boundary |
+| --- | --- | --- | --- |
+| `web/svg-css.js` reads `<style>` sheets for element, class, id and universal selectors with specificity and source order between presentation attributes and inline style; `web/svg-colors.js` accepts all CSS named colors, hex with alpha, `rgb()` and `hsl()` in both syntaxes, folding alpha into fill/stroke opacity | No new interface: Place image or SVG, drop, paste and Icon library all use it | 10 unit tests (cascade, selector lists, `use`/symbol content, engine paste, refusals, colors); 1 Chromium test pasting an Illustrator-style file, undoing it and refusing a descendant selector | Descendant/child/attribute selectors, pseudo-classes, `@media`/`@import`/`@font-face` and `!important` are refused, as is any rule matching a gradient or stop. Transparent colors in gradient stops still need `stop-opacity`. Compound and even-odd fills, clipping, masks, text and images are still unsupported. Tested with hand-written files, not a corpus of real exports. The SVG Animator's separate importer is unchanged |
+
 ### Storage quotas and unreferenced bodies — 2026-11-04, branch source
 
 | Core | UI | Verification | Boundary |

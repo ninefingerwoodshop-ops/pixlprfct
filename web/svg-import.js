@@ -3,13 +3,15 @@ import {fromPoints} from './vectors.js';
 import {bounds} from './selection.js';
 import {gradientResolver} from './svg-gradients.js';
 import {svgViewport,svgReferences} from './svg-viewport.js';
+import {parseSvgColor} from './svg-colors.js';
+import {parseSvgCss,matchSvgCss} from './svg-css.js';
 
 const inherited=['fill','stroke','stroke-width','stroke-linecap','stroke-linejoin','stroke-miterlimit','stroke-dasharray','stroke-dashoffset','fill-opacity','stroke-opacity','fill-rule','color','visibility'];
 const allowed=new Set([...inherited,'opacity','display']);
 const defaults={fill:'#000000',stroke:'none','stroke-width':'1','stroke-linecap':'butt','stroke-linejoin':'miter','stroke-miterlimit':'4','stroke-dasharray':'none','stroke-dashoffset':'0','fill-opacity':'1','stroke-opacity':'1','fill-rule':'nonzero',color:'#000000',visibility:'visible'};
 const length=(value,fallback=0)=>{if(value==null||value==='')return fallback;if(!/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?(?:px)?$/i.test(value.trim()))throw new Error('SVG lengths must use pixels or unitless values');const n=Number(value.replace(/px$/i,''));if(!Number.isFinite(n)||Math.abs(n)>1e6)throw new Error('SVG length is out of range');return n;};
-const names={black:'#000000',white:'#ffffff',red:'#ff0000',green:'#008000',blue:'#0000ff',yellow:'#ffff00',gray:'#808080',grey:'#808080',orange:'#ffa500',purple:'#800080',pink:'#ffc0cb',transparent:'none'};
-function color(value,current){value=value.trim().toLowerCase();if(value==='currentcolor')value=current.toLowerCase();if(names[value])return names[value];if(value==='none'||/^#[0-9a-f]{6}$/.test(value))return value;if(/^#[0-9a-f]{3}$/.test(value))return '#'+[...value.slice(1)].map(c=>c+c).join('');const rgb=value.match(/^rgb\(\s*([\d.]+)(%)?[,\s]+([\d.]+)(%)?[,\s]+([\d.]+)(%)?\s*\)$/);if(rgb)return '#'+[1,3,5].map(i=>Math.round(Math.max(0,Math.min(255,Number(rgb[i])*(rgb[i+1]?2.55:1)))).toString(16).padStart(2,'0')).join('');throw new Error('Unsupported SVG paint: '+value.slice(0,60)+'. Use solid hex or RGB colors.');}
+// Gradient stops take a plain color; transparency there is written as stop-opacity.
+function color(value,current){const parsed=parseSvgColor(value,current);if(!parsed)return 'none';if(parsed.alpha<1)throw new Error('Unsupported SVG paint: '+value.trim().slice(0,60)+'. Use stop-opacity for transparent gradient stops.');return parsed.hex;}
 const opacity=v=>{const n=Number(v??1);if(!Number.isFinite(n))throw new Error('Invalid SVG opacity');return Math.max(0,Math.min(1,n));};
 function paint(attrs,parent){const style={...parent,opacity:'1',display:'inline'};for(const key of allowed)if(attrs[key]!=null)style[key]=attrs[key];for(const part of (attrs.style??'').split(';').filter(s=>s.trim())){const at=part.indexOf(':'),key=part.slice(0,at).trim(),value=part.slice(at+1).trim();if(at<0||!allowed.has(key))throw new Error('Unsupported SVG style: '+key);style[key]=value;}return style;}
 function geometry(tag,a){
@@ -26,14 +28,31 @@ export function svgLayers(tree,name='SVG artwork'){
  if(tree.attrs.transform)throw new Error('Move the root SVG transform into a group before importing');
  const rootViewport=svgViewport(tree.attrs,length),{width,height}=rootViewport,viewport=rootViewport.matrix;
  const gradientFill=gradientResolver(tree,rootViewport.units,color),reference=svgReferences(tree);
+ // <style> rules sit between presentation attributes and inline style in the cascade.
+ let css='';
+ (function collect(node,depth){
+  if(depth>64)throw new Error('SVG structure is too large or deeply nested');
+  if(node.tag==='style'){
+   if(!['','text/css'].includes((node.attrs.type??'').trim().toLowerCase())||!['','all','screen'].includes((node.attrs.media??'').trim().toLowerCase()))throw new Error('Unsupported SVG style sheet type or media');
+   css+=(node.text??'')+'\n';
+  }
+  for(const child of node.children)collect(child,depth+1);
+ })(tree,0);
+ const rules=parseSvgCss(css,allowed),styled=(tag,attrs)=>{const found=matchSvgCss(rules,tag,attrs);return found.length?{...attrs,...Object.fromEntries(found)}:attrs;};
+ if(rules.length)(function guard(node,inside){
+  // Gradient definitions are resolved from their own attributes; a rule that reached them would be lost.
+  inside||=['linearGradient','radialGradient'].includes(node.tag);
+  if(inside&&matchSvgCss(rules,node.tag,node.attrs).length)throw new Error('CSS rules on SVG gradients are not supported. Put colors on the stops.');
+  for(const child of node.children)guard(child,inside);
+ })(tree,false);
  const shapes=[];let next=1,visited=0;
  const frame=(name,parent,alpha)=>({id:next++,kind:'frame',name:name.slice(0,128),parent_id:parent,x:0,y:0,width:1,height:1,fill:'#ffffff',text:'',hidden:false,clip_content:false,appearance:{opacity:alpha,corner_radius:0,fill_enabled:false,stroke_enabled:false,stroke_color:'#000000'}});
  function walk(node,parent,matrix,style,depth,active=new Set(),units=rootViewport.units){
   if(++visited>10000||depth>64)throw new Error('SVG structure is too large or deeply nested');
-  const {tag,attrs}=node;if(['title','desc','metadata','defs','symbol','linearGradient','radialGradient'].includes(tag))return;
+  const {tag,attrs}=node;if(['title','desc','metadata','defs','symbol','linearGradient','radialGradient','style'].includes(tag))return;
   for(const key of Object.keys(attrs))if(/^on/i.test(key)||['filter','clip-path','mask','marker-start','marker-mid','marker-end','vector-effect'].includes(key)&&attrs[key]!=='none')throw new Error('Unsupported SVG attribute: '+key);
   if(tag!=='use'&&(attrs.href||attrs['xlink:href']))throw new Error('Unsupported SVG artwork reference');
-  const own=paint(attrs,style);if(own.display==='none')return;
+  const own=paint(styled(tag,attrs),style);if(own.display==='none')return;
   const m=multiply(matrix,parseTransform(attrs.transform??''));
   if(tag==='use'){
    if(node.children.some(c=>!['title','desc','metadata'].includes(c.tag)))throw new Error('Unsupported SVG use content');
@@ -48,7 +67,7 @@ export function svgLayers(tree,name='SVG artwork'){
     if(w<0||h<0)throw new Error('SVG symbol dimensions cannot be negative');
     if(!w||!h||!translated[0]||!translated[3]){shapes.pop();return;}
     if(w&&h){
-     const vp=svgViewport({...target.attrs,width:String(w),height:String(h)},length,units),symbolStyle=paint(target.attrs,own);
+     const vp=svgViewport({...target.attrs,width:String(w),height:String(h)},length,units),symbolStyle=paint(styled('symbol',target.attrs),own);
      if(symbolStyle.display!=='none'){
       const symbol=frame(target.attrs.id||'SVG symbol',group.id,opacity(symbolStyle.opacity)),a=transformPoint({x:0,y:0},translated),b=transformPoint({x:w,y:h},translated);
       if(target.attrs.overflow&&!['visible','hidden','scroll','auto'].includes(target.attrs.overflow))throw new Error('Unsupported SVG symbol overflow');
@@ -66,7 +85,7 @@ export function svgLayers(tree,name='SVG artwork'){
    Object.assign(group,bounds(shapes.slice(start))??{x:0,y:0,width:1,height:1});
    if(depth===0){Object.assign(group,{x:0,y:0,width,height,clip_content:true});}return;
   }
-  const paths=geometry(tag,attrs),hasGradient=/^url\(/i.test(own.fill.trim()),fill=hasGradient?'#000000':color(own.fill,own.color),hasStrokeGradient=/^url\(/i.test(own.stroke.trim()),stroke=hasStrokeGradient?'#000000':color(own.stroke,own.color),alpha=opacity(own.opacity);
+  const paths=geometry(tag,attrs),hasGradient=/^url\(/i.test(own.fill.trim()),fillPaint=hasGradient?{hex:'#000000',alpha:1}:parseSvgColor(own.fill,own.color),fill=fillPaint?.hex??'none',hasStrokeGradient=/^url\(/i.test(own.stroke.trim()),strokePaint=hasStrokeGradient?{hex:'#000000',alpha:1}:parseSvgColor(own.stroke,own.color),stroke=strokePaint?.hex??'none',alpha=opacity(own.opacity);
   if(own['fill-rule']!=='nonzero'&&fill!=='none')throw new Error('Even-odd SVG fills are not supported yet');
   if(paths.length>1&&fill!=='none')throw new Error('Filled compound SVG paths are not supported yet. Separate them before importing.');
   const sx=Math.hypot(m[0],m[1]),sy=Math.hypot(m[2],m[3]);
@@ -74,7 +93,7 @@ export function svgLayers(tree,name='SVG artwork'){
   const weight=length(own['stroke-width'])*sx;if(weight<0)throw new Error('Invalid SVG stroke width');
   const dash=own['stroke-dasharray']==='none'?[]:own['stroke-dasharray'].trim().split(/[\s,]+/).map(v=>length(v)*sx);
   for(const path of paths){const points=path.points.map(p=>({...transformPoint(p,m),...(p.in?{in:transformPoint(p.in,m)}:{}),...(p.out?{out:transformPoint(p.out,m)}:{})})),shape=fromPoints('pen',points,path.closed);
-   Object.assign(shape,{id:next++,parent_id:parent,name:(attrs.id||tag).slice(0,128),fill:fill==='none'?'#000000':fill,stroke_width:Math.max(.1,weight),hidden:['hidden','collapse'].includes(own.visibility),appearance:{opacity:alpha,fill_opacity:opacity(own['fill-opacity']),stroke_opacity:opacity(own['stroke-opacity']),corner_radius:0,fill_enabled:fill!=='none',stroke_enabled:stroke!=='none'&&weight>0,stroke_color:stroke==='none'?'#000000':stroke,stroke_dash:dash,stroke_dash_offset:length(own['stroke-dashoffset'])*sx,stroke_cap:own['stroke-linecap'],stroke_join:own['stroke-linejoin'],stroke_miter_limit:Number(own['stroke-miterlimit'])}});shapes.push(shape);
+   Object.assign(shape,{id:next++,parent_id:parent,name:(attrs.id||tag).slice(0,128),fill:fill==='none'?'#000000':fill,stroke_width:Math.max(.1,weight),hidden:['hidden','collapse'].includes(own.visibility),appearance:{opacity:alpha,fill_opacity:opacity(own['fill-opacity'])*(fillPaint?.alpha??1),stroke_opacity:opacity(own['stroke-opacity'])*(strokePaint?.alpha??1),corner_radius:0,fill_enabled:fill!=='none',stroke_enabled:stroke!=='none'&&weight>0,stroke_color:stroke==='none'?'#000000':stroke,stroke_dash:dash,stroke_dash_offset:length(own['stroke-dashoffset'])*sx,stroke_cap:own['stroke-linecap'],stroke_join:own['stroke-linejoin'],stroke_miter_limit:Number(own['stroke-miterlimit'])}});shapes.push(shape);
    if(hasGradient)shape.appearance.gradient=gradientFill(own.fill,shape,paths,m,units);
    if(hasStrokeGradient)shape.appearance.stroke_gradient=gradientFill(own.stroke,shape,paths,m,units);
   }
@@ -87,6 +106,6 @@ export function parseSvg(text,name){
  if(/<!DOCTYPE|<!ENTITY/i.test(text))throw new Error('SVG document types and entities are not supported');
  const xml=new DOMParser().parseFromString(text,'image/svg+xml');if(xml.querySelector('parsererror'))throw new Error('Invalid SVG XML');
  let count=0;
- const tree=(el,depth=0)=>{if(++count>10000||depth>64)throw new Error('SVG structure is too large or deeply nested');return {tag:el.localName,attrs:Object.fromEntries(Array.from(el.attributes,a=>[a.name,a.value])),children:Array.from(el.children,c=>tree(c,depth+1))};};
+ const tree=(el,depth=0)=>{if(++count>10000||depth>64)throw new Error('SVG structure is too large or deeply nested');return {tag:el.localName,attrs:Object.fromEntries(Array.from(el.attributes,a=>[a.name,a.value])),children:Array.from(el.children,c=>tree(c,depth+1)),...(el.localName==='style'?{text:el.textContent??''}:{})};};
  return svgLayers(tree(xml.documentElement),name);
 }
