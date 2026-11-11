@@ -665,6 +665,30 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "move_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and insertion boundary before (track count appends). Selected tracks gather at the boundary in their current order; connected spans move together in one undo step. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "before",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "move_into",
     "readOnly": false,
     "description": "Pass an array of complete Shapes with desired world coordinates, then destination parent ID (0 = root).",
@@ -945,6 +969,18 @@ export const engineCommands=[
     "returns": "string"
   },
   {
+    "name": "prototype_variable_value",
+    "readOnly": false,
+    "description": "prototype variable value",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "push_style_overrides",
     "readOnly": false,
     "description": "push style overrides",
@@ -1039,6 +1075,18 @@ export const engineCommands=[
       }
     ],
     "returns": "void"
+  },
+  {
+    "name": "remove_slot_across_variants",
+    "readOnly": false,
+    "description": "Slot property ID. Removes it and the same-named slot properties of the other variants in its component set. Returns the number removed.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      }
+    ],
+    "returns": "number"
   },
   {
     "name": "remove_text_style",
@@ -1301,6 +1349,18 @@ export const engineCommands=[
     "returns": "number"
   },
   {
+    "name": "save_slot_across_variants",
+    "readOnly": false,
+    "description": "Slot component property (json, as for save_component_property). Saves it and gives every other variant in its component set a same-named slot with the same settings, bound to layers matched by name and then by position. One undo step. Returns a JSON report string: id, created, updated, unchanged and skipped variants with reasons.",
+    "args": [
+      {
+        "name": "json",
+        "type": "json"
+      }
+    ],
+    "returns": "string"
+  },
+  {
     "name": "save_text_style",
     "readOnly": false,
     "description": "Create/update TextStyle {id,name,description?,typography}. ID 0 creates. layer_id 0 saves without binding; otherwise applies across pages. Shares family, size, weight and line height, preserving alignment, wrapping and sizing.",
@@ -1459,6 +1519,30 @@ export const engineCommands=[
       }
     ],
     "returns": "number"
+  },
+  {
+    "name": "shift_grid_tracks",
+    "readOnly": false,
+    "description": "Grid frame ID, columns/rows, json array of zero-based track indices, and -1 or 1. The selection shifts one position as a block. Returns the new indices as a JSON array string.",
+    "args": [
+      {
+        "name": "id",
+        "type": "number"
+      },
+      {
+        "name": "axis",
+        "type": "string"
+      },
+      {
+        "name": "json",
+        "type": "json"
+      },
+      {
+        "name": "delta",
+        "type": "number"
+      }
+    ],
+    "returns": "string"
   },
   {
     "name": "sort_components",
@@ -1698,7 +1782,12 @@ export const modelReference={
   "Prototype": {
     "file": "src/lib.rs",
     "kind": "struct",
-    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Prototype {\n    #[serde(default = \"default_trigger\")]\n    pub trigger: String,\n    #[serde(default = \"default_delay\")]\n    pub delay: u32,\n    pub action: String,\n    #[serde(default)]\n    pub target: u32,\n    #[serde(default)]\n    pub close_on_outside: bool,\n    #[serde(default = \"default_overlay_position\")]\n    pub overlay_position: String,\n    #[serde(default)]\n    pub overlay_x: f64,\n    #[serde(default)]\n    pub overlay_y: f64,\n    #[serde(default = \"default_backdrop_color\")]\n    pub backdrop_color: String,\n    #[serde(default = \"default_backdrop_opacity\")]\n    pub backdrop_opacity: f64,\n    #[serde(default = \"default_transition\")]\n    pub transition: String,\n    #[serde(default = \"default_duration\")]\n    pub duration: u32,\n    #[serde(default = \"default_easing\")]\n    pub easing: String,\n}"
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct Prototype {\n    #[serde(default = \"default_trigger\")]\n    pub trigger: String,\n    #[serde(default = \"default_delay\")]\n    pub delay: u32,\n    pub action: String,\n    #[serde(default)]\n    pub target: u32,\n    #[serde(default)]\n    pub close_on_outside: bool,\n    #[serde(default = \"default_overlay_position\")]\n    pub overlay_position: String,\n    #[serde(default)]\n    pub overlay_x: f64,\n    #[serde(default)]\n    pub overlay_y: f64,\n    #[serde(default = \"default_backdrop_color\")]\n    pub backdrop_color: String,\n    #[serde(default = \"default_backdrop_opacity\")]\n    pub backdrop_opacity: f64,\n    #[serde(default = \"default_transition\")]\n    pub transition: String,\n    #[serde(default = \"default_duration\")]\n    pub duration: u32,\n    #[serde(default = \"default_easing\")]\n    pub easing: String,\n    /// For `set-variable`: the variable, how to change it (`set`, `add` for\n    /// numbers, `toggle` for booleans) and the literal used by `set` and `add`.\n    /// The change lasts for the presentation and never edits the document.\n    #[serde(default, skip_serializing_if = \"is_zero_id\")]\n    pub variable: u32,\n    #[serde(default = \"default_operation\", skip_serializing_if = \"is_set\")]\n    pub operation: String,\n    #[serde(default, skip_serializing_if = \"serde_json::Value::is_null\")]\n    pub value: serde_json::Value,\n    /// When present, the action runs only if the comparison holds.\n    #[serde(default, skip_serializing_if = \"Option::is_none\")]\n    pub condition: Option<PrototypeCondition>,\n    /// Further actions run in order after this one, on the same trigger.\n    /// Their own trigger and delay are ignored and they cannot nest.\n    #[serde(default, skip_serializing_if = \"Vec::is_empty\")]\n    pub then: Vec<Prototype>,\n}"
+  },
+  "PrototypeCondition": {
+    "file": "src/lib.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]\npub struct PrototypeCondition {\n    pub variable: u32,\n    /// `==`, `!=`, and for numbers `<`, `<=`, `>`, `>=`.\n    pub operator: String,\n    pub value: serde_json::Value,\n}"
   },
   "AutoLayout": {
     "file": "src/lib.rs",
@@ -1789,6 +1878,16 @@ export const modelReference={
     "file": "src/slots.rs",
     "kind": "struct",
     "declaration": "#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]\npub struct SlotState {\n    pub property: u32,\n    #[serde(default)]\n    pub modified: bool,\n}"
+  },
+  "VariantSlotReport": {
+    "file": "src/slots.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Default, Serialize)]\npub struct VariantSlotReport {\n    pub id: u32,\n    pub created: u32,\n    pub updated: u32,\n    pub unchanged: u32,\n    pub skipped: Vec<SkippedVariant>,\n}"
+  },
+  "SkippedVariant": {
+    "file": "src/slots.rs",
+    "kind": "struct",
+    "declaration": "#[derive(Serialize)]\npub struct SkippedVariant {\n    pub component_id: u32,\n    pub name: String,\n    pub reason: String,\n}"
   },
   "TextStyle": {
     "file": "src/text_styles.rs",

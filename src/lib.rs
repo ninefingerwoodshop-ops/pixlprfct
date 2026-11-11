@@ -317,13 +317,37 @@ impl Shape {
             .iter_mut()
             .chain(self.additional_interactions.iter_mut())
     }
+    /// Every action, including the ones that follow a trigger's first action.
+    fn each_action_mut(&mut self, mut f: impl FnMut(&mut Prototype)) {
+        for p in self.interactions_mut() {
+            f(p);
+            p.then.iter_mut().for_each(&mut f);
+        }
+    }
     fn retain_interactions(&mut self, keep: impl Fn(&Prototype) -> bool) {
         let mut interactions: Vec<_> = self
             .prototype
             .take()
             .into_iter()
             .chain(self.additional_interactions.drain(..))
-            .filter(keep)
+            .filter_map(|mut p| {
+                // When the first action goes, the next one takes over its trigger.
+                let mut rest: Vec<_> = std::mem::take(&mut p.then)
+                    .into_iter()
+                    .filter(&keep)
+                    .collect();
+                if !keep(&p) {
+                    if rest.is_empty() {
+                        return None;
+                    }
+                    let (trigger, delay) = (p.trigger, p.delay);
+                    p = rest.remove(0);
+                    p.trigger = trigger;
+                    p.delay = delay;
+                }
+                p.then = rest;
+                Some(p)
+            })
             .collect();
         self.prototype = if interactions.is_empty() {
             None
@@ -361,6 +385,22 @@ pub struct Prototype {
     pub duration: u32,
     #[serde(default = "default_easing")]
     pub easing: String,
+    /// For `set-variable`: the variable, how to change it (`set`, `add` for
+    /// numbers, `toggle` for booleans) and the literal used by `set` and `add`.
+    /// The change lasts for the presentation and never edits the document.
+    #[serde(default, skip_serializing_if = "is_zero_id")]
+    pub variable: u32,
+    #[serde(default = "default_operation", skip_serializing_if = "is_set")]
+    pub operation: String,
+    #[serde(default, skip_serializing_if = "serde_json::Value::is_null")]
+    pub value: serde_json::Value,
+    /// When present, the action runs only if the comparison holds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub condition: Option<PrototypeCondition>,
+    /// Further actions run in order after this one, on the same trigger.
+    /// Their own trigger and delay are ignored and they cannot nest.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub then: Vec<Prototype>,
 }
 
 fn no_overflow() -> String {
@@ -371,6 +411,20 @@ fn is_no_overflow(value: &str) -> bool {
 }
 fn is_not_fixed(value: &bool) -> bool {
     !*value
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PrototypeCondition {
+    pub variable: u32,
+    /// `==`, `!=`, and for numbers `<`, `<=`, `>`, `>=`.
+    pub operator: String,
+    pub value: serde_json::Value,
+}
+
+fn default_operation() -> String {
+    "set".into()
+}
+fn is_set(operation: &String) -> bool {
+    operation == "set"
 }
 fn default_trigger() -> String {
     "click".into()
@@ -988,9 +1042,18 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Additional interactions require a primary interaction; at most six triggers are supported".into());
         }
         let mut triggers = std::collections::HashSet::new();
-        for p in shape.interactions() {
-            if !triggers.insert(&p.trigger) {
+        for (first, p) in shape
+            .interactions()
+            .flat_map(|p| std::iter::once((true, p)).chain(p.then.iter().map(|step| (false, step))))
+        {
+            if first && !triggers.insert(&p.trigger) {
                 return Err("Each prototype trigger may occur only once per layer".into());
+            }
+            if p.then.len() > 7 || (!first && !p.then.is_empty()) {
+                return Err(
+                    "A trigger runs at most eight actions, and follow-up actions cannot nest"
+                        .into(),
+                );
             }
             if ![
                 "click",
@@ -999,6 +1062,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 "afterdelay",
                 "mousedown",
                 "mouseup",
+                "drag",
             ]
             .contains(&p.trigger.as_str())
             {
@@ -1018,22 +1082,32 @@ fn validate(document: &Document) -> Result<(), String> {
                 "slide-right",
                 "slide-up",
                 "slide-down",
+                "smart-animate",
             ]
             .contains(&p.transition.as_str())
                 || p.duration > 10_000
                 || !["linear", "ease-in", "ease-out", "ease-in-out"].contains(&p.easing.as_str())
                 || (["overlay", "close", "swap"].contains(&p.action.as_str())
-                    && p.transition.starts_with("slide-"))
+                    && (p.transition.starts_with("slide-") || p.transition == "smart-animate"))
             {
                 return Err("Invalid prototype transition, duration or easing".into());
             }
-            if !["navigate", "back", "overlay", "close", "swap"].contains(&p.action.as_str())
+            variables::validate_action(document, p)?;
+            if ![
+                "navigate",
+                "back",
+                "overlay",
+                "close",
+                "swap",
+                "set-variable",
+            ]
+            .contains(&p.action.as_str())
                 || (["navigate", "overlay", "swap"].contains(&p.action.as_str())
                     && !document
                         .shapes
                         .iter()
                         .any(|s| s.id == p.target && s.kind == "frame"))
-                || (["back", "close"].contains(&p.action.as_str()) && p.target != 0)
+                || (["back", "close", "set-variable"].contains(&p.action.as_str()) && p.target != 0)
                 || ![
                     "center",
                     "manual",
@@ -1539,7 +1613,7 @@ impl Editor {
             .map(|s| s.id)
             .collect()
     }
-    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 5] {
+    fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 6] {
         self.prototype_hit_ids_scrolled(root, x, y, &std::collections::HashMap::new())
     }
     // `scroll` holds how far each scrolling frame's content has moved, as the
@@ -1550,7 +1624,7 @@ impl Editor {
         x: f64,
         y: f64,
         scroll: &std::collections::HashMap<u32, (f64, f64)>,
-    ) -> [Vec<u32>; 5] {
+    ) -> [Vec<u32>; 6] {
         let Some(frame) = self
             .document
             .shapes
@@ -1670,14 +1744,21 @@ impl Editor {
                 }
             }
         }
-        let mut result: [Vec<u32>; 5] = std::array::from_fn(|_| vec![]);
+        let mut result: [Vec<u32>; 6] = std::array::from_fn(|_| vec![]);
         let mut hit = staged.hit_test(x, y);
         while hit != 0 {
             let s = staged.document.shapes.iter().find(|s| s.id == hit).unwrap();
             for p in s.interactions() {
-                if let Some(index) = ["click", "mouseenter", "mouseleave", "mousedown", "mouseup"]
-                    .iter()
-                    .position(|t| *t == p.trigger)
+                if let Some(index) = [
+                    "click",
+                    "mouseenter",
+                    "mouseleave",
+                    "mousedown",
+                    "mouseup",
+                    "drag",
+                ]
+                .iter()
+                .position(|t| *t == p.trigger)
                 {
                     result[index].push(s.id);
                 }
@@ -1977,10 +2058,14 @@ impl Editor {
                 }
                 copy.variable_bindings.clear();
                 copy.variable_modes.clear();
+                // Variables do not travel with a portable copy, so neither do the
+                // actions and conditions that name them.
                 copy.retain_interactions(|p| {
-                    !["navigate", "overlay", "swap"].contains(&p.action.as_str())
-                        || ids.contains(&p.target)
+                    p.action != "set-variable"
+                        && (!["navigate", "overlay", "swap"].contains(&p.action.as_str())
+                            || ids.contains(&p.target))
                 });
+                copy.each_action_mut(|p| p.condition = None);
                 if !ids.contains(&copy.parent_id) {
                     copy.parent_id = 0;
                 }
@@ -2126,11 +2211,11 @@ impl Editor {
             if payload.origin == self.clipboard_origin {
                 s.component = payload.components.get(&s.id).filter(|c| matches!(c, components::Component::Instance {master,..} if self.document.shapes.iter().any(|m| m.id == *master && m.component == Some(components::Component::Master)))).cloned();
             }
-            for p in s.interactions_mut() {
+            s.each_action_mut(|p| {
                 if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                     p.target = ids[&p.target];
                 }
-            }
+            });
             paint::remap_sources(&mut s, &ids, payload.origin == self.clipboard_origin);
             s.id = ids[&s.id];
             s.page_id = document.active_page;
@@ -2226,11 +2311,11 @@ impl Editor {
                 } else {
                     s.parent_id = mapping[&s.parent_id];
                 }
-                for p in s.interactions_mut() {
+                s.each_action_mut(|p| {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = mapping[&p.target];
                     }
-                }
+                });
                 document.shapes.push(s);
             }
             next = end;
@@ -2316,11 +2401,11 @@ impl Editor {
                     } else {
                         s.parent_id = ids[&source.parent_id];
                     }
-                    for p in s.interactions_mut() {
+                    s.each_action_mut(|p| {
                         if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                             p.target = ids[&p.target];
                         }
-                    }
+                    });
                     document.shapes.push(s);
                 }
                 next = end;
@@ -2812,11 +2897,11 @@ impl Editor {
                 let mut copy = shape.clone();
                 copy.id = self.next_id + created.len() as u32;
                 copy.parent_id = *mapping.get(&copy.parent_id).unwrap_or(&copy.parent_id);
-                for p in copy.interactions_mut() {
+                copy.each_action_mut(|p| {
                     if ["navigate", "overlay", "swap"].contains(&p.action.as_str()) {
                         p.target = *mapping.get(&p.target).unwrap_or(&p.target);
                     }
-                }
+                });
                 copy.x += x;
                 copy.y += y;
                 created.push(copy.id);
@@ -3504,6 +3589,39 @@ impl Editor {
         self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
         Ok(next)
     }
+    /// Shift several tracks (JSON array of zero-based indices) one position as a block.
+    /// Returns their new indices as a JSON array, in the order given.
+    pub fn shift_grid_tracks(
+        &mut self,
+        id: u32,
+        axis: &str,
+        json: &str,
+        delta: i32,
+    ) -> Result<String, String> {
+        let indices: Vec<usize> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let (changes, next) = grid::shift_tracks(&self.document, id, axis, &indices, delta)?;
+        if !changes.is_empty() {
+            self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
+        }
+        serde_json::to_string(&next).map_err(|e| e.to_string())
+    }
+    /// Move several tracks (JSON array of zero-based indices) before one insertion
+    /// boundary, keeping their relative order. One history entry; returns the new
+    /// indices as a JSON array, in the order given.
+    pub fn move_grid_tracks(
+        &mut self,
+        id: u32,
+        axis: &str,
+        json: &str,
+        before: usize,
+    ) -> Result<String, String> {
+        let indices: Vec<usize> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let (changes, next) = grid::move_tracks(&self.document, id, axis, &indices, before)?;
+        if !changes.is_empty() {
+            self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
+        }
+        serde_json::to_string(&next).map_err(|e| e.to_string())
+    }
     /// Move a track before a zero-based insertion boundary (track count appends).
     /// Connected spans move together, and the entire move is one history entry.
     pub fn move_grid_track(
@@ -3644,7 +3762,7 @@ impl Editor {
 
     pub fn prototype_pointer_hits(&self, root: u32, x: f64, y: f64) -> String {
         let ids = self.prototype_hit_ids(root, x, y);
-        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0)}).to_string()
+        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0),"drag":ids[5].first().copied().unwrap_or(0)}).to_string()
     }
 
     /// `prototype_pointer_hits` for a presentation whose frames have scrolled.
@@ -3658,7 +3776,7 @@ impl Editor {
                 .filter(|(_, (x, y))| x.is_finite() && y.is_finite())
                 .collect();
         let ids = self.prototype_hit_ids_scrolled(root, x, y, &scroll);
-        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0)}).to_string()
+        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0),"drag":ids[5].first().copied().unwrap_or(0)}).to_string()
     }
 
     pub fn hit_test(&self, x: f64, y: f64) -> u32 {
@@ -3819,13 +3937,13 @@ impl Editor {
             shape.id = mapping[&shape.id];
             shape.page_id = page.id;
             shape.parent_id = *mapping.get(&shape.parent_id).unwrap_or(&shape.parent_id);
-            for interaction in shape.interactions_mut() {
+            shape.each_action_mut(|interaction| {
                 if ["navigate", "overlay", "swap"].contains(&interaction.action.as_str()) {
                     interaction.target = *mapping
                         .get(&interaction.target)
                         .unwrap_or(&interaction.target);
                 }
-            }
+            });
         }
         document.active_page = page.id;
         document.pages.insert(index + 1, page);

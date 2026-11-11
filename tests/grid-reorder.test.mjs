@@ -59,3 +59,55 @@ test('dragging source tracks propagates to component instances and rejects prote
  const before=e.snapshot();assert.throws(()=>e.move_grid_track(instance,'columns',0,4),/Instance appearance is protected/);
  assert.equal(e.snapshot(),before);e.free();
 });
+const moveMany=(e,f,axis,indices,before)=>JSON.parse(e.move_grid_tracks(f,axis,JSON.stringify(indices),before));
+const shiftMany=(e,f,axis,indices,delta)=>JSON.parse(e.shift_grid_tracks(f,axis,JSON.stringify(indices),delta));
+test('several selected columns gather at the drop boundary in their current order as one undo step',()=>{
+ const {e,f,ids}=setup();const before=e.snapshot(),order=all(e).map(s=>s.id);
+ // Columns 1 and 3 (100, 140) dropped at the end, returned in the order given.
+ assert.deepEqual(moveMany(e,f,'columns',[2,0],4),[3,2]);
+ assert.deepEqual(plan(e,f).columns,[120,160,100,140]);
+ assert.deepEqual(plan(e,f).placements.map(p=>p.column),[3,1,4,2,3,1,4,2]);
+ assert.deepEqual(all(e).map(s=>s.id),order);assert.equal(get(e,ids[0]).width,100);
+ const moved=e.snapshot();e.undo();assert.equal(e.snapshot(),before);e.redo();assert.equal(e.snapshot(),moved);
+ // Dropping between the two halves of a split selection closes the gap around the boundary.
+ e.undo();assert.deepEqual(moveMany(e,f,'columns',[0,3],2),[1,2]);assert.deepEqual(plan(e,f).columns,[120,100,160,140]);e.free();
+});
+test('a multi-track move agrees with the single-track move for every one-track selection',()=>{
+ for(let index=0;index<4;index++)for(let slot=0;slot<=4;slot++){
+  const a=setup(),b=setup();
+  assert.deepEqual(moveMany(a.e,a.f,'columns',[index],slot),[b.e.move_grid_track(b.f,'columns',index,slot)]);
+  assert.equal(a.e.snapshot(),b.e.snapshot());a.e.free();b.e.free();
+ }
+});
+test('multi-track moves keep connected spans whole at the source and the destination',()=>{
+ const {e,f}=setup(1);const frame=get(e,f);
+ set(e,f,{auto_layout:{...frame.auto_layout,grid:{...frame.auto_layout.grid,areas:[{name:'wide',column:2,row:1,column_span:2,row_span:1}]}}});
+ // Selecting one half of the span and the last column carries the whole span.
+ assert.deepEqual(moveMany(e,f,'columns',[1,3],0),[0,2]);
+ assert.deepEqual(plan(e,f).columns,[120,140,160,100]);assert.equal(get(e,f).auto_layout.grid.areas[0].column,1);
+ // A drop inside the span from the right snaps before it, never through it.
+ assert.deepEqual(moveMany(e,f,'columns',[2,3],1),[0,1]);
+ assert.deepEqual(plan(e,f).columns,[160,100,120,140]);assert.equal(get(e,f).auto_layout.grid.areas[0].column,3);e.free();
+});
+test('shifting a selection moves it one position as a block and stops at the edges',()=>{
+ const {e,f}=setup();
+ assert.deepEqual(shiftMany(e,f,'columns',[1,2],1),[2,3]);assert.deepEqual(plan(e,f).columns,[100,160,120,140]);
+ const edge=e.snapshot();assert.deepEqual(shiftMany(e,f,'columns',[2,3],1),[2,3]);assert.equal(e.snapshot(),edge);
+ assert.deepEqual(shiftMany(e,f,'columns',[2,3],-1),[1,2]);assert.deepEqual(shiftMany(e,f,'columns',[1,2],-1),[0,1]);
+ assert.deepEqual(plan(e,f).columns,[120,140,100,160]);
+ assert.deepEqual(shiftMany(e,f,'rows',[0],1),[1]);assert.deepEqual(plan(e,f).placements.map(p=>p.row),[2,2,2,2,1,1,1,1]);e.free();
+});
+test('invalid and unchanged multi-track moves leave the document and history untouched',()=>{
+ const {e,f}=setup();e.clear_history();const before=e.snapshot();
+ for(const [axis,indices,slot] of [['bad',[0],1],['columns',[],1],['columns',[0,4],0],['columns',[0],5]])assert.throws(()=>moveMany(e,f,axis,indices,slot));
+ assert.throws(()=>e.move_grid_tracks(f,'columns','not json',0));assert.throws(()=>shiftMany(e,f,'columns',[0],2));
+ for(const slot of [1,2,3])assert.deepEqual(moveMany(e,f,'columns',[1,2],slot),[1,2]);
+ assert.deepEqual(moveMany(e,f,'columns',[0,1,2,3],2),[0,1,2,3]);
+ assert.equal(e.snapshot(),before);assert.equal(e.can_undo(),false);e.free();
+});
+test('multi-track moves propagate to component instances and protect instance edits',()=>{
+ const {e,f}=setup();e.create_component(f);const instance=e.create_instance(f,1000,100);
+ moveMany(e,f,'columns',[0,1],4);assert.deepEqual(plan(e,instance).columns,[140,160,100,120]);
+ assert.deepEqual(plan(e,instance).placements.map(p=>p.column),plan(e,f).placements.map(p=>p.column));
+ const before=e.snapshot();assert.throws(()=>moveMany(e,instance,'columns',[0,1],4),/Instance appearance is protected/);assert.equal(e.snapshot(),before);e.free();
+});
