@@ -64,6 +64,7 @@ sequenceDiagram
 - **Hover** ([web/prototype-hover.js](../../web/prototype-hover.js)): `prototypeHover()` latches entered regions so moving across children does not re-fire `mouseenter`, and drops pending `mouseleave` when the screen changes.
 - **Press** ([web/prototype-press.js](../../web/prototype-press.js)): `prototypePress()` tracks the primary pointer; a handled mousedown/mouseup suppresses the compatibility click. A press can open a menu overlay and the release can activate an item in it.
 - **Timers** ([web/prototype-timers.js](../../web/prototype-timers.js)): `timedInteractions(scene)` lists visible frames with an `afterdelay` interaction; `prototypeTimers(fire)` owns one "visit" per screen, pauses elapsed time during repaint/animation, and invalidates callbacks on navigation (epoch counter).
+- **Overflow scrolling** ([web/prototype-scroll.js](../../web/prototype-scroll.js)): `Shape.overflow_scroll` (`none`, `vertical`, `horizontal`, `both`; frames only) and `Shape.scroll_fixed`, both omitted from JSON when unused and synced to component instances. The player keeps offsets per frame id; `scrollExtent` measures content past the frame, `scrollBy` applies a wheel/drag delta to the innermost scrollable frame under the pointer and chains the remainder outward, and `scrolledScene` returns the shapes to draw (content shifted, frame clipping, pinned subtrees moved to the top of the stack). `Editor::prototype_pointer_hits_scrolled` applies the same offsets and pinning to a staged copy for hit testing. Offsets reset when the presented screen changes. Not compared against Figma.
 - **Transitions** ([web/prototype-transition.js](../../web/prototype-transition.js)): `transitionSpec(config, reduced)` maps to Web Animations keyframes (dissolve = opacity, slides = translate ±100%); `canvasTransitions` snapshots the old canvas into a ghost element and animates both. `prefers-reduced-motion` makes every transition instant.
 - **Device chrome / orientation**: `prototypeViewport` fits the frame plus optional device chrome ([web/device-chrome.js](../../web/device-chrome.js)); `prototypeOrientationDocument` re-lays out a rotated copy in a separate preview `Editor` so orientation changes never touch the real document.
 - **Overlay placement**: `overlayPlacement(base, frame, position, x, y)`.
@@ -158,7 +159,8 @@ flowchart LR
 
 ## Known limitations
 
-- No smart-animate, scroll/overflow behaviors, variables-in-prototypes or conditional logic in prototypes (README lists variable-driven prototypes as pending).
+- Overflow scrolling has no scroll-to action, sticky positioning, scroll triggers, momentum or scrollbars, and the presented screen does not scroll inside a device viewport.
+- No smart-animate, variables-in-prototypes or conditional logic in prototypes (README lists variable-driven prototypes as pending).
 - Behaviors are not available in the prototype player or Rust export; JSX/imports/framework syntax are rejected as bodies.
 - Motion supports linear interpolation only and a fixed property set; there is no Motion-specific test file.
 - Full framework production builds and screen-reader audits for controls were not performed (starter-controls.md, dropdown-starter.md).

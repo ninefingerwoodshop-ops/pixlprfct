@@ -118,7 +118,8 @@
     "Parent-only panel tear-outs, persistent icon docks, icon-only tear-out return actions, inline expanded-header toggles and top collapsed-dock toggles and adjacent flyouts in Design and SVG Animation (local source)",
     "Independent SVG fill/stroke gradient rotation and stop keyframes with linear/radial editing, persistence, Undo and animated SVG export (local source)",
     "PDF export: current page, selection, top-level frames or separate layers as one multi-page PDF (1 pt per pixel); each page is a lossless image with transparency, not vector, so text is not selectable (branch source)",
-    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)"
+    "Optional per-owner cloud storage quota (PIXL_STORAGE_QUOTA_MB, HTTP 507) and safe daily removal of unreferenced large bodies on Sites (R2 with D1 trackers) and self-hosted SQL (branch source)",
+    "Prototype overflow scrolling: vertical, horizontal or both on frames with wheel, touch-drag and keyboard scrolling, nested scroll chaining, fixed children drawn above scrolling content, and hit testing that follows the scrolled content (branch source; not compared against live Figma)"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
@@ -127,7 +128,7 @@
     "Masks, Boolean operations, advanced corner smoothing and slice workflows require capability-specific acceptance",
     "Direct drag grid track reordering and multi-track selection",
     "Set-label overlap, slot rich descriptions/bulk authoring/native Figma slot metadata import",
-    "Complete prototype parity: Smart Animate, sequential/conditional actions, drag and scroll interactions",
+    "Complete prototype parity: Smart Animate, sequential/conditional actions, drag interactions, scroll-to actions, sticky positioning and device-viewport scrolling",
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
     "Vector PDF export with selectable text, and comprehensive accessibility/performance validation",
     "Complex-document edit latency, real installed-app OS-sleep acceptance",

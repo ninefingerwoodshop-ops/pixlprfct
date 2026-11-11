@@ -99,6 +99,13 @@ pub struct Shape {
     pub additional_interactions: Vec<Prototype>,
     #[serde(default)]
     pub flow_name: String,
+    /// Prototype overflow scrolling for a frame: `none`, `vertical`,
+    /// `horizontal` or `both`. Content beyond the frame scrolls in presentations.
+    #[serde(default = "no_overflow", skip_serializing_if = "is_no_overflow")]
+    pub overflow_scroll: String,
+    /// Stays in place when the frame directly containing it scrolls.
+    #[serde(default, skip_serializing_if = "is_not_fixed")]
+    pub scroll_fixed: bool,
     #[serde(default)]
     pub layout_item: LayoutItem,
     pub kind: String,
@@ -356,6 +363,15 @@ pub struct Prototype {
     pub easing: String,
 }
 
+fn no_overflow() -> String {
+    "none".into()
+}
+fn is_no_overflow(value: &str) -> bool {
+    value == "none"
+}
+fn is_not_fixed(value: &bool) -> bool {
+    !*value
+}
 fn default_trigger() -> String {
     "click".into()
 }
@@ -953,6 +969,11 @@ fn validate(document: &Document) -> Result<(), String> {
     let by_id: std::collections::HashMap<u32, &Shape> =
         document.shapes.iter().map(|s| (s.id, s)).collect();
     for shape in &document.shapes {
+        if !["none", "vertical", "horizontal", "both"].contains(&shape.overflow_scroll.as_str())
+            || (shape.overflow_scroll != "none" && shape.kind != "frame")
+        {
+            return Err("Overflow scrolling requires a frame and a valid direction".into());
+        }
         if shape.flow_name.len() > 128
             || (!shape.flow_name.is_empty()
                 && (shape.kind != "frame" || shape.flow_name.trim().is_empty()))
@@ -1519,6 +1540,17 @@ impl Editor {
             .collect()
     }
     fn prototype_hit_ids(&self, root: u32, x: f64, y: f64) -> [Vec<u32>; 5] {
+        self.prototype_hit_ids_scrolled(root, x, y, &std::collections::HashMap::new())
+    }
+    // `scroll` holds how far each scrolling frame's content has moved, as the
+    // presentation shows it. Scrolled frames clip, and fixed children stay put.
+    fn prototype_hit_ids_scrolled(
+        &self,
+        root: u32,
+        x: f64,
+        y: f64,
+        scroll: &std::collections::HashMap<u32, (f64, f64)>,
+    ) -> [Vec<u32>; 5] {
         let Some(frame) = self
             .document
             .shapes
@@ -1551,6 +1583,93 @@ impl Editor {
             next_page_id: self.next_page_id,
             snapshot_cache: Default::default(),
         };
+        let mut staged = staged;
+        // Pinned layers sit above the content that scrolls beneath them, as the
+        // presentation draws them: move each pinned subtree to the top of its
+        // scrolling frame's stack.
+        let scrollers: Vec<(u32, bool)> = staged
+            .document
+            .shapes
+            .iter()
+            .filter(|s| s.overflow_scroll != "none")
+            .map(|s| {
+                (
+                    s.id,
+                    s.auto_layout
+                        .as_ref()
+                        .is_some_and(|l| l.canvas_stacking == "first"),
+                )
+            })
+            .collect();
+        for (frame, reversed) in scrollers {
+            let mut pinned: std::collections::HashSet<u32> = staged
+                .document
+                .shapes
+                .iter()
+                .filter(|s| s.parent_id == frame && s.scroll_fixed)
+                .map(|s| s.id)
+                .collect();
+            if pinned.is_empty() {
+                continue;
+            }
+            loop {
+                let before = pinned.len();
+                for s in &staged.document.shapes {
+                    if pinned.contains(&s.parent_id) {
+                        pinned.insert(s.id);
+                    }
+                }
+                if pinned.len() == before {
+                    break;
+                }
+            }
+            let (top, mut rest): (Vec<_>, Vec<_>) = std::mem::take(&mut staged.document.shapes)
+                .into_iter()
+                .partition(|s| pinned.contains(&s.id));
+            if reversed {
+                // This frame paints its first child on top.
+                let at = rest.iter().position(|s| s.id == frame).map_or(0, |i| i + 1);
+                rest.splice(at..at, top);
+            } else {
+                rest.extend(top);
+            }
+            staged.document.shapes = rest;
+        }
+        for (frame, (dx, dy)) in scroll {
+            let Some(scroller) = staged
+                .document
+                .shapes
+                .iter_mut()
+                .find(|s| s.id == *frame && s.overflow_scroll != "none")
+            else {
+                continue;
+            };
+            scroller.clip_content = true;
+            let mut moving: std::collections::HashSet<u32> = staged
+                .document
+                .shapes
+                .iter()
+                .filter(|s| s.parent_id == *frame && !s.scroll_fixed)
+                .map(|s| s.id)
+                .collect();
+            loop {
+                let before = moving.len();
+                for s in &staged.document.shapes {
+                    if moving.contains(&s.parent_id) {
+                        moving.insert(s.id);
+                    }
+                }
+                if moving.len() == before {
+                    break;
+                }
+            }
+            for s in &mut staged.document.shapes {
+                if moving.contains(&s.id) {
+                    s.x -= dx;
+                    s.y -= dy;
+                }
+            }
+        }
         let mut result: [Vec<u32>; 5] = std::array::from_fn(|_| vec![]);
         let mut hit = staged.hit_test(x, y);
         while hit != 0 {
@@ -2330,6 +2449,8 @@ impl Editor {
             prototype: None,
             additional_interactions: vec![],
             flow_name: String::new(),
+            overflow_scroll: no_overflow(),
+            scroll_fixed: false,
             layout_item: LayoutItem::default(),
             kind: kind.into(),
             name: format!("{} {}", kind, id),
@@ -3523,6 +3644,20 @@ impl Editor {
 
     pub fn prototype_pointer_hits(&self, root: u32, x: f64, y: f64) -> String {
         let ids = self.prototype_hit_ids(root, x, y);
+        serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0)}).to_string()
+    }
+
+    /// `prototype_pointer_hits` for a presentation whose frames have scrolled.
+    /// `json` maps scrolling frame ids to `[x, y]` content offsets.
+    pub fn prototype_pointer_hits_scrolled(&self, root: u32, x: f64, y: f64, json: &str) -> String {
+        let scroll: std::collections::HashMap<u32, (f64, f64)> =
+            serde_json::from_str::<std::collections::HashMap<String, (f64, f64)>>(json)
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|(id, offset)| Some((id.parse().ok()?, offset)))
+                .filter(|(_, (x, y))| x.is_finite() && y.is_finite())
+                .collect();
+        let ids = self.prototype_hit_ids_scrolled(root, x, y, &scroll);
         serde_json::json!({"click":ids[0].first().copied().unwrap_or(0),"mouseenter":ids[1],"mouseleave":ids[2],"mousedown":ids[3].first().copied().unwrap_or(0),"mouseup":ids[4].first().copied().unwrap_or(0)}).to_string()
     }
 

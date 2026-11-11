@@ -5,6 +5,7 @@ import {prototypeTimers,timedInteractions} from './prototype-timers.js';
 import {prototypePress} from './prototype-press.js';
 import {prototypeHover} from './prototype-hover.js';
 import {canvasTransitions} from './prototype-transition.js';
+import {scrolls,scrollExtent,clampScroll,scrolledScene,scrollJson,scrollBy,keyboardScrollFrame,keyScrollDelta} from './prototype-scroll.js';
 import {descendants,visibleInTree} from './selection.js';
 import {drawScene,radii,roundedContains} from './appearance.js';
 export function prototypeFrames(doc){return doc.shapes.filter(s=>s.kind==='frame'&&!(doc.libraries??[]).some(l=>l.page_id===s.page_id)&&visibleInTree(s,doc.shapes));}
@@ -34,6 +35,10 @@ export function renderPrototypeControls(host,shape,doc,change,present,{activeInd
  });
  const unused=Object.keys(triggerLabels).find(t=>(shape.kind==='frame'||t!=='afterdelay')&&!list.some(p=>(p.trigger??'click')===t));
  const add=document.createElement('button');add.textContent='Add interaction';add.className='wide-button';add.disabled=!unused;add.onclick=()=>{const target=frames.find(f=>f.id!==shape.id);select(list.length);change(withInteractions(shape,[...list,{trigger:unused,action:target?'navigate':'back',target:target?.id??0}]));};host.append(add);
+ const choice=(options,value,save)=>{const select=document.createElement('select');for(const [key,text] of options){const o=document.createElement('option');o.value=key;o.textContent=text;select.append(o);}select.value=value;select.onchange=()=>save(select.value);return select;};
+ if(shape.kind==='frame')field('Overflow scrolling',choice([['none','No scrolling'],['vertical','Vertical'],['horizontal','Horizontal'],['both','Both directions']],shape.overflow_scroll??'none',value=>change({...shape,overflow_scroll:value})));
+ // Only a direct child of a scrolling frame can be pinned.
+ if(scrolls(doc.shapes.find(s=>s.id===shape.parent_id)))field('Position when scrolling',choice([['scroll','Scroll with parent'],['fixed','Fixed (stay in place)']],shape.scroll_fixed?'fixed':'scroll',value=>change({...shape,scroll_fixed:value==='fixed'})));
  if(shape.kind==='frame'){const flow=document.createElement('input');flow.type='text';flow.maxLength=128;flow.placeholder='Not a flow start';flow.value=shape.flow_name??'';flow.onchange=()=>change({...shape,flow_name:flow.value.trim()});field('Flow starting point',flow);}
  const play=document.createElement('button');play.className='wide-button';play.textContent='Present prototype';play.disabled=!frames.length;play.onclick=present;host.append(play);
 }
@@ -92,47 +97,67 @@ export function presentPrototype(doc,start,editor,paint,prepare=async()=>{}){
   if(!chromeImages.has(svg))chromeImages.set(svg,new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>resolve(null);image.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}));
   return chromeImages.get(svg);
  };
- let transform=null,version=0,visit=0,pointerFrame=0,pointer=null;const hover=prototypeHover(),press=prototypePress(),timers=prototypeTimers(id=>activateId(id,'afterdelay'));
+ let transform=null,version=0,visit=0,pointerFrame=0,pointer=null;
+ // Scroll offsets by frame id for the presented screen, and the last paint to repeat when they change.
+ const scroll=new Map();let scrollScreen=0,repaint=null,touchScroll=null;const hover=prototypeHover(),press=prototypePress(),timers=prototypeTimers(id=>activateId(id,'afterdelay'));
  const activate=s=>{const p=s.prototype;if(!p||!dialog.open||animator.running)return;const playback={...p,transition:state.overlays.length&&p.action==='back'&&p.transition?.startsWith('slide-')?'dissolve':p.transition},snapshot=animator.capture(playback);let ok=true;if(p.action==='back'){if(!state.canBack)return;state.back();}else if(p.action==='close'){if(!state.overlays.length)return;state.close();}else if(p.action==='overlay')ok=state.open(p);else if(p.action==='swap')ok=state.swap(p.target);else if(p.action==='navigate')ok=state.navigate(p.target);if(ok){visit++;render(playback,snapshot);}else status.textContent='Destination unavailable, no overlay to swap, or the overlay limit was reached.';};
  const render=async(config={},snapshot=null)=>{
   timers.pause();animator.cancel();hover.scope(state.active);
   transform=null;const ticket=++version,key=state.current+':'+(orientations.get(state.current)??'saved');
   if(key!==previewKey){previewDoc=prototypeOrientationDocument(previewEditor,doc,state.current,orientations.get(state.current));previewKey=key;}
+  if(state.current!==scrollScreen){scroll.clear();scrollScreen=state.current;}
   const baseScene=prototypeScene(previewDoc,state.current),base=baseScene[0],stack=state.overlays;
   const layers=[{scene:baseScene,offset:{x:0,y:0}},...stack.map(o=>{const scene=prototypeScene(previewDoc,o.target);return{scene,overlay:o,offset:overlayPlacement(base,scene[0],o.overlay_position,o.overlay_x??0,o.overlay_y??0)};})],active=layers.at(-1),frame=active.scene[0];
   for(const [value,button] of orientationButtons)button.setAttribute('aria-pressed',String(value==='portrait'?base.height>=base.width:base.width>base.height));
   timers.scope(visit,timedInteractions(active.scene));
   chooser.value=state.current;back.disabled=!state.canBack;buttons.replaceChildren();
   for(const s of active.scene.filter(s=>s.prototype&&visibleInTree(s,active.scene)))for(const p of interactions(s)){const b=document.createElement('button');b.textContent=s.name+' ['+({click:'Click',mouseenter:'Mouse enter',mouseleave:'Mouse leave',afterdelay:`After ${p.delay??800} ms`,mousedown:'Mouse down / Touch press',mouseup:'Mouse up / Touch release'}[p.trigger??'click'])+'] → '+(p.action==='back'?'Back':p.action==='close'?'Close overlay':(p.action==='overlay'?'Open overlay: ':p.action==='swap'?'Swap overlay: ':'')+(doc.shapes.find(f=>f.id===p.target)?.name??'Unavailable'));b.onclick=()=>activate({...s,prototype:p});buttons.append(b);}
-  status.textContent=base.name+' · '+(base.width>base.height?'Landscape':'Portrait')+(stack.length?' · Overlay: '+frame.name:'')+' · Click or hover linked layers. All interactions are available below.';await prepare(layers.flatMap(l=>l.scene));if(ticket!==version||!dialog.open)return;
+  status.textContent=base.name+' · '+(base.width>base.height?'Landscape':'Portrait')+(stack.length?' · Overlay: '+frame.name:'')+(keyboardScrollFrame(active.scene)?' · Scroll with the wheel, touch or arrow keys':'')+' · Click or hover linked layers. All interactions are available below.';await prepare(layers.flatMap(l=>l.scene));if(ticket!==version||!dialog.open)return;
   const width=Math.max(1,area.clientWidth),height=Math.max(1,area.clientHeight),viewport=prototypeViewport(base,width,height,chromeVisibility.get(state.current)),{x,y,scale}=viewport,dpr=window.devicePixelRatio||1;
   chromeToggle.checked=!!viewport.svg;
   const shell=await chromeImage(viewport.svg);if(ticket!==version||!dialog.open)return;
   canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';
-  const ctx=canvas.getContext('2d');ctx.save();ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*x,dpr*y);ctx.beginPath();ctx.roundRect(0,0,base.width,base.height,viewport.screenRadius||radii(base));ctx.clip();
-  for(let i=0;i<layers.length;i++){const l=layers[i],f=l.scene[0];if(i){ctx.save();ctx.globalAlpha=l.overlay.backdrop_opacity??.4;ctx.fillStyle=l.overlay.backdrop_color??'#000000';ctx.fillRect(0,0,base.width,base.height);ctx.restore();}ctx.save();ctx.translate(l.offset.x-f.x,l.offset.y-f.y);ctx.beginPath();ctx.roundRect(f.x,f.y,f.width,f.height,radii(f));ctx.clip();drawScene(l.scene,ctx,paint);
-   if(hotspots.checked&&i===layers.length-1){ctx.strokeStyle='#0284c7';ctx.lineWidth=2/scale;ctx.setLineDash([5/scale,4/scale]);for(const s of l.scene.filter(s=>s.prototype&&visibleInTree(s,l.scene)))ctx.strokeRect(s.x,s.y,s.width,s.height);}ctx.restore();
+  repaint=()=>{
+  const ctx=canvas.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.save();ctx.setTransform(dpr*scale,0,0,dpr*scale,dpr*x,dpr*y);ctx.beginPath();ctx.roundRect(0,0,base.width,base.height,viewport.screenRadius||radii(base));ctx.clip();
+  for(let i=0;i<layers.length;i++){const l=layers[i],f=l.scene[0];if(i){ctx.save();ctx.globalAlpha=l.overlay.backdrop_opacity??.4;ctx.fillStyle=l.overlay.backdrop_color??'#000000';ctx.fillRect(0,0,base.width,base.height);ctx.restore();}ctx.save();ctx.translate(l.offset.x-f.x,l.offset.y-f.y);ctx.beginPath();ctx.roundRect(f.x,f.y,f.width,f.height,radii(f));ctx.clip();const shown=scrolledScene(l.scene,scroll);drawScene(shown,ctx,paint);
+   if(hotspots.checked&&i===layers.length-1){ctx.strokeStyle='#0284c7';ctx.lineWidth=2/scale;ctx.setLineDash([5/scale,4/scale]);for(const s of shown.filter(s=>s.prototype&&visibleInTree(s,shown)))ctx.strokeRect(s.x,s.y,s.width,s.height);}ctx.restore();
   }
   ctx.restore();
   if(shell){ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.drawImage(shell,viewport.chromeX,viewport.chromeY,viewport.outerWidth*scale,viewport.outerHeight*scale);ctx.restore();}
-  transform={x:x+active.offset.x*scale,y:y+active.offset.y*scale,scale,frame,base,xBase:x,yBase:y,outside:stack.at(-1)?.close_on_outside??false,overlay:stack.length>0};await animator.play(snapshot,config);if(ticket===version&&dialog.open)timers.resume();
+  };
+  repaint();
+  transform={scene:active.scene,x:x+active.offset.x*scale,y:y+active.offset.y*scale,scale,frame,base,xBase:x,yBase:y,outside:stack.at(-1)?.close_on_outside??false,overlay:stack.length>0};await animator.play(snapshot,config);if(ticket===version&&dialog.open)timers.resume();
  };
  const locate=(clientX,clientY)=>{
   if(!transform||animator.running)return null;const r=canvas.getBoundingClientRect(),t=transform,px=clientX-r.left,py=clientY-r.top,p={x:(px-t.x)/t.scale+t.frame.x,y:(py-t.y)/t.scale+t.frame.y};
   const inside=roundedContains(t.base,{x:(px-t.xBase)/t.scale+t.base.x,y:(py-t.yBase)/t.scale+t.base.y})&&roundedContains(t.frame,p);
-  return{inside,hits:inside?JSON.parse(previewEditor.prototype_pointer_hits(t.frame.id,p.x,p.y)):{}};
+  const offsets=scroll.size?scrollJson(t.scene,scroll):'{}';
+  return{inside,point:p,hits:inside?JSON.parse(offsets==='{}'?previewEditor.prototype_pointer_hits(t.frame.id,p.x,p.y):previewEditor.prototype_pointer_hits_scrolled(t.frame.id,p.x,p.y,offsets)):{}};
  };
+ // Wheel, touch drag and keys move the content of scrolling frames; nothing navigates.
+ const applyScroll=next=>{if(!next)return false;scroll.clear();for(const [id,offset] of next)scroll.set(id,offset);repaint?.();return true;};
+ const scrollAt=(clientX,clientY,dx,dy)=>{const hit=locate(clientX,clientY);return !!hit?.inside&&applyScroll(scrollBy(transform.scene,scroll,hit.point,dx,dy));};
+ canvas.addEventListener('wheel',event=>{const unit=event.deltaMode===1?16:event.deltaMode===2?(transform?.frame.height??400):1,scale=transform?.scale??1;if(scrollAt(event.clientX,event.clientY,event.deltaX*unit/scale,event.deltaY*unit/scale))event.preventDefault();},{passive:false});
+ canvas.tabIndex=0;
+ canvas.addEventListener('keydown',event=>{
+  if(!transform||animator.running||event.altKey||event.ctrlKey||event.metaKey)return;
+  const frame=keyboardScrollFrame(transform.scene);if(!frame)return;const extent=scrollExtent(transform.scene,frame),delta=keyScrollDelta(event.key,frame,extent);if(!delta)return;
+  const from=clampScroll(extent,scroll.get(frame.id)),to=clampScroll(extent,{x:from.x+delta.x,y:from.y+delta.y});event.preventDefault();
+  if(to.x!==from.x||to.y!==from.y)applyScroll(new Map([...scroll,[frame.id,to]]));
+ });
  const activateId=(id,trigger)=>{const s=previewDoc.shapes.find(s=>s.id===id),p=s&&interactionFor(s,trigger);if(p)activate({...s,prototype:p});};
  canvas.onclick=event=>{if(!press.click()){event.preventDefault();return;}const hit=locate(event.clientX,event.clientY);if(!hit)return;if(!hit.inside){if(transform.overlay&&transform.outside){state.close();visit++;render();}return;}activateId(hit.hits.click,'click');};
-  canvas.onpointerdown=event=>{const hit=locate(event.clientX,event.clientY);activateId(press.down(event,hit?.hits),'mousedown');};
-  canvas.onpointerup=event=>{const hit=locate(event.clientX,event.clientY);activateId(press.up(event,hit?.hits),'mouseup');};
+  canvas.onpointerdown=event=>{if(event.pointerType==='touch'&&event.isPrimary)touchScroll={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};const hit=locate(event.clientX,event.clientY);activateId(press.down(event,hit?.hits),'mousedown');};
+  canvas.onpointerup=event=>{if(touchScroll?.id===event.pointerId)touchScroll=null;const hit=locate(event.clientX,event.clientY);activateId(press.up(event,hit?.hits),'mouseup');};
   const releaseOutside=event=>{if(event.target!==canvas)press.cancel(event);};document.addEventListener('pointerup',releaseOutside);
   canvas.onpointermove=event=>{
+  // A touch that travels scrolls the content under it and is no longer a tap.
+  if(touchScroll?.id===event.pointerId&&transform){const dx=touchScroll.x-event.clientX,dy=touchScroll.y-event.clientY;if(touchScroll.moved||Math.hypot(dx,dy)>=6){if(scrollAt(event.clientX,event.clientY,dx/transform.scale,dy/transform.scale)&&!touchScroll.moved){touchScroll.moved=true;press.cancel(event);}touchScroll.x=event.clientX;touchScroll.y=event.clientY;}return;}
   if(event.pointerType==='touch'||event.buttons)return;pointer={x:event.clientX,y:event.clientY};if(pointerFrame)return;
   pointerFrame=requestAnimationFrame(()=>{pointerFrame=0;if(!pointer)return;const hit=locate(pointer.x,pointer.y);if(!hit)return;canvas.style.cursor=(hit.hits.click||hit.hits.mousedown||hit.hits.mouseup||hit.hits.mouseenter?.length||hit.hits.mouseleave?.length)?'pointer':'default';activateId(hover.move(hit.hits),hover.trigger);});
  };
  canvas.onpointerleave=()=>{pointer=null;if(pointerFrame)cancelAnimationFrame(pointerFrame);pointerFrame=0;canvas.style.cursor='default';const id=hover.exit();if(transform&&!animator.running)activateId(id,hover.trigger);};
- canvas.onpointercancel=event=>{press.cancel(event);pointer=null;hover.reset();};
- back.onclick=()=>{state.back();visit++;render();};restart.onclick=()=>{state.restart();visit++;render();};chooser.onchange=()=>{state.navigate(Number(chooser.value));visit++;render();};hotspots.onchange=()=>render();close.onclick=()=>dialog.close();
+ canvas.onpointercancel=event=>{touchScroll=null;press.cancel(event);pointer=null;hover.reset();};
+ back.onclick=()=>{state.back();visit++;render();};restart.onclick=()=>{scroll.clear();state.restart();visit++;render();};chooser.onchange=()=>{state.navigate(Number(chooser.value));visit++;render();};hotspots.onchange=()=>render();close.onclick=()=>dialog.close();
  const observer=new ResizeObserver(()=>render());observer.observe(area);dialog.onclose=()=>{document.removeEventListener('pointerup',releaseOutside);press.reset();timers.reset();if(pointerFrame)cancelAnimationFrame(pointerFrame);pointer=null;hover.reset();animator.cancel();version++;observer.disconnect();previewEditor.free();dialog.remove();};render();return dialog;
 }
