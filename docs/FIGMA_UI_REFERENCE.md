@@ -200,6 +200,17 @@ variants, and preservation of native Figma slot metadata during .fig import
 remain unverified/unimplemented. Descriptions currently use plain text. Existing
 Territory Track component definitions have not been migrated automatically.
 
+Follow-up (2026-11-10, branch source, not installed): descriptions accept a
+fixed Markdown subset (bold, italic, code, http/https/mailto links, bulleted and
+numbered lists) with a formatting toolbar and live preview; a slot can be saved
+to, or removed from, every variant of its component set in one undo step; and
+`.fig` import reads native SLOT property definitions and their settings. Live
+Figma was **not** re-inspected for this follow-up. The toolbar, the "Apply to
+all variants" checkbox and the inline description under a property row are
+PixlPrfct designs, and the import is derived from the schema embedded in `.fig`
+files and tested with synthetic nodes, not with a real Figma export that
+contains slots. Treat all three as unverified against Figma.
+
 Installed locally as desktop **0.1.1-alpha.10** in both existing app bundles.
 Native About confirms the version (`.local/slots/desktop-version.png`), both
 strict/deep signature checks passed, and the saved Territory Track design was

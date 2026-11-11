@@ -3468,6 +3468,39 @@ impl Editor {
         self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
         Ok(next)
     }
+    /// Shift several tracks (JSON array of zero-based indices) one position as a block.
+    /// Returns their new indices as a JSON array, in the order given.
+    pub fn shift_grid_tracks(
+        &mut self,
+        id: u32,
+        axis: &str,
+        json: &str,
+        delta: i32,
+    ) -> Result<String, String> {
+        let indices: Vec<usize> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let (changes, next) = grid::shift_tracks(&self.document, id, axis, &indices, delta)?;
+        if !changes.is_empty() {
+            self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
+        }
+        serde_json::to_string(&next).map_err(|e| e.to_string())
+    }
+    /// Move several tracks (JSON array of zero-based indices) before one insertion
+    /// boundary, keeping their relative order. One history entry; returns the new
+    /// indices as a JSON array, in the order given.
+    pub fn move_grid_tracks(
+        &mut self,
+        id: u32,
+        axis: &str,
+        json: &str,
+        before: usize,
+    ) -> Result<String, String> {
+        let indices: Vec<usize> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        let (changes, next) = grid::move_tracks(&self.document, id, axis, &indices, before)?;
+        if !changes.is_empty() {
+            self.update_many(&serde_json::to_string(&changes).map_err(|e| e.to_string())?)?;
+        }
+        serde_json::to_string(&next).map_err(|e| e.to_string())
+    }
     /// Move a track before a zero-based insertion boundary (track count appends).
     /// Connected spans move together, and the entire move is one history entry.
     pub fn move_grid_track(

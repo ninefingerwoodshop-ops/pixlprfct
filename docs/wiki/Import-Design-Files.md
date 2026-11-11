@@ -77,9 +77,9 @@ Save a local `.fig` copy of a design archive, then use **Import design** on the 
 - **Library data** ([library-data.js](../../web/figma/library-data.js)): `importVariables` creates variable collections (≤32 modes) and color/number/string/boolean variables with aliases (cycles and unavailable aliases warn); color, effect and text styles become `color_styles`, `effect_styles`, `text_styles`; `importVariantSets` rebuilds `component_sets`. The report includes `variables`, `styles` and `variantSets` counts.
 - **Report**: `warn(message, node)` groups by message with a count and up to three example layer names. Fatal limits: 10,000 converted layers, 5 MB serialized body.
 
-Unsupported features that only warn include masks (imported as plain layers), prototypes, layout guides, image color adjustments and custom crops, custom stroke endpoints, exposed component properties/slot metadata, and unsupported paints/effects (gray fill or omitted).
+Unsupported features that only warn include masks (imported as plain layers), prototypes, layout guides, image color adjustments and custom crops, custom stroke endpoints, exposed text/boolean/instance-swap component properties, and unsupported paints/effects (gray fill or omitted).
 
-> **Note:** Local variables (with aliases), color/effect/text styles and variant sets are imported (`library-data.js`; test "imported library variables, aliases, shared styles and variant sets remain reusable after merge"). Exposed component properties are still not imported, and unresolvable bindings fall back to saved values with a warning.
+> **Note:** Local variables (with aliases), color/effect/text styles and variant sets are imported (`library-data.js`; test "imported library variables, aliases, shared styles and variant sets remain reusable after merge"). Native slot definitions and their settings are imported as slot properties (`importSlotProperties`; derived from the embedded `.fig` schema and tested with synthetic nodes, not a real slot-bearing export). Other exposed component properties are still not imported, and unresolvable bindings fall back to saved values with a warning.
 
 ### Native validation and saving
 
@@ -167,7 +167,7 @@ Run `npm run build:editor` before `node --test tests/figma-import.test.mjs tests
 
 - Only `.fig` archives; no `.jam`, `.deck`, URLs or REST JSON; no .fig export.
 - The `.fig` format is proprietary and may change; fixtures cover archive versions 101 and 106.
-- Mixed text runs, compound-path holes, masks, skew/reflection, image crops/filters, grid auto layout, layout guides, prototypes and exposed component properties are lost or approximated.
+- Mixed text runs, compound-path holes, masks, skew/reflection, image crops/filters, grid auto layout, layout guides, prototypes and exposed text/boolean/instance-swap component properties are lost or approximated.
 - SVG: no text, images, CSS `<style>`, masks, clip paths, filters, nested `<svg>`, even-odd/compound fills or repeating gradients.
 
 ## Related pages

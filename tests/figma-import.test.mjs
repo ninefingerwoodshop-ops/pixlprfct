@@ -100,3 +100,45 @@ test('cyclic and unavailable Figma variable aliases produce explicit warnings wi
  const p=parsed([node('tokens','VARIABLE_SET','page',{variableSetModes:[{id:'light',name:'Light'}]}),...['a','b'].map((id,i)=>node(id,'VARIABLE','page',{variableSetID:{guid:'tokens'},variableResolvedType:'COLOR',variableDataValues:{entries:[{modeID:'light',variableData:{value:{alias:{guid:i?'a':'b'}}}}]}})),node('main','SYMBOL','page',{fillPaints:[{...solid(1,0,0),colorVar:{value:{alias:{guid:'a'}}}}]})]);
  const {body,report}=await convertFigma(p);assert.equal(load(body).variables.values.length,0);assert(report.warnings.some(w=>w.message.includes('cyclic alias')));assert(report.warnings.some(w=>w.message.includes('unavailable paint variable')));
 });
+const slotDef=(id,name,extra={})=>({id,name,type:'SLOT',...extra}),slotRef=id=>({isSlot:true,componentPropRefs:[{defID:id,componentPropNodeField:'SLOT_CONTENT_ID'}]});
+test('native slot definitions import as working slot properties with their settings',async()=>{
+ const p=parsed([
+  node('icon','SYMBOL','page',{key:'icon-key'}),
+  node('card','SYMBOL','page',{componentPropDefs:[slotDef('body-def','Body#12:3',{description:'Put **content** here',preferredValues:{instanceSwapValues:[{type:'COMPONENT',key:'icon-key'}]},slotPropConfig:{minChildren:1,maxChildren:4,allowPreferredValuesOnly:true,displayByDefault:true,stretchChildOnInsert:true}}),{id:'label-def',name:'Label#1:2',type:'TEXT'}]}),
+  // An auto-sized unfilled frame would otherwise import as a group.
+  node('body','FRAME','card',{resizeToFit:true,...slotRef('body-def')}),node('text','TEXT','body',{textData:{characters:'Default'},isSlotContent:true}),
+ ]);
+ const {body,report}=await convertFigma(p,'Card.fig'),d=load(body),[property]=d.component_properties,frame=d.shapes.find(s=>s.name==='body');
+ assert.equal(report.slotProperties,1);assert.equal(d.component_properties.length,1);
+ assert.equal(property.name,'Body');assert.equal(property.kind,'slot');assert.equal(property.component_id,d.shapes.find(s=>s.name==='card').id);assert.deepEqual(property.targets,[frame.id]);
+ assert.deepEqual(property.slot_settings,{description:'Put **content** here',min_children:1,max_children:4,preferred_instances:[d.shapes.find(s=>s.name==='icon').id],only_preferred_instances:true,display_empty:true,fill_counter_axis:true});
+ assert.equal(frame.kind,'frame');assert.equal(frame.slot.property,property.id);
+ // Only the property kinds that are still not imported are reported.
+ assert.ok(report.warnings.some(w=>w.message.includes('text, boolean and instance-swap')));
+ const e=new Editor();try{e.load(body);const card=property.component_id,instance=e.create_instance(card,600,0),snapshot=JSON.parse(e.snapshot()),copy=snapshot.shapes.find(s=>s.parent_id===instance&&s.slot);assert.ok(copy);assert.equal(snapshot.shapes.find(s=>s.parent_id===copy.id).text,'Default');e.clear_slot(copy.id);assert.equal(JSON.parse(e.snapshot()).shapes.filter(s=>s.parent_id===copy.id).length,0);}finally{e.free();}
+});
+test('a set-level slot definition becomes one slot property in each variant that uses it',async()=>{
+ const p=parsed([
+  node('set','FRAME','page',{name:'Card',isStateGroup:true,componentPropDefs:[{id:'state',name:'State',type:'VARIANT'},slotDef('body-def','Body#9:9'),slotDef('unused-def','Unused#9:8')]}),
+  ...['Default','Wide','Empty'].flatMap((value,i)=>[node('main'+i,'SYMBOL','set',{name:'State='+value,variantPropSpecs:[{propDefId:'state',value}]}),...(i<2?[node('body'+i,'FRAME','main'+i,slotRef('body-def'))]:[node('plain'+i,'FRAME','main'+i)])]),
+ ]);
+ const {body,report}=await convertFigma(p,'Card.fig'),d=load(body),id=name=>d.shapes.find(s=>s.name===name).id;
+ assert.equal(d.component_sets.length,1);assert.deepEqual(d.component_properties.map(q=>[q.name,q.component_id,q.targets]),[['Body',id('State=Default'),[id('body0')]],['Body',id('State=Wide'),[id('body1')]]]);
+ assert.ok(report.warnings.some(w=>w.message.includes('no layer uses')));assert.equal(d.shapes.find(s=>s.name==='plain2').slot,undefined);
+});
+test('unsupported slot shapes degrade to ordinary layers with a warning instead of failing the import',async()=>{
+ const p=parsed([
+  node('card','SYMBOL','page',{componentPropDefs:[slotDef('outer-def','Outer'),slotDef('inner-def','Inner'),slotDef('text-def','Text slot',{description:'x'.repeat(10_001),slotPropConfig:{minChildren:5,maxChildren:2,allowPreferredValuesOnly:true},preferredValues:{instanceSwapValues:[{type:'COMPONENT',key:'elsewhere'}]}}),slotDef('gone-def','Gone',{isDeleted:true})]}),
+  node('outer','FRAME','card',slotRef('outer-def')),node('inner','FRAME','outer',slotRef('inner-def')),node('label','TEXT','card',{textData:{characters:'x'},...slotRef('text-def')}),
+  node('holder','FRAME','card',slotRef('text-def')),node('ghost','FRAME','card',slotRef('gone-def')),
+  node('use','INSTANCE','page',{symbolData:{symbolID:'card'}}),
+ ]);
+ const {body,report}=await convertFigma(p,'Card.fig'),d=load(body),messages=report.warnings.map(w=>w.message).join('\n');
+ assert.deepEqual(d.component_properties.map(q=>q.name),['Outer','Text slot']);
+ const text=d.component_properties[1];assert.deepEqual(text.targets,[d.shapes.find(s=>s.name==='holder').id]);
+ assert.deepEqual(text.slot_settings,{description:'',min_children:5,max_children:null,preferred_instances:[],only_preferred_instances:false,display_empty:false,fill_counter_axis:false});
+ for(const part of ['nested inside another slot','not a plain frame','longer than 10 KB','not main components in this file','no layer uses'])assert.ok(messages.includes(part),part);
+ assert.equal(d.shapes.find(s=>s.name==='ghost').slot,undefined);
+ // The detached instance copy carries no slot binding.
+ assert.ok(d.shapes.filter(s=>s.slot).every(s=>d.component_properties.some(q=>q.targets.includes(s.id))));
+});

@@ -525,6 +525,7 @@ svg.app-icon :is(path,circle,rect,line,polyline,polygon,ellipse){stroke-width:va
 .grid-track-heading[draggable=true],.grid-track-grip{cursor:grab}.grid-track-heading[draggable=true]{user-select:none}
 .grid-track-title{flex:1;min-width:0}.grid-track-card{position:relative}.grid-track-card.grid-track-dragging{opacity:.45}
 .grid-track-card:is(.grid-drop-before,.grid-drop-after)::after{content:'';position:absolute;left:0;right:0;height:2px;background:var(--ui-accent);pointer-events:none;border-radius:1px}
+.grid-track-card.grid-track-selected{box-shadow:inset 0 0 0 1px var(--ui-accent)}
 .grid-track-card.grid-drop-before::after{top:-5px}.grid-track-card.grid-drop-after::after{bottom:-5px}
 .grid-track-actions{display:flex;align-items:center;gap:2px}.grid-track-actions button{width:24px!important;height:24px!important;min-width:24px!important;padding:4px!important}
 .grid-track-card .grid-settings-group{border:0;padding:0}.grid-track-card .grid-settings-group summary{font-size:11px;color:var(--ui-text-muted,var(--ui-text-muted))}
