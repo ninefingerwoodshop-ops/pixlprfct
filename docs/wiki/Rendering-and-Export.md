@@ -123,6 +123,18 @@ Paint opacities use `withPaintOpacity()` (multiplies `globalAlpha` by `fill_opac
 | ZIP | 1–1000 entries, ≤ 134,217,728 bytes (128 MB) total | `zipFiles`, `exportArtwork` |
 | ZIP filenames | ≤ 65,535 bytes, no `/` or `\`, not `..` | `zipFiles` |
 | Native `.pixl` | ≤ 5,000,000 bytes | `project-file.js` |
+
+### PDF export (pdf-export.js, pdf-text.js)
+
+PDF is written by a dependency-free PDF 1.4 writer. Each export job is one page, 1 pt per CSS pixel, holding one FlateDecode image painted by the canvas renderer (plus a soft mask when transparent). Limits: 14,400 pt per page edge, 100 pages, 128 MB of image data.
+
+On top of the image, `pdfTextRuns(shapes, box, measure, baselineOf)` adds an **invisible text layer** (text render mode 3) so text layers can be selected, copied and searched:
+
+- One run per word of each laid-out line, from the same `layoutText()` used for painting, so wrapping, alignment, vertical alignment, letter spacing and text case match the pixels. A run keeps its trailing spaces.
+- Runs carry the layer's world rotation (including rotated ancestors). Text on a path is one straight run along the chord from its first to its last glyph.
+- Left out: hidden layers or ancestors, zero opacity, text with neither fill nor stroke, and words whose middle is outside the layer's own box, a clipping ancestor frame or the exported area. Masks are not considered.
+- `pdfDocument()` embeds one shared glyphless TrueType font (`glyphlessFont()`, 264 bytes, every character maps to an empty one-em glyph) as a Type 0 / CIDFontType2 font with a ToUnicode map; horizontal scaling (`Tz`) stretches each run to its measured width. The document's own fonts are not embedded and nothing is drawn as vector.
+- Pages without text are byte-for-byte what they were before the text layer existed.
 | MCP export chunk | 256 – 64,000 UTF-16 code units (default 64,000) | `export-chunks.js` |
 
 ### PNG/JPEG

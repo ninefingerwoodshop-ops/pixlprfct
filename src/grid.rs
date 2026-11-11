@@ -572,10 +572,8 @@ pub(crate) fn shift_track(
     index: usize,
     delta: i32,
 ) -> Result<(Vec<Shape>, usize), String> {
-    if !["columns", "rows"].contains(&axis) || ![-1, 1].contains(&delta) {
-        return Err("Choose a grid axis and an adjacent track direction".into());
-    }
-    reorder_track(doc, id, axis, index, TrackDestination::Adjacent(delta))
+    let (changes, next) = shift_tracks(doc, id, axis, &[index], delta)?;
+    Ok((changes, next[0]))
 }
 
 pub(crate) fn move_track(
@@ -585,7 +583,33 @@ pub(crate) fn move_track(
     index: usize,
     before: usize,
 ) -> Result<(Vec<Shape>, usize), String> {
-    reorder_track(doc, id, axis, index, TrackDestination::Before(before))
+    let (changes, next) = move_tracks(doc, id, axis, &[index], before)?;
+    Ok((changes, next[0]))
+}
+
+/// Shift every selected track one position as a single block.
+pub(crate) fn shift_tracks(
+    doc: &crate::Document,
+    id: u32,
+    axis: &str,
+    indices: &[usize],
+    delta: i32,
+) -> Result<(Vec<Shape>, Vec<usize>), String> {
+    if !["columns", "rows"].contains(&axis) || ![-1, 1].contains(&delta) {
+        return Err("Choose a grid axis and an adjacent track direction".into());
+    }
+    reorder_tracks(doc, id, axis, indices, TrackDestination::Adjacent(delta))
+}
+
+/// Gather every selected track, in its current order, at one insertion boundary.
+pub(crate) fn move_tracks(
+    doc: &crate::Document,
+    id: u32,
+    axis: &str,
+    indices: &[usize],
+    before: usize,
+) -> Result<(Vec<Shape>, Vec<usize>), String> {
+    reorder_tracks(doc, id, axis, indices, TrackDestination::Before(before))
 }
 
 enum TrackDestination {
@@ -593,13 +617,13 @@ enum TrackDestination {
     Before(usize),
 }
 
-fn reorder_track(
+fn reorder_tracks(
     doc: &crate::Document,
     id: u32,
     axis: &str,
-    index: usize,
+    indices: &[usize],
     destination: TrackDestination,
-) -> Result<(Vec<Shape>, usize), String> {
+) -> Result<(Vec<Shape>, Vec<usize>), String> {
     if !["columns", "rows"].contains(&axis) {
         return Err("Choose a grid axis".into());
     }
@@ -627,7 +651,10 @@ fn reorder_track(
     } else {
         p.rows.len()
     };
-    if index >= n || n > 128 {
+    if indices.is_empty() {
+        return Err("Select at least one grid track".into());
+    }
+    if indices.iter().any(|index| *index >= n) || n > 128 {
         return Err("Track reordering supports up to 128 tracks per axis".into());
     }
     if matches!(destination, TrackDestination::Before(before) if before > n) {
@@ -694,10 +721,22 @@ fn reorder_track(
             groups.push(vec![]);
         }
     }
-    let from = groups.iter().position(|g| g.contains(&index)).unwrap();
-    let to = match destination {
+    // A selection is the set of connected groups it touches; they travel
+    // together and keep their relative order.
+    let selected: Vec<bool> = groups
+        .iter()
+        .map(|g| g.iter().any(|i| indices.contains(i)))
+        .collect();
+    let first = selected.iter().position(|s| *s).unwrap();
+    let last = selected.iter().rposition(|s| *s).unwrap();
+    // Insertion boundary between groups, in the current group order.
+    let boundary = match destination {
         TrackDestination::Adjacent(delta) => {
-            (from as i64 + delta as i64).clamp(0, groups.len() as i64 - 1) as usize
+            if delta < 0 {
+                first.saturating_sub(1)
+            } else {
+                (last + 2).min(groups.len())
+            }
         }
         // A drop inside a connected span snaps to its far edge in the direction
         // of travel. Never split spanning layers or named areas.
@@ -706,25 +745,32 @@ fn reorder_track(
                 .iter()
                 .position(|g| *g.last().unwrap() >= before)
                 .unwrap_or(groups.len());
-            if slot == from {
-                from
-            } else if slot > from {
-                if slot < groups.len() && before > groups[slot][0] {
-                    slot
-                } else {
-                    slot - 1
-                }
+            if slot == groups.len() || before == groups[slot][0] || selected[slot] {
+                slot
+            } else if last < slot {
+                slot + 1
+            } else if first > slot {
+                slot
+            } else if (before - groups[slot][0]) * 2 >= groups[slot].len() {
+                // Selections on both sides have no single direction of travel.
+                slot + 1
             } else {
                 slot
             }
         }
     };
-    if from == to {
-        return Ok((vec![], index));
+    let pick = |range: std::ops::Range<usize>, want: bool| -> Vec<usize> {
+        range
+            .filter(|i| selected[*i] == want)
+            .flat_map(|i| groups[i].iter().copied())
+            .collect()
+    };
+    let mut order = pick(0..boundary, false);
+    order.extend(pick(0..groups.len(), true));
+    order.extend(pick(boundary..groups.len(), false));
+    if order.iter().copied().eq(0..n) {
+        return Ok((vec![], indices.to_vec()));
     }
-    let moved = groups.remove(from);
-    groups.insert(to, moved);
-    let order: Vec<_> = groups.into_iter().flatten().collect();
     let mut mapping = vec![0; n];
     for (new, old) in order.iter().enumerate() {
         mapping[*old] = new;
@@ -802,7 +848,7 @@ fn reorder_track(
             changes.push(changed);
         }
     }
-    Ok((changes, mapping[index]))
+    Ok((changes, indices.iter().map(|i| mapping[*i]).collect()))
 }
 
 pub(crate) fn delete_track(

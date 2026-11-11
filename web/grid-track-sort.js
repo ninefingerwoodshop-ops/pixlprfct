@@ -1,10 +1,14 @@
 // The document changes only on drop. Native dragend also cleans up Escape and
 // drops outside this section, so cancelling never creates an undo entry.
-export function bindGridTrackSort(section, cards, move, shift) {
- let source = null;
+// `multi` shares the canvas track selection: {indices, select(index, event),
+// move(indices, before)}. Dragging a selected card carries the whole selection.
+export function bindGridTrackSort(section, cards, move, shift, multi = null) {
+ let source = null, carried = [];
+ const selected = new Set(multi?.indices ?? []);
  const clearPreview = () => cards.forEach(card => card.classList.remove('grid-drop-before', 'grid-drop-after'));
  const finish = () => {
   source = null;
+  carried = [];
   clearPreview();
   cards.forEach(card => card.classList.remove('grid-track-dragging'));
  };
@@ -15,7 +19,7 @@ export function bindGridTrackSort(section, cards, move, shift) {
    return event.clientY < box.top + box.height / 2;
   });
   const slot = before < 0 ? cards.length : before;
-  if(slot !== source && slot !== source + 1) {
+  if(carried.length > 1 || slot !== source && slot !== source + 1) {
    const target = cards[slot] ?? cards.at(-1);
    target.classList.add(slot === cards.length ? 'grid-drop-after' : 'grid-drop-before');
   }
@@ -24,6 +28,15 @@ export function bindGridTrackSort(section, cards, move, shift) {
  cards.forEach((card, index) => {
   const heading = card.querySelector('.grid-track-heading');
   const grip = card.querySelector('.grid-track-grip');
+  if(selected.has(index)) card.classList.add('grid-track-selected');
+  if(multi) heading.addEventListener('click', event => {
+   // Plain clicks keep their existing meaning; modifiers build the selection.
+   if(!event.shiftKey && !event.ctrlKey && !event.metaKey) return;
+   const control = event.target.closest('button');
+   if(control && control !== grip) return;
+   event.preventDefault();
+   multi.select(index, event);
+  });
   heading.draggable = grip.draggable = cards.length > 1;
   grip.disabled = cards.length < 2;
   heading.addEventListener('dragstart', event => {
@@ -34,7 +47,8 @@ export function bindGridTrackSort(section, cards, move, shift) {
    event.dataTransfer.effectAllowed = 'move';
    event.dataTransfer.setData('application/x-pixlprfct-grid-track', String(index));
    event.dataTransfer.setDragImage(card, 16, 16);
-   card.classList.add('grid-track-dragging');
+   carried = selected.has(index) && selected.size > 1 ? [...selected].sort((a, b) => a - b) : [index];
+   (carried.length > 1 ? carried.map(i => cards[i]).filter(Boolean) : [card]).forEach(item => item.classList.add('grid-track-dragging'));
   });
   heading.addEventListener('dragend', finish);
   grip.addEventListener('keydown', event => {
@@ -58,9 +72,10 @@ export function bindGridTrackSort(section, cards, move, shift) {
   if(source === null) return;
   event.preventDefault();
   event.stopPropagation();
-  const index = source, before = preview(event);
+  const index = source, group = carried, before = preview(event);
   finish();
-  if(before !== index && before !== index + 1) move(index, before);
+  if(group.length > 1) multi.move(group, before);
+  else if(before !== index && before !== index + 1) move(index, before);
  });
  section.addEventListener('keydown', event => {
   if(source !== null && event.key === 'Escape') {

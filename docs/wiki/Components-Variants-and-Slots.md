@@ -166,6 +166,10 @@ Linked instances may live inside a main (README "Nested linked components"). The
 
 **JS** ([web/slots.js](../../web/slots.js)): `slotProperty`, `slotOwner`, `slotWarnings`, `renderSlotProperty` (Default/Modified chip, add, reset/delete menu, "Limits" warning), `editSlotProperty` (settings dialog), `slotInstancePicker` (Add instances picker with library source dropdown, page folders, list/grid, live thumbnails via `assetAppearance`), `renderSlotOverlay` (empty-slot "+" targets positioned from pan/zoom).
 
+- `save_slot_across_variants(json)` saves a slot property and calls `sync_variants`, which gives every other variant in the component set a same-named slot with the same settings. Target layers are matched by name (with ordinal among same-named siblings) and then by sibling position; layers that are not plain frames, already belong to another slot, or sit inside one are not taken. A rename follows the slot into the other variants. The JSON report lists created, updated, unchanged and skipped variants. `remove_slot_across_variants(id)` removes the same-named slots of the whole set. Each is one history entry.
+
+**Descriptions** ([web/rich-description.js](../../web/rich-description.js)): the stored description is a plain string. `parseDescription` reads a fixed Markdown subset (`**bold**`, `*italic*`/`_italic_`, `` `code` ``, `[text](url)` with http/https/mailto only, `- ` and `1. ` lists); `renderDescription` builds DOM nodes from text, never HTML; `plainDescription` feeds tooltips; `formatSelection` backs the dialog toolbar (also Ctrl/Cmd+B, I, E, K).
+
 > **Note:** Slot limits and "only preferred instances" are **advisory**. `slotWarnings` reports them in the UI; the engine does not enforce them (`slots.test.mjs`: "slot limits warn without blocking content").
 
 ## Assets panel, placement and sorting
@@ -203,7 +207,7 @@ After changing any WASM signature, rebuild with `npm run build:editor` so [web/e
 
 ## Known limitations
 
-From code and README: no nested main definitions; no independent nested-instance swap in outer copies; no exposed instance-swap properties; no variable-driven component properties; slot limits are advisory; slot descriptions are plain text; native design-archive slot metadata is not preserved on `.fig` import (interface reference log "Component slots"); real-time multiplayer is out of scope here.
+From code and README: no nested main definitions; no independent nested-instance swap in outer copies; no exposed instance-swap properties; no variable-driven component properties; slot limits are advisory; slot description formatting, across-variant slot authoring and native `.fig` slot import are implemented but not verified against live Figma or a real slot-bearing export (interface reference log "Component slots"); instance slot overrides in a `.fig` are not imported because instances detach; real-time multiplayer is out of scope here.
 
 ## Tests
 

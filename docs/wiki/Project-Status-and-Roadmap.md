@@ -66,7 +66,7 @@ The [public roadmap](https://ninefingerwoodshop-ops.github.io/pixlprfct/roadmap.
 6. Set-label overlap; slot rich descriptions / bulk authoring / native design-archive slot metadata import
 7. Prototype parity: interpolated transitions, sequential/conditional actions, drag and scroll interactions
 8. Real-time simultaneous collaboration *(see note below)*
-9. PDF export; comprehensive accessibility and performance validation
+9. Vector PDF export (image pages with selectable text exist); comprehensive accessibility and performance validation
 10. Complex-document edit latency; real installed-app OS-sleep acceptance
 11. Cloud storage quotas; cleanup of unreferenced uploads
 12. Shared-variable integration: scopes, code syntax, RGBA, component/prototype bindings, bulk metadata editing

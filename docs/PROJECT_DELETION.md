@@ -3,7 +3,37 @@
 On Projects, use the project’s **…** button or right-click its card and choose
 **Move to trash**. Open **Trash** in the sidebar to restore it. Grid and list
 views use the same actions. Moving to Trash preserves document bodies and
-history; this change adds no permanent-delete operation.
+history.
+
+## Delete forever
+
+In **Trash**, a project's menu also offers **Delete forever**. It asks for
+confirmation first; Cancel has focus, so Enter and Escape keep the project.
+The same action is in the editor's Cloud files dialog under Show Trash.
+
+- Only a project already in Trash can be deleted forever. The API refuses an
+  active file (`409`), and the request must carry the current revision.
+- Cloud: `DELETE /api/documents/:id?permanent=1` removes the file and its
+  version history in one transaction. Self-hosted servers also remove its
+  sharing settings, edit requests, comments, reviews, notifications and
+  simultaneous-editing rows.
+- A file that is a published library is refused, because other files may
+  depend on it. It stays in Trash.
+- The same people who can move a project to Trash can delete it forever.
+- Local: the project is removed from this browser's storage. If it was the
+  last one, the list is marked as cleared so an old single-file backup is not
+  imported again.
+- Storage: inline bodies stop counting at once. Large bodies stored as objects
+  are removed by the existing daily cleanup after its 24-hour grace period.
+
+Version history has **Delete** on each version and **Delete automatic backups
+older than 30 days**. Named versions are never deleted in bulk. In shared
+workspaces only the file's creator or an administrator can delete versions.
+
+Not included: Empty Trash, automatic expiry of Trash, a scheduled retention
+policy, or cleanup of rows that belong to files deleted before this change.
+The Delete forever menu item and its confirmation were **not** compared
+against Figma's Trash; the live Figma UI could not be opened for this change.
 
 Shared projects can be deleted and restored only by their original creator, a
 workspace owner/admin, or the installation administrator. Installation admins

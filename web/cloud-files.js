@@ -1,4 +1,5 @@
 import {recoveryStore} from './recovery-store.js';
+import {confirmDestructive} from './confirm-dialog.js';
 import {CloudSession,cloudRequest} from './cloud-session.js';
 import {openCloudHistory} from './cloud-history.js';
 import {staticHost} from './static-host.js';
@@ -28,7 +29,8 @@ export function cloudFiles({snapshot,load,status,toast,backupLocal:saveDraft,ope
   const files=result.documents.filter(f=>Boolean(f.deleted_at)===trash);
   if(!files.length&&!more){const empty=document.createElement('p');empty.textContent=search.value.trim()?'No matching files.':trash?'Trash is empty.':'No cloud files yet. Save this design or create a new file.';list.append(empty);}
   for(const f of files){const row=document.createElement('div');row.className='cloud-row';const text=document.createElement('div'),name=document.createElement('strong'),date=document.createElement('small');name.textContent=f.name;date.textContent=new Date(f.updated_at).toLocaleString();text.append(name,date);row.append(text);
-   if(trash){if(f.can_delete===true)row.append(button('Restore',async()=>{await cloudRequest('/'+f.id,{method:'PATCH',headers:{'if-match':String(f.revision)}});await refresh();}));}
+   if(trash){if(f.can_delete===true){row.append(button('Restore',async()=>{await cloudRequest('/'+f.id,{method:'PATCH',headers:{'if-match':String(f.revision)}});await refresh();}));
+    row.append(button('Delete forever',async()=>{if(!await confirmDestructive({title:'Delete forever?',message:`“${f.name}” and its version history will be permanently deleted. This cannot be undone.`,confirm:'Delete forever'}))return;await cloudRequest('/'+f.id+'?permanent=1',{method:'DELETE',headers:{'if-match':String(f.revision)}});await refresh();}));}}
    else{row.append(button('Open',async()=>{await beforeSwitch();const file=await cloudRequest('/'+f.id);if(file.deleted_at)throw new Error('This file was moved to Trash.');applyFile(file);dialog.close();toast('Cloud file opened');}));
     if(f.can_delete===true)row.append(button('Move to Trash',async()=>{let revision=f.revision;if(session.active?.id===f.id){await session.flush();revision=session.active.revision;}await cloudRequest('/'+f.id,{method:'DELETE',headers:{'if-match':String(revision)}});if(session.active?.id===f.id)session.detach();await refresh();}));}
    list.append(row);

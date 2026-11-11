@@ -52,7 +52,7 @@ function placementPicker(panel,c,placed,plan,change,preview){
  if(!buttons.some(b=>b.tabIndex===0))buttons[0].tabIndex=0;
  box.append(map,el('p',`Column · Row · Dot = occupied${view.totalColumns>8||view.totalRows>8?' · Showing a window around the selected item; use the fields below for other cells.':''}`,'grid-caption'));panel.append(box);
 }
-export function renderGridControls(panel,shape,update,reorder,plan,remove,renameArea,deleteArea,move){
+export function renderGridControls(panel,shape,update,reorder,plan,remove,renameArea,deleteArea,move,multi=null){
  const hadContent=panel.childElementCount>0,expanded=new Set([...panel.querySelectorAll('details[open]')].map(e=>e.id));panel.replaceChildren();panel.classList.add('grid-editor');panel.hidden=shape?.auto_layout?.direction!=='grid';if(panel.hidden)return;
  const l=shape.auto_layout,g=l.grid??defaultGrid(),commit=grid=>update({...shape,auto_layout:{...l,grid}}),patch=v=>commit({...g,...v});
  select(panel,'Placement','grid-placement',g.masonry?'masonry':'manual',[['manual','Manual cells'],['masonry','Automatic masonry']],value=>patch({masonry:value==='masonry',cell_containers:true}));
@@ -65,7 +65,7 @@ export function renderGridControls(panel,shape,update,reorder,plan,remove,rename
 
  for(const key of (g.masonry?['columns']:['columns','rows'])){const section=group(panel,key==='columns'?`Column sizing · ${g.columns.length}`:`Row sizing · ${g.rows.length||'Auto'}`,`grid-${key}-section`,false);const tracks=g[key];
  const cards=tracks.map((t,i)=>trackControls(section,`${key==='columns'?'Column':'Row'} ${i+1}`,`grid-${key}-${i}`,t,value=>patch({[key]:tracks.map((old,j)=>i===j?value:old)}),reorder?delta=>reorder(key,i,delta):null,tracks.length>(key==='columns'?1:0)?()=>{if(remove&&(plan?.[key]?.length??0)>1)remove(key,i);else patch({[key]:tracks.filter((_,j)=>i!==j)});}:null,!!move));
- if(move&&cards.length)bindGridTrackSort(section,cards,(index,before)=>move(key,index,before),(index,delta)=>reorder?.(key,index,delta));
+ if(move&&cards.length)bindGridTrackSort(section,cards,(index,before)=>move(key,index,before),(index,delta)=>reorder?.(key,index,delta),multi&&{indices:multi.selection?.axis===key?multi.selection.indices:[],select:(index,event)=>multi.select(key,index,event),move:(indices,before)=>multi.move(key,indices,before)});
  const add=el('button',`Add ${key==='columns'?'column':'row'}`,'wide-button grid-add-track');add.type='button';add.disabled=tracks.length>=128;add.onclick=()=>patch({[key]:[...tracks,defaultTrack()]});section.append(add);
  }
  const implicit=group(panel,'Auto placement & implicit tracks','grid-implicit');
