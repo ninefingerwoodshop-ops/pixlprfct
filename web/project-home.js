@@ -83,7 +83,7 @@ function render(){
   const meta=el('div','project-meta'),title=el('strong',null,file.name),details=el('span','project-details'),place=el('span',null,file.kind==='cloud'?'Cloud':'On this device'),date=el('time');date.dateTime=new Date(file.updatedAt).toISOString();date.textContent='Edited '+new Date(file.updatedAt).toLocaleDateString(undefined,{month:'short',day:'numeric'});
   try{if(file.body&&isSvgAnimation(JSON.parse(file.body)))details.append(el('span',null,'SVG Animation'));}catch{/* A damaged file can still be listed and recovered. */}
   details.append(place,date);meta.append(title,details);link.append(preview,meta);card.append(link);
-  const actions=[...(!trash?[{label:'Open',run:()=>location.assign(projectUrl({...file,workspace}))}]:[]),...(file.can_delete===true?[...(!trash?[{separator:true}]:[]),{label:trash?'Restore':'Move to trash',enabled:!changingProject,run:()=>changeProjectTrash(file,!trash)},...(trash?[{separator:true},{label:'Delete forever',enabled:!changingProject,run:()=>deleteProjectForever(file)}]:[])]:[])];
+  const actions=[...(!trash?[{label:'Open',run:()=>location.assign(projectUrl({...file,workspace}))}]:[]),...(file.can_delete===true?[...(!trash?[{separator:true}]:[]),{label:trash?'Restore':'Move to trash',enabled:!changingProject,run:()=>changeProjectTrash(file,!trash)},...(trash?[{separator:true},{label:'Permanently delete',enabled:!changingProject,run:()=>deleteProjectForever(file)}]:[])]:[])];
   if(actions.length){const menu=el('button','project-menu-button');menu.type='button';menu.innerHTML=icon('more-horizontal');menu.setAttribute('aria-label','Actions for '+file.name);menu.setAttribute('aria-haspopup','menu');menu.setAttribute('aria-expanded','false');
    const open=(event,anchor)=>{menu.setAttribute('aria-expanded','true');closeProjectMenu=showContextMenu(event,actions,menu,{label:'Project actions',anchor,onClose:()=>menu.setAttribute('aria-expanded','false')});};
    menu.onclick=event=>open(event,menu);card.oncontextmenu=event=>open(event,null);card.append(menu);
@@ -99,7 +99,7 @@ function render(){
 async function deleteProjectForever(file){
  if(changingProject||disposed)return;
  const local=file.kind==='local';
- if(!await confirmDestructive({title:'Delete forever?',message:`“${file.name}” ${local?'will be permanently deleted from this device':'and its version history will be permanently deleted'}. This cannot be undone.`,confirm:'Delete forever'})||changingProject||disposed)return;
+ if(!await confirmDestructive({title:'Permanently delete project',message:['You’re about to permanently delete the project ',{strong:file.name},local?' from this device. You won’t be able to restore it.':' and its version history. You won’t be able to restore it.'],confirm:'Permanently delete'})||changingProject||disposed)return;
  changingProject=true;$('home-error').hidden=true;$('home-status').hidden=true;
  try{
   if(local)await withDraftLock(()=>drafts.remove(file.id,file.body));
@@ -109,7 +109,9 @@ async function deleteProjectForever(file){
  finally{changingProject=false;if(!disposed){render();($('project-cards').querySelector('a,button')??$('home-new')).focus();}}
 }
 async function changeProjectTrash(file,trash){
- if(changingProject||disposed)return;changingProject=true;const startedScope=scope;$('home-error').hidden=true;$('home-status').hidden=true;
+ if(changingProject||disposed)return;
+ // Figma confirms a move to Trash as well, with a plain (not red) button.
+ if(trash&&(!await confirmDestructive({title:'Move project to trash',message:[['You’re about to move the project ',{strong:file.name},' to trash.'],['You can always restore it later from the Trash section.']],confirm:'Move project to trash',tone:'primary'})||changingProject||disposed))return;changingProject=true;const startedScope=scope;$('home-error').hidden=true;$('home-status').hidden=true;
  try{
   if(file.kind==='local')await withDraftLock(()=>drafts.setTrashed(file.id,trash,file.body));
   else{await cloudRequest('/'+encodeURIComponent(file.id),{method:trash?'DELETE':'PATCH',headers:{'if-match':String(file.revision)}});if(scope!==startedScope)await fetchCloud();else cloud=cloud.filter(item=>item.id!==file.id);}
@@ -126,7 +128,7 @@ async function fetchCloud(more=false){
 }
 for(const button of root.querySelectorAll('[data-scope]'))button.onclick=()=>{
  closeProjectMenu();const wasTrash=scope==='trash';scope=button.dataset.scope;for(const b of root.querySelectorAll('[data-scope]')){if(b===button)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
- $('home-title').textContent=scope==='all'?'All projects':scope==='local'?'On this device':scope==='trash'?'Trash':'Cloud projects';$('collection-title').textContent=scope==='trash'?'Deleted projects':'Your designs';$('home-description').textContent=scope==='trash'?'Restore projects moved to Trash, or delete them forever.':scope==='cloud'?'Designs saved to your account.':'Create a design or pick up where you left off.';
+ $('home-title').textContent=scope==='all'?'All projects':scope==='local'?'On this device':scope==='trash'?'Trash':'Cloud projects';$('collection-title').textContent=scope==='trash'?'Deleted projects':'Your designs';$('home-description').textContent=scope==='trash'?'Restore projects moved to Trash, or permanently delete them.':scope==='cloud'?'Designs saved to your account.':'Create a design or pick up where you left off.';
  if(wasTrash!==(scope==='trash')){cloud=[];next=null;fetchCloud();}render();
 };
 $('project-search').oninput=render;$('project-sort').onchange=render;

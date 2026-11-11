@@ -5,13 +5,13 @@ On Projects, use the project’s **…** button or right-click its card and choo
 views use the same actions. Moving to Trash preserves document bodies and
 history.
 
-## Delete forever
+## Permanently delete
 
-In **Trash**, a project's menu also offers **Delete forever**. It asks for
+In **Trash**, a project's menu also offers **Permanently delete**. It asks for
 confirmation first; Cancel has focus, so Enter and Escape keep the project.
 The same action is in the editor's Cloud files dialog under Show Trash.
 
-- Only a project already in Trash can be deleted forever. The API refuses an
+- Only a project already in Trash can be permanently deleted. The API refuses an
   active file (`409`), and the request must carry the current revision.
 - Cloud: `DELETE /api/documents/:id?permanent=1` removes the file and its
   version history in one transaction. Self-hosted servers also remove its
@@ -19,7 +19,7 @@ The same action is in the editor's Cloud files dialog under Show Trash.
   simultaneous-editing rows.
 - A file that is a published library is refused, because other files may
   depend on it. It stays in Trash.
-- The same people who can move a project to Trash can delete it forever.
+- The same people who can move a project to Trash can permanently delete it.
 - Local: the project is removed from this browser's storage. If it was the
   last one, the list is marked as cleared so an old single-file backup is not
   imported again.
@@ -32,8 +32,10 @@ workspaces only the file's creator or an administrator can delete versions.
 
 Not included: Empty Trash, automatic expiry of Trash, a scheduled retention
 policy, or cleanup of rows that belong to files deleted before this change.
-The Delete forever menu item and its confirmation were **not** compared
-against Figma's Trash; the live Figma UI could not be opened for this change.
+The menu item, both confirmation dialogs and their wording were compared
+against Figma's Trash on 2026-11-11; see `docs/FIGMA_UI_REFERENCE.md` for what
+matches and what still differs. Moving a project to Trash now asks first, as
+Figma does.
 
 Shared projects can be deleted and restored only by their original creator, a
 workspace owner/admin, or the installation administrator. Installation admins

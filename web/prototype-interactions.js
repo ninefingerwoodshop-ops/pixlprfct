@@ -12,4 +12,4 @@ export function actionLabel(p,frameName,variableName=()=>undefined){
  return (p.action==='overlay'?'Open overlay: ':p.action==='swap'?'Swap overlay: ':'')+(frameName(p.target)??'Unavailable')+when;
 }
 export const sequenceLabel=(p,frameName,variableName)=>actionSteps(p).map(step=>actionLabel(step,frameName,variableName)).join(', then ');
-export const triggerLabels={click:'On click',mouseenter:'Mouse enter',mouseleave:'Mouse leave',afterdelay:'After delay',mousedown:'Mouse down / Touch press',mouseup:'Mouse up / Touch release',drag:'On drag'};
+export const triggerLabels={click:'On click',mouseenter:'Mouse enter',mouseleave:'Mouse leave',afterdelay:'After delay',mousedown:'Mouse down',mouseup:'Mouse up',drag:'On drag'};
