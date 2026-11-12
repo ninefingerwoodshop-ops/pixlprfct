@@ -4,10 +4,12 @@
 const KINDS=['number','boolean','string','color'];
 export function prototypeVariables(doc){
  const collections=new Map((doc.variables?.collections??[]).map(c=>[c.id,c.name]));
- return (doc.variables?.values??[]).filter(v=>KINDS.includes(v.kind)).map(v=>({id:v.id,kind:v.kind,name:v.name,label:`${collections.get(v.collection_id)??''} / ${v.name}`}));
+ return (doc.variables?.values??[]).filter(v=>KINDS.includes(v.kind)).map(v=>({id:v.id,kind:v.kind,name:v.name,collection:collections.get(v.collection_id)??'',label:`${collections.get(v.collection_id)??''} / ${v.name}`}));
 }
 export const operatorsFor=kind=>kind==='number'?['==','!=','<','<=','>','>=']:['==','!='];
 export const operatorLabels={'==':'is','!=':'is not','<':'is less than','<=':'is at most','>':'is greater than','>=':'is at least'};
+// Figma's names for the comparisons in a conditional (inspected 2026-11-11).
+export const comparisonNames={'==':'Equal to','!=':'Not equal to','>':'Greater than','>=':'Greater than or equal to','<':'Less than','<=':'Less than or equal to'};
 export const operationsFor=kind=>kind==='number'?['set','add']:kind==='boolean'?['set','toggle']:['set'];
 export const operationLabels={set:'Set to',add:'Add',toggle:'Toggle'};
 export const defaultLiteral=kind=>({number:0,boolean:true,string:'',color:'#000000'})[kind];
@@ -35,6 +37,11 @@ export function nextValue(action,current){
 const literalText=value=>typeof value==='string'?`“${value}”`:String(value);
 export function conditionLabel(condition,variableName){
  return condition?`when ${variableName(condition.variable)??'a missing variable'} ${operatorLabels[condition.operator]??condition.operator} ${literalText(condition.value)}`:'';
+}
+export const conditionLiteral=value=>typeof value==='string'?`"${value}"`:String(value);
+// "Count > 3": a condition as Figma writes it in a conditional's if row.
+export function conditionText(condition,variableName){
+ return condition?`${variableName(condition.variable)??'a missing variable'} ${condition.operator} ${conditionLiteral(condition.value)}`:'';
 }
 export function setVariableLabel(action,variableName){
  const name=variableName(action.variable)??'a missing variable';
