@@ -80,7 +80,7 @@ test('set labels avoid adjacent artwork and retain selection, rename, and zoom c
  await select(page,header);await page.getByLabel('Layer visible',{exact:true}).uncheck();await expect(label).toBeVisible();
  await label.getByRole('button').click();await expect(page.locator(`.layer[data-layer-id="${frame.id}"]`)).toHaveAttribute('aria-pressed','true');
  await label.getByRole('button').dblclick();await label.getByRole('textbox',{name:'Frame name'}).fill('Renamed set');await page.keyboard.press('Enter');await expect.poll(async()=>(await saved(page)).component_sets[0].name).toBe('Renamed set');
- expect(await label.getByRole('button').evaluate(n=>getComputedStyle(n).fontSize)).toBe('12px');await snapshot(page,'set-labels.png');
+ expect(await label.getByRole('button').evaluate(n=>getComputedStyle(n).fontSize)).toBe('11px');await snapshot(page,'set-labels.png');
  await page.locator('#canvas').focus();for(let i=0;i<22;i++)await page.keyboard.press('Control+-');
  expect(await label.evaluate(n=>parseFloat(n.style.maxWidth))).toBeLessThan(80);expect(await label.evaluate(n=>n.getBoundingClientRect().width)).toBeLessThan(80);
  await page.reload();expect((await saved(page)).shapes.find(s=>s.id===header).hidden).toBe(true);expect((await saved(page)).component_sets[0].name).toBe('Renamed set');

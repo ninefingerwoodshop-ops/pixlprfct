@@ -1457,4 +1457,62 @@ Still different:
 - Handles are not shown for a grid nested inside a rotated parent any
   differently from before; rotation was not checked.
 
-Slots and set labels were not inspected in this pass.
+Slots and set labels were inspected later the same day; see the section below.
+
+## Slots and set labels — live web app, 2026-11-11
+
+Inspected in the Figma web app at 100% in a scratch file: a two-variant set, a
+component with an inner frame, and an instance of it.
+
+Observed:
+
+- **Convert to slot** (⇧⌘S, in the frame's context menu) converts at once and
+  creates a property named after the frame. No chooser appeared.
+- A slot is magenta on the canvas: outline, a light pink tint, a pink size
+  pill, and a dotted pink outline around its component while it is selected.
+  Its layer row is pink with a square-plus glyph. In an instance the slot shows
+  the tint and a pink **+** in the middle; the instance panel lists
+  "Content [Default]".
+- The component's **Properties** list shows a filled 24 px chip: square-plus
+  glyph, the name, then "· 1 item". On hover the chip narrows and a settings
+  button and **−** appear. Clicking the name renames it in place. **+** opens
+  "Create property": Variant, Text, Boolean, Instance swap, Slot.
+- **Edit slot property** is a 304 px popover with a 40 px title bar. It has no
+  Save button; edits apply as they are made. **Name** sits beside a 136×24
+  field. **Description** is a 270×112 rich-text box ("How to use this slot")
+  with a row of 24 px tools under the text, 30 px apart: Bold, Italic,
+  Strikethrough, Heading, Bulleted list, Numbered list, Link, Code, Code
+  block. **Settings**: Minimum layers and Maximum layers (120 px fields with
+  steppers, "None"), then checkboxes 36 px apart: "Flag non-preferred
+  instances", "By default, display empty slot", "By default, fill items on
+  slot's counter axis" (disabled here, with an info icon). Last row:
+  "Preferred instances", a "Learn more" link and **+**.
+- Set and component labels are 11 px Inter in the component purple, with the
+  glyph flush with the frame's left edge, a 4 px gap, and the text centred
+  about 13.5 px above the boundary. "Parity Button" measured 67 px wide; Inter
+  gives 68 px at 11 px and 74 px at 12 px. The 12 px figure recorded on
+  2026-10-30 came from the desktop app and is superseded for the web app.
+  A selected set shows a "2 Variants" pill and a **+** below it.
+
+PixlPrfct now matches: the dialog title, the Name row, the description box
+with the nine tools underneath in Figma's order, the limit fields on the right,
+the "Flag non-preferred instances" wording, the property chip with its count
+and hover-only edit and remove buttons, and 11 px canvas labels 25 px above
+the frame. Strikethrough (`~~text~~`), headings (`# `) and code blocks
+(fenced) were added to the stored description format to back the new tools.
+
+Still different:
+
+- The description is a text box holding the markers, with a formatted preview
+  below. Figma edits the formatted text directly.
+- The dialog is modal and keeps **Save property**, the "Apply to all N
+  variants" box and the preview. Figma's is a floating popover that applies
+  edits live.
+- The limit fields are plain number inputs without Figma's stepper arrows, and
+  there is no "Learn more" link or info icon.
+- "· N items" counts the layers bound to the property. What Figma counts
+  there was not confirmed beyond the single case seen.
+- Clicking the chip opens the dialog; Figma renames in place.
+- Convert to slot still offers a choice of property; the pink tint, size pill
+  and dotted component outline on the canvas, the instance **+** button, and
+  the "N Variants" pill were not compared against PixlPrfct in this pass.

@@ -62,3 +62,15 @@ test('list buttons prefix every selected line and toggle off again',()=>{
  assert.equal(formatSelection('solo',2,2,'bulleted').value,'- solo');
  assert.deepEqual(formatSelection('same',0,4,'unknown'),{value:'same',start:0,end:4});
 });
+test('strikethrough, headings and code blocks follow Figma\'s description toolbar',()=>{
+ assert.deepEqual(parseDescription('# Title\n\nUse ~~two~~ one\n\n```\n<b>x</b>\n- raw **text**\n```\n- a'),[
+  {type:'heading',lines:[[{text:'Title'}]]},{type:'paragraph',lines:[[{text:'Use '},{text:'two',strike:true},{text:' one'}]]},
+  {type:'code',text:'<b>x</b>\n- raw **text**'},{type:'list',ordered:false,items:[[{text:'a'}]]}]);
+ // An unclosed fence runs to the end; a lone ~ or # is plain text.
+ assert.deepEqual(parseDescription('```\nopen'),[{type:'code',text:'open'}]);
+ assert.deepEqual(parseDescription('a ~ b #1 ~~ c'),[{type:'paragraph',lines:[[{text:'a ~ b #1 ~~ c'}]]}]);
+ assert.equal(plainDescription('# T\n\n~~x~~\n\n```\ny\n```'),'T\n\nx\n\ny');assert.equal(hasFormatting('# T'),true);assert.equal(hasFormatting('~~x~~'),true);assert.equal(hasFormatting('```\nx\n```'),true);
+ assert.deepEqual(formatSelection('abc',0,3,'strike'),{value:'~~abc~~',start:2,end:5});assert.deepEqual(formatSelection('~~abc~~',2,5,'strike'),{value:'abc',start:0,end:3});
+ assert.deepEqual(formatSelection('abc\ndef',1,5,'heading'),{value:'# abc\n# def',start:0,end:11});assert.deepEqual(formatSelection('# abc\n# def',0,11,'heading'),{value:'abc\ndef',start:0,end:7});
+ assert.deepEqual(formatSelection('abc',1,1,'codeblock'),{value:'```\nabc\n```',start:4,end:7});assert.deepEqual(formatSelection('```\nabc\n```',0,11,'codeblock'),{value:'abc',start:0,end:3});
+});

@@ -32,7 +32,7 @@ export function installFramePresets(panel,create){
  panel.prepend(section);return active=>{if(section.parentElement!==panel)panel.prepend(section);section.hidden=!active;panel.classList.toggle('choosing-frame',active);};
 }
 export function installFrameLabels(canvas,{select,rename,beginDrag}){
- const overlay=document.createElement('div');overlay.className='frame-labels';overlay.style.inset='0';canvas.after(overlay);const entries=new Map(),metrics=document.createElement('canvas').getContext('2d');metrics.font='12px Inter,Arial,sans-serif';
+ const overlay=document.createElement('div');overlay.className='frame-labels';overlay.style.inset='0';canvas.after(overlay);const entries=new Map(),metrics=document.createElement('canvas').getContext('2d');metrics.font='11px Inter,Arial,sans-serif';
  return (scene,pan,zoom,selected,enabled,sets=[])=>{
   const byId=new Map(scene.map(s=>[s.id,s]));
   const obstacles=scene.filter(s=>!s.parent_id&&!s.hidden).map(s=>({id:s.id,...visualBounds(s)}));
@@ -69,7 +69,7 @@ export function installFrameLabels(canvas,{select,rename,beginDrag}){
    // its text would cover another root's artwork; Layers remains available.
    const occluded=type==='set'&&!row.querySelector('input')&&obstacles.some(s=>s.id!==frame.id&&label.x<s.x+s.width&&label.x+label.width>s.x&&label.y<s.y+s.height&&label.y+label.height>s.y);
    row.dataset.occluded=String(occluded);row.style.visibility=occluded?'hidden':'';
-   row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+top*zoom-26+'px';row.style.maxWidth=width+'px';row.style.pointerEvents=enabled&&!occluded?'auto':'none';
+   row.dataset.locked=String(lockedInTree(frame,scene));row.classList.toggle('selected',selected.has(frame.id));row.style.left=pan.x+frame.x*zoom+'px';row.style.top=pan.y+top*zoom-25+'px';row.style.maxWidth=width+'px';row.style.pointerEvents=enabled&&!occluded?'auto':'none';
   }
  };
 }

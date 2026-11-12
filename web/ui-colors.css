@@ -53,6 +53,7 @@
 .frame-label[data-locked="true"]>button{cursor:default}
 /* Canvas labels measured in the live Figma reference; their size stays fixed on zoom. */
 .frame-label{height:24px}
-.frame-label>button{font-size:12px;line-height:16px;padding:0;gap:4px}
+/* Figma draws frame and component labels at 11px (measured from the web app at 100%, 2026-11-11). */
+.frame-label>button{font-size:11px;line-height:16px;padding:0;gap:4px}
 .frame-label-icon{flex-basis:12px}
 .frame-label-icon svg{width:12px;height:12px}
