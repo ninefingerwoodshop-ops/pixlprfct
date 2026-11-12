@@ -26,7 +26,8 @@ This page covers everything that lets more than one person work on PixlPrfct des
 | Character-level text merging / CRDT, WebSocket push | **Not implemented** (polling + whole-field merge) |
 | Who has the file open, and following someone's view | Implemented in every editing mode for any role that can see the file: `POST /presence` heartbeat (1 s, 250 ms while following or followed), avatars, coloured cursors, click an avatar to follow |
 | Canvas comment pins, spotlight (asking others to follow you), voice | **Not implemented** (TEAM_WORKFLOWS.md) |
-| Public links, cross-workspace or anonymous sharing | **Not implemented** |
+| Share link for people outside the workspace | Implemented: one link per file; the visitor signs in and may then **view** that one file ([server/share-links.mjs](../../server/share-links.mjs)) |
+| Anonymous (no sign-in) links, guests who comment or edit, a "shared with me" list | **Not implemented** |
 | Live synchronization with external source libraries | **Not implemented** |
 | Publishing a library that contains another library's instance or pattern | Refused by `librarySnapshot` |
 | Nested instance-swap overrides | **Not implemented** (README "Current limits") |
@@ -232,6 +233,14 @@ Every editor window with a shared-workspace file open sends `POST /api/documents
 [web/presence.js](../../web/presence.js) holds the client rules: `Presence` (heartbeat, `follow`, `stop`, faster interval while following or being followed), `personColor` (one of eight colours per window), `followView` (the zoom and pan that fit the other person's view rectangle whole into this canvas) and `blendView` (200 ms glide between updates). `installTeamCollaboration` draws the avatars (the followed person first, yourself last, **+N** past four), coloured cursors, the **Following NAME · Stop** pill and the coloured canvas frame. Following ends on wheel or pointer-down on the canvas, Escape, Stop, clicking the avatar again, or when that person leaves.
 
 Following is one-way and per viewer: it never moves the followed person's view and does not change who may edit. With polling, a followed view arrives up to 250 ms late plus a 200 ms glide; it is not frame-by-frame.
+
+## Share links
+
+The Share dialog's **Link sharing** section (file creator or workspace admin) creates one link per file: `<base URL>/editor/account.html?join=<token>`. Any member can copy it. Opening it shows the account page; signing in or registering keeps the `join` parameter, then `POST /api/share-links/redeem` records the account in `document_guests` and the page opens the file.
+
+A guest is not a workspace member. `accessFor` in `server/application.mjs` falls back to `guestAccess()` only when membership fails, and `guestRoute()` lets that access through for exactly: `GET /api/documents/:id`, `GET …/editing`, `GET …/comments`, `POST|DELETE …/presence`, for the files joined. Every other route answers 403, so no other handler receives a guest. `collaboration.record()` gives a guest the `viewer` role regardless of the workspace default. A member who opens the link keeps their own role, including `none`.
+
+Guest rows are valid only while the link they came through is on (`document_guests.token` must match `document_links.token`). **Replace link** and **Turn off link** therefore end access for everyone who joined; **Remove** ends it for one person. The token is 32 random bytes and is stored as is, so the link can be shown again; treat a database copy as holding live links.
 
 ## Key modules
 
