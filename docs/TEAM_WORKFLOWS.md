@@ -13,7 +13,7 @@ Simultaneous multiplayer editing is not implemented.
    files do not gain shared access just by copying their address.
 3. Open **Share**. Set the workspace default and individual member overrides:
    **Can view**, **Can comment**, **Can edit**, or **No access**. The creator and
-   workspace administrators manage file access. Copy link preserves those checks;
+   workspace administrators manage file access. Copy link (the file's own address) preserves those checks;
    it does not create anonymous access or invite an outsider.
 4. An editor clicks **Start editing**. Other editors see the current holder and
    can **Request editing**. The holder saves and clicks **Hand off to …**, or
@@ -98,8 +98,19 @@ Figma library synchronization and simultaneous co-editing remain separate work.
   show first-project and design-system setup actions.
 
 Synthetic acceptance uses separate authenticated browser contexts; there are no
-human pilot participants. Canvas comment pins, public/cross-workspace sharing,
+human pilot participants. Canvas comment pins, anonymous public links,
 voice, spotlight (asking everyone to follow you), and character-level co-editing remain separate features.
+
+## Share links — 2026-11-12
+
+In **Share**, the file creator or a workspace administrator can **Create share
+link**. Anyone who opens the link signs in (or creates an account) and can
+then view that one file; they cannot edit, comment, open Reviews or the Share
+dialog, or see anything else in the workspace. People who joined are listed
+under **Joined by link** and can be removed one at a time. **Replace link**
+and **Turn off link** stop the link and end access for everyone who came in
+through it. There is still no link that works without signing in, and the
+server must be reachable by the people you send it to.
 
 ## People in the file and following — 2026-11-12
 

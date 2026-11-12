@@ -7,13 +7,15 @@ const card=(title,description)=>{const node=el('section',undefined,'account-card
 const message=(target,text)=>{const node=el('p',text,'account-success');node.setAttribute('role','status');target.append(node);};
 const fail=error=>{const node=el('p',error.message,'account-message');node.setAttribute('role','alert');content.append(node);};
 const run=action=>async event=>{const source=event?.currentTarget;if(source)source.disabled=true;try{await action(event);}catch(error){fail(error);}finally{if(source)source.disabled=false;}};
-const callback=()=>location.origin+'/editor/account.html'+(params.get('invitation')?'?invitation='+encodeURIComponent(params.get('invitation')):'');
+// A team invitation or a file's share link survives signing in or creating an account.
+const callback=()=>{const keep=new URLSearchParams();for(const key of ['invitation','join'])if(params.get(key))keep.set(key,params.get(key));return location.origin+'/editor/account.html'+(keep.size?'?'+keep:'');};
 const setMode=mode=>{params.set('mode',mode);history.replaceState(null,'','?'+params);renderAuth(mode);};
 function renderAuth(mode='signin'){
  const reset=mode==='reset',signup=mode==='register',forgot=mode==='forgot',factor=mode==='factor',backup=mode==='backup';
  const title=reset?'Choose a new password':signup?'Create your account':forgot?'Reset your password':factor||backup?'Verify it’s you':'Welcome back';
  heading(title,signup?'Create designs, build a team, and work together. Every feature is free.':factor||backup?'Complete the second step to securely sign in.':'Your projects and your team, in one place.');
  const panel=card();panel.classList.add('narrow');content.append(panel);
+ if(params.get('join')&&!reset)panel.append(el('p',signup?'Create an account to view the file that was shared with you.':'Sign in to view the file that was shared with you.','account-hint'));
  if(installation.localDevelopment)panel.append(el('p','Local development: verification emails are saved privately in data/outbox.','account-hint'));
  const fields=[];
  if(signup)fields.push(field('Your name','name',{autocomplete:'name',maxLength:100}));
@@ -41,6 +43,12 @@ async function loadAccount(){
  heading('Your workspace',`Signed in as ${workspace.user.email}`);
  const actions=el('div',undefined,'account-actions');actions.append(link('Open projects','/'),button('Sign out',run(async()=>{await auth('sign-out',{});location.assign('/editor/account.html');})));
  content.append(actions);
+ if(params.get('join')){
+  // Opened from a file's share link: add this account as a viewer of that file, then open it.
+  const shared=card('Shared file');content.append(shared);
+  try{const file=await api('/api/share-links/redeem',{token:params.get('join')});shared.append(el('p','Opening '+file.name+'…'));location.assign('/editor/index.html?'+new URLSearchParams({cloud:file.id,workspace:file.workspace}));return;}
+  catch(error){shared.append(el('p',error.status===403?'You do not have access to this file. Ask a workspace administrator.':error.message,'account-message'),link('Open my workspaces','/'));}
+ }
  if(params.get('invitation')){
   const invite=card('Team invitation');content.append(invite);
   try{const invitation=await auth('organization/get-invitation?'+new URLSearchParams({id:params.get('invitation')}));invite.append(el('p','Join '+invitation.organizationName+' as '+invitation.role+'. This invitation expires '+new Date(invitation.expiresAt).toLocaleString()+'.'),button('Accept invitation',run(async()=>{await auth('organization/accept-invitation',{invitationId:invitation.id});location.assign('/?'+new URLSearchParams({workspace:'org:'+invitation.organizationId}));}),'primary'));}

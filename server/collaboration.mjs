@@ -17,8 +17,9 @@ export function collaborationService(db,engine,{now=Date.now}={}){
   if(!file)throw new DocumentError(404,'File not found.');
   await db.query(`${ignored} INTO document_collaboration (document_id,owner,roles) VALUES (?,?,'{}')${engine==='postgres'?' ON CONFLICT (document_id) DO NOTHING':''}`,[id,access.owner],'run');
   const [policy]=await db.query('SELECT * FROM document_collaboration WHERE document_id=? AND owner=?',[id,access.owner]);
-  const manage=access.manage||file.created_by===access.userId;
-  const role=manage?'owner':JSON.parse(policy.roles)[access.userId]??policy.default_role;
+  // A link guest can only ever view, whatever the workspace default is.
+  const manage=!access.guest&&(access.manage||file.created_by===access.userId);
+  const role=access.guest?(access.guestDocuments.includes(String(id).toLowerCase())?'viewer':'none'):manage?'owner':JSON.parse(policy.roles)[access.userId]??policy.default_role;
   return {file,policy,manage,role,canEdit:canEdit(role),canComment:canComment(role)};
  }
  async function accessFor(id,access){const state=await record(id,access);if(state.role==='none')throw new DocumentError(403,'You no longer have access to this file.');return state;}
@@ -47,7 +48,7 @@ export function collaborationService(db,engine,{now=Date.now}={}){
   const live=p.lease_expires>stamp&&people.some(m=>m.id===p.lease_user);
   const mine=!!live&&p.lease_user===access.userId&&p.lease_client===client;
   const requests=await db.query('SELECT id,user_id,client_id,created_at FROM document_edit_requests WHERE document_id=? AND owner=? AND created_at>? ORDER BY created_at LIMIT 20',[id,access.owner,stamp-10*60_000]);
-  const result={editingMode:p.editing_mode,revision:p.revision,documentRevision:state.file.revision,userId:access.userId,role:state.role,canEdit:state.canEdit,canComment:state.canComment,manage:state.manage,serverNow:stamp,
+  const result={guest:!!access.guest,editingMode:p.editing_mode,revision:p.revision,documentRevision:state.file.revision,userId:access.userId,role:state.role,canEdit:state.canEdit,canComment:state.canComment,manage:state.manage,serverNow:stamp,
    lease:live?{userId:p.lease_user,name:userName(p.lease_user),mine,expiresAt:p.lease_expires,...(mine?{token:p.lease_token}:{})}:null,
    requested:requests.some(r=>r.user_id===access.userId&&r.client_id===client),
    requests:mine?requests.filter(r=>people.some(m=>m.id===r.user_id)).map(r=>({id:r.id,name:userName(r.user_id),userId:r.user_id})):[],
