@@ -4,7 +4,7 @@
 const KINDS=['number','boolean','string','color'];
 export function prototypeVariables(doc){
  const collections=new Map((doc.variables?.collections??[]).map(c=>[c.id,c.name]));
- return (doc.variables?.values??[]).filter(v=>KINDS.includes(v.kind)).map(v=>({id:v.id,kind:v.kind,name:v.name,label:`${collections.get(v.collection_id)??''} / ${v.name}`}));
+ return (doc.variables?.values??[]).filter(v=>KINDS.includes(v.kind)).map(v=>({id:v.id,kind:v.kind,name:v.name,collection:collections.get(v.collection_id)??'',label:`${collections.get(v.collection_id)??''} / ${v.name}`}));
 }
 export const operatorsFor=kind=>kind==='number'?['==','!=','<','<=','>','>=']:['==','!='];
 export const operatorLabels={'==':'is','!=':'is not','<':'is less than','<=':'is at most','>':'is greater than','>=':'is at least'};

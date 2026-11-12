@@ -36,8 +36,19 @@ test('a conditional is built in the Interaction panel as an if/else block',async
  await expect(test).toHaveAttribute('aria-selected','true');await expect(block.locator('.prototype-modal-else')).toHaveText('else');
  await expect(block.getByRole('button',{name:'Add action to if',exact:true})).toBeVisible();await expect(block.getByRole('button',{name:'Add action to else',exact:true})).toBeVisible();
  await expect(modal.getByRole('heading',{name:'Condition',exact:true})).toBeVisible();await expect(field('Animation')).toHaveCount(0);await expect(field('Run')).toHaveCount(0);
- await expect(field('Comparison').locator('option')).toHaveText(['Equal to','Not equal to','Less than','Less than or equal to','Greater than','Greater than or equal to']);
- await set(field('Comparison'),'>');await field('Compared with').fill('1');await field('Compared with').blur();
+ // The test is written in a popover: pick the variable, then the comparison, then type the value.
+ const condition=modal.getByRole('button',{name:'Condition',exact:true}),popover=modal.getByRole('dialog',{name:'Write condition',exact:true}),entry=popover.getByRole('textbox',{name:'Write condition',exact:true}),options=popover.getByRole('option');
+ await expect(condition).toHaveText('Count'+'=='+'0');expect((await condition.boundingBox()).height).toBe(24);
+ await condition.click();await expect(entry).toBeFocused();await expect(entry).toHaveValue('== 0');expect((await popover.boundingBox()).width).toBe(257);
+ // Backspace through the text and the chip to start again from the variable list.
+ await entry.fill('');await expect(options).toHaveText(['Equal to'+'==','Not equal to'+'!=','Greater than'+'>','Greater than or equal to'+'>=','Less than'+'<','Less than or equal to'+'<=']);
+ await entry.press('Backspace');await expect(popover.locator('.prototype-condition-group')).toHaveText(['State','Typography Base']);await expect(options).toHaveText(['Count'+'0','Open'+'False','Text color'+'#222222']);
+ await entry.fill('op');await expect(options).toHaveText(['Open'+'False']);await entry.press('Enter');await expect(popover.locator('.prototype-modal-variable')).toHaveText('Open');await expect(options).toHaveText(['Equal to'+'==','Not equal to'+'!=']);
+ // An unfinished test is dropped: Escape leaves the saved one alone.
+ await entry.press('Escape');await expect(popover).toHaveCount(0);await expect(condition).toBeFocused();expect((await proto()).condition).toEqual({variable:1,operator:'==',value:0});
+ await condition.click();await entry.fill('');await entry.press('Backspace');await entry.fill('cou');await entry.press('Enter');
+ await entry.pressSequentially('gre');await expect(options).toHaveText(['Greater than'+'>','Greater than or equal to'+'>=']);await entry.press('Enter');await expect(entry).toHaveValue('> ');
+ await entry.pressSequentially('1');await expect(options).toHaveCount(0);await entry.press('Enter');await expect(popover).toHaveCount(0);
  await expect.poll(async()=>(await proto()).condition).toEqual({variable:1,operator:'>',value:1});await expect(modal.getByRole('option',{name:'if Count > 1',exact:true})).toBeVisible();
  // Geometry measured in Figma: a 440 px panel, 182 px block of 24 px rows 8 px apart.
  const box=await block.boundingBox(),rows=await block.locator(':scope>*').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return [Math.round(r.top),Math.round(r.height)];}));
@@ -80,4 +91,21 @@ test('the player runs the side of a conditional that matches the variable at tha
  await page.mouse.click(go.x,go.y);await expect(status).toContainText('Done');
  await player(page).locator('summary').click();await player(page).getByRole('button',{name:'Back',exact:true}).click();
  await expect(player(page).getByRole('button',{name:'Go [Click] → If Count > 1: Done; else: Low',exact:true})).toBeVisible();
+});
+
+test('the condition popover is worked with the pointer and commits on leaving',async({page})=>{
+ const data=await seed(page,screens());await select(page,data.go);await page.getByRole('tab',{name:'Prototype',exact:true}).click();await page.locator('#prototype-panel .prototype-chip').click();
+ const modal=page.getByRole('dialog',{name:'Interaction',exact:true}),condition=modal.getByRole('button',{name:'Condition',exact:true}),popover=modal.getByRole('dialog',{name:'Write condition',exact:true}),entry=popover.getByRole('textbox',{name:'Write condition',exact:true});
+ const saved_=async()=>(await saved(page)).shapes.find(s=>s.id===data.go).prototype;
+ await expect(condition).toHaveText('Count'+'>'+'1');await condition.click();await entry.fill('');await entry.press('Backspace');
+ // Picking with the pointer keeps typing in the field; a boolean offers its two values.
+ await popover.getByRole('option',{name:'Open False',exact:true}).click();await expect(entry).toBeFocused();
+ await popover.getByRole('option',{name:'Not equal to !=',exact:true}).click();await expect(entry).toHaveValue('!= ');await expect(popover.getByRole('option')).toHaveText(['True','False']);
+ await popover.getByRole('option',{name:'True',exact:true}).click();await expect(popover).toHaveCount(0);
+ await expect.poll(async()=>(await saved_()).condition).toEqual({variable:2,operator:'!=',value:true});
+ // Both sides survive a rewritten test, and the if row follows it.
+ expect((await saved_()).if_actions.length+(await saved_()).else_actions.length).toBe(2);await expect(modal.getByRole('option',{name:'if Open != true',exact:true})).toBeVisible();
+ // Clicking elsewhere keeps a complete test and drops an incomplete one.
+ await condition.click();await entry.fill('== false');await modal.locator('header h2').click();await expect(popover).toHaveCount(0);await expect.poll(async()=>(await saved_()).condition).toEqual({variable:2,operator:'==',value:false});
+ await condition.click();await entry.fill('== ma');await modal.locator('header h2').click();await expect(popover).toHaveCount(0);await page.waitForTimeout(200);expect((await saved_()).condition).toEqual({variable:2,operator:'==',value:false});
 });
