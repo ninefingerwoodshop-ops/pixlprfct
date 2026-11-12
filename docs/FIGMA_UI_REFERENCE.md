@@ -1411,18 +1411,50 @@ Still different:
 
 ### Grid auto-layout track handles
 
-- With a grid frame selected, hovering a cell shows a small light-blue pill
-  centered above that cell's column and another to the left of its row, about
-  28 px outside the frame at 246% zoom.
-- Hovering a pill expands it to a blue chip with a grip icon, the track size
-  ("1fr") and a chevron.
-- Clicking the chip selects the track, outlines it on the canvas and replaces
-  the right sidebar with a **Grid** panel: **Columns** and **Rows** lists, each
-  row showing its index, a sizing menu (Fill) and a value menu (1fr), a **−**
-  on the selected row and a **+** in each list header.
+Re-inspected on 2026-11-11 at 100% zoom, with sizes converted to CSS px
+(screenshots are scaled to 84%; the sidebar was read from the page layout).
 
-PixlPrfct's track headers are different: a header lane drawn for every track
-in spacing-edit mode, not a per-hover pill and chip, and selection does not
-open a Grid panel in the sidebar. Dragging a chip to reorder and multi-track
-selection were **not** exercised in Figma, so that behaviour is still
-unverified. Slots and set labels were not inspected in this pass.
+- With a grid frame selected, hovering a cell shows a light-blue pill with a
+  white edge centred over that cell's column and another beside its row. Pills
+  are 22 × 10 px (10 × 22 for rows) and sit 34 px outside the frame.
+- Hovering a pill turns it into a blue chip, 16 px high and 55 px wide for
+  "1fr": a grip (three bars), the track size in white, and a chevron. Row chips
+  are also horizontal and extend away from the frame.
+- Clicking any part of the chip selects the track: a 2 px blue outline around
+  the whole column or row, the chip stays, and the frame outline becomes dashed.
+- Shift-click adds further tracks; neighbouring selected tracks share one outline.
+- Dragging a chip reorders the track, and a multi-track selection moves together.
+- Clicking the chevron of an already selected track opens a menu: **Fixed
+  width (154.67)**, **Hug contents**, **Fill container (1fr)** with a check on
+  the current one; the size text becomes editable.
+- While tracks are selected the sidebar shows a **Grid** panel under the
+  Design / Prototype tabs: a 13 px / 550 title with a 24 px close button, then
+  **Columns** and **Rows** (11 px / 550) each with a 24 px **+**. Rows are 24 px
+  controls 32 px apart: a 16 px track number at 40% white, a 76 px sizing menu
+  (Fill), a 76 px value field with its own menu (1fr), and a 24 px **−** on
+  selected rows. Selected rows are highlighted and their controls outlined in blue.
+
+PixlPrfct now matches (rebuilt 2026-11-11): pills for the hovered cell's
+column and row at those sizes and offsets, chips on hover and for selected
+tracks, click / Shift / Ctrl-or-Command selection, the shared 2 px outline,
+drag to reorder including several tracks, the chevron sizing menu with those
+three entries, and the sidebar Grid panel with those row sizes. It works for
+any selected grid frame, no longer only in "Edit spacing on canvas".
+
+Still different:
+
+- The chevron menu marks the current entry with a "✓" in its label rather
+  than a check column, and has no icons.
+- The size text in a chip cannot be edited in place; edit it in the Grid panel.
+- The value field in the Grid panel is a plain text field, without Figma's
+  attached menu. The sizing menu offers Fixed, Hug and Fill, plus the track's
+  current mode if it is one of PixlPrfct's others (percent, em, auto, min/max content).
+- The frame outline does not become dashed while a track is selected, and
+  selected tracks get a light tint as well as the outline.
+- After the selected track is removed, PixlPrfct keeps the panel open on the
+  neighbouring track. What Figma does there was not observed.
+- Chip colours and the exact grip and chevron shapes were matched by eye.
+- Handles are not shown for a grid nested inside a rotated parent any
+  differently from before; rotation was not checked.
+
+Slots and set labels were not inspected in this pass.
