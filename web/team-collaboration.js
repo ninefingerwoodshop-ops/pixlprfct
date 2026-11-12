@@ -3,9 +3,10 @@ import {cloudRequest} from './cloud-session.js';
 import {LiveSession} from './live-session.js';
 import {TeamSession,sameArtwork} from './team-session.js';
 import {icon} from './icons.js';
+import {Presence,personColor,initials,followView,blendView} from './presence.js';
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
 const roleNames={none:'No access',viewer:'Can view',commenter:'Can comment',editor:'Can edit',owner:'Owner'};
-export function installTeamCollaboration({session,reload,getDocument,selection,select,changed,toast,enabled,editor,applyRemote,busy,point,screenPoint}){
+export function installTeamCollaboration({session,reload,getDocument,selection,select,changed,toast,enabled,editor,applyRemote,busy,point,screenPoint,activePage=()=>getDocument().active_page,view=()=>null,setView=()=>{}}){
  activityStyles();
  const workspace=new URLSearchParams(location.search).get('workspace'),shared=enabled&&/^(org|team):/.test(workspace??'');
  const bar=el('div','team-editing'),label=el('span'),actions=el('div','team-actions');bar.setAttribute('role','region');bar.setAttribute('aria-label','Editing session');bar.append(label,actions);document.querySelector('.right-panel .inspector-top').after(bar);
@@ -20,15 +21,68 @@ export function installTeamCollaboration({session,reload,getDocument,selection,s
  mentionPicker(textarea,getMembers);
  let loading=0,comments=[],showResolved=false,working=false,commentId=crypto.randomUUID(),commentFile=null,nextCommentsOffset=null;
  const model=new TeamSession({session,request:cloudRequest,reload,changed:()=>{render();changed();}});
- const people=el('div','team-presence'),cursors=el('div','team-cursors');people.setAttribute('aria-label','People in this file');document.querySelector('.right-panel .inspector-top').prepend(people);document.getElementById('workspace').append(cursors);let livePeople=[],cursor=null;
- const live=new LiveSession({session,model,apply:applyRemote,busy,reserve:(a,b)=>editor?.reserve_ids(a,b),presence:items=>{livePeople=items??[];renderPresence();},changed:()=>{render();changed();},cursor:()=>cursor});model.live=live;
+ const people=el('div','team-presence'),cursors=el('div','team-cursors');people.setAttribute('aria-label','People in this file');document.querySelector('.right-panel .inspector-top').prepend(people);document.getElementById('workspace').append(cursors);let cursor=null;
+ // Everyone with this file open, in any editing mode; following one of them moves this view with theirs.
+ const follow=el('div','team-follow'),followLabel=el('span'),followStop=el('button',null,'Stop');follow.hidden=true;follow.setAttribute('role','status');followStop.type='button';followStop.onclick=()=>presence.stop();follow.append(followLabel,followStop);document.getElementById('workspace').append(follow);
+ let glide=0;const presence=new Presence({call:(path,options)=>model.call(path,options),local:()=>({cursor,view:view()}),changed:renderPresence,left:()=>toast('The person you were following left the file.')});
+ const live=new LiveSession({session,model,apply:applyRemote,busy,reserve:(a,b)=>editor?.reserve_ids(a,b),changed:()=>{render();changed();},cursor:()=>cursor});model.live=live;
  const standardSave=({id,revision,body})=>session.request('/'+id,{method:'PUT',headers:{...model.headers(),'if-match':String(revision)},body});
  session.save=value=>live.active()?live.save(value):standardSave(value);session.receive=(data,body)=>live.active()?live.receive(data,body):body;
  if(editor)for(const kind of ['undo','redo','can_undo','can_redo']){const original=editor[kind].bind(editor);editor[kind]=()=>live.active()?(kind.startsWith('can_')?!!live.history[kind==='can_undo'?'undoStack':'redoStack'].length:live.undo(kind)):original();}
- document.getElementById('canvas').addEventListener('pointermove',e=>{if(live.active()){const p=point?.(e);if(p)cursor={...p,page:getDocument().active_page};}});
+ document.getElementById('canvas').addEventListener('pointermove',e=>{if(model.id){const p=point?.(e);if(p)cursor={x:p.x,y:p.y,page:activePage()};}});
+ // Moving the view yourself ends following, as in Figma.
+ for(const kind of ['wheel','pointerdown'])document.getElementById('canvas').addEventListener(kind,()=>presence.stop(),{capture:true,passive:true});
+ addEventListener('keydown',event=>{if(event.key==='Escape'&&presence.following&&!event.target.closest?.('dialog,input,textarea,select,[contenteditable]'))presence.stop();},true);
  document.getElementById('canvas').addEventListener('pointerleave',()=>cursor=null);
- function renderPresence(){people.replaceChildren();people.hidden=!live.active();for(const p of livePeople){const b=el('button','team-avatar',p.name.trim().split(/\s+/).map(n=>n[0]).slice(0,2).join(''));b.title=p.name+(p.mine?' (You)':'');b.setAttribute('aria-label',b.title);b.onclick=()=>{const existing=document.querySelector('.team-people-popover');if(existing){existing.remove();return;}const pop=el('dialog','team-people-popover');pop.setAttribute('aria-label','People in this file');for(const person of livePeople)pop.append(el('p',null,person.name+(person.mine?' (You)':'')));const r=b.getBoundingClientRect();pop.style.left=Math.min(innerWidth-240,r.left)+'px';pop.style.top=(r.bottom+8)+'px';pop.onclick=()=>pop.close();pop.addEventListener('close',()=>pop.remove());document.body.append(pop);pop.showModal();};people.append(b);}}
- function positionCursors(){cursors.replaceChildren();if(!live.active())return;for(const p of livePeople.filter(p=>!p.mine&&p.cursor?.page===getDocument().active_page)){const xy=screenPoint?.(p.cursor);if(!xy)continue;const node=el('div','team-cursor');node.style.transform=`translate(${xy.x}px,${xy.y}px)`;node.innerHTML='<svg width="16" height="20" viewBox="0 0 16 20"><path d="M1 1L14 12L8 13L5 19Z" fill="#b56bff" stroke="white"/></svg>';node.append(el('span',null,p.name));cursors.append(node);}}
+ let drawnPeople='';
+ function renderPresence(){
+  // Redrawn only when who is here or who is followed changes, so a focused avatar keeps its focus between heartbeats.
+  const signature=JSON.stringify([model.id,presence.following,presence.people.map(p=>[p.client,p.name,p.mine])]);if(signature===drawnPeople)return;drawnPeople=signature;
+  people.replaceChildren();people.hidden=!model.id||!presence.people.length;
+  const leader=presence.leader();follow.hidden=!leader;document.getElementById('workspace').classList.toggle('team-following',!!leader);
+  if(leader){for(const node of [follow,document.getElementById('workspace')])node.style.setProperty('--team-person',personColor(leader.client));followLabel.textContent='Following '+leader.name;followStop.setAttribute('aria-label','Stop following '+leader.name);}
+  // The person being followed first, then everyone else, yourself last; past four, the rest sit behind a count.
+  const mine=presence.people.find(p=>p.mine),others=presence.others().sort((a,b)=>(b.client===presence.following)-(a.client===presence.following)),shown=others.slice(0,MAX_AVATARS),more=others.length-shown.length;
+  const avatar=p=>{
+   const b=el('button','team-avatar',initials(p.name)),following=presence.following===p.client;b.type='button';b.style.setProperty('--team-person',personColor(p.client));b.title=p.mine?p.name+' (You)':(following?'Stop following ':'Follow ')+p.name;b.setAttribute('aria-label',b.title);
+   if(p.mine)b.onclick=showPeople;else{b.setAttribute('aria-pressed',String(following));b.onclick=()=>toggleFollow(p);}
+   return b;
+  };
+  people.append(...shown.map(avatar));
+  if(more>0){const rest=el('button','team-avatar team-avatar-more','+'+more);rest.type='button';rest.title=`${more} more ${more===1?'person':'people'}`;rest.setAttribute('aria-label',rest.title);rest.onclick=showPeople;people.append(rest);}
+  if(mine)people.append(avatar(mine));
+ }
+ const MAX_AVATARS=4;
+ function toggleFollow(p){if(presence.following===p.client)presence.stop();else{presence.follow(p.client);beatLoop();}}
+ // Everyone in the file by name; anyone but yourself can be followed from here too.
+ function showPeople(event){
+  const existing=document.querySelector('.team-people-popover');if(existing){existing.close();return;}
+  const pop=el('dialog','team-people-popover');pop.setAttribute('aria-label','People in this file');
+  for(const person of [...presence.others(),...presence.people.filter(p=>p.mine)]){
+   const row=el('p'),dot=el('span','team-person-dot'),name=el('span',null,person.name+(person.mine?' (You)':''));dot.style.background=personColor(person.client);row.append(dot,name);
+   if(!person.mine){const following=presence.following===person.client,b=el('button',null,following?'Stop following':'Follow');b.type='button';b.setAttribute('aria-label',(following?'Stop following ':'Follow ')+person.name);b.onclick=()=>toggleFollow(person);row.append(b);}
+   pop.append(row);
+  }
+  const r=event.currentTarget.getBoundingClientRect();pop.style.left=Math.max(8,Math.min(innerWidth-248,r.left))+'px';pop.style.top=(r.bottom+8)+'px';pop.onclick=()=>pop.close();pop.addEventListener('close',()=>pop.remove());document.body.append(pop);pop.showModal();
+ }
+ function positionCursors(){cursors.replaceChildren();if(!model.id)return;const page=activePage();for(const p of presence.others().filter(p=>p.cursor?.page===page)){const xy=screenPoint?.(p.cursor);if(!xy)continue;const node=el('div','team-cursor'),color=personColor(p.client);node.style.transform=`translate(${xy.x}px,${xy.y}px)`;node.style.setProperty('--team-person',color);node.innerHTML=`<svg width="16" height="20" viewBox="0 0 16 20"><path d="M1 1L14 12L8 13L5 19Z" fill="${color}" stroke="white"/></svg>`;node.append(el('span',null,p.name));cursors.append(node);}}
+ // Show what the followed person sees: their page, with their view fitted whole into this canvas.
+ function followLeader(){
+  const leader=presence.leader(),mine=view();if(!leader?.view||!mine||busy())return;
+  const target=followView(leader.view,mine.canvasWidth,mine.canvasHeight),from={page:mine.page,zoom:mine.zoom,pan:mine.pan},started=performance.now(),run=++glide;
+  if(target.page!==mine.page){setView(target);return;}
+  if(Math.abs(target.zoom-from.zoom)<1e-4&&Math.abs(target.pan.x-from.pan.x)<.5&&Math.abs(target.pan.y-from.pan.y)<.5)return;
+  const step=now=>{if(run!==glide||!presence.following)return;const t=Math.min(1,(now-started)/200);setView(blendView(from,target,t));if(t<1)requestAnimationFrame(step);};requestAnimationFrame(step);
+ }
+ let beatTimer=0,beatFile=null;
+ async function beatLoop(){
+  clearTimeout(beatTimer);
+  if(model.id!==beatFile){beatFile=model.id;presence.clear();}
+  if(model.id&&document.visibilityState==='visible'){try{await presence.beat();followLeader();}catch{/* Offline or access ended: the editing bar already reports it. */}}
+  else if(!model.id&&presence.people.length)presence.clear();
+  beatTimer=setTimeout(beatLoop,presence.interval());
+ }
+ beatLoop();addEventListener('pagehide',()=>{if(model.id)presence.leave();});
  setInterval(()=>{if(live.active()&&document.visibilityState==='visible')live.poll();},1000);setInterval(positionCursors,100);
  session.writeHeaders=()=>model.headers();session.equal=(a,b)=>model.id?sameArtwork(a,b):a===b;
  session.beforeWrite=()=>{if(!model.editable())throw Object.assign(new Error(model.issue||'Start editing before saving changes to this file.'),{status:423});};
@@ -36,7 +90,7 @@ export function installTeamCollaboration({session,reload,getDocument,selection,s
  const run=async fn=>{if(working)return;working=true;try{await fn();}catch(error){toast(error.message??String(error));}finally{working=false;render();}};
  const button=(text,fn,cls)=>{const b=el('button',cls,text);b.type='button';b.onclick=()=>run(fn);return b;};
  function render(){
-  const active=!!model.id;people.hidden=!active||model.state?.editingMode!=='live';document.getElementById('document-name').readOnly=active&&!model.editable();bar.hidden=!active;share.hidden=!active;document.body.classList.toggle('team-shared',active);document.body.classList.toggle('team-readonly',active&&!model.editable());
+  const active=!!model.id;document.getElementById('document-name').readOnly=active&&!model.editable();bar.hidden=!active;share.hidden=!active;document.body.classList.toggle('team-shared',active);document.body.classList.toggle('team-readonly',active&&!model.editable());
   if(!active){panel.hidden=true;document.body.classList.remove('team-comments-open');return;}
   const s=model.state;label.textContent=model.issue||(!s?'Checking access…':s.editingMode==='live'?(model.editable()?'Editing together':roleNames[s.role]):s.lease?.mine&&model.editable()?'You’re editing':s.lease?`${s.lease.name} is editing`:s.canEdit?'Open for review':roleNames[s.role]);
   actions.replaceChildren();if(live.conflict){label.title=live.conflict.paths.join(', ');actions.append(button('Keep my overlapping edits',()=>live.resolve('local')),button('Keep teammates’ overlapping edits',()=>live.resolve('remote')));}else label.title='';if(s?.canEdit&&s.editingMode!=='live'){if(s.lease?.mine&&model.editable()){actions.append(button('Finish editing',()=>model.action('release')));for(const r of s.requests)actions.append(button('Hand off to '+r.name,()=>model.action('handoff',r.id)));}else if(!s.lease||s.lease.mine)actions.append(button('Start editing',()=>model.action('acquire')));else actions.append(button(s.requested?'Handoff requested':'Request editing',()=>model.action('request')));}
