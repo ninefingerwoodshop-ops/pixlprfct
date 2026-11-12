@@ -99,4 +99,19 @@ Figma library synchronization and simultaneous co-editing remain separate work.
 
 Synthetic acceptance uses separate authenticated browser contexts; there are no
 human pilot participants. Canvas comment pins, public/cross-workspace sharing,
-voice, spotlight/follow, and character-level co-editing remain separate features.
+voice, spotlight (asking everyone to follow you), and character-level co-editing remain separate features.
+
+## People in the file and following — 2026-11-12
+
+Avatars at the top of the inspector show everyone who has the file open, in
+any editing mode and with any role that can see it, each in their own colour.
+Their pointers appear on the canvas in the same colour. Click someone's avatar
+to follow them: your canvas shows what theirs shows, framed in their colour
+with a **Following NAME** pill. Scroll or click the canvas, press Escape or
+choose **Stop** to take your view back. Your own avatar lists everyone, and
+anyone can be followed from that list. Following only changes your own view.
+
+Updates use polling: once a second, and four times a second while you follow
+or are followed, with a short glide between positions. Figma's own presence
+and follow UI could not be inspected (it needs a second signed-in account), so
+layout and timing here are not verified against it.
