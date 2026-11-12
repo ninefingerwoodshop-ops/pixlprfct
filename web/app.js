@@ -32,7 +32,7 @@ import {createLayoutCssEditor} from './layout-css-editor.js';
 import {installDeviceChrome,orientFrame,chromeBreakpoints,deviceChromeStatus} from './device-chrome.js';
 import {gridStackDrop,drawGridStackDrop} from './grid-stack-drop.js';
 import {areaSelectionStatus,areaVisiblePan,historyAreaSelection,areaBox,areaFromDrag,moveArea,pageArea,cycleArea,nudgeArea,resizeArea,validArea,nextAreaName,areaHit,drawAreaEditing} from './grid-areas.js';
-import {gridCreationPlacement,isNamedAreaLayer,gridArrowMove,historyGridItemSelection,drawGridCells,gridSpanResize,drawGridDestination,gridCellAt} from './grid-canvas.js';
+import {gridCreationPlacement,isNamedAreaLayer,gridArrowMove,historyGridItemSelection,drawGridCells,gridSpanResize,drawGridDestination,gridCellAt,gridTracks} from './grid-canvas.js';
 import {hasHugControlHeight} from './control-sizing.js';
 import {layoutArrowOrder} from './layout-keyboard.js';
 import {ensureBaseTextDocument} from './base-text.js';
@@ -84,11 +84,12 @@ import {componentAssets,renderAssets,assetAppearance} from './assets.js';
 import {createLibraryManager} from './library-manager.js';
 import {libraryForMaster,libraryForShape,instancePermissions} from './library-model.js';
 import {showContextMenu} from './context-menu.js';
+import {renderGridTrackPanel} from './grid-track-panel.js';
 import {installActionPanel} from './action-panel.js';
-import {renderGridControls,renderGridCell,defaultGrid} from './grid-controls.js';
+import {renderGridControls,renderGridCell,defaultGrid,defaultTrack} from './grid-controls.js';
 import {drawAlignedStroke} from './stroke-alignment.js';
 import {spacingHandles,spacingHit,changeSpacing,drawSpacing} from './layout-spacing.js';
-import {trackHeaderHit,selectTrack,validTrackSelection,trackDropBoundary,trackDropMoves,drawTrackHeaders,trackSelectionLabel} from './grid-track-selection.js';
+import {trackHandleHit,hoveredTracks,nearTrackHandles,selectTrack,validTrackSelection,trackDropBoundary,trackDropMoves,drawTrackHandles} from './grid-track-selection.js';
 import {drawVectorStroke} from './stroke-render.js';
 import {cloudFiles} from './cloud-files.js';
 import {staticHost} from './static-host.js';
@@ -189,7 +190,7 @@ const assetDragToken=crypto.randomUUID();let assetDrag=null;
 function clearAssetDrag(){assetDrag=null;draw();}
 function startAssetDrag(event,master){if(!event.dataTransfer)return;event.dataTransfer.setData(ASSET_MIME,assetDragPayload(assetDragToken,master));event.dataTransfer.effectAllowed='copy';assetDrag={master,point:null,parent:0};}
 let editingPath = 0;
-let editingLayout=0,activeSpacing=null,trackSelection=null;
+let editingLayout=0,activeSpacing=null,trackSelection=null,trackHover=null;
 let editingGridAreas=0,activeGridArea=null,tooltips=null;
 let activeNode=-1;
 let lastPasted='',pasteCount=0,pasteInPlace=false,pasteReplace=false,pasteFrames=false;
@@ -200,7 +201,7 @@ let editingGradient=0,activeGradient=null,gradientChannel='fill';
 const gradientField=()=>gradientChannel==='stroke'?'stroke_gradient':'gradient';
 const gradientShape=()=>editingPaint(current(),gradientChannel);
 document.addEventListener('paint-selection',()=>{editingGradient=0;activeGradient=null;renderProperties();draw();});
-function setSelection(ids,{preservePrototypeLink=false}={}) { if(textEditing&&(ids.length!==1||ids[0]!==textEditing.id)&&!finishText({render:false}))return; if(!preservePrototypeLink||ids.length!==1||ids[0]!==selected)prototypeLinkSelected=false; if(ids.length!==1||ids[0]!==selected)prototypeInteraction=0; gridPickerPreview=null; if(ids.length!==1||ids[0]!==editingGridAreas){tooltips?.hideFor($('grid-area-status'));editingGridAreas=0;activeGridArea=null;} if(ids.length!==1||ids[0]!==editingLayout){editingLayout=0;activeSpacing=null;trackSelection=null;} selectedIds = new Set([...selectionRoots(pageShapes(),ids),...ids.filter(id=>!pageShapes().some(s=>s.id===id))]); pasteContext.select([...selectedIds]); selected = [...selectedIds].at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} if(ids.length!==1||ids[0]!==editingGradient){editingGradient=0;activeGradient=null;} }
+function setSelection(ids,{preservePrototypeLink=false}={}) { if(textEditing&&(ids.length!==1||ids[0]!==textEditing.id)&&!finishText({render:false}))return; if(!preservePrototypeLink||ids.length!==1||ids[0]!==selected)prototypeLinkSelected=false; if(ids.length!==1||ids[0]!==selected)prototypeInteraction=0; gridPickerPreview=null; if(ids.length!==1||ids[0]!==editingGridAreas){tooltips?.hideFor($('grid-area-status'));editingGridAreas=0;activeGridArea=null;} if(ids.length!==1||ids[0]!==editingLayout){editingLayout=0;activeSpacing=null;} if(ids.length!==1||ids[0]!==trackSelection?.frameId)trackSelection=null; selectedIds = new Set([...selectionRoots(pageShapes(),ids),...ids.filter(id=>!pageShapes().some(s=>s.id===id))]); pasteContext.select([...selectedIds]); selected = [...selectedIds].at(-1) || 0; if(ids.length!==1 || ids[0]!==editingPath){editingPath=0;activeNode=-1;} if(ids.length!==1||ids[0]!==editingGradient){editingGradient=0;activeGradient=null;} }
 function previewText(value){
   if(!textEditing)return;
   try{textEditing.preview(value);inlineText.invalid(false);$('text').value=value;draw();}
@@ -738,6 +739,7 @@ function saveDocumentStyle(kind,style,layer=0,stroke=false){return safe(()=>{con
 function removeDocumentStyle(kind,id){return safe(()=>{editor['remove_'+kind+'_style'](id);refresh();});}
 let parentOptionsKey='';
 function renderPropertiesNow() {
+  renderGridTracks();
   if(!renderLayerCssInspector)renderLayerCssInspector=installLayerCssInspector($('design-inspector'),{current,shapes:()=>doc.shapes,change:shape=>{editor.update(JSON.stringify(shape));refresh();},changeMany:shapes=>{editor.update_across_pages(JSON.stringify(shapes));refresh();}});
   renderLayerCssInspector();
   if(!layerCssEditor){
@@ -888,8 +890,34 @@ function drawShape(shape, target=ctx) {
 function focusGridTrack(axis,index){$('grid-'+axis+'-section')?.querySelectorAll('.grid-track-grip')[index]?.focus({preventScroll:true});}
 const gridTrackKey=(axis,index)=>'grid-'+(axis==='columns'?'column':'row')+'-'+index;
 // Canvas and inspector share one multi-track selection for the frame being edited.
-function gridTrackSelection(frame=current()){const editing=frame&&editingLayout===frame.id;return trackSelection=validTrackSelection(trackSelection,editing?frame:null,editing?gridPlan(frame):null);}
+// Track handles belong to the one selected grid frame while the Select tool is active.
+function gridHandleFrame(){const frame=current();return frame&&tool==='select'&&selectedIds.size<=1&&frame.auto_layout?.direction==='grid'&&!frame.hidden&&editingGridAreas!==frame.id&&!editingPath&&!editingGradient&&!textEditing&&canvasEditable()?frame:null;}
+function gridTrackSelection(frame=current()){const live=frame&&gridHandleFrame()?.id===frame.id;return trackSelection=validTrackSelection(trackSelection,live?frame:null,live?gridPlan(frame):null);}
+function gridTrackHover(frame){return trackHover&&trackHover.frameId===frame.id?trackHover:null;}
 function selectGridTracks(frame,next){trackSelection=next?{...next,frameId:frame.id}:null;if(next)activeSpacing=gridTrackKey(next.axis,next.anchor??next.indices[0]);}
+// While tracks are selected the sidebar shows Figma's Grid panel instead of the layer's properties.
+function renderGridTracks(){
+ const host=$('grid-track-panel'),frame=gridHandleFrame(),selection=frame?gridTrackSelection(frame):null;
+ host.closest('.right-panel').classList.toggle('grid-tracks-open',!!selection);host.hidden=!selection;if(!selection){host.replaceChildren();return;}
+ const layout=frame.auto_layout,grid=layout.grid,plan=gridPlan(frame),patch=(axis,tracks)=>safe(()=>{update({...frame,auto_layout:{...layout,grid:{...grid,[axis]:tracks}}});});
+ renderGridTrackPanel(host,frame,plan,selection,{
+  close:()=>{trackSelection=null;renderProperties();draw();canvas.focus();},
+  select:(axis,index,event)=>{selectGridTracks(frame,selectTrack(gridTrackSelection(frame),axis,index,{shiftKey:event.shiftKey,toggle:event.ctrlKey||event.metaKey})??selectTrack(null,axis,index));renderProperties();draw();},
+  change:(axis,index,track)=>patch(axis,grid[axis].map((old,i)=>i===index?track:old)),
+  add:axis=>{patch(axis,[...grid[axis],defaultTrack()]);selectGridTracks(frame,selectTrack(null,axis,grid[axis].length));renderProperties();draw();},
+  remove:(axis,index)=>safe(()=>{if((plan?.[axis]?.length??0)>1)editor.delete_grid_track(frame.id,axis,index);else{patch(axis,grid[axis].filter((_,i)=>i!==index));return;}activeSpacing=null;const left=gridTrackSelection(frame),kept=left&&left.axis===axis?left.indices.filter(i=>i!==index).map(i=>i>index?i-1:i):[];// Keep the panel open on a neighbour when the removed track was the only one selected.
+   const near=Math.max(0,Math.min(index,grid[axis].length-2)),stay=kept.length?kept:[near];trackSelection={frameId:frame.id,axis,indices:stay,anchor:stay[0]};refresh();toast('Grid track deleted · all layers kept');}),
+  sizeOf:(axis,index)=>{const span=gridTracks(frame,plan)[axis][index];return span?Math.max(1,Math.round((span.end-span.start)*100)/100):100;},
+ });
+}
+// Figma's chevron menu: Fixed width (current size), Hug contents, Fill container (1fr).
+function openTrackSizingMenu(frame,axis,index,event){
+ const grid=frame.auto_layout.grid,track=grid?.[axis]?.[index];if(!track)return;
+ const span=gridTracks(frame,gridPlan(frame))[axis][index],size=Math.round((span.end-span.start)*100)/100,word=axis==='columns'?'width':'height';
+ const set=next=>safe(()=>{update({...frame,auto_layout:{...frame.auto_layout,grid:{...grid,[axis]:grid[axis].map((t,i)=>i===index?{...t,...next,min:null,max:null}:t)}}});});
+ const mark=on=>on?'✓ ':'';
+ showContextMenu(event,[{label:mark(track.mode==='fixed')+`Fixed ${word} (${size})`,run:()=>set({mode:'fixed',value:size})},{label:mark(track.mode==='hug')+'Hug contents',run:()=>set({mode:'hug'})},{label:mark(track.mode==='fr')+`Fill container (${track.mode==='fr'?track.value:1}fr)`,run:()=>set({mode:'fr',value:track.mode==='fr'?track.value:1})}],canvas,{label:(axis==='columns'?'Column ':'Row ')+(index+1)+' sizing'});
+}
 function followGridTracks(frame,selection,moved){const anchor=moved[Math.max(0,selection.indices.indexOf(selection.anchor))];selectGridTracks(frame,{axis:selection.axis,indices:[...moved].sort((a,b)=>a-b),anchor});refresh();}
 function moveGridTracks(frame,selection,before){followGridTracks(frame,selection,JSON.parse(editor.move_grid_tracks(frame.id,selection.axis,JSON.stringify(selection.indices),before)));}
 function shiftGridTracks(frame,selection,delta){followGridTracks(frame,selection,JSON.parse(editor.shift_grid_tracks(frame.id,selection.axis,JSON.stringify(selection.indices),delta)));}
@@ -979,7 +1007,8 @@ function draw() {
   }
   if(editingGradient&&gradientShape()?.appearance?.[gradientField()])drawGradientHandles(ctx,gesture?.type==='gradient'?gesture.preview:gradientShape(),zoom,activeGradient,gradientField());
   if(prototypeConnections&&!editingPath&&!editingGradient)drawConnections(ctx,scene,selectedIds.size===1?scene.find(s=>s.id===selected):null,zoom,gesture,tool==='select'&&canvasEditable(),prototypeInteraction);
-  if(editingLayout===current()?.id&&tool==='select'&&canvasEditable()){const frame=scene.find(s=>s.id===editingLayout);if(frame&&visibleInTree(frame,scene)){ctx.save();for(const clip of clippingFrames(frame,scene)){ctx.beginPath();ctx.roundRect(clip.x,clip.y,clip.width,clip.height,radii(clip));ctx.clip();}if(frame.auto_layout?.direction==='grid')drawTrackHeaders(ctx,frame,gesture?.grid??gridPlan(frame),zoom,gridTrackSelection(frame),gesture?.type==='grid-track-drag'&&gesture.moved?{axis:gesture.axis,before:gesture.before,moves:trackDropMoves(gesture.indices,gesture.before)}:null);drawSpacing(ctx,frame,scene,zoom,activeSpacing,gesture?.grid??gridPlan(frame));ctx.restore();}}
+  {const live=gridHandleFrame(),frame=live&&scene.find(s=>s.id===live.id);if(frame&&visibleInTree(frame,scene))drawTrackHandles(ctx,frame,gesture?.grid??gridPlan(frame),zoom,{hover:gesture?null:gridTrackHover(frame),selection:gridTrackSelection(live),drop:gesture?.type==='grid-track-drag'&&gesture.moved?{axis:gesture.axis,before:gesture.before,moves:trackDropMoves(gesture.indices,gesture.before)}:null});}
+  if(editingLayout===current()?.id&&tool==='select'&&canvasEditable()){const frame=scene.find(s=>s.id===editingLayout);if(frame&&visibleInTree(frame,scene)){ctx.save();for(const clip of clippingFrames(frame,scene)){ctx.beginPath();ctx.roundRect(clip.x,clip.y,clip.width,clip.height,radii(clip));ctx.clip();}drawSpacing(ctx,frame,scene,zoom,activeSpacing,gesture?.grid??gridPlan(frame));ctx.restore();}}
   if(editingGridAreas===current()?.id&&tool==='select'){const frame=transformGeometry(current());drawAreaEditing(ctx,frame,gesture?.type==='grid-area'?gesture.plan:gridPlan(frame),current().auto_layout?.grid?.areas??[],activeGridArea,gesture?.type==='grid-area'?gesture.area:null,gesture?.valid!==false,zoom);}
   const areaStatus=editingGridAreas===current()?.id&&tool==='select'?areaSelectionStatus(current().auto_layout?.grid?.areas??[],activeGridArea):null;
   const resizeConstraints=gesture?.type==='resize'?areaResizeConstraints(gesture.original,gesture.preview,pageShapes().find(s=>s.id===gesture.original.parent_id),gesture.grid):[];
@@ -1642,17 +1671,20 @@ function bind() {
       const segment=nearestSegment(shape,p);if(segment&&segment.distance<10/zoom){activeNode=-1;renderProperties();draw();return;}
       editingPath=0;activeNode=-1;
     }
-    if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;trackSelection=null;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}
-      const header=trackHeaderHit(shape,gridPlan(shape),p,zoom);
+    {const live=gridHandleFrame(),header=live&&live.id===shape?.id&&visibleInTree(shape,pageShapes())?trackHandleHit(shape,gridPlan(shape),p,zoom,{hover:gridTrackHover(shape),selection:gridTrackSelection(shape)}):null;
       if(header){
         // Modifiers edit the selection; a plain press on a selected track keeps
         // the set so it can be dragged, and collapses to that track on release.
         const toggle=event.ctrlKey||event.metaKey,held=gridTrackSelection(shape),inside=!!held&&held.axis===header.axis&&held.indices.includes(header.index);
+        // The chevron of an already selected track opens its sizing menu, as in Figma.
+        if(inside&&header.part==='chevron'&&!event.shiftKey&&!toggle){selectGridTracks(shape,selectTrack(null,header.axis,header.index));gesture={type:'grid-track-menu',frame:shape,axis:header.axis,index:header.index};renderProperties();draw();return;}
         const next=event.shiftKey||toggle?selectTrack(held,header.axis,header.index,{shiftKey:event.shiftKey,toggle}):inside?held:selectTrack(null,header.axis,header.index);
-        selectGridTracks(shape,next);if(next&&next.indices.length>1)toast(trackSelectionLabel(next)+' · drag a selected header to reorder');
+        selectGridTracks(shape,next);
         gesture=next?.indices.includes(header.index)?{type:'grid-track-drag',frame:shape,axis:header.axis,index:header.index,indices:next.indices,start:p,moved:false,before:null,collapse:inside&&!event.shiftKey&&!toggle}:null;
         renderProperties();draw();return;
       }}
+    if(editingLayout===shape?.id&&canvasEditable()&&visibleInTree(shape,pageShapes())&&clippingFrames(shape,pageShapes()).every(f=>roundedContains(f,p))){const handle=spacingHit(shape,pageShapes(),p,zoom,gridPlan(shape));if(handle){activeSpacing=handle.key;trackSelection=null;gesture={type:'layout-spacing',original:shape,preview:shape,start:p,handle};draw();return;}
+}
     if (shape && (shape.component?.type!=='instance'||gridSpanParent(shape)) && !shape.hidden && canvasEditable()) {
       const measured=transformGeometry(shape);
       const handle=resizeHandleAt(measured,p,zoom,!!gridSpanParent(shape));
@@ -1674,14 +1706,17 @@ function bind() {
     if(!canvasEditable()){toast('Unlock the selection before moving it on canvas');return;}
     gesture = {type:'move',targets:pageShapes().map(s=>({...s,...transformGeometry(s)})),start:p,originals:transformedSelection().map(s=>({...s})),previews:transformedSelection().map(s=>({...s}))};
   });
-  canvas.onpointerleave = event => { if(event.relatedTarget?.closest?.('#slot-overlays'))return;gridHoverPointer=null; draw(); };
+  canvas.onpointerleave = event => { if(event.relatedTarget?.closest?.('#slot-overlays'))return;gridHoverPointer=null;trackHover=null; draw(); };
   canvas.onpointermove = event => {
     gridHoverPointer={clientX:event.clientX,clientY:event.clientY};
     if(!gesture)scheduleViewportDraw();
     if (!gesture) {
       if(tool==='text'){const p=point(event),hit=pageShapes().find(s=>s.id===canvasHit(p.x,p.y));canvas.style.cursor=hit?.kind==='text'?'text':'crosshair';return;}
       if(tool==='select'&&editingGridAreas===current()?.id){const frame=transformGeometry(current()),hit=areaHit(frame,gridPlan(frame),current().auto_layout.grid?.areas??[],point(event),zoom,activeGridArea);canvas.style.cursor=hit?.cx!=null?resizeCursor(frame,[hit.cx,hit.cy]):hit?'grab':'crosshair';return;}
-      if(tool==='select'&&editingLayout&&editingLayout===current()?.id&&current().auto_layout?.direction==='grid'&&canvasEditable()&&trackHeaderHit(current(),gridPlan(current()),point(event),zoom)){canvas.style.cursor='grab';return;}
+      {const live=gridHandleFrame();if(live){const p=point(event),plan=gridPlan(live),hit=trackHandleHit(live,plan,p,zoom,{hover:gridTrackHover(live),selection:gridTrackSelection(live)}),cell=hoveredTracks(live,plan,p);
+        // Keep the pills while the pointer travels from a cell to them.
+        trackHover=hit?{frameId:live.id,column:trackHover?.frameId===live.id?trackHover.column:null,row:trackHover?.frameId===live.id?trackHover.row:null,chip:{axis:hit.axis,index:hit.index}}:cell?{frameId:live.id,column:cell.column,row:cell.row,chip:null}:nearTrackHandles(live,p,zoom)&&trackHover?.frameId===live.id?{...trackHover,chip:null}:null;
+        if(hit){canvas.style.cursor=hit.part==='grip'?'grab':'pointer';return;}}else trackHover=null;}
       if(tool==='select'&&prototypeConnections&&!editingPath&&!editingGradient){const p=point(event),shape=current();if((shape&&canvasEditable()&&connectionHit(transformGeometry(shape),p,zoom))||connectionAt(pageShapes().map(transformGeometry),p,zoom)){canvas.style.cursor='pointer';return;}}
       if(tool==='select'&&!editingPath&&!editingGradient){const s=current(),measured=s&&transformGeometry(s),p=point(event),handle=measured&&(s.component?.type!=='instance'||gridSpanParent(s))&&canvasEditable()?resizeHandleAt(measured,p,zoom,!!gridSpanParent(s)):null;canvas.style.cursor=handle?resizeCursor(measured,handle):measured&&s.component?.type!=='instance'&&canvasEditable()&&rotationHandleAt(measured,p,zoom)?rotateCursor:'default';}
       return;
@@ -1776,6 +1811,7 @@ function bind() {
       if(gesture.kind!=='pencil' && shape.width<3 && shape.height<3) shape=drawnShape(gesture.kind,gesture.start,{x:gesture.start.x+160,y:gesture.start.y+(gesture.kind==='line'||gesture.kind==='arrow'?0:120)});
       const start=gesture.start;gesture=null; safe(()=>{setSelection([insertAt(shape,start)]); setTool('select'); refresh();if(editorRole(shape)){development.activate('design');renderToolInspector.focus();}}); return;
     }
+    if(gesture?.type==='grid-track-menu'){const g=gesture;gesture=null;openTrackSizingMenu(g.frame,g.axis,g.index,event);return;}
     if(gesture?.type==='grid-track-drag'){
       const g=gesture;gesture=null;canvas.style.cursor='default';
       if(!g.moved){if(g.collapse){selectGridTracks(g.frame,selectTrack(null,g.axis,g.index));renderProperties();}draw();return;}
@@ -1847,7 +1883,8 @@ function bind() {
     // Enter/Space activate the focused control; they must not also edit the
     // selected text or navigate into a layer on the canvas.
     if(['Enter',' '].includes(event.key)&&event.target.closest('button,summary,[role=menuitem]'))return;
-    if (editorDOM.querySelector('dialog[open]:not(.variables-dialog)') || event.target.closest('.variables-dialog')) return;
+    // The floating Interaction panel is not modal: shortcuts still work on the canvas beside it.
+    if (editorDOM.querySelector('dialog[open]:not(.variables-dialog):not(#prototype-interaction-modal)') || event.target.closest('.variables-dialog,#prototype-interaction-modal')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(prototypeConnections&&prototypeLinkSelected&&event.target===canvas&&!mod&&!event.altKey&&['delete','backspace'].includes(key)){
@@ -1897,8 +1934,10 @@ function bind() {
       revealSelectedArea();
       return;
     }
+    if(key==='escape'&&!mod&&!gesture&&gridTrackSelection()){event.preventDefault();trackSelection=null;renderProperties();draw();return;}
+    // Alt + Arrow moves the selected tracks one place, without entering spacing mode.
+    if(event.altKey&&!mod&&!editingLayout&&!gesture&&canvasEditable()){const held=gridTrackSelection(),keys=held?.axis==='columns'?['ArrowLeft','ArrowRight']:['ArrowUp','ArrowDown'];if(held&&keys.includes(event.key)){event.preventDefault();safe(()=>{shiftGridTracks(current(),held,event.key===keys[0]?-1:1);});return;}}
     if(editingLayout&&!mod){
-      if(key==='escape'&&!gesture&&gridTrackSelection()){event.preventDefault();trackSelection=null;renderProperties();draw();return;}
       if(key==='escape'||key==='enter'){event.preventDefault();const preview=gesture?.type==='layout-spacing'?gesture.preview:null;gesture=null;if(key==='enter'&&preview)update(preview);if(key==='enter'||!preview){editingLayout=0;activeSpacing=null;trackSelection=null;}renderProperties();draw();return;}
       if(key==='tab'&&event.target===canvas){event.preventDefault();const handles=spacingHandles(current(),pageShapes(),gridPlan(current())).filter((h,i,a)=>a.findIndex(v=>v.key===h.key)===i),index=handles.findIndex(h=>h.key===activeSpacing);activeSpacing=handles[(index+(event.shiftKey?-1:1)+handles.length)%handles.length]?.key;trackSelection=null;renderProperties();draw();return;}
       if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();if(!canvasEditable()||gesture)return;const h=spacingHandles(current(),pageShapes(),gridPlan(current())).find(h=>h.key===activeSpacing);if(h){const direction=event.key==='ArrowLeft'||event.key==='ArrowUp'?-1:1;if(event.altKey&&h.track){const held=gridTrackSelection();if(held&&held.indices.length>1&&held.axis===h.track.axis&&held.indices.includes(h.track.index))safe(()=>{shiftGridTracks(current(),held,direction);});else safe(()=>{shiftGridTrack(current().id,h.track.axis,h.track.index,direction);});}else update(changeSpacing(current(),h,direction*(event.shiftKey?10:1),{altKey:event.altKey}));}return;}

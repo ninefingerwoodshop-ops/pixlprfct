@@ -1,15 +1,16 @@
 import {Editor} from './pkg/pixlprfct_core.js';
 import {chromeInsets,deviceChromeSvg,orientFrame,deviceScreenRadius} from './device-chrome.js';
-import {interactions,withInteractions,interactionFor,triggerLabels,actionSteps,sequenceLabel,MAX_FOLLOW_UPS} from './prototype-interactions.js';
+import {interactions,withInteractions,interactionFor,triggerLabels,actionSteps,sequenceLabel,MAX_FOLLOW_UPS,MAX_BRANCH_ACTIONS,BRANCHES,branchActions,withBranch} from './prototype-interactions.js';
 import {prototypeTimers,timedInteractions} from './prototype-timers.js';
 import {prototypePress} from './prototype-press.js';
 import {prototypeHover} from './prototype-hover.js';
 import {canvasTransitions,smartSpec} from './prototype-transition.js';
 import {matchLayers,smartScene} from './prototype-smart-animate.js';
-import {prototypeVariables,operatorsFor,operatorLabels,operationsFor,operationLabels,defaultLiteral,conditionHolds,nextValue,sessionVariables} from './prototype-variables.js';
+import {prototypeVariables,operatorsFor,operatorLabels,operationsFor,operationLabels,defaultLiteral,comparisonNames,conditionHolds,conditionText,conditionLiteral,nextValue,sessionVariables} from './prototype-variables.js';
 import {scrolls,scrollExtent,clampScroll,scrolledScene,scrollJson,scrollBy,keyboardScrollFrame,keyScrollDelta} from './prototype-scroll.js';
 import {descendants,visibleInTree} from './selection.js';
 import {icon} from './icons.js';
+import {conditionField} from './prototype-condition.js';
 import {showContextMenu} from './context-menu.js';
 import {drawScene,radii,roundedContains} from './appearance.js';
 export function prototypeFrames(doc){return doc.shapes.filter(s=>s.kind==='frame'&&!(doc.libraries??[]).some(l=>l.page_id===s.page_id)&&visibleInTree(s,doc.shapes));}
@@ -25,17 +26,18 @@ export function overlayPlacement(base,frame,position='center',x=0,y=0){
 // Which interaction's floating panel is open, kept across re-renders of the
 // inspector. Layout follows Figma's Prototype tab (inspected 2026-11-11): a
 // chip per interaction in the sidebar and an "Interaction" panel beside it.
-const panel={shape:0,open:false,index:0,action:0,draft:false,draftTrigger:''};
+// `branch` ('if' or 'else') and `nested` pick an action inside the conditional at `action`.
+const panel={shape:0,open:false,index:0,action:0,branch:'',nested:0,draft:false,draftTrigger:''};
 const MODAL_ID='prototype-interaction-modal';
 export function closePrototypeInteraction(){panel.open=false;panel.draft=false;globalThis.document?.getElementById(MODAL_ID)?.remove();}
 // Used when a connection is picked or drawn on the canvas: show that interaction's panel on the next render.
-export function openPrototypeInteraction(shapeId,index){Object.assign(panel,{shape:shapeId,open:true,draft:false,index,action:0});}
+export function openPrototypeInteraction(shapeId,index){Object.assign(panel,{shape:shapeId,open:true,draft:false,index,action:0,branch:''});}
 const chipTrigger={click:'Click',drag:'Drag',mouseenter:'Mouse enter',mouseleave:'Mouse leave',mousedown:'Mouse down',mouseup:'Mouse up',afterdelay:'After delay'};
 const actionChoices=doc=>[['navigate','Navigate to'],['back','Back'],['overlay','Open overlay'],['swap','Swap overlay'],['close','Close overlay'],...(prototypeVariables(doc).length?[['set-variable','Set variable']]:[])];
-const actionIcon=action=>({navigate:'arrow-right',back:'undo',overlay:'layers',swap:'repeat',close:'close','set-variable':'variable'}[action]??'minus-circle');
+const actionIcon=action=>({navigate:'arrow-right',back:'undo',overlay:'layers',swap:'repeat',close:'close','set-variable':'variable',conditional:'shuffle'}[action]??'minus-circle');
 export function renderPrototypeControls(host,shape,doc,change,present,{activeIndex=0,select=()=>{}}={}){
  host.replaceChildren();host.hidden=!shape;if(!shape){closePrototypeInteraction();return;}
- if(panel.shape!==shape.id){closePrototypeInteraction();Object.assign(panel,{shape:shape.id,index:0,action:0,draftTrigger:''});}
+ if(panel.shape!==shape.id){closePrototypeInteraction();Object.assign(panel,{shape:shape.id,index:0,action:0,branch:'',draftTrigger:''});}
  const document=host.ownerDocument,el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=text;return node;};
  const rerender=()=>renderPrototypeControls(host,shape,doc,change,present,{activeIndex,select});
  const field=(name,input)=>{const label=document.createElement('label');label.append(document.createTextNode(name),input);input.setAttribute('aria-label',name);host.append(label);};
@@ -46,9 +48,9 @@ export function renderPrototypeControls(host,shape,doc,change,present,{activeInd
  if(panel.open&&!panel.draft&&!list.length)panel.open=false;
  const head=el('div','prototype-section-header'),heading=el('h3',null,'Interactions'),add=el('button','prototype-add');
  add.type='button';add.innerHTML=icon('plus');add.setAttribute('aria-label','Add interaction');add.disabled=!unused||panel.draft;
- add.onclick=()=>{Object.assign(panel,{open:true,draft:true,index:list.length,action:0,draftTrigger:unused});rerender();};
+ add.onclick=()=>{Object.assign(panel,{open:true,draft:true,index:list.length,action:0,branch:'',draftTrigger:unused});rerender();};
  head.append(heading,add);host.append(head);
- const chipText=p=>p?(p.action==='set-variable'?sequenceLabel({...p,then:[],condition:null},frameName,variableName):frameName(p.target)??({back:'Back',close:'Close overlay'}[p.action]??'None')):'None';
+ const chipText=p=>p?(p.action==='set-variable'?sequenceLabel({...p,then:[],condition:null},frameName,variableName):frameName(p.target)??({back:'Back',close:'Close overlay',conditional:'Conditional'}[p.action]??'None')):'None';
  const rows=[...list,...(panel.draft?[null]:[])];
  rows.forEach((p,index)=>{
   const row=el('div','prototype-interaction-row'),chip=el('button','prototype-chip'),remove=el('button','prototype-chip-remove');
@@ -58,7 +60,7 @@ export function renderPrototypeControls(host,shape,doc,change,present,{activeInd
   chip.setAttribute('aria-label',`Interaction ${index+1}: ${p?(triggerLabels[p.trigger??'click']??'On click')+' → '+steps.map(step=>sequenceLabel({...step,then:[]},frameName,variableName)).join(', then '):summary}`);
   const glyph=el('span','prototype-chip-icon');glyph.innerHTML=icon(actionIcon(p?.action));
   chip.append(el('span','prototype-chip-trigger',chipTrigger[p?.trigger??(panel.draftTrigger||'click')]??'Click'),glyph,el('span','prototype-chip-target',chipText(p)+(steps.length>1?` +${steps.length-1}`:'')));
-  chip.onclick=()=>{if(open)closePrototypeInteraction();else{if(index<list.length)panel.draft=false;Object.assign(panel,{open:true,index,action:0});select(Math.min(index,Math.max(0,list.length-1)));}rerender();};
+  chip.onclick=()=>{if(open)closePrototypeInteraction();else{if(index<list.length)panel.draft=false;Object.assign(panel,{open:true,index,action:0,branch:''});select(Math.min(index,Math.max(0,list.length-1)));}rerender();};
   remove.type='button';remove.innerHTML=icon('minus');remove.setAttribute('aria-label','Remove interaction '+(index+1));
   remove.onclick=()=>{if(panel.index===index||!p)closePrototypeInteraction();else if(panel.index>index)panel.index--;if(p){select(Math.max(0,index-1));change(withInteractions(shape,list.filter((_,i)=>i!==index)));}else rerender();};
   row.append(chip,remove);host.append(row);
@@ -77,39 +79,73 @@ export function renderPrototypeControls(host,shape,doc,change,present,{activeInd
  document.getElementById(MODAL_ID)?.remove();
  if(!panel.open)return;
  const index=panel.index,p=panel.draft?null:list[index]??null,steps=p?actionSteps(p):[];panel.action=Math.min(panel.action,Math.max(0,steps.length-1));
- const modal=el('dialog','prototype-interaction-modal');modal.id=MODAL_ID;modal.setAttribute('aria-label','Interaction');modal.classList.toggle('wide',steps.length>1);
+ // A conditional always shows the action list, where its if and else sides live.
+ const wide=steps.length>1||steps.some(step=>step.action==='conditional'),chosen=steps[panel.action];
+ if(panel.branch&&!(chosen?.action==='conditional'&&branchActions(chosen,panel.branch).length))panel.branch='';
+ if(panel.branch)panel.nested=Math.min(panel.nested,branchActions(chosen,panel.branch).length-1);
+ const modal=el('dialog','prototype-interaction-modal');modal.id=MODAL_ID;modal.setAttribute('aria-label','Interaction');modal.classList.toggle('wide',wide);
  const bar=el('header'),more=el('button','prototype-modal-add'),shut=el('button','prototype-modal-close');
  more.type=shut.type='button';more.innerHTML=icon('plus');more.setAttribute('aria-label','Add action');shut.innerHTML=icon('close');shut.setAttribute('aria-label','Close');
  shut.onclick=()=>{closePrototypeInteraction();rerender();};
  const setBase=next=>{const all=[...list];if(next)all[index]=next;else all.splice(index,1);change(withInteractions(shape,all));};
- const setSteps=then=>{const rest={...p};delete rest.then;setBase(then.length?{...rest,then}:rest);};
- const addAction=event=>showContextMenu(event,actionChoices(doc).map(([action,label])=>({label,run:()=>{const target=frames.find(f=>f.id!==shape.id)?.id??frames[0]?.id??0,needsTarget=['navigate','overlay','swap'].includes(action),variable=prototypeVariables(doc)[0];
-  const step={action,target:needsTarget?target:0,...(action==='set-variable'?{variable:variable.id,operation:'set',value:defaultLiteral(variable.kind)}:{})};panel.action=steps.length;setSteps([...(p.then??[]),step]);}})),event.currentTarget,{label:'Add action',anchor:event.currentTarget});
- const removeAction=()=>{const at=panel.action;if(at===0){const [next,...rest]=p.then;const base={...next,trigger:p.trigger??'click',delay:p.delay};setBase(rest.length?{...base,then:rest}:base);}else setSteps(p.then.filter((_,i)=>i!==at-1));panel.action=Math.max(0,at-1);};
- more.hidden=!p||steps.length>1;more.disabled=steps.length>MAX_FOLLOW_UPS;more.onclick=addAction;
+ // Save the trigger's actions; the first one carries the trigger and its delay.
+ const writeSteps=all=>{
+  if(!all.length){Object.assign(panel,{draft:true,index:list.length-1,action:0,branch:'',draftTrigger:p.trigger??'click'});setBase(null);return;}
+  const [first,...rest]=all.map(step=>{const next={...step};delete next.then;return next;});setBase({...first,trigger:p.trigger??'click',delay:p.delay,...(rest.length?{then:rest}:{})});};
+ const setStep=(at,next)=>writeSteps(next?steps.map((step,i)=>i===at?next:step):steps.filter((_,i)=>i!==at));
+ const newStep=action=>{const target=frames.find(f=>f.id!==shape.id&&f.id!==shape.parent_id)?.id??frames[0]?.id??0,needsTarget=['navigate','overlay','swap'].includes(action),variable=prototypeVariables(doc)[0];
+  return {action,target:needsTarget?target:0,...(action==='set-variable'?{variable:variable.id,operation:'set',value:defaultLiteral(variable.kind)}:{}),...(action==='conditional'?{condition:{variable:variable.id,operator:'==',value:defaultLiteral(variable.kind)}}:{})};};
+ const menu=(event,choices,run)=>showContextMenu(event,choices.map(([action,label])=>({label,run:()=>run(newStep(action))})),event.currentTarget,{label:'Add action',anchor:event.currentTarget});
+ const addNested=(event,at,branch)=>menu(event,actionChoices(doc),step=>{const side=branchActions(steps[at],branch);Object.assign(panel,{action:at,branch,nested:side.length});setStep(at,withBranch(steps[at],branch,[...side,step]));});
+ // With an action inside a conditional selected, the new action joins that side; otherwise it follows the trigger's last action.
+ const addAction=event=>panel.branch?addNested(event,panel.action,panel.branch):menu(event,[...actionChoices(doc),...(prototypeVariables(doc).length?[['conditional','Conditional']]:[])],step=>{Object.assign(panel,{action:steps.length,branch:''});writeSteps([...steps,step]);});
+ const removeAction=()=>{const at=panel.action;
+  if(panel.branch){const side=branchActions(chosen,panel.branch).filter((_,i)=>i!==panel.nested);panel.nested=Math.max(0,panel.nested-1);setStep(at,withBranch(chosen,panel.branch,side));return;}
+  panel.action=Math.max(0,at-1);setStep(at,null);};
+ const full=panel.branch?branchActions(chosen,panel.branch).length>=MAX_BRANCH_ACTIONS:steps.length>MAX_FOLLOW_UPS;
+ more.hidden=!p||wide;more.disabled=full;more.onclick=addAction;
  bar.append(el('h2',null,'Interaction'),more,shut);modal.append(bar);
  const fields=el('div','prototype-modal-fields'),triggerBox=el('div','prototype-modal-trigger');
  const used=list.filter((_,i)=>i!==index).map(other=>other.trigger??'click');
- if(panel.action===0||!p){
+ if(panel.branch){
+  const side=branchActions(chosen,panel.branch),at=panel.nested;
+  renderInteractionControls(fields,{...shape,prototype:side[at]},doc,updated=>setStep(panel.action,withBranch(chosen,panel.branch,updated.prototype?side.map((s,i)=>i===at?updated.prototype:s):side.filter((_,i)=>i!==at))),[],`${panel.branch==='else'?'Else':'If'} ${at+1}: `,'click',true);
+ }else if(panel.action===0||!p){
   renderInteractionControls(fields,{...shape,prototype:p},doc,updated=>{if(!updated.prototype&&!p){rerender();return;}if(!updated.prototype&&p){Object.assign(panel,{draft:true,index:list.length-1,draftTrigger:p.trigger??'click'});}else if(updated.prototype&&!p)panel.draft=false;setBase(updated.prototype);},used,'',panel.draftTrigger||unused||'click');
   // A trigger picked before any action exists only lives in this panel.
   if(!p)modal.addEventListener('change',event=>{if(event.target.getAttribute?.('aria-label')==='Trigger')panel.draftTrigger=event.target.value;},true);
  }else{
-  const at=panel.action-1,then=p.then;
-  renderInteractionControls(fields,{...shape,prototype:then[at]},doc,updated=>setSteps(updated.prototype?then.map((s,i)=>i===at?updated.prototype:s):then.filter((_,i)=>i!==at)),[],`Then ${at+1}: `);
+  const at=panel.action;
+  renderInteractionControls(fields,{...shape,prototype:steps[at]},doc,updated=>setStep(at,updated.prototype),[],`Then ${at}: `);
  }
  for(const control of fields.querySelectorAll('[aria-label]'))control.id=`prototype-${shape.id}-${index}-${control.getAttribute('aria-label').replace(/[^a-z0-9]/gi,'-')}`;
  // The trigger (and its delay) sit above the actions, as in Figma.
  for(const name of ['Trigger','Delay'])for(const control of fields.querySelectorAll(`[aria-label="${name}"]`))triggerBox.append(control.closest('label'));
- if(steps.length>1){
+ if(wide){
   const left=el('div','prototype-modal-actions'),items=el('div','prototype-modal-list'),foot=el('div','prototype-modal-foot'),plus=el('button'),minus=el('button');
   items.setAttribute('role','listbox');items.setAttribute('aria-label','Actions');
-  if(panel.action!==0){const holder=el('div');renderInteractionControls(holder,{...shape,prototype:p},doc,updated=>{if(updated.prototype)setBase(updated.prototype);},used);for(const name of ['Trigger','Delay'])for(const control of holder.querySelectorAll(`[aria-label="${name}"]`))triggerBox.append(control.closest('label'));}
+  if(panel.action!==0||panel.branch){const holder=el('div');renderInteractionControls(holder,{...shape,prototype:p},doc,updated=>{if(updated.prototype)setBase(updated.prototype);},used);for(const name of ['Trigger','Delay'])for(const control of holder.querySelectorAll(`[aria-label="${name}"]`))triggerBox.append(control.closest('label'));}
   // In the action list layout the trigger menu stands alone, without its caption.
   const bare=triggerBox.querySelector('[aria-label="Trigger"]');if(bare){const caption=bare.closest('label');caption.replaceWith(bare);}
-  steps.forEach((step,at)=>{const item=el('button','prototype-modal-action');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(at===panel.action));item.classList.toggle('active',at===panel.action);const glyph=el('span','prototype-chip-icon');glyph.innerHTML=icon(actionIcon(step.action));
-   item.append(glyph,el('span',null,(step.action==='navigate'?'Navigate to ':'')+sequenceLabel({...step,then:[]},frameName,variableName).replace(/^Go back/,'Back')));item.onclick=()=>{panel.action=at;rerender();};items.append(item);});
-  plus.type=minus.type='button';plus.innerHTML=icon('plus');plus.setAttribute('aria-label','Add action');plus.disabled=steps.length>MAX_FOLLOW_UPS;plus.onclick=addAction;
+  const rowText=step=>(step.action==='navigate'?'Navigate to ':'')+sequenceLabel({...step,then:[]},frameName,variableName).replace(/^Go back/,'Back');
+  const row=(step,active,pick)=>{const item=el('button','prototype-modal-action');item.type='button';item.setAttribute('role','option');item.setAttribute('aria-selected',String(active));item.classList.toggle('active',active);const glyph=el('span','prototype-chip-icon');glyph.innerHTML=icon(actionIcon(step.action));item.append(glyph);item.onclick=()=>{pick();rerender();};return item;};
+  steps.forEach((step,at)=>{
+   const active=at===panel.action&&!panel.branch;
+   if(step.action!=='conditional'){const item=row(step,active,()=>Object.assign(panel,{action:at,branch:''}));item.append(el('span',null,rowText(step)));items.append(item);return;}
+   // Figma's block: an if row with the test, the actions run when it holds, an else row and its actions.
+   const block=el('div','prototype-modal-conditional'),test=row(step,active,()=>Object.assign(panel,{action:at,branch:''})),name=variableName(step.condition?.variable)??'Missing variable';
+   block.classList.toggle('active',active);test.classList.add('prototype-modal-if');test.setAttribute('aria-label','if '+conditionText(step.condition,variableName));
+   test.append(el('span','prototype-modal-keyword','if'),el('span','prototype-modal-variable',name),el('span','prototype-modal-operator',step.condition?.operator??''),el('span','prototype-modal-literal',conditionLiteral(step.condition?.value)));block.append(test);
+   for(const [branch] of BRANCHES){
+    if(branch==='else')block.append(el('div','prototype-modal-else','else'));
+    const side=branchActions(step,branch);
+    side.forEach((inner,n)=>{const item=row(inner,at===panel.action&&panel.branch===branch&&panel.nested===n,()=>Object.assign(panel,{action:at,branch,nested:n})),corner=el('span','prototype-modal-corner');corner.innerHTML=icon('corner-down-right');item.classList.add('nested');item.prepend(corner);item.append(el('span',null,rowText(inner)));block.append(item);});
+    // An empty side offers its own "Add action", as in Figma; a filled one grows from the + below.
+    if(!side.length){const create=el('button','prototype-modal-action nested prototype-modal-create'),corner=el('span','prototype-modal-corner');create.type='button';corner.innerHTML=icon('corner-down-right');create.append(corner,el('span',null,'Add action'));create.setAttribute('aria-label',`Add action to ${branch}`);create.title='Add nested action';create.onclick=event=>addNested(event,at,branch);block.append(create);}
+   }
+   items.append(block);
+  });
+  plus.type=minus.type='button';plus.innerHTML=icon('plus');plus.setAttribute('aria-label','Add action');plus.disabled=full;plus.onclick=addAction;
   minus.innerHTML=icon('minus');minus.setAttribute('aria-label','Remove action');minus.onclick=removeAction;foot.append(plus,minus);
   left.append(triggerBox,items,foot);const body=el('div','prototype-modal-columns');body.append(left,fields);modal.append(body);
  }else{if(triggerBox.children.length)modal.append(triggerBox);modal.append(fields);}
@@ -122,16 +158,16 @@ export function renderPrototypeControls(host,shape,doc,change,present,{activeInd
 }
 // `step` is the accessible-name prefix of a follow-up action ("Then 1: "); a
 // follow-up has no trigger or delay of its own.
-function renderInteractionControls(host,shape,doc,change,usedTriggers=[],step='',defaultTrigger='click'){
+function renderInteractionControls(host,shape,doc,change,usedTriggers=[],step='',defaultTrigger='click',inside=false){
  host.replaceChildren();host.hidden=!shape;if(!shape)return;
  const field=(name,select)=>{const label=document.createElement('label');label.classList.toggle('long',name.length>11);label.append(document.createTextNode(name),select);select.setAttribute('aria-label',step+name);host.append(label);};
- const action=document.createElement('select');for(const [value,text] of [['none','None'],['navigate','Navigate to'],['back','Back'],['overlay','Open overlay'],['swap','Swap overlay'],['close','Close overlay'],...(prototypeVariables(doc).length||shape.prototype?.action==='set-variable'?[['set-variable','Set variable']]:[])]){const o=document.createElement('option');o.value=value;o.textContent=text;action.append(o);}action.value=shape.prototype?.action??'none';field('Action',action);
+ const action=document.createElement('select');for(const [value,text] of [['none','None'],['navigate','Navigate to'],['back','Back'],['overlay','Open overlay'],['swap','Swap overlay'],['close','Close overlay'],...(prototypeVariables(doc).length||shape.prototype?.action==='set-variable'?[['set-variable','Set variable']]:[]),...(!inside&&(prototypeVariables(doc).length||shape.prototype?.action==='conditional')?[['conditional','Conditional']]:[])]){const o=document.createElement('option');o.value=value;o.textContent=text;action.append(o);}action.value=shape.prototype?.action??'none';field('Action',action);
  // Variable pickers and literal inputs shared by Set variable and conditions.
  const variables=prototypeVariables(doc),kindOf=id=>variables.find(v=>v.id===Number(id))?.kind;
  const variablePicker=(selected,empty)=>{const select=document.createElement('select');if(empty){const o=document.createElement('option');o.value='0';o.textContent=empty;select.append(o);}for(const v of variables){const o=document.createElement('option');o.value=v.id;o.textContent=v.label;select.append(o);}select.value=String(selected||(empty?0:variables[0]?.id??0));if(!select.value)select.selectedIndex=0;return select;};
  const literal=(kind,value)=>{value=typeof value===({number:'number',boolean:'boolean'}[kind]??'string')?value:defaultLiteral(kind);if(kind==='boolean'){const select=document.createElement('select');for(const text of ['true','false']){const o=document.createElement('option');o.value=text;o.textContent=text;select.append(o);}select.value=String(value);return {input:select,read:()=>select.value==='true'};}const input=document.createElement('input');if(kind==='number'){input.type='number';input.min=-1e9;input.max=1e9;input.step='any';input.value=value;return {input,read:()=>Number.isFinite(Number(input.value))?Number(input.value):0};}if(kind==='color'){input.type='color';input.value=value;return {input,read:()=>input.value};}input.type='text';input.maxLength=1000;input.value=value;return {input,read:()=>input.value};};
  const setting=shape.prototype?.action==='set-variable'?shape.prototype:null,setVariable=variablePicker(setting?.variable,null),setKind=kindOf(setVariable.value),operation=document.createElement('select');for(const value of operationsFor(setKind)){const o=document.createElement('option');o.value=value;o.textContent=operationLabels[value];operation.append(o);}operation.value=setting&&operationsFor(setKind).includes(setting.operation??'set')?setting.operation??'set':'set';const setValue=literal(setKind,setting?.value);
- const guard=shape.prototype?.condition??null,guardVariable=variablePicker(guard?.variable,'Always run'),guardKind=kindOf(guardVariable.value),operator=document.createElement('select');for(const value of operatorsFor(guardKind)){const o=document.createElement('option');o.value=value;o.textContent=operatorLabels[value];operator.append(o);}operator.value=guard&&operatorsFor(guardKind).includes(guard.operator)?guard.operator:'==';const guardValue=literal(guardKind,guard?.value);
+ const conditional=action.value==='conditional',guard=shape.prototype?.condition??null,guardVariable=variablePicker(guard?.variable,conditional?null:'Always run'),guardKind=kindOf(guardVariable.value),operator=document.createElement('select');for(const value of operatorsFor(guardKind)){const o=document.createElement('option');o.value=value;o.textContent=(conditional?comparisonNames:operatorLabels)[value];operator.append(o);}operator.value=guard&&operatorsFor(guardKind).includes(guard.operator)?guard.operator:'==';const guardValue=literal(guardKind,guard?.value);
  const trigger=document.createElement('select');for(const [value,text] of Object.entries(triggerLabels).filter(([value])=>shape.kind==='frame'||value!=='afterdelay')){const o=document.createElement('option');o.value=value;o.textContent=text;o.disabled=usedTriggers.includes(value);trigger.append(o);}trigger.value=shape.prototype?.trigger??defaultTrigger;if(!step)field('Trigger',trigger);
  const frames=prototypeFrames(doc),target=document.createElement('select');for(const f of frames){const o=document.createElement('option');o.value=f.id;o.textContent=f.page_id===shape.page_id?f.name:`${doc.pages.find(p=>p.id===f.page_id)?.name??''} / ${f.name}`;target.append(o);}target.value=shape.prototype?.target??frames.find(f=>f.id!==shape.id&&f.id!==shape.parent_id)?.id??frames[0]?.id??'';if(!target.value&&frames.length)target.value=frames[0].id;
  const position=document.createElement('select');for(const value of ['center','top-left','top-right','bottom-left','bottom-right','manual']){const o=document.createElement('option');o.value=value;o.textContent=value.replaceAll('-',' ');position.append(o);}position.value=shape.prototype?.overlay_position??'center';const outside=document.createElement('input');outside.type='checkbox';outside.checked=!!shape.prototype?.close_on_outside;
@@ -142,13 +178,17 @@ function renderInteractionControls(host,shape,doc,change,usedTriggers=[],step=''
  // Picking a variable of another type starts again from that type's default comparison and value.
  const setFields=()=>{const kind=kindOf(setVariable.value),fresh=kind!==setKind,how=fresh?'set':operation.value;return {variable:Number(setVariable.value),operation:how,...(how==='toggle'?{}:{value:fresh?defaultLiteral(kind):setValue.read()})};};
  const guardFields=()=>{const kind=kindOf(guardVariable.value),fresh=kind!==guardKind;return {variable:Number(guardVariable.value),operator:fresh?'==':operator.value,value:fresh?defaultLiteral(kind):guardValue.read()};};
- const save=()=>{const targets=['navigate','overlay','swap'].includes(action.value);if(targets&&!target.value)return;if(action.value==='set-variable'&&!Number(setVariable.value))return;change({...shape,prototype:action.value==='none'?null:{trigger:trigger.value,delay:Number(delay.value),action:action.value,target:targets?Number(target.value):0,overlay_position:position.value,overlay_x:Number(offsetX.value),overlay_y:Number(offsetY.value),backdrop_color:backdropColor.value,backdrop_opacity:Number(backdropOpacity.value)/100,close_on_outside:outside.checked,transition:['overlay','close','swap'].includes(action.value)&&(transition.value.startsWith('slide-')||transition.value==='smart-animate')?'dissolve':transition.value,duration:Number(duration.value),easing:easing.value,...(action.value==='set-variable'?setFields():{}),...(Number(guardVariable.value)?{condition:guardFields()}:{}),...(!step&&shape.prototype?.then?.length?{then:shape.prototype.then}:{})}});};action.onchange=save;
+ // A conditional keeps its two sides while it stays one; its test never becomes another action's condition.
+ const was=shape.prototype?.action==='conditional',sides=()=>Object.fromEntries(['if_actions','else_actions'].filter(key=>was&&shape.prototype[key]?.length).map(key=>[key,shape.prototype[key]]));
+ let written=null;
+ const save=()=>{const targets=['navigate','overlay','swap'].includes(action.value),branching=action.value==='conditional';if(targets&&!target.value)return;if(action.value==='set-variable'&&!Number(setVariable.value))return;if(branching&&!variables.length)return;change({...shape,prototype:action.value==='none'?null:{trigger:trigger.value,delay:Number(delay.value),action:action.value,target:targets?Number(target.value):0,overlay_position:position.value,overlay_x:Number(offsetX.value),overlay_y:Number(offsetY.value),backdrop_color:backdropColor.value,backdrop_opacity:Number(backdropOpacity.value)/100,close_on_outside:outside.checked,transition:['overlay','close','swap'].includes(action.value)&&(transition.value.startsWith('slide-')||transition.value==='smart-animate')?'dissolve':transition.value,duration:Number(duration.value),easing:easing.value,...(action.value==='set-variable'?setFields():{}),...(branching?{condition:was?written??guard:{variable:variables[0].id,operator:'==',value:defaultLiteral(variables[0].kind)},...sides()}:!was&&!inside&&Number(guardVariable.value)?{condition:guardFields()}:{}),...(!step&&shape.prototype?.then?.length?{then:shape.prototype.then}:{})}});};action.onchange=save;
  if(action.value==='set-variable'){if(!variables.length){const note=document.createElement('p');note.textContent='Create a number, boolean, text or color variable first.';host.append(note);}else{field('Variable',setVariable);field('Operation',operation);if(operation.value!=='toggle')field(operation.value==='add'?'Amount':'Value',setValue.input);}}
  for(const control of [setVariable,operation,setValue.input,guardVariable,operator,guardValue.input])control.onchange=save;trigger.onchange=save;delay.onchange=save;target.onchange=save;position.onchange=save;outside.onchange=save;if(['navigate','overlay','swap'].includes(action.value))field('Destination',target);if(action.value==='overlay'){field('Overlay position',position);if(position.value==='manual'){field('Overlay X',offsetX);field('Overlay Y',offsetY);}field('Backdrop color',backdropColor);field('Backdrop opacity (%)',backdropOpacity);field('Close when clicking outside',outside);}
  for(const input of [offsetX,offsetY,backdropColor,backdropOpacity])input.onchange=save;
  if(action.value==='swap'){const note=document.createElement('p');note.textContent='Replaces the top overlay, keeping its placement, backdrop and dismissal settings. Requires an open overlay.';host.append(note);}
- transition.onchange=save;duration.onchange=save;easing.onchange=save;if(action.value!=='none'&&action.value!=='set-variable'){field('Animation',transition);if(transition.value!=='instant'){field('Easing',easing);field('Duration',duration);}}
- if(action.value!=='none'&&(variables.length||guard)){field('Run',guardVariable);if(Number(guardVariable.value)){field('Comparison',operator);field('Compared with',guardValue.input);}}
+ transition.onchange=save;duration.onchange=save;easing.onchange=save;if(conditional){const title=document.createElement('h4');title.className='prototype-modal-condition';title.textContent='Condition';host.append(title);const entry=conditionField({document:host.ownerDocument,doc,variables,condition:guard,commit:next=>{written=next;save();}});entry.id=`prototype-condition-${shape.id}`;host.append(entry);}
+ if(action.value!=='none'&&action.value!=='set-variable'&&!conditional){field('Animation',transition);if(transition.value!=='instant'){field('Easing',easing);field('Duration',duration);}}
+ if(action.value!=='none'&&!conditional&&!inside&&(variables.length||guard)){field('Run',guardVariable);if(Number(guardVariable.value)){field('Comparison',operator);field('Compared with',guardValue.input);}}
 
 }
 // Fit the complete device, while hit testing continues to use the content viewport.
@@ -211,7 +251,11 @@ export function presentPrototype(doc,start,editor,paint,prepare=async()=>{}){
   sequence=true;
   // A layout redraw (resize, orientation) may cut a transition short without
   // ending the sequence; `visit` only changes when something navigates.
-  try{for(const step of steps){const done=perform(step),mark=visit;if(!done)continue;await done;if(mark!==visit||!dialog.open)break;}}
+  // A conditional tests its variable when its turn comes, so earlier actions in the same trigger can decide it.
+  const run=async list=>{for(const step of list){
+   if(step.action==='conditional'){if(!await run(branchActions(step,conditionHolds(step.condition,variableValue(step.condition.variable))?'if':'else')))return false;continue;}
+   const done=perform(step),mark=visit;if(!done)continue;await done;if(mark!==visit||!dialog.open)return false;}return true;};
+  try{await run(steps);}
   finally{sequence=false;}
  };
  const render=async(config={},snapshot=null,leaving=null)=>{

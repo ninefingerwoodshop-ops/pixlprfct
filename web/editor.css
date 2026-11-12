@@ -663,6 +663,63 @@ dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;height:24px!important;min-height:24px!important;padding:0 8px!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);text-align:left;cursor:pointer}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action.active{background:color-mix(in srgb,var(--ui-accent) 32%,transparent)!important}
+/* Conditional block, measured in Figma 2026-11-11: 24px rows 8px apart on a half-strength #383838 panel, the if row solid. */
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-conditional{display:grid;gap:8px;border-radius:5px;background:#38383880}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-conditional.active{background:color-mix(in srgb,var(--ui-accent) 24%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if{gap:4px;border-radius:5px 5px 0 0!important;background:#383838}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-conditional.active .prototype-modal-if{background:color-mix(in srgb,var(--ui-accent) 32%,transparent)!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if .prototype-modal-variable{flex:0 1 auto;min-width:0;padding:0 4px;border-radius:4px;background:#2c2c2c;box-shadow:inset 0 0 0 1px #ffffff1f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if .prototype-modal-operator{color:#f4a4e0}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if .prototype-modal-keyword{margin-left:4px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-else{height:24px;padding:0 8px;line-height:24px;color:var(--ui-text-color)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action.nested{gap:4px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-corner{display:inline-grid;place-items:center;width:16px;height:16px;color:color-mix(in srgb,var(--ui-text-color) 50%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-corner .app-icon{width:12px!important;height:12px!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-create{color:color-mix(in srgb,var(--ui-text-color) 40%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-create:is(:hover,:focus-visible){color:var(--ui-text-color)}
+/* Condition field and its expression popover (sizes read from Figma screenshots, 2026-11-11: about 257px wide, 24px rows). */
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition{display:flex;align-items:center;gap:4px;width:100%;height:24px!important;min-height:24px!important;padding:0 8px!important;border:1px solid transparent!important;border-radius:5px!important;background:#383838;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);text-align:left;cursor:text;overflow:hidden;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition:hover{border-color:var(--ui-border)!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-placeholder{color:color-mix(in srgb,var(--ui-text-color) 40%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal :is(.prototype-condition,.prototype-condition-entry) .prototype-modal-variable{flex:0 1 auto;min-width:0;padding:0 4px;border-radius:4px;background:#2c2c2c;box-shadow:inset 0 0 0 1px #ffffff1f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition .prototype-modal-operator{color:#f4a4e0}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-popover{position:absolute;z-index:2;width:257px;border-radius:13px;background:#1e1e1e;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);box-shadow:0 10px 24px #00000073,0 3px 5px #00000059,inset 0 .5px 0 #ffffff14,inset 0 0 .5px #ffffff59;overflow:hidden}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-entry{display:flex;align-items:center;gap:6px;height:32px;margin:4px;padding:0 8px;border:1px solid var(--ui-accent);border-radius:5px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-chips{display:contents}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-entry input{flex:1;min-width:0;width:auto!important;height:22px!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;color:var(--ui-text-color);font:inherit}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-list{max-height:240px;padding:8px;border-top:1px solid var(--ui-border);overflow:auto}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-list[hidden]{display:none}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-group{height:24px;padding:0 8px;line-height:24px;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-option{display:flex;align-items:center;justify-content:space-between;gap:8px;height:24px;padding:0 8px;border-radius:5px;cursor:default;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-option:is(.active,:hover){background:var(--ui-accent);color:#fff}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-option>span:first-child{overflow:hidden;text-overflow:ellipsis}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-hint{color:color-mix(in srgb,currentColor 50%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal h4.prototype-modal-condition{margin:4px 0 0!important;font:var(--ui-regular) 11px/16px var(--ui-font)!important;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent);letter-spacing:0;text-transform:none}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-foot{display:flex;gap:0;padding:8px;border-top:1px solid var(--ui-border)}
 dialog#prototype-interaction-modal#prototype-interaction-modal button:focus-visible,#prototype-panel :is(.prototype-chip,.prototype-add,.prototype-chip-remove):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}
 dialog#prototype-interaction-modal#prototype-interaction-modal label.long{grid-template-columns:minmax(0,1fr);height:auto!important;gap:4px}
+
+/* Sidebar Grid panel for selected grid tracks. Measured in Figma on 2026-11-11
+   (CSS px, 240 px sidebar): 13px/550 title with a 24px close button, 11px/550
+   section titles, 24px rows 32px apart: 16px number, two 76px controls and a
+   24px remove button, 8px gaps, 16px side padding. */
+/* The editor moves inspector sections into .inspector-content at start-up; the panel replaces its siblings there, and the tabs stay. */
+.right-panel.grid-tracks-open .inspector-content>:not(#grid-track-panel){display:none!important}
+#grid-track-panel{flex:1;overflow:auto;padding:0;font:var(--ui-regular) 11px/16px var(--ui-font);color:var(--ui-text-color)}
+#grid-track-panel[hidden]{display:none}
+#grid-track-panel .grid-track-panel-head{display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 8px 0 16px;border-top:1px solid var(--ui-border);border-bottom:1px solid var(--ui-border)}
+#grid-track-panel .grid-track-panel-head h2{margin:0!important;font:550 13px/22px var(--ui-font)!important;letter-spacing:0}
+#grid-track-panel .grid-track-panel-section{padding:8px 0 12px;border-bottom:1px solid var(--ui-border)}
+#grid-track-panel .grid-track-panel-title{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 8px 0 16px}
+#grid-track-panel .grid-track-panel-title h3{margin:0!important;font:550 11px/16px var(--ui-font)!important;letter-spacing:0;text-transform:none}
+#grid-track-panel .grid-track-panel-note{margin:4px 16px;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent)}
+#grid-track-panel#grid-track-panel :is(.grid-track-panel-close,.grid-track-panel-add,.grid-track-panel-remove){flex:none;width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);display:inline-grid;place-items:center;cursor:pointer}
+#grid-track-panel .grid-track-panel-row{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px 0 16px}
+#grid-track-panel .grid-track-panel-row.selected{background:color-mix(in srgb,var(--ui-accent) 28%,transparent)}
+#grid-track-panel#grid-track-panel .grid-track-panel-index{flex:none;width:16px!important;min-width:16px!important;height:16px!important;min-height:16px!important;padding:0!important;border:0!important;background:transparent!important;color:color-mix(in srgb,var(--ui-text-color) 40%,transparent);font:550 11px/16px var(--ui-font);text-align:center;cursor:pointer}
+#grid-track-panel#grid-track-panel .grid-track-panel-row.selected .grid-track-panel-index{color:var(--ui-text-color)}
+#grid-track-panel#grid-track-panel .grid-track-panel-row>:is(select,input,.inspector-select-trigger){flex:1 1 76px;width:76px!important;min-width:0;height:24px!important;min-height:24px!important;box-sizing:border-box;padding:0 8px;border:1px solid var(--ui-border);border-radius:5px;background:var(--ui-field);color:var(--ui-text-color);font:450 11px/16px var(--ui-font)}
+#grid-track-panel#grid-track-panel .grid-track-panel-row.selected>:is(select,input,.inspector-select-trigger){border-color:var(--ui-accent)}
+#grid-track-panel .grid-track-panel-remove{visibility:hidden}
+#grid-track-panel .grid-track-panel-row:is(.selected,:hover,:focus-within) .grid-track-panel-remove{visibility:visible}
+#grid-track-panel :is(button,input,select):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}

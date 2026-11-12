@@ -40,7 +40,8 @@ export function librarySnapshot(doc) {
   }
   // Actions that leave the copied set are dropped; a follow-up takes over when the first action goes.
   const stays=p=>!['navigate','overlay','swap'].includes(p.action)||ids.has(p.target);
-  const prune=p=>{const {then=[],...head}=p,rest=then.filter(stays);if(stays(head))return rest.length?{...head,then:rest}:head;if(!rest.length)return null;const [next,...later]=rest;return {...next,trigger:head.trigger,delay:head.delay,...(later.length?{then:later}:{})};};
+  const inner=p=>p.action==='conditional'?{...p,...(p.if_actions?{if_actions:p.if_actions.filter(stays)}:{}),...(p.else_actions?{else_actions:p.else_actions.filter(stays)}:{})}:p;
+  const prune=p=>{const {then=[],...head}=inner(p),rest=then.map(inner).filter(stays);if(stays(head))return rest.length?{...head,then:rest}:head;if(!rest.length)return null;const [next,...later]=rest;return {...next,trigger:head.trigger,delay:head.delay,...(later.length?{then:later}:{})};};
   const kept=[...(s.prototype?[s.prototype]:[]),...(s.additional_interactions??[])].map(prune).filter(Boolean);
   s.prototype=kept[0]??null;s.additional_interactions=kept.slice(1);return s;
  });
@@ -66,8 +67,8 @@ export function mergeLibrary(document,release) {
  allocate('sets',source.component_sets??[],doc.component_sets);allocate('properties',source.component_properties??[],doc.component_properties);allocate('guides',source.guide_styles??[],doc.guide_styles);allocate('effects',source.effect_styles??[],doc.effect_styles);allocate('texts',source.text_styles??[],doc.text_styles);allocate('colors',source.color_styles??[],doc.color_styles);
  const present=new Set(source.shapes.map(s=>maps.shapes[s.id])),oldIds=new Set(Object.values(maps.shapes));
  if(doc.shapes.some(s=>s.component?.type==='instance'&&!oldIds.has(s.id)&&oldIds.has(s.component.master)&&!present.has(s.component.master)))throw new Error('This update removes a component used in this project. Remove its instances before accepting the update.');
- // Destinations and variables take their imported ids; an action whose variable did not come along is dropped, and a condition on one is cleared.
- const remapAction=p=>{const next={...p,target:maps.shapes[p.target]??0};if(p.action==='set-variable'){if(!maps.variables[p.variable])return null;next.variable=maps.variables[p.variable];}if(p.condition){if(maps.variables[p.condition.variable])next.condition={...p.condition,variable:maps.variables[p.condition.variable]};else delete next.condition;}return next;};
+ // Destinations and variables take their imported ids; an action or conditional whose variable did not come along is dropped, and a condition on one is cleared.
+ const remapAction=p=>{const next={...p,target:maps.shapes[p.target]??0};if(p.action==='conditional'){if(!maps.variables[p.condition?.variable])return null;for(const key of ['if_actions','else_actions'])if(p[key])next[key]=p[key].map(remapAction).filter(Boolean);}if(p.action==='set-variable'){if(!maps.variables[p.variable])return null;next.variable=maps.variables[p.variable];}if(p.condition){if(maps.variables[p.condition.variable])next.condition={...p.condition,variable:maps.variables[p.condition.variable]};else delete next.condition;}return next;};
  const remapInteraction=p=>{if(!p)return p;const {then=[],...head}=p,steps=[remapAction(head),...then.map(remapAction)].filter(Boolean);if(!steps.length)return null;const [first,...rest]=steps;return {...first,trigger:head.trigger,delay:head.delay,...(rest.length?{then:rest}:{})};};
  const shapes=source.shapes.map(original=>{
   const s=clone(original);s.id=maps.shapes[s.id];s.page_id=link.page_id;s.parent_id=maps.shapes[s.parent_id]??0;s.layout_class='';s.layout_class_generated=true;

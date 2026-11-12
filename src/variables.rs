@@ -267,13 +267,21 @@ pub fn validate_action(doc: &Document, p: &Prototype) -> Result<(), String> {
     }
     Ok(())
 }
-/// After variables change: a Set variable action that no longer fits is
-/// removed, and a condition that no longer fits is cleared so its action
+/// After variables change: a Set variable action or a conditional that no
+/// longer fits is removed, and a condition that no longer fits is cleared so its action
 /// runs unconditionally, like a layer property that loses its token.
 pub fn prune_actions(doc: &mut Document) {
     let reference = doc.clone();
     for shape in &mut doc.shapes {
-        shape.retain_interactions(|p| p.action != "set-variable" || set_variable_ok(&reference, p));
+        shape.retain_interactions(|p| match p.action.as_str() {
+            "set-variable" => set_variable_ok(&reference, p),
+            // A conditional is nothing without its test, so it goes with it.
+            "conditional" => p
+                .condition
+                .as_ref()
+                .is_some_and(|c| condition_ok(&reference, c)),
+            _ => true,
+        });
         shape.each_action_mut(|p| {
             if p.condition
                 .as_ref()

@@ -140,7 +140,7 @@ Set in the Constraints inspector (`#constraint-horizontal/vertical`, multi-selec
 | [grid-areas.js](../../web/grid-areas.js) | Named-area editing: `areaFromDrag`, `moveArea`, `resizeArea`, `nudgeArea`, `validArea`/`areasOverlap`, `nextAreaName`, `cycleArea`/`pageArea`, `drawAreaEditing`, history-aware selection restore. |
 | [grid-ux.js](../../web/grid-ux.js), [grid-picker-drag.js](../../web/grid-picker-drag.js) | Visual placement picker cells/window and drag-to-span. |
 | [grid-track-sort.js](../../web/grid-track-sort.js) | Drag-reorder track cards in the inspector (commits only on drop); a selected card carries the whole track selection. |
-| [grid-track-selection.js](../../web/grid-track-selection.js) | Canvas track headers in spacing edit mode: hit testing, click/Shift/Ctrl selection, drop boundary and drop line, drawing. |
+| [grid-track-selection.js](../../web/grid-track-selection.js) | Canvas track handles for the selected grid frame, following Figma: a pill per hovered column/row (`trackPill`, `hoveredTracks`), chips for hovered and selected tracks (`trackChip`, `trackHandles`, `trackHandleHit` with grip/size/chevron parts), click/Shift/Ctrl selection, drop boundary and drop line, drawing. The sidebar Grid panel shown while tracks are selected lives in [grid-track-panel.js](../../web/grid-track-panel.js). |
 | [grid-stack-drop.js](../../web/grid-stack-drop.js) | Pointer-based drop into an occupied cell's wrapper (stacking). |
 | [grid-resize-feedback.js](../../web/grid-resize-feedback.js) | Limit boxes and warnings while resizing bounded tracks/areas; auto-scroll of the track list with pause and Alt/Option+R resume. |
 | [grid-measurement.js](../../web/grid-measurement.js) | `measuredGridPlacement`: derive cells from the browser's resolved CSS grid (used when the CSS canvas is active). |
@@ -213,7 +213,7 @@ Rust has only three unit tests (`src/lib.rs` `mod tests`); layout is verified th
 - Inference is a set of measured heuristics, with documented limits; arbitrary compositions may infer differently.
 - Canvas breakpoints use frame width; general CSS media queries in custom layer CSS use the browser viewport.
 - design-file import maps horizontal/vertical stacks only; Imported grid layouts import with fixed positions.
-- Canvas multi-track selection is pointer-only (click, Shift-range, Ctrl/Command-toggle on track headers); there is no keyboard path to build a multi-track selection.
+- Canvas multi-track selection is pointer-only (click, Shift-range, Ctrl/Command-toggle on track chips or the Grid panel's track numbers); there is no keyboard path to reveal a pill or build a selection from the canvas. Alt+Arrow moves a selection once it exists.
 - Track headers are a PixlPrfct addition and have not been compared against Figma's grid UI.
 
 > **Note:** README "Grid auto layout" says direct drag reordering and direct track deletion of grid tracks are pending. Code has inspector drag reordering ([grid-track-sort.js](../../web/grid-track-sort.js)) and `Editor::delete_grid_track` (README's "Inspector and toolbar" section documents Delete row/column). Canvas drag reordering and multi-track selection are implemented by track headers in spacing edit mode ([grid-track-selection.js](../../web/grid-track-selection.js), `Editor::move_grid_tracks` / `shift_grid_tracks`).

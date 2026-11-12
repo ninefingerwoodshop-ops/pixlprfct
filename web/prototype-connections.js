@@ -1,4 +1,4 @@
-import {interactions,withInteractions} from './prototype-interactions.js';
+import {interactions,withInteractions,branchActions,withBranch,MAX_BRANCH_ACTIONS} from './prototype-interactions.js';
 import {roundedContains} from './appearance.js';
 import {visibleInTree} from './selection.js';
 import {clippingFrames} from './scene.js';
@@ -7,6 +7,8 @@ export function connectionHit(s,p,zoom){const h=connectionHandle(s,zoom);return 
 export function connectionTarget(shapes,source,p){return [...shapes].reverse().find(s=>s.id!==source&&s.kind==='frame'&&visibleInTree(s,shapes)&&[s,...clippingFrames(s,shapes)].every(f=>roundedContains(f,p)))?.id??0;}
 export function connectedShape(source,target,index=0){
  const list=interactions(source);index=Math.max(0,Math.min(index,Math.max(0,list.length-1)));const p=list[index];
+ // A conditional has no destination of its own: the connection joins its if side.
+ if(p?.action==='conditional'){const side=branchActions(p,'if');if(side.length>=MAX_BRANCH_ACTIONS)return source;list[index]=withBranch(p,'if',[...side,{action:'navigate',target}]);return withInteractions(source,list);}
  list[index]={...p,action:['overlay','swap'].includes(p?.action)?p.action:'navigate',target};
  return withInteractions(source,list);
 }
