@@ -1439,11 +1439,15 @@ the frame. Strikethrough (`~~text~~`), headings (`# `) and code blocks
 
 Still different:
 
-- The description is a text box holding the markers, with a formatted preview
-  below. Figma edits the formatted text directly.
-- The dialog is modal and keeps **Save property**, the "Apply to all N
-  variants" box and the preview. Figma's is a floating popover that applies
-  edits live.
+- Editing an existing slot property now matches in behaviour: a floating
+  panel 2 px left of the properties panel, no Save button, each change applied
+  as it is made (name on Return or leaving the field, description on leaving
+  it, limits and checkboxes on change), and the description edited directly as
+  formatted text. Clicking elsewhere or Escape closes it. Creating a property
+  still uses a modal with a **Create property** button; Figma's create flow
+  was not inspected. "Apply to all N variants" remains as a PixlPrfct extra.
+- The link tool asks for the address in a field under the text. Figma's link
+  entry was not inspected.
 - The limit fields are plain number inputs without Figma's stepper arrows, and
   there is no "Learn more" link or info icon.
 - "· N items" counts the layers bound to the property. What Figma counts

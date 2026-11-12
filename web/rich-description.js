@@ -27,7 +27,7 @@ export function parseInline(text,style={}){
  const flush=()=>{if(plain){runs.push({text:plain,...style});plain='';}};
  for(let i=0;i<text.length;){
   const c=text[i];
-  if(c==='\\'&&'\\*_~#`[]()'.includes(text[i+1]??'\n')){plain+=text[i+1];i+=2;continue;}
+  if(c==='\\'&&'\\*_~#`[]()-.•'.includes(text[i+1]??'\n')){plain+=text[i+1];i+=2;continue;}
   if(c==='`'){const end=text.indexOf('`',i+1);if(end>i+1){flush();runs.push({text:text.slice(i+1,end),...style,code:true});i=end+1;continue;}}
   if(c==='['){
    const close=text.indexOf('](',i+1),end=close>0?text.indexOf(')',close+2):-1;
