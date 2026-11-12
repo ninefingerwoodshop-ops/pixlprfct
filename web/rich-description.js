@@ -1,6 +1,8 @@
 // Formatted descriptions. The stored value stays a plain string; a small,
 // fixed Markdown subset is interpreted for display: **bold**, *italic* or
-// _italic_, `code`, [text](https://…) links, and "- " / "1. " list lines.
+// _italic_, ~~strikethrough~~, `code`, [text](https://…) links, "# " heading
+// lines, "- " / "1. " list lines and ``` fenced code blocks. These are the
+// formats Figma's description toolbar offers (inspected 2026-11-11).
 // Rendering builds DOM nodes from text only. Description text is never parsed
 // as HTML, and links are limited to http, https and mailto.
 const SAFE_LINK=/^(https?:\/\/|mailto:)[^\s<>"]+$/i;
@@ -25,7 +27,7 @@ export function parseInline(text,style={}){
  const flush=()=>{if(plain){runs.push({text:plain,...style});plain='';}};
  for(let i=0;i<text.length;){
   const c=text[i];
-  if(c==='\\'&&'\\*_`[]()'.includes(text[i+1]??'\n')){plain+=text[i+1];i+=2;continue;}
+  if(c==='\\'&&'\\*_~#`[]()'.includes(text[i+1]??'\n')){plain+=text[i+1];i+=2;continue;}
   if(c==='`'){const end=text.indexOf('`',i+1);if(end>i+1){flush();runs.push({text:text.slice(i+1,end),...style,code:true});i=end+1;continue;}}
   if(c==='['){
    const close=text.indexOf('](',i+1),end=close>0?text.indexOf(')',close+2):-1;
@@ -34,21 +36,26 @@ export function parseInline(text,style={}){
     if(SAFE_LINK.test(href)){flush();runs.push(...parseInline(text.slice(i+1,close),{...style,href}));i=end+1;continue;}
    }
   }
-  const marker=text.startsWith('**',i)?'**':c==='*'||c==='_'?c:'';
+  const marker=text.startsWith('**',i)?'**':text.startsWith('~~',i)?'~~':c==='*'||c==='_'?c:'';
   // An opening marker is followed by text; _ also starts at a word boundary.
   if(marker&&!space(text[i+marker.length])&&!(marker==='_'&&word(text[i-1]))){
    const end=closing(text,i+marker.length+1,marker);
-   if(end>0){flush();runs.push(...parseInline(text.slice(i+marker.length,end),{...style,[marker==='**'?'bold':'italic']:true}));i=end+marker.length;continue;}
+   if(end>0){flush();runs.push(...parseInline(text.slice(i+marker.length,end),{...style,[marker==='**'?'bold':marker==='~~'?'strike':'italic']:true}));i=end+marker.length;continue;}
   }
   plain+=c;i++;
  }
  flush();return runs;
 }
-// Blocks: paragraphs (single newlines are line breaks) and lists.
+// Blocks: paragraphs (single newlines are line breaks), headings, lists and code blocks.
 export function parseDescription(text){
- const blocks=[];let paragraph=[];
+ const blocks=[];let paragraph=[],fence=null;
  const end=()=>{if(paragraph.length){blocks.push({type:'paragraph',lines:paragraph.map(line=>parseInline(line))});paragraph=[];}};
  for(const raw of String(text??'').replace(/\r\n?/g,'\n').split('\n')){
+  // Inside a fence every line is kept as written; an unclosed fence runs to the end.
+  if(fence){if(/^\s{0,3}```\s*$/.test(raw)){blocks.push({type:'code',text:fence.join('\n')});fence=null;}else fence.push(raw);continue;}
+  if(/^\s{0,3}```/.test(raw)){end();fence=[];continue;}
+  const heading=/^\s{0,3}#{1,3}\s+(.*)$/.exec(raw);
+  if(heading){end();blocks.push({type:'heading',lines:[parseInline(heading[1].trim())]});continue;}
   const item=/^\s{0,3}(?:([-*•])|(\d{1,3})[.)])\s+(.*)$/.exec(raw);
   if(item){
    end();const ordered=!!item[2],last=blocks.at(-1);
@@ -57,26 +64,29 @@ export function parseDescription(text){
   }else if(!raw.trim())end();
   else paragraph.push(raw.trim());
  }
+ if(fence)blocks.push({type:'code',text:fence.join('\n')});
  end();return blocks;
 }
-export const hasFormatting=text=>parseDescription(text).some(b=>b.type==='list'||b.lines.some(line=>line.some(run=>run.bold||run.italic||run.code||run.href)));
+export const hasFormatting=text=>parseDescription(text).some(b=>b.type!=='paragraph'||b.lines.some(line=>line.some(run=>run.bold||run.italic||run.strike||run.code||run.href)));
 // For tooltips and other plain-text surfaces.
 export function plainDescription(text){
  const flat=runs=>runs.map(run=>run.text).join('');
- return parseDescription(text).map(b=>b.type==='list'?b.items.map((item,i)=>(b.ordered?`${i+1}. `:'• ')+flat(item)).join('\n'):b.lines.map(flat).join('\n')).join('\n\n');
+ return parseDescription(text).map(b=>b.type==='code'?b.text:b.type==='list'?b.items.map((item,i)=>(b.ordered?`${i+1}. `:'• ')+flat(item)).join('\n'):b.lines.map(flat).join('\n')).join('\n\n');
 }
 export function renderDescription(text,doc=document){
  const fragment=doc.createDocumentFragment();
  const inline=(host,runs)=>{
   for(const run of runs){
    let node=doc.createTextNode(run.text);
-   for(const [on,tag] of [[run.code,'code'],[run.italic,'em'],[run.bold,'strong']])if(on){const wrap=doc.createElement(tag);wrap.append(node);node=wrap;}
+   for(const [on,tag] of [[run.code,'code'],[run.strike,'s'],[run.italic,'em'],[run.bold,'strong']])if(on){const wrap=doc.createElement(tag);wrap.append(node);node=wrap;}
    if(run.href){const link=doc.createElement('a');link.href=run.href;link.target='_blank';link.rel='noopener noreferrer';link.append(node);node=link;}
    host.append(node);
   }
  };
  for(const block of parseDescription(text)){
-  if(block.type==='list'){
+  if(block.type==='code'){const pre=doc.createElement('pre'),code=doc.createElement('code');code.textContent=block.text;pre.append(code);fragment.append(pre);}
+  else if(block.type==='heading'){const h=doc.createElement('h4');inline(h,block.lines[0]);fragment.append(h);}
+  else if(block.type==='list'){
    const list=doc.createElement(block.ordered?'ol':'ul');
    for(const item of block.items){const li=doc.createElement('li');inline(li,item);list.append(li);}
    fragment.append(list);
@@ -89,7 +99,7 @@ export function renderDescription(text,doc=document){
  return fragment;
 }
 // Toolbar edits on a textarea value. Returns the new value and selection.
-const wraps={bold:'**',italic:'*',code:'`'};
+const wraps={bold:'**',italic:'*',strike:'~~',code:'`'};
 export function formatSelection(value,start,end,kind){
  const selected=value.slice(start,end);
  if(wraps[kind]){
@@ -97,13 +107,24 @@ export function formatSelection(value,start,end,kind){
   // Toggle off when the selection is already wrapped, inside or outside.
   if(selected.length>=2*n&&selected.startsWith(m)&&selected.endsWith(m)&&!(kind==='italic'&&selected.startsWith('**')))return {value:value.slice(0,start)+selected.slice(n,-n)+value.slice(end),start,end:end-2*n};
   if(value.slice(start-n,start)===m&&value.slice(end,end+n)===m&&!(kind==='italic'&&value.slice(start-2,start)==='**'))return {value:value.slice(0,start-n)+selected+value.slice(end+n),start:start-n,end:end-n};
-  const inner=selected||{bold:'bold text',italic:'italic text',code:'code'}[kind];
+  const inner=selected||{bold:'bold text',italic:'italic text',strike:'struck text',code:'code'}[kind];
   return {value:value.slice(0,start)+m+inner+m+value.slice(end),start:start+n,end:start+n+inner.length};
  }
  if(kind==='link'){
   const label=selected||'link text',url='https://';
   const next=value.slice(0,start)+`[${label}](${url})`+value.slice(end),at=start+label.length+3;
   return {value:next,start:at,end:at+url.length};
+ }
+ const lineRange=()=>{const from=value.lastIndexOf('\n',start-1)+1,after=value.indexOf('\n',Math.max(end-1,start)),to=after<0?value.length:after;return [from,to];};
+ if(kind==='heading'){
+  const [from,to]=lineRange(),lines=value.slice(from,to).split('\n'),mark=/^\s{0,3}#{1,3}\s+/,already=lines.every(line=>!line.trim()||mark.test(line));
+  const block=lines.map(line=>!line.trim()?line:already?line.replace(mark,''):'# '+line.replace(mark,'')).join('\n')||'# Heading';
+  return {value:value.slice(0,from)+block+value.slice(to),start:from,end:from+block.length};
+ }
+ if(kind==='codeblock'){
+  const [from,to]=lineRange(),inner=value.slice(from,to),fenced=/^```\n([\s\S]*)\n```$/.exec(inner);
+  const block=fenced?fenced[1]:'```\n'+(inner||'code')+'\n```';
+  return {value:value.slice(0,from)+block+value.slice(to),start:fenced?from:from+4,end:fenced?from+block.length:from+block.length-4};
  }
  if(kind==='bulleted'||kind==='numbered'){
   const from=value.lastIndexOf('\n',start-1)+1,after=value.indexOf('\n',Math.max(end-1,start)),to=after<0?value.length:after;

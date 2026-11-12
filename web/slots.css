@@ -25,3 +25,29 @@ dialog.slot-property-dialog .slot-check:has(input:disabled){opacity:.4}
 .slot-description code{font:11px/16px ui-monospace,SFMono-Regular,Menlo,monospace;background:#383838;border-radius:3px;padding:0 3px}
 .slot-description-preview{padding:8px;background:#242424;border-radius:5px;margin:0}
 dialog.slot-property-dialog label.slot-all-variants{margin-top:16px}
+
+/* Edit slot property, measured in Figma 2026-11-11: Name beside a 136px field, a 270x112 description
+   box with its 24px tools underneath, 120px limit fields on the right, rows 36px apart. */
+dialog#slot-property-dialog.slot-property-dialog .slot-property-body>label.slot-name-setting{display:grid;grid-template-columns:minmax(0,1fr) 136px;align-items:center;gap:8px;margin:0 0 12px;height:24px}
+dialog#slot-property-dialog.slot-property-dialog .slot-property-body>label.slot-name-setting>input{width:136px!important;height:24px!important;min-height:24px!important;margin:0!important;box-sizing:border-box}
+dialog#slot-property-dialog.slot-property-dialog .slot-property-body>label.slot-description-setting{display:block;margin:0 0 8px;line-height:16px}
+dialog#slot-property-dialog.slot-property-dialog .slot-description-editor{border:1px solid var(--ui-border);border-radius:5px;background:#383838;overflow:hidden}
+dialog#slot-property-dialog.slot-property-dialog .slot-description-editor:focus-within{border-color:var(--ui-accent)}
+dialog#slot-property-dialog.slot-property-dialog .slot-description-editor>textarea{display:block;width:100%!important;height:112px;min-height:64px;margin:0!important;padding:6px 7px!important;border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;resize:vertical;box-sizing:border-box;font:var(--ui-regular) 11px/16px var(--ui-font)}
+dialog#slot-property-dialog.slot-property-dialog .slot-format-tools{display:flex;gap:6px;margin:0;padding:8px 3px;border-top:1px solid var(--ui-border)}
+dialog#slot-property-dialog.slot-property-dialog .slot-format-tools .slot-icon-button{width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important}
+dialog#slot-property-dialog.slot-property-dialog .slot-description-preview{margin-top:8px}
+dialog#slot-property-dialog.slot-property-dialog label.slot-limit-setting{display:flex!important;align-items:center;justify-content:space-between;width:100%;box-sizing:border-box;height:24px;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent)}
+dialog#slot-property-dialog.slot-property-dialog label.slot-limit-setting input{width:120px!important;height:24px!important;min-height:24px!important;box-sizing:border-box}
+dialog#slot-property-dialog.slot-property-dialog .slot-preferred-heading>span:first-child{color:color-mix(in srgb,var(--ui-text-color) 70%,transparent)}
+.slot-description s{text-decoration:line-through}.slot-description h4{margin:0 0 4px;font:600 12px/16px var(--ui-font);color:#fff;letter-spacing:0;text-transform:none}
+.slot-description pre{margin:0 0 4px;padding:4px 6px;background:#383838;border-radius:3px;overflow:auto;white-space:pre}.slot-description pre code{padding:0;background:transparent}
+/* Property chip in the component panel: filled 24px row; edit and remove appear on hover or focus. */
+#component-panel .slot-property-row.slot-property-authoring .slot-property-name{display:flex!important;align-items:center;gap:6px;height:24px!important;min-height:24px!important;padding:0 6px!important;border-radius:5px!important;background:#383838!important;color:var(--ui-text-color);font-size:11px;white-space:nowrap}
+#component-panel .slot-property-name>span{overflow:hidden;text-overflow:ellipsis}
+#component-panel .slot-property-glyph{display:inline-grid;place-items:center;flex:0 0 16px;overflow:visible!important}
+#component-panel .slot-property-count{color:color-mix(in srgb,var(--ui-text-color) 70%,transparent)}
+#component-panel .slot-property-row:not(.slot-property-authoring) .slot-property-glyph{display:none}
+#component-panel .slot-property-row.slot-property-authoring>.slot-icon-button{display:none!important}
+#component-panel .slot-property-row.slot-property-authoring:is(:hover,:focus-within)>.slot-icon-button{display:inline-flex!important}
+#component-panel .slot-property-glyph svg{width:14px;height:14px}

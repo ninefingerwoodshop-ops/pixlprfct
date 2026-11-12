@@ -3,7 +3,7 @@ let designPanels=null,editorKeydown=()=>{},updateCollapsible=()=>{};
 import {editorDOM,queryPanel} from './editor-dom.js';
 import {installTeamCollaboration} from './team-collaboration.js';
 function setTextIfChanged(node,value){const text=String(value);if(node.textContent!==text)node.textContent=text;}
-import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay,slotDescription,variantReportMessage} from './slots.js';
+import {slotProperty,slotOwner,slotWarnings,editSlotProperty,slotInstancePicker,renderSlotOverlay,slotDescription,variantReportMessage,SLOT_GLYPH} from './slots.js';
 import {loadingMessage,finishLoading,failLoading} from './loading-screen.js';
 import {installDesktop} from './desktop-integration.js';
 import {readDesignFile} from './design-import.js';
@@ -552,7 +552,7 @@ function renderLayers(force=false) {
     const glyph = document.createElement('span'); glyph.className = 'glyph'; glyph.innerHTML = icon(editorRole(shape)|| (shape.editor_meta?.text_path?'text-path':layoutIcon?'layout-'+direction:shape.kind));
     if(layoutIcon){glyph.title=direction==='grid'?'Grid Layout':direction==='horizontal'?'Flex Layout · Horizontal':'Flex Layout · Vertical';glyph.dataset.layout=direction;}
     if(componentType){glyph.innerHTML=icon(componentType==='set'?'component':'instance');glyph.classList.add('component-glyph');glyph.title=[glyph.title,componentType==='set'?'Component set':componentType==='master'?'Main component':'Component instance'].filter(Boolean).join(' · ');}
-    if(shape.slot){button.classList.add('slot-layer');glyph.innerHTML='<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M5 8h6M8 5v6"/></svg>';glyph.title='Slot';}
+    if(shape.slot){button.classList.add('slot-layer');glyph.innerHTML=SLOT_GLYPH;glyph.title='Slot';}
     const name = document.createElement('span'); name.className = 'layer-name'; name.textContent = shape.name;
     button.append(glyph, name);
     button.classList.toggle('is-hidden',!!shape.hidden);
