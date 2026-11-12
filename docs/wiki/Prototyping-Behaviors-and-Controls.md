@@ -24,9 +24,10 @@ PixlPrfct has four separate ways to make designs interactive, and they live in d
 |---|---|
 | `trigger` | `click` (default), `mouseenter`, `mouseleave`, `afterdelay`, `mousedown`, `mouseup`, `drag` |
 | `delay` | ms, 1–600,000 (default 800); `afterdelay` only on frames |
-| `action` | `navigate`, `overlay`, `swap` (need a frame `target`), `back`, `close`, `set-variable` (`target` must be 0) |
+| `action` | `navigate`, `overlay`, `swap` (need a frame `target`), `back`, `close`, `set-variable`, `conditional` (`target` must be 0) |
 | `variable`, `operation`, `value` | `set-variable` only: variable id; `set` (default), `add` (numbers) or `toggle` (booleans, no `value`); a literal matching the variable's kind. Omitted otherwise |
-| `condition` | Optional `{variable, operator, value}`; `==`/`!=` for any supported kind, `<`,`<=`,`>`,`>=` for numbers. The action is skipped when it does not hold |
+| `condition` | Optional `{variable, operator, value}`; `==`/`!=` for any supported kind, `<`,`<=`,`>`,`>=` for numbers. The action is skipped when it does not hold. Required on a `conditional`, where it chooses the side to run; not allowed on actions inside one |
+| `if_actions`, `else_actions` | `conditional` only: up to 8 actions each, run in order when `condition` holds or does not. They take no trigger, delay, `then` or `condition` and cannot be conditionals. Omitted from JSON when empty. A conditional is removed when its variable is deleted or changes type, and is not copied to another file |
 | `then` | Up to 7 follow-up actions run in order after this one on the same trigger. Each is a `Prototype` validated like any action; its own `trigger`/`delay` are ignored and it cannot have a `then`. Omitted from JSON when empty |
 | `transition` | `instant` (default), `dissolve`, `slide-left/right/up/down`, `smart-animate` (slides and smart animate not allowed for overlay/close/swap) |
 | `duration`, `easing` | ≤10,000 ms (default 300); `linear`, `ease-in`, `ease-out`, `ease-in-out` (default) |
@@ -168,7 +169,7 @@ flowchart LR
 
 - Overflow scrolling has no scroll-to action, sticky positioning, scroll triggers, momentum or scrollbars, and the presented screen does not scroll inside a device viewport.
 - No smart-animate, variables-in-prototypes or conditional logic in prototypes (README lists variable-driven prototypes as pending).
-- Smart animate covers navigate and back only, switches text, images, gradients and path shapes instead of morphing them, and is unverified against Figma. On drag fires once at a threshold; the transition does not follow the pointer. Conditions compare one variable with one literal; there are no expressions, nested condition blocks or Set variable mode. A layout redraw from the player's `ResizeObserver` (for example the keyboard interaction list changing height) cancels a running transition. No scroll/overflow behaviors (README lists variable-driven prototypes as pending).
+- Smart animate covers navigate and back only, switches text, images, gradients and path shapes instead of morphing them, and is unverified against Figma. On drag fires once at a threshold; the transition does not follow the pointer. Conditions compare one variable with one literal; a Conditional action gives if/else blocks, but there are no written expressions (and/or, variable-to-variable tests), conditionals inside conditionals, or Set variable mode. A layout redraw from the player's `ResizeObserver` (for example the keyboard interaction list changing height) cancels a running transition. No scroll/overflow behaviors (README lists variable-driven prototypes as pending).
 - Behaviors are not available in the prototype player or Rust export; JSX/imports/framework syntax are rejected as bodies.
 - Motion supports linear interpolation only and a fixed property set; there is no Motion-specific test file.
 - Full framework production builds and screen-reader audits for controls were not performed (starter-controls.md, dropdown-starter.md).

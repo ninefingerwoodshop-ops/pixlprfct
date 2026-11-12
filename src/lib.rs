@@ -320,8 +320,10 @@ impl Shape {
     /// Every action, including the ones that follow a trigger's first action.
     fn each_action_mut(&mut self, mut f: impl FnMut(&mut Prototype)) {
         for p in self.interactions_mut() {
-            f(p);
-            p.then.iter_mut().for_each(&mut f);
+            p.walk_mut(&mut f);
+            for step in &mut p.then {
+                step.walk_mut(&mut f);
+            }
         }
     }
     fn retain_interactions(&mut self, keep: impl Fn(&Prototype) -> bool) {
@@ -331,6 +333,11 @@ impl Shape {
             .into_iter()
             .chain(self.additional_interactions.drain(..))
             .filter_map(|mut p| {
+                // Actions inside a conditional go on their own; the conditional stays.
+                p.retain_branches(&keep);
+                p.then
+                    .iter_mut()
+                    .for_each(|step| step.retain_branches(&keep));
                 // When the first action goes, the next one takes over its trigger.
                 let mut rest: Vec<_> = std::mem::take(&mut p.then)
                     .into_iter()
@@ -401,6 +408,31 @@ pub struct Prototype {
     /// Their own trigger and delay are ignored and they cannot nest.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub then: Vec<Prototype>,
+    /// For `conditional`: the actions run when `condition` holds, and the ones
+    /// run when it does not. They take no trigger, delay or condition of their
+    /// own and cannot be conditionals themselves.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub if_actions: Vec<Prototype>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub else_actions: Vec<Prototype>,
+}
+
+impl Prototype {
+    fn branches(&self) -> impl Iterator<Item = &Prototype> {
+        self.if_actions.iter().chain(self.else_actions.iter())
+    }
+    /// This action, then the ones inside it when it is a conditional.
+    fn walk_mut(&mut self, f: &mut impl FnMut(&mut Prototype)) {
+        f(self);
+        self.if_actions
+            .iter_mut()
+            .chain(self.else_actions.iter_mut())
+            .for_each(f);
+    }
+    fn retain_branches(&mut self, keep: &impl Fn(&Prototype) -> bool) {
+        self.if_actions.retain(keep);
+        self.else_actions.retain(keep);
+    }
 }
 
 fn no_overflow() -> String {
@@ -1042,10 +1074,16 @@ fn validate(document: &Document) -> Result<(), String> {
             return Err("Additional interactions require a primary interaction; at most six triggers are supported".into());
         }
         let mut triggers = std::collections::HashSet::new();
-        for (first, p) in shape
-            .interactions()
-            .flat_map(|p| std::iter::once((true, p)).chain(p.then.iter().map(|step| (false, step))))
-        {
+        // 0: a trigger's first action, 1: a follow-up, 2: inside a conditional.
+        let mut actions = Vec::new();
+        for p in shape.interactions() {
+            for (level, step) in std::iter::once((0, p)).chain(p.then.iter().map(|s| (1, s))) {
+                actions.push((level, step));
+                actions.extend(step.branches().map(|inner| (2, inner)));
+            }
+        }
+        for (level, p) in actions {
+            let first = level == 0;
             if first && !triggers.insert(&p.trigger) {
                 return Err("Each prototype trigger may occur only once per layer".into());
             }
@@ -1054,6 +1092,15 @@ fn validate(document: &Document) -> Result<(), String> {
                     "A trigger runs at most eight actions, and follow-up actions cannot nest"
                         .into(),
                 );
+            }
+            let conditional = p.action == "conditional";
+            if (conditional && (level == 2 || p.condition.is_none()))
+                || (!conditional && p.branches().next().is_some())
+                || p.if_actions.len() > 8
+                || p.else_actions.len() > 8
+                || (level == 2 && p.condition.is_some())
+            {
+                return Err("A conditional needs a condition, holds at most eight actions on each side, and cannot contain another conditional or condition".into());
             }
             if ![
                 "click",
@@ -1100,6 +1147,7 @@ fn validate(document: &Document) -> Result<(), String> {
                 "close",
                 "swap",
                 "set-variable",
+                "conditional",
             ]
             .contains(&p.action.as_str())
                 || (["navigate", "overlay", "swap"].contains(&p.action.as_str())
@@ -1107,7 +1155,8 @@ fn validate(document: &Document) -> Result<(), String> {
                         .shapes
                         .iter()
                         .any(|s| s.id == p.target && s.kind == "frame"))
-                || (["back", "close", "set-variable"].contains(&p.action.as_str()) && p.target != 0)
+                || (["back", "close", "set-variable", "conditional"].contains(&p.action.as_str())
+                    && p.target != 0)
                 || ![
                     "center",
                     "manual",
@@ -2061,7 +2110,7 @@ impl Editor {
                 // Variables do not travel with a portable copy, so neither do the
                 // actions and conditions that name them.
                 copy.retain_interactions(|p| {
-                    p.action != "set-variable"
+                    !["set-variable", "conditional"].contains(&p.action.as_str())
                         && (!["navigate", "overlay", "swap"].contains(&p.action.as_str())
                             || ids.contains(&p.target))
                 });

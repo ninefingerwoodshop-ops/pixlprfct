@@ -1847,7 +1847,8 @@ function bind() {
     // Enter/Space activate the focused control; they must not also edit the
     // selected text or navigate into a layer on the canvas.
     if(['Enter',' '].includes(event.key)&&event.target.closest('button,summary,[role=menuitem]'))return;
-    if (editorDOM.querySelector('dialog[open]:not(.variables-dialog)') || event.target.closest('.variables-dialog')) return;
+    // The floating Interaction panel is not modal: shortcuts still work on the canvas beside it.
+    if (editorDOM.querySelector('dialog[open]:not(.variables-dialog):not(#prototype-interaction-modal)') || event.target.closest('.variables-dialog,#prototype-interaction-modal')) return;
     if (event.target.closest('input,textarea,select,[contenteditable]')) return;
     const key = event.key.toLowerCase(), mod = event.ctrlKey || event.metaKey;
     if(prototypeConnections&&prototypeLinkSelected&&event.target===canvas&&!mod&&!event.altKey&&['delete','backspace'].includes(key)){

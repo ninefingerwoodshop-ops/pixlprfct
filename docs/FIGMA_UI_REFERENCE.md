@@ -1336,9 +1336,26 @@ body spacing is close but not measured to the pixel.
   action's fields on the right.
 - **Set variable** shows **Target** (a searchable variable picker with
   "Add new") and **Value**.
-- **Conditional** is an action of its own. The list shows an **if** row with a
-  "Write condition" expression field and variable picker, an indented
-  "Add action", then **else** with its own "Add action".
+- **Conditional** is an action of its own and always shows the two-column
+  panel, even as the only action. The list shows a block: an **if** row
+  (branch icon, "if", then the committed test as a variable chip, a pink
+  operator and the value, for example `if [Count] > 3`), an indented
+  "Add action" (tooltip "Add nested action"), an **else** row and its own
+  "Add action". Once a side has an action its "Add action" row goes away;
+  with an inner action selected the **+** below the list adds to that side.
+  The inner action menu is the normal one without Conditional, so
+  conditionals do not nest. The right column shows **Action: Conditional**,
+  a **Condition** label and a full-width "Write condition" field.
+- Focusing the field opens an expression popover: "if | Write condition", an
+  "All libraries" filter with **+**, and variables grouped by collection with
+  their current value. Typing filters, Return inserts the highlighted
+  variable as a chip, and the list then offers **Equal to ==, Not equal to
+  !=, Greater than >, Greater than or equal to >=, Less than <, Less than or
+  equal to <=**. Operators and literals can also be typed; clicking outside
+  commits.
+- Measured: block 182 px wide inside the 199 px column, radius 5, background
+  #383838 at 50%; the if row solid #383838 with the top corners rounded; rows
+  24 px high, 8 px apart; the selected block takes the blue selection tint.
 
 Measured from the page's own layout (CSS px): the Interaction panel is 240
 wide, or 440 with an action list (a 199 px list column and a 241 px settings
@@ -1359,8 +1376,17 @@ section title Scroll behavior with Overflow and Position.
 
 Still different:
 
-- Conditions are a "Run: Always / Only when" setting on each action, not a
-  Conditional action with if/else blocks and a written expression.
+- The Conditional action and its if/else block match (added 2026-11-11), but
+  the test is picked with Variable / Comparison / Compared with menus rather
+  than Figma's written expression field and variable popover, and it compares
+  one variable with one literal: no and/or, no variable-to-variable tests.
+  The older "Run: Always / Only when" setting on single actions remains as a
+  PixlPrfct extra. The chip of a conditional-only interaction reads
+  "Click → Conditional"; Figma's text there was not observed.
+  The if row uses the existing shuffle icon; Figma's branch glyph needs adding
+  to the separately maintained icon font.
+- With an Interaction panel open, canvas shortcuts such as undo now work as in
+  Figma, except while focus is inside the panel itself.
 - Set variable uses Variable / Operation / Value fields rather than Target and
   Value with Figma's searchable picker.
 - A chip with several actions shows the first action and "+N"; what Figma
