@@ -677,6 +677,23 @@ dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-corner .app-icon{width:12px!important;height:12px!important}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-create{color:color-mix(in srgb,var(--ui-text-color) 40%,transparent)}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-create:is(:hover,:focus-visible){color:var(--ui-text-color)}
+/* Condition field and its expression popover (sizes read from Figma screenshots, 2026-11-11: about 257px wide, 24px rows). */
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition{display:flex;align-items:center;gap:4px;width:100%;height:24px!important;min-height:24px!important;padding:0 8px!important;border:1px solid transparent!important;border-radius:5px!important;background:#383838;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);text-align:left;cursor:text;overflow:hidden;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition:hover{border-color:var(--ui-border)!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-placeholder{color:color-mix(in srgb,var(--ui-text-color) 40%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal :is(.prototype-condition,.prototype-condition-entry) .prototype-modal-variable{flex:0 1 auto;min-width:0;padding:0 4px;border-radius:4px;background:#2c2c2c;box-shadow:inset 0 0 0 1px #ffffff1f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition .prototype-modal-operator{color:#f4a4e0}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-popover{position:absolute;z-index:2;width:257px;border-radius:13px;background:#1e1e1e;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);box-shadow:0 10px 24px #00000073,0 3px 5px #00000059,inset 0 .5px 0 #ffffff14,inset 0 0 .5px #ffffff59;overflow:hidden}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-entry{display:flex;align-items:center;gap:6px;height:32px;margin:4px;padding:0 8px;border:1px solid var(--ui-accent);border-radius:5px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-chips{display:contents}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-entry input{flex:1;min-width:0;width:auto!important;height:22px!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;color:var(--ui-text-color);font:inherit}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-list{max-height:240px;padding:8px;border-top:1px solid var(--ui-border);overflow:auto}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-list[hidden]{display:none}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-group{height:24px;padding:0 8px;line-height:24px;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-option{display:flex;align-items:center;justify-content:space-between;gap:8px;height:24px;padding:0 8px;border-radius:5px;cursor:default;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-option:is(.active,:hover){background:var(--ui-accent);color:#fff}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-option>span:first-child{overflow:hidden;text-overflow:ellipsis}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-condition-hint{color:color-mix(in srgb,currentColor 50%,transparent)}
 dialog#prototype-interaction-modal#prototype-interaction-modal h4.prototype-modal-condition{margin:4px 0 0!important;font:var(--ui-regular) 11px/16px var(--ui-font)!important;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent);letter-spacing:0;text-transform:none}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-foot{display:flex;gap:0;padding:8px;border-top:1px solid var(--ui-border)}
 dialog#prototype-interaction-modal#prototype-interaction-modal button:focus-visible,#prototype-panel :is(.prototype-chip,.prototype-add,.prototype-chip-remove):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}

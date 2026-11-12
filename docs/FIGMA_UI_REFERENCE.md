@@ -1376,10 +1376,16 @@ section title Scroll behavior with Overflow and Position.
 
 Still different:
 
-- The Conditional action and its if/else block match (added 2026-11-11), but
-  the test is picked with Variable / Comparison / Compared with menus rather
-  than Figma's written expression field and variable popover, and it compares
-  one variable with one literal: no and/or, no variable-to-variable tests.
+- The Conditional action, its if/else block and the written condition field
+  match in outline (added 2026-11-11): the field shows the chip, pink operator
+  and value; its popover lists variables by collection with their values, then
+  the six comparisons by name and symbol, takes a typed value, and commits on
+  Return or on leaving. Popover sizes (about 257 px wide, 24 px rows) were read
+  from screenshots, not the page layout. Not matched: the "All libraries"
+  filter and **+** (new variable) row, variable type icons in the list,
+  and/or, and comparing one variable with another. Figma lists matching
+  variables while a value is typed; PixlPrfct lists nothing there because the
+  value must be a literal.
   The older "Run: Always / Only when" setting on single actions remains as a
   PixlPrfct extra. The chip of a conditional-only interaction reads
   "Click → Conditional"; Figma's text there was not observed.

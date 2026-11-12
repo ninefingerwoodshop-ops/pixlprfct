@@ -129,7 +129,7 @@
     "Slot authoring: formatted descriptions (bold, italic, code, links, lists) with toolbar and preview; save or remove a slot across every variant of a component set in one undo step with a skipped-variant report; native Figma SLOT definitions and settings imported from .fig, per variant for set-level definitions (branch source; not verified against live Figma or a real slot-bearing export)",
     "Canvas grid track headers in spacing edit mode: drag a column or row header to reorder with a drop line; click, Shift-range and Ctrl/Command-toggle multi-track selection shared with the inspector cards; grouped moves and Alt+arrow block shifts keep connected spans whole, propagate to instances and commit as one undo step (branch source; pointer-only selection, not compared against Figma)",
     "Grid track handles rebuilt to Figma: pills for the hovered cell, chips with grip, size and chevron, a sizing menu, and a sidebar Grid panel with Columns and Rows lists, for any selected grid frame (branch source)",
-    "Conditional prototype action: an if/else block in the Interaction panel with a variable test and up to eight actions on each side (no nesting), evaluated when its turn comes in the trigger's sequence; destinations inside follow copies, deleted frames and library import, and the conditional is removed when its variable stops fitting"
+    "Conditional prototype action: an if/else block in the Interaction panel with a written condition field (variable, comparison and value picked or typed in a popover) and up to eight actions on each side (no nesting), evaluated when its turn comes in the trigger's sequence; destinations inside follow copies, deleted frames and library import, and the conditional is removed when its variable stops fitting"
   ],
   "remaining": [
     "Complete measured Figma visual and workflow parity across all equivalent tools, states and menus",
@@ -137,7 +137,7 @@
     "Broader SVG import (compound and even-odd fills, clipping, masks, text, images, complex CSS selectors; simple style sheets and CSS colors exist) and external vector clipboard interoperability",
     "Masks, Boolean operations, advanced corner smoothing and slice workflows require capability-specific acceptance",
     "Set-label placement parity against live Figma; Figma verification of slot description formatting, across-variant slot authoring and native slot import with a real export",
-    "Complete prototype parity: written variable expressions (and/or, variable-to-variable tests) and Set variable mode, scroll-to actions, sticky positioning and device-viewport scrolling, connection arrows for follow-up actions, pointer-following drag transitions, Smart Animate for overlays and verification of Smart Animate matching against live Figma",
+    "Complete prototype parity: compound variable expressions (and/or, variable-to-variable tests) and Set variable mode, scroll-to actions, sticky positioning and device-viewport scrolling, connection arrows for follow-up actions, pointer-following drag transitions, Smart Animate for overlays and verification of Smart Animate matching against live Figma",
     "Real-time simultaneous collaboration; existing cloud/team storage is implemented separately",
     "Vector PDF export (paths and real fonts instead of page images; the selectable text layer exists), and comprehensive accessibility/performance validation",
     "Complex-document edit latency, real installed-app OS-sleep acceptance",
