@@ -3,7 +3,8 @@ import {componentAssets} from './assets.js';
 import {visibleInTree} from './selection.js';
 import {showContextMenu} from './context-menu.js';
 import {icon} from './icons.js';
-import {renderDescription,plainDescription,formatSelection} from './rich-description.js';
+import {renderDescription,plainDescription} from './rich-description.js';
+import {richEditor,RICH_TOOLS} from './rich-editor.js';
 const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 // Variants of the component set a main component belongs to (itself included).
 export const slotVariants=(doc,master)=>doc.component_sets?.find(s=>s.variants.some(v=>v.component_id===master))?.variants.map(v=>v.component_id)??[];
@@ -44,32 +45,58 @@ export function renderSlotProperty(host,doc,property,targets,linked,actions){
  host.append(row);if(property.slot_settings?.description)host.append(slotDescription(property.slot_settings.description));
 }
 export function editSlotProperty(doc,master,property,onSave){
- const draft=structuredClone(property??{id:0,component_id:master,name:'Slot',kind:'slot',targets:[],slot_settings:{}});draft.slot_settings??={};const settings=draft.slot_settings;
- const dialog=el('dialog');dialog.id='slot-property-dialog';dialog.className='slot-property-dialog';dialog.setAttribute('aria-label',property?'Edit slot property':'Create property');
- const heading=el('header'),title=el('strong',property?'Edit slot property':'Create property'),close=iconButton('close','Close');close.onclick=()=>dialog.close();heading.append(title,close);
+ // An existing property is edited in a floating panel that applies each change
+ // as it is made, as in Figma. A new one is still confirmed with a button.
+ const live=!!property?.id;
+ let saved=structuredClone(property??{id:0,component_id:master,name:'Slot',kind:'slot',targets:[],slot_settings:{}});saved.slot_settings??={};
+ const draft=structuredClone(saved),settings=draft.slot_settings;
+ document.getElementById('slot-property-dialog')?.close();
+ const anchor=live?document.activeElement?.closest?.('.slot-property-row')?.getBoundingClientRect():null;
+ const dialog=el('dialog');dialog.id='slot-property-dialog';dialog.className='slot-property-dialog';dialog.classList.toggle('slot-property-live',live);dialog.setAttribute('aria-label',live?'Edit slot property':'Create property');
+ const heading=el('header'),title=el('strong',live?'Edit slot property':'Create property'),close=iconButton('close','Close');heading.append(title,close);
+ const error=el('p');error.className='slot-error';error.setAttribute('role','alert');
+ const variantCount=slotVariants(doc,master).length;let everyVariant=null;
+ // Save the draft. A change the engine refuses is reported and the control goes back to what was saved.
+ const apply=undo=>{if(!live)return true;try{onSave(structuredClone(draft),{allVariants:!!everyVariant?.checked});saved=structuredClone(draft);error.textContent='';return true;}catch(e){error.textContent=String(e);undo?.();return false;}};
  const body=el('div');body.className='slot-property-body';const nameLabel=el('label','Name'),name=el('input');nameLabel.className='slot-name-setting';name.setAttribute('aria-label','Slot name');name.maxLength=128;name.value=draft.name;nameLabel.append(name);
- const descriptionLabel=el('label','Description'),description=el('textarea');description.setAttribute('aria-label','Slot description');description.placeholder='How to use this slot';description.maxLength=10000;description.value=settings.description??'';
- // Formatting is stored as plain Markdown-style markers in the same string.
+ name.onchange=()=>{draft.name=name.value;apply(()=>{draft.name=name.value=saved.name;});};
+ name.addEventListener('keydown',event=>{if(event.key==='Enter'&&live){event.preventDefault();name.blur();name.focus();}});
+ // The description is edited as it will look and stored as plain Markdown-style markers.
+ const descriptionLabel=el('div','Description');descriptionLabel.className='slot-description-setting';descriptionLabel.id='slot-description-label';
+ const rich=richEditor({document,value:settings.description??'',label:'Slot description',placeholder:'How to use this slot',
+  onInput:value=>{settings.description=value;error.textContent=value.length>10000?'A description holds at most 10,000 characters':'';},
+  onCommit:value=>{settings.description=value;if(value.length<=10000)apply(()=>{settings.description=saved.slot_settings.description??'';});}});
  const formats=el('div');formats.className='slot-format-tools';formats.setAttribute('role','toolbar');formats.setAttribute('aria-label','Description formatting');
- const preview=el('div');preview.className='slot-description slot-description-preview';preview.setAttribute('aria-label','Description preview');
- const showPreview=()=>{preview.replaceChildren(renderDescription(description.value));preview.hidden=!description.value.trim();};
  // Figma's toolbar, in its order, under the text (inspected 2026-11-11).
- for(const [kind,glyph,label] of [['bold','text-bold','Bold'],['italic','text-italic','Italic'],['strike','text-strikethrough','Strikethrough'],['heading','heading-1','Heading'],['bulleted','list-bulleted','Bulleted list'],['numbered','list-numbered','Numbered list'],['link','link','Link'],['code','text-code','Code'],['codeblock','code-block','Code block']]){
-  const button=iconButton(glyph,label);button.onclick=()=>{const next=formatSelection(description.value,description.selectionStart,description.selectionEnd,kind);if(next.value.length>description.maxLength)return;description.value=next.value;description.focus();description.setSelectionRange(next.start,next.end);showPreview();};formats.append(button);
- }
- description.addEventListener('input',showPreview);
- description.addEventListener('keydown',event=>{const kind=(event.ctrlKey||event.metaKey)&&!event.altKey&&!event.shiftKey?{b:'bold',i:'italic',e:'code',k:'link'}[event.key.toLowerCase()]:(event.ctrlKey||event.metaKey)&&event.shiftKey&&!event.altKey&&event.key.toLowerCase()==='x'?'strike':null;if(!kind)return;event.preventDefault();event.stopPropagation();const next=formatSelection(description.value,description.selectionStart,description.selectionEnd,kind);if(next.value.length>description.maxLength)return;description.value=next.value;description.setSelectionRange(next.start,next.end);showPreview();});
- const editor=el('div');editor.className='slot-description-editor';editor.append(description,formats);descriptionLabel.className='slot-description-setting';description.id='slot-description-input';descriptionLabel.htmlFor=description.id;showPreview();body.append(nameLabel,descriptionLabel,editor,preview);
+ for(const [kind,glyph,label] of RICH_TOOLS){const button=iconButton(glyph,label);button.onpointerdown=event=>{event.preventDefault();rich.keep();};button.onclick=()=>rich.tool(kind);formats.append(button);}
+ const editor=el('div');editor.className='slot-description-editor';editor.append(rich.surface,rich.linkBar,formats);body.append(nameLabel,descriptionLabel,editor);
  const section=el('section');section.append(el('strong','Settings'));
- for(const [key,label] of [['min_children','Minimum layers'],['max_children','Maximum layers']]){const row=el('label',label),input=el('input');input.type='number';input.min='0';input.max='10000';input.step='1';input.placeholder='None';input.value=settings[key]??'';input.setAttribute('aria-label',label);input.oninput=()=>settings[key]=input.value===''?null:Number(input.value);row.className='slot-limit-setting';row.append(input);section.append(row);}
- for(const [key,label] of [['only_preferred_instances','Flag non-preferred instances'],['display_empty','By default, display empty slot'],['fill_counter_axis',"By default, fill items on slot’s counter axis"]]){const row=el('label'),input=el('input');row.className='slot-check';input.type='checkbox';input.checked=!!settings[key];if(key==='fill_counter_axis')input.disabled=!draft.targets.some(id=>['horizontal','vertical'].includes(doc.shapes.find(s=>s.id===id)?.auto_layout?.direction));input.onchange=()=>settings[key]=input.checked;row.append(input,el('span',label));section.append(row);}
- const preferred=el('section'),preferredHeading=el('div');preferredHeading.className='slot-preferred-heading';preferredHeading.append(el('span','Preferred instances'));const add=iconButton('plus','Select preferred instances');preferredHeading.append(add);preferred.append(preferredHeading);const list=el('div');preferred.append(list);const render=()=>{list.replaceChildren(...(settings.preferred_instances??[]).map(id=>{const row=el('div'),remove=iconButton('close','Remove preferred '+(doc.shapes.find(s=>s.id===id)?.name??id));row.className='slot-preferred-heading';row.append(el('span',doc.shapes.find(s=>s.id===id)?.name??'Missing component'),remove);remove.onclick=()=>{settings.preferred_instances=settings.preferred_instances.filter(v=>v!==id);render();};return row;}));};add.onclick=event=>menu(event,add,doc.shapes.filter(s=>s.component?.type==='master'&&s.id!==master).map(s=>({label:s.name,run:()=>{settings.preferred_instances=[...new Set([...(settings.preferred_instances??[]),s.id])];render();}})),'Preferred instances');render();
+ for(const [key,label] of [['min_children','Minimum layers'],['max_children','Maximum layers']]){const row=el('label',label),input=el('input');input.type='number';input.min='0';input.max='10000';input.step='1';input.placeholder='None';input.value=settings[key]??'';input.setAttribute('aria-label',label);input.oninput=()=>settings[key]=input.value===''?null:Number(input.value);input.onchange=()=>apply(()=>{settings[key]=saved.slot_settings[key]??null;input.value=settings[key]??'';});row.className='slot-limit-setting';row.append(input);section.append(row);}
+ for(const [key,label] of [['only_preferred_instances','Flag non-preferred instances'],['display_empty','By default, display empty slot'],['fill_counter_axis',"By default, fill items on slot’s counter axis"]]){const row=el('label'),input=el('input');row.className='slot-check';input.type='checkbox';input.checked=!!settings[key];if(key==='fill_counter_axis')input.disabled=!draft.targets.some(id=>['horizontal','vertical'].includes(doc.shapes.find(s=>s.id===id)?.auto_layout?.direction));input.onchange=()=>{settings[key]=input.checked;apply(()=>{settings[key]=input.checked=!!saved.slot_settings[key];});};row.append(input,el('span',label));section.append(row);}
+ const preferred=el('section'),preferredHeading=el('div');preferredHeading.className='slot-preferred-heading';preferredHeading.append(el('span','Preferred instances'));const add=iconButton('plus','Select preferred instances');preferredHeading.append(add);preferred.append(preferredHeading);const list=el('div');preferred.append(list);
+ const setPreferred=ids=>{settings.preferred_instances=ids;apply(()=>{settings.preferred_instances=[...(saved.slot_settings.preferred_instances??[])];});render();};
+ const render=()=>{list.replaceChildren(...(settings.preferred_instances??[]).map(id=>{const row=el('div'),remove=iconButton('close','Remove preferred '+(doc.shapes.find(s=>s.id===id)?.name??id));row.className='slot-preferred-heading';row.append(el('span',doc.shapes.find(s=>s.id===id)?.name??'Missing component'),remove);remove.onclick=()=>setPreferred(settings.preferred_instances.filter(v=>v!==id));return row;}));};add.onclick=event=>menu(event,add,doc.shapes.filter(s=>s.component?.type==='master'&&s.id!==master).map(s=>({label:s.name,run:()=>setPreferred([...new Set([...(settings.preferred_instances??[]),s.id])])})),'Preferred instances');render();
  // A slot in a component set normally exists in every variant. An existing
  // slot that only this variant has stays that way unless the box is ticked.
- const variantCount=slotVariants(doc,master).length;let everyVariant=null;
- if(variantCount>1){const row=el('label');everyVariant=el('input');row.className='slot-check slot-all-variants';everyVariant.type='checkbox';everyVariant.checked=!property||(doc.component_properties??[]).some(q=>q.kind==='slot'&&q.name===property.name&&q.component_id!==master&&slotVariants(doc,master).includes(q.component_id));everyVariant.setAttribute('aria-label','Apply to all variants');row.append(everyVariant,el('span',`Apply to all ${variantCount} variants`));section.append(row);}
- const error=el('p');error.className='slot-error';error.setAttribute('role','alert');const footer=el('footer'),save=el('button',property?'Save property':'Create property');save.className='primary';save.onclick=()=>{try{draft.name=name.value;settings.description=description.value;onSave(draft,{allVariants:!!everyVariant?.checked});dialog.close();}catch(e){error.textContent=String(e);}};footer.append(save);
- dialog.append(heading,body,section,preferred,error,footer);dialog.addEventListener('close',()=>dialog.remove());document.body.append(dialog);dialog.showModal();name.focus();name.select();
+ if(variantCount>1){const row=el('label');everyVariant=el('input');row.className='slot-check slot-all-variants';everyVariant.type='checkbox';everyVariant.checked=!property||(doc.component_properties??[]).some(q=>q.kind==='slot'&&q.name===property.name&&q.component_id!==master&&slotVariants(doc,master).includes(q.component_id));everyVariant.setAttribute('aria-label','Apply to all variants');everyVariant.onchange=()=>{if(everyVariant.checked)apply(()=>{everyVariant.checked=false;});};row.append(everyVariant,el('span',`Apply to all ${variantCount} variants`));section.append(row);}
+ dialog.append(heading,body,section,preferred,error);
+ dialog.addEventListener('close',()=>{document.removeEventListener('pointerdown',outside,true);dialog.remove();});
+ // Closing first leaves the field being edited, which saves it.
+ const shut=()=>{if(dialog.contains(document.activeElement))document.activeElement.blur();dialog.close();};
+ const outside=event=>{if(!dialog.isConnected){document.removeEventListener('pointerdown',outside,true);return;}if(!dialog.contains(event.target)&&!event.target.closest?.('.selection-menu'))shut();};
+ close.onclick=shut;
+ if(!live){
+  const footer=el('footer'),save=el('button','Create property');save.className='primary';save.onclick=()=>{try{draft.name=name.value;settings.description=rich.value();onSave(draft,{allVariants:!!everyVariant?.checked});dialog.close();}catch(e){error.textContent=String(e);}};footer.append(save);dialog.append(footer);
+  document.body.append(dialog);dialog.showModal();name.focus();name.select();return;
+ }
+ // Escape closes the panel wherever focus is, unless a menu opened from it is taking the key.
+ const escape=event=>{if(event.key!=='Escape'||document.querySelector('.selection-menu')||(!dialog.contains(event.target)&&event.target.closest?.('input,textarea,select,[contenteditable],dialog')))return;event.preventDefault();event.stopPropagation();shut();};
+ document.addEventListener('keydown',escape,true);dialog.addEventListener('close',()=>document.removeEventListener('keydown',escape,true));
+ document.body.append(dialog);dialog.show();
+ // Beside the properties panel, level with the property's chip (Figma: 5px above it).
+ const view=document.defaultView,side=document.querySelector('.right-panel')?.getBoundingClientRect(),box=dialog.getBoundingClientRect();
+ dialog.style.left=Math.max(8,(side?.left??view.innerWidth)-box.width-2)+'px';dialog.style.top=Math.max(8,Math.min(view.innerHeight-box.height-8,(anchor?.top??(side?.top??0)+80)-5))+'px';
+ document.addEventListener('pointerdown',outside,true);name.focus();name.select();
 }
 export function slotInstancePicker(doc,slot,onInsert,{preview}={}){
  const property=slotProperty(doc,slot),preferredIds=property?.slot_settings?.preferred_instances??[];

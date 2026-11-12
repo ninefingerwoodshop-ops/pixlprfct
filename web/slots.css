@@ -33,7 +33,15 @@ dialog#slot-property-dialog.slot-property-dialog .slot-property-body>label.slot-
 dialog#slot-property-dialog.slot-property-dialog .slot-property-body>label.slot-description-setting{display:block;margin:0 0 8px;line-height:16px}
 dialog#slot-property-dialog.slot-property-dialog .slot-description-editor{border:1px solid var(--ui-border);border-radius:5px;background:#383838;overflow:hidden}
 dialog#slot-property-dialog.slot-property-dialog .slot-description-editor:focus-within{border-color:var(--ui-accent)}
-dialog#slot-property-dialog.slot-property-dialog .slot-description-editor>textarea{display:block;width:100%!important;height:112px;min-height:64px;margin:0!important;padding:6px 7px!important;border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;resize:vertical;box-sizing:border-box;font:var(--ui-regular) 11px/16px var(--ui-font)}
+dialog#slot-property-dialog.slot-property-dialog .rich-editor{display:block;height:112px;min-height:64px;margin:0;padding:6px 7px;outline:0;overflow:auto;resize:vertical;box-sizing:border-box;font:var(--ui-regular) 11px/16px var(--ui-font);color:var(--ui-text-color);white-space:pre-wrap;cursor:text}
+dialog#slot-property-dialog.slot-property-dialog .rich-editor.empty::before{content:attr(data-placeholder);color:color-mix(in srgb,var(--ui-text-color) 40%,transparent);pointer-events:none;float:left;height:0}
+dialog#slot-property-dialog.slot-property-dialog .rich-editor pre{white-space:pre-wrap}
+dialog#slot-property-dialog.slot-property-dialog .rich-editor-link{padding:4px;border-top:1px solid var(--ui-border)}
+dialog#slot-property-dialog.slot-property-dialog .rich-editor-link[hidden]{display:none}
+dialog#slot-property-dialog.slot-property-dialog .rich-editor-link input{width:100%!important;height:24px!important;min-height:24px!important;margin:0!important;box-sizing:border-box}
+/* Editing an existing property: a floating panel beside the properties, not a modal (Figma). */
+dialog#slot-property-dialog.slot-property-dialog.slot-property-live{position:fixed;z-index:60;margin:0;overflow:visible}
+dialog#slot-property-dialog.slot-property-dialog div.slot-description-setting{margin:0 0 8px;line-height:16px}
 dialog#slot-property-dialog.slot-property-dialog .slot-format-tools{display:flex;gap:6px;margin:0;padding:8px 3px;border-top:1px solid var(--ui-border)}
 dialog#slot-property-dialog.slot-property-dialog .slot-format-tools .slot-icon-button{width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;padding:0!important}
 dialog#slot-property-dialog.slot-property-dialog .slot-description-preview{margin-top:8px}
