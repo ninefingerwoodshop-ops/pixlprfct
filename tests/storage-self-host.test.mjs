@@ -11,7 +11,7 @@ if(process.env.PIXL_TEST_POSTGRES_URL)engines.push({name:'postgres',config:{engi
 const hash=n=>String(n).repeat(64).slice(0,64),pointer=n=>'@pixlprfct-r2:'+hash(n),key=n=>'documents/'+hash(n);
 const design=(name,size=0)=>JSON.stringify({version:1,name,shapes:[],...(size?{padding:'x'.repeat(size)}:{})});
 async function reset(db,engine){
- if(engine==='postgres')for(const table of ['documents','document_versions','document_bodies','live_versions','live_mutations','live_clients','document_presence','component_libraries','component_library_versions','document_collaboration','document_edit_requests','document_comments','library_release_notes','team_notifications','notification_preferences','document_reviews'])await db.query(`DROP TABLE IF EXISTS ${table}`,[],'run');
+ if(engine==='postgres')for(const table of ['documents','document_versions','document_bodies','live_versions','live_mutations','live_clients','document_presence','document_links','document_guests','component_libraries','component_library_versions','document_collaboration','document_edit_requests','document_comments','library_release_notes','team_notifications','notification_preferences','document_reviews'])await db.query(`DROP TABLE IF EXISTS ${table}`,[],'run');
 }
 
 for(const {name,config} of engines){
