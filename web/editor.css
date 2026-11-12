@@ -663,6 +663,21 @@ dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action{display:flex;align-items:center;justify-content:flex-start;gap:8px;width:100%;height:24px!important;min-height:24px!important;padding:0 8px!important;border:0!important;border-radius:5px!important;background:transparent;color:var(--ui-text-color);font:var(--ui-regular) 11px/16px var(--ui-font);text-align:left;cursor:pointer}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action.active{background:color-mix(in srgb,var(--ui-accent) 32%,transparent)!important}
+/* Conditional block, measured in Figma 2026-11-11: 24px rows 8px apart on a half-strength #383838 panel, the if row solid. */
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-conditional{display:grid;gap:8px;border-radius:5px;background:#38383880}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-conditional.active{background:color-mix(in srgb,var(--ui-accent) 24%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if{gap:4px;border-radius:5px 5px 0 0!important;background:#383838}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-conditional.active .prototype-modal-if{background:color-mix(in srgb,var(--ui-accent) 32%,transparent)!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if .prototype-modal-variable{flex:0 1 auto;min-width:0;padding:0 4px;border-radius:4px;background:#2c2c2c;box-shadow:inset 0 0 0 1px #ffffff1f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if .prototype-modal-operator{color:#f4a4e0}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-if .prototype-modal-keyword{margin-left:4px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-else{height:24px;padding:0 8px;line-height:24px;color:var(--ui-text-color)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-action.nested{gap:4px}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-corner{display:inline-grid;place-items:center;width:16px;height:16px;color:color-mix(in srgb,var(--ui-text-color) 50%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-corner .app-icon{width:12px!important;height:12px!important}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-create{color:color-mix(in srgb,var(--ui-text-color) 40%,transparent)}
+dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-create:is(:hover,:focus-visible){color:var(--ui-text-color)}
+dialog#prototype-interaction-modal#prototype-interaction-modal h4.prototype-modal-condition{margin:4px 0 0!important;font:var(--ui-regular) 11px/16px var(--ui-font)!important;color:color-mix(in srgb,var(--ui-text-color) 70%,transparent);letter-spacing:0;text-transform:none}
 dialog#prototype-interaction-modal#prototype-interaction-modal .prototype-modal-foot{display:flex;gap:0;padding:8px;border-top:1px solid var(--ui-border)}
 dialog#prototype-interaction-modal#prototype-interaction-modal button:focus-visible,#prototype-panel :is(.prototype-chip,.prototype-add,.prototype-chip-remove):focus-visible{outline:2px solid var(--ui-accent);outline-offset:1px}
 dialog#prototype-interaction-modal#prototype-interaction-modal label.long{grid-template-columns:minmax(0,1fr);height:auto!important;gap:4px}
