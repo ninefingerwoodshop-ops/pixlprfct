@@ -3,6 +3,7 @@ import {cloudRequest} from './cloud-session.js';
 import {LiveSession} from './live-session.js';
 import {TeamSession,sameArtwork} from './team-session.js';
 import {icon} from './icons.js';
+import {confirmDestructive} from './confirm-dialog.js';
 import {Presence,personColor,initials,followView,blendView} from './presence.js';
 const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
 const roleNames={none:'No access',viewer:'Can view',commenter:'Can comment',editor:'Can edit',owner:'Owner'};
@@ -90,11 +91,11 @@ export function installTeamCollaboration({session,reload,getDocument,selection,s
  const run=async fn=>{if(working)return;working=true;try{await fn();}catch(error){toast(error.message??String(error));}finally{working=false;render();}};
  const button=(text,fn,cls)=>{const b=el('button',cls,text);b.type='button';b.onclick=()=>run(fn);return b;};
  function render(){
-  const active=!!model.id;document.getElementById('document-name').readOnly=active&&!model.editable();bar.hidden=!active;share.hidden=!active;document.body.classList.toggle('team-shared',active);document.body.classList.toggle('team-readonly',active&&!model.editable());
+  const active=!!model.id;document.getElementById('document-name').readOnly=active&&!model.editable();bar.hidden=!active;share.hidden=!active||!!model.state?.guest;document.body.classList.toggle('team-shared',active);document.body.classList.toggle('team-readonly',active&&!model.editable());
   if(!active){panel.hidden=true;document.body.classList.remove('team-comments-open');return;}
   const s=model.state;label.textContent=model.issue||(!s?'Checking access…':s.editingMode==='live'?(model.editable()?'Editing together':roleNames[s.role]):s.lease?.mine&&model.editable()?'You’re editing':s.lease?`${s.lease.name} is editing`:s.canEdit?'Open for review':roleNames[s.role]);
   actions.replaceChildren();if(live.conflict){label.title=live.conflict.paths.join(', ');actions.append(button('Keep my overlapping edits',()=>live.resolve('local')),button('Keep teammates’ overlapping edits',()=>live.resolve('remote')));}else label.title='';if(s?.canEdit&&s.editingMode!=='live'){if(s.lease?.mine&&model.editable()){actions.append(button('Finish editing',()=>model.action('release')));for(const r of s.requests)actions.append(button('Hand off to '+r.name,()=>model.action('handoff',r.id)));}else if(!s.lease||s.lease.mine)actions.append(button('Start editing',()=>model.action('acquire')));else actions.append(button(s.requested?'Handoff requested':'Request editing',()=>model.action('request')));}
-  actions.append(button('Comments',showComments),button('Reviews',showReviews));post.disabled=!s?.canComment;textarea.disabled=!s?.canComment;
+  actions.append(button('Comments',showComments));if(!s?.guest)actions.append(button('Reviews',showReviews));post.disabled=!s?.canComment;textarea.disabled=!s?.canComment;
   if(!panel.hidden){panel.style.top=(bar.offsetTop+bar.offsetHeight)+'px';const d=getDocument(),id=selection()[0],layer=d.shapes.find(s=>s.id===id);anchorLabel.textContent=layer?'On '+layer.name:'On '+(d.pages?.find(p=>p.id===d.active_page)?.name??'this page');}
  }
  const moreComments=button('Load more comments',()=>readComments(true));moreComments.hidden=true;list.after(moreComments);
@@ -125,6 +126,17 @@ export function installTeamCollaboration({session,reload,getDocument,selection,s
  }
  async function sharing(){
   const state=await model.call('/sharing'),id=model.id,dialog=el('dialog','team-share');dialog.id='team-share';dialog.setAttribute('aria-label','Share file');const header=el('header'),h=el('strong',null,'Share '+getDocument().name),done=button('',()=>dialog.close(),'team-icon');done.innerHTML=icon('close');done.setAttribute('aria-label','Close sharing');header.append(h,button('Copy link',async()=>{await navigator.clipboard.writeText(location.href);toast('File link copied');}),done);const content=el('div','team-share-content');content.append(el('p',null,'Workspace members need to sign in to open this file.'));
+  // A link for people outside the workspace: they sign in, then may view this one file.
+  const linkBox=el('section','team-link');linkBox.setAttribute('aria-label','Link sharing');content.append(linkBox);
+  const drawLink=link=>{
+   linkBox.replaceChildren(el('strong',null,'Link sharing'),el('p',null,link.enabled?'Anyone who has this link and signs in can view this file. They cannot edit, comment or see the rest of the workspace.':'Off. Only workspace members can open this file.'));
+   const row=el('div','team-link-actions'),change=action=>async()=>{if(model.id!==id)throw new Error('The active file changed.');drawLink(await model.call('/link',{method:'POST',body:JSON.stringify(action)}));};
+   if(link.enabled){const field=el('input');field.readOnly=true;field.value=link.url;field.setAttribute('aria-label','Share link');field.onfocus=()=>field.select();linkBox.append(field);row.append(button('Copy share link',async()=>{await navigator.clipboard.writeText(link.url);toast('Share link copied');},'primary'));}
+   if(link.manage){if(link.enabled)row.append(button('Replace link',async()=>{if(await confirmDestructive({title:'Replace this link?',message:['The current link stops working and ',{strong:link.guests.length===1?'1 person':link.guests.length+' people'},' who joined through it lose access.'],confirm:'Replace link',tone:'primary'}))await change({action:'replace'})();}),button('Turn off link',async()=>{if(await confirmDestructive({title:'Turn off link sharing?',message:['The link stops working and ',{strong:link.guests.length===1?'1 person':link.guests.length+' people'},' who joined through it lose access.'],confirm:'Turn off link'}))await change({action:'disable'})();}));else row.append(button('Create share link',change({action:'create'}),'primary'));}
+   linkBox.append(row);
+   if(link.manage&&link.guests.length){linkBox.append(el('strong',null,'Joined by link'));for(const guest of link.guests){const person=el('div','team-person'),name=el('span',null,guest.name);name.append(el('small',null,guest.email));const remove=button('Remove',change({action:'remove',userId:guest.id}));remove.setAttribute('aria-label','Remove '+guest.name);person.append(name,remove);linkBox.append(person);}}
+  };
+  drawLink(await model.call('/link'));
   const defaults=el('select');defaults.setAttribute('aria-label','Default workspace access');for(const [v,name]of Object.entries(roleNames).filter(([v])=>v!=='owner'))defaults.append(new Option(name,v));defaults.value=state.defaultRole??state.role;defaults.disabled=!state.manage;
   content.append(el('strong',null,'Who has access'));const defaultRow=el('label','team-person');defaultRow.append(el('span',null,'Workspace members'),defaults);if(state.manage)content.append(defaultRow);
   const mode=el('select');mode.setAttribute('aria-label','Editing mode');mode.append(new Option('Hand off editing','handoff'),new Option('Edit together','live'));mode.value=state.editingMode;mode.disabled=!state.manage;const modeRow=el('label','team-person');modeRow.append(el('span',null,'Editing mode'),mode);content.append(modeRow);

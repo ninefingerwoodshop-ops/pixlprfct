@@ -1,5 +1,6 @@
 import {liveEditing} from './live-editing.mjs';
 import {presence} from './presence.mjs';
+import {shareLinks,guestRoute} from './share-links.mjs';
 import {onboarding} from './onboarding.mjs';
 import {documentApi,DocumentError,checkOrigin} from '../lib/documents.mjs';
 import {workspaceAccess} from './workspace-access.mjs';
@@ -23,7 +24,20 @@ export function createApplication({config,db,auth,operations}) {
  const collaboration=collaborationService(db,config.engine);
  const live=liveEditing(db,bodies,collaboration,libraries,config.engine,storage),people=presence(db,collaboration,config.engine);
  const activity=teamActivity(db,config.engine,collaboration);
- const accessFor=(request,session)=>workspaceAccess(db,session.user.id,new URL(request.url).searchParams.get('workspace')||'personal');
+ const links=shareLinks(db,collaboration,config.engine,config.baseURL);
+ // Workspace membership decides access. Someone who is not a member but came in
+ // through a file's share link gets a guest access that only the routes in
+ // guestRoute accept, so no other handler ever sees it.
+ const accessFor=async(request,session)=>{
+  const url=new URL(request.url),workspace=url.searchParams.get('workspace')||'personal';
+  try{return await workspaceAccess(db,session.user.id,workspace);}
+  catch(error){
+   if(error.status!==403)throw error;
+   const guest=await links.guestAccess(session.user.id,workspace);if(!guest)throw error;
+   if(!guestRoute(request.method,url.pathname,guest.guestDocuments))throw new DocumentError(403,'This link lets you view one file. Ask a workspace administrator for more access.');
+   return guest;
+  }
+ };
  async function documentOwner(request,session){return (await accessFor(request,session)).owner;}
 
  return async request=>{
@@ -52,6 +66,7 @@ export function createApplication({config,db,auth,operations}) {
        if(path.endsWith('operations')&&request.method==='GET')return json(await operations.status());
        throw new DocumentError(405,'Method not allowed.');
      }
+     if(path==='/api/share-links/redeem')return await links.redeem(request,session.user);
      if(path==='/api/onboarding'&&request.method==='GET')return json(await onboarding(db,await accessFor(request,session),collaboration));
      if(path==='/api/notifications/preferences')return await activity.preferences(session.user.id,request);
      if(path==='/api/notifications')return await activity.inbox(request,session.user.id);
@@ -90,12 +105,13 @@ export function createApplication({config,db,auth,operations}) {
        if(access.organizationId&&!id&&response.ok){const data=await response.json(),visible=[];for(const item of data.libraries){try{await collaboration.accessFor(item.id,access);visible.push(item);}catch(error){if(error.status!==403)throw error;}}return json({...data,libraries:visible});}
        return response;
      }
-     const collaborationMatch=path.match(/^\/api\/documents\/([0-9a-f-]{36})\/(sharing|editing|comments|reviews|members|live|presence)$/i);
+     const collaborationMatch=path.match(/^\/api\/documents\/([0-9a-f-]{36})\/(sharing|editing|comments|reviews|members|live|presence|link)$/i);
      if(collaborationMatch){
        const access=await accessFor(request,session);if(!access.organizationId)throw new DocumentError(400,'Save this file in a shared workspace to collaborate.');
        const [,id,action]=collaborationMatch;
        if(action==='live')return await live(request,id,access);
        if(action==='presence')return await people(request,id,access);
+       if(action==='link')return await links.link(request,id,access);
        if(action==='reviews')return await activity.reviews(request,id,access,session.user);
        if(action==='members'){if(request.method!=='GET')throw new DocumentError(405,'Method not allowed.');await collaboration.accessFor(id,access);return json({members:(await activity.recipients(id,access)).map(p=>({id:p.id,name:p.name}))});}
        const comment=action==='comments'&&request.method==='POST'?await readJSON(request.clone()):null;
