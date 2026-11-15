@@ -20,8 +20,9 @@ unchanged permissions on earlier MIT / Apache 2.0 versions and third-party code.
 
 `@ninefingerwoodshop-ops` owns every path through `.github/CODEOWNERS`. The main
 branch requires a pull request, owner review, and resolved conversations.
-The `CI` workflow runs the build, unit tests, lint, types and browser workflows
-on every pull request; it is not yet a required status check. GitHub Pages
+The `CI` workflow runs the build, unit tests, lint and types on every pull
+request; it is not yet a required status check. Its browser job runs only when
+dispatched by hand, and the latency budget remains a local release gate. GitHub Pages
 publishing and manually requested desktop packages remain available. New commits dismiss
 stale approvals. Force pushes and deletion of main are blocked. The repository owner retains the existing administrator
 override through a pull request for owner-authored changes; there is no direct
