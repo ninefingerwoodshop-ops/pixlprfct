@@ -17,7 +17,8 @@ the saved result is preserved:
 - Prototypes, the SVG Animator and path editing as implemented in the release
   candidate.
 - PNG, SVG and PDF (page-image) export.
-- Desktop apps for macOS and Windows, and the browser editor.
+- The macOS desktop app and the browser editor. The Windows desktop app joins
+  beta when it is signed.
 - Local MCP agent editing.
 - Self-hosted team workspaces, each team running its own infrastructure.
 
@@ -45,10 +46,12 @@ this list.
 | 2 | Release candidate | One build containing everything on `main`; full gates in [RELEASE_ACCEPTANCE.md](RELEASE_ACCEPTANCE.md) recorded against the installed build | Not started |
 | 3 | Reliability | `npm run test:sleep` passes with a real OS sleep/wake (B23); 727-layer latency re-measured on the candidate against the 100 ms p95 gate (B33); automated CI runs tests on every PR | Not passed |
 | 4 | Human pilot | 3-5 designers named and working on copies of real files under [PILOT_PLAN.md](PILOT_PLAN.md). The beta period is the pilot; its expansion criteria gate leaving beta, not entering it | Not started |
-| 5 | Distribution | Notarized Mac build passes `scripts/desktop/release-check.mjs`; Windows build signed or Store-signed; each run interactively on real hardware | Not started |
+| 5 | Distribution | Notarized Mac build passes `scripts/desktop/release-check.mjs` and is run interactively on real hardware; the local-only browser editor is published at a permanent public address. Windows stays a labelled preview until it is signed or Store-signed (owner decision, 2026-11-15) | Not started |
 
 Gates 3 (sleep/wake) and 5 (signing) are firm. A beta that can lose a connection
-across sleep, or that shows an unknown-publisher warning, is not offered.
+across sleep, or that shows an unknown-publisher warning, is not offered. Beta
+therefore launches on macOS and in the browser first; the unsigned Windows
+installer keeps its preview label and is not described as beta.
 
 ## Open decisions
 
@@ -56,5 +59,7 @@ across sleep, or that shows an unknown-publisher warning, is not offered.
 - Pilot participant list (the pilot plan does not authorize invitations).
 - B33: the remaining per-edit cost is local persistence. Reducing it changes the
   save or recovery format. Decide after re-measuring on the candidate.
+- The permanent public address of the browser editor. Projects are stored per
+  origin in each visitor's browser, so changing the address later orphans them.
 - Beta version scheme (for example `0.2.0-beta.1`) and the permanent desktop
   app identifier, which must be fixed before the first signed distribution.
