@@ -1,4 +1,5 @@
 import {liveEditing} from './live-editing.mjs';
+import {presence} from './presence.mjs';
 import {onboarding} from './onboarding.mjs';
 import {documentApi,DocumentError,checkOrigin} from '../lib/documents.mjs';
 import {workspaceAccess} from './workspace-access.mjs';
@@ -20,7 +21,7 @@ export function createApplication({config,db,auth,operations}) {
  async function sessionFor(request){const session=await auth.api.getSession({headers:request.headers});if(!session?.user.emailVerified)throw new DocumentError(401,'Sign in with a verified account to continue.');return session;}
  const libraries=libraryService(db,bodies,{canReadDocument:async(id,access)=>{try{await collaboration.accessFor(id,access);return true;}catch(error){if(error.status===403)return false;throw error;}}});
  const collaboration=collaborationService(db,config.engine);
- const live=liveEditing(db,bodies,collaboration,libraries,config.engine,storage);
+ const live=liveEditing(db,bodies,collaboration,libraries,config.engine,storage),people=presence(db,collaboration,config.engine);
  const activity=teamActivity(db,config.engine,collaboration);
  const accessFor=(request,session)=>workspaceAccess(db,session.user.id,new URL(request.url).searchParams.get('workspace')||'personal');
  async function documentOwner(request,session){return (await accessFor(request,session)).owner;}
@@ -89,11 +90,12 @@ export function createApplication({config,db,auth,operations}) {
        if(access.organizationId&&!id&&response.ok){const data=await response.json(),visible=[];for(const item of data.libraries){try{await collaboration.accessFor(item.id,access);visible.push(item);}catch(error){if(error.status!==403)throw error;}}return json({...data,libraries:visible});}
        return response;
      }
-     const collaborationMatch=path.match(/^\/api\/documents\/([0-9a-f-]{36})\/(sharing|editing|comments|reviews|members|live)$/i);
+     const collaborationMatch=path.match(/^\/api\/documents\/([0-9a-f-]{36})\/(sharing|editing|comments|reviews|members|live|presence)$/i);
      if(collaborationMatch){
        const access=await accessFor(request,session);if(!access.organizationId)throw new DocumentError(400,'Save this file in a shared workspace to collaborate.');
        const [,id,action]=collaborationMatch;
        if(action==='live')return await live(request,id,access);
+       if(action==='presence')return await people(request,id,access);
        if(action==='reviews')return await activity.reviews(request,id,access,session.user);
        if(action==='members'){if(request.method!=='GET')throw new DocumentError(405,'Method not allowed.');await collaboration.accessFor(id,access);return json({members:(await activity.recipients(id,access)).map(p=>({id:p.id,name:p.name}))});}
        const comment=action==='comments'&&request.method==='POST'?await readJSON(request.clone()):null;

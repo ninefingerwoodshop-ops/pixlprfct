@@ -24,7 +24,8 @@ This page covers everything that lets more than one person work on PixlPrfct des
 | Device libraries (IndexedDB) and `.pixllib` export/import | Implemented on all hosts |
 | `.fig` library import | Snapshot only (see [Import-Design-Files](Import-Design-Files.md)) |
 | Character-level text merging / CRDT, WebSocket push | **Not implemented** (polling + whole-field merge) |
-| Canvas comment pins, spotlight/follow, voice | **Not implemented** (TEAM_WORKFLOWS.md) |
+| Who has the file open, and following someone's view | Implemented in every editing mode for any role that can see the file: `POST /presence` heartbeat (1 s, 250 ms while following or followed), avatars, coloured cursors, click an avatar to follow |
+| Canvas comment pins, spotlight (asking others to follow you), voice | **Not implemented** (TEAM_WORKFLOWS.md) |
 | Public links, cross-workspace or anonymous sharing | **Not implemented** |
 | Live synchronization with external source libraries | **Not implemented** |
 | Publishing a library that contains another library's instance or pattern | Refused by `librarySnapshot` |
@@ -113,7 +114,7 @@ Client: `LiveSession` ([web/live-session.js](../../web/live-session.js)), owned 
 3. **Incoming changes.** `reconcile(data)` runs `mergeDocuments(base = session.ack, local = current snapshot, remote = server body)`. Without conflicts it loads the merged document (keeping the user's active page) and advances `ack`/`revision`.
 4. **Outgoing changes.** `CloudSession.save` is replaced by `live.save()`: `PUT /live {mutationId, baseRevision, document}`. The mutation ID is stable for the same `(id, revision, body)` so retries are idempotent (`live_mutations`). The server merges `base` (from `live_versions` at `baseRevision`), the submitted document and the current document, normalizes through the WASM engine, runs `libraries.guard`, and commits with an automatic checkpoint. `receive()` merges the returned body into anything typed since submission.
 5. **Undo.** The editor's `undo/redo/can_undo/can_redo` are wrapped: in live mode they use `PersonalHistory` (100 entries) which replays the user's own before/after pairs through `mergeDocuments`; if a teammate changed the same fields, undo throws "A teammate changed this edit. Undo is paused to preserve their work." History resets on reopen.
-6. **Presence.** Avatars (initials) and cursors (`.team-cursor`, repositioned every 100 ms) for other clients on the same page; cursor positions are page coordinates sent with each poll.
+6. **Presence.** Since 2026-11-12 presence is its own heartbeat, independent of live mode (see [People in the file and following](#people-in-the-file-and-following)); the `presence` list in `/live` responses is no longer used by the editor. Avatars (initials) and cursors (`.team-cursor`, repositioned every 100 ms) for other clients on the same page; cursor positions are page coordinates sent with each poll.
 
 **Merge rules** (`web/document-merge.js#mergeDocuments`): a field-level three-way merge. If only one side changed a value, that side wins. Arrays of objects with unique `id`s merge per ID (adds and removals from both sides survive; order conflicts only if both sides reordered differently). Any value both sides changed differently is a **conflict path**; `prefer` (`'remote'` by default, or `'local'`) decides the provisional value. Depth over 60 is a conflict.
 
@@ -223,6 +224,14 @@ flowchart LR
   R2 -->|Updates → preview → Update<br/>unless pinned| C
   C -->|guard: importedContentError<br/>protectedInstanceError| X{{Rejected edits}}
 ```
+
+## People in the file and following
+
+Every editor window with a shared-workspace file open sends `POST /api/documents/:id/presence` with `{cursor, view, following}` and gets `{presence[]}` back ([server/presence.mjs](../../server/presence.mjs), table `document_presence`, rows live 10 s). It needs only a role that can see the file, so viewers and commenters appear too, in hand-off and edit-together mode alike. `DELETE` removes the window when the page closes.
+
+[web/presence.js](../../web/presence.js) holds the client rules: `Presence` (heartbeat, `follow`, `stop`, faster interval while following or being followed), `personColor` (one of eight colours per window), `followView` (the zoom and pan that fit the other person's view rectangle whole into this canvas) and `blendView` (200 ms glide between updates). `installTeamCollaboration` draws the avatars (the followed person first, yourself last, **+N** past four), coloured cursors, the **Following NAME · Stop** pill and the coloured canvas frame. Following ends on wheel or pointer-down on the canvas, Escape, Stop, clicking the avatar again, or when that person leaves.
+
+Following is one-way and per viewer: it never moves the followed person's view and does not change who may edit. With polling, a followed view arrives up to 250 ms late plus a 200 ms glide; it is not frame-by-frame.
 
 ## Key modules
 

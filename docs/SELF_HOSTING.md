@@ -96,7 +96,7 @@ Register and verify your email. Account & teams includes profile editing, passwo
 
 Select a personal, organization, or team workspace in the project-home dropdown. New designs in organization/team workspaces save directly to the server. Personal device drafts remain in the browser; use the editor's cloud-file action to save a server copy. Organization members can edit organization designs. Team members and organization owners/admins can edit team designs. Published library source projects additionally require whole-library or component maintainer grants; owners/admins manage those grants. Imported instance properties remain protected. See [Protected team libraries](TEAM_LIBRARIES.md). Membership is rechecked on every design and version-history request; removed members immediately lose server access. Previously downloaded files cannot be revoked.
 
-Updates use optimistic revisions, automatic checkpoints, and explicit conflict errors. This supports shared saved documents, not simultaneous cursor presence or live merging of two people's edits. Download a recovery copy before replacing conflicting changes. Real-time co-editing is a separate future step.
+Updates use optimistic revisions, automatic checkpoints, and explicit conflict errors. This is the default hand-off mode; people with the file open and their cursors are shown in every mode (see TEAM_WORKFLOWS.md), and "Edit together" adds live merging. Hand-off itself does not provide live merging of two people's edits. Download a recovery copy before replacing conflicting changes. Real-time co-editing is a separate future step.
 
 ## Security and operations
 
