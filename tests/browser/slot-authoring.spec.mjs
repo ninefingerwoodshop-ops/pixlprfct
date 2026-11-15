@@ -7,6 +7,9 @@ const openEditor=async page=>{await page.locator('#component-panel .slot-propert
 // Select the first occurrence of `word` inside the description editor.
 const pick=(editor,word)=>editor.evaluate((node,word)=>{const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);for(let t=walker.nextNode();t;t=walker.nextNode()){const at=t.nodeValue.indexOf(word);if(at<0)continue;const range=document.createRange();range.setStart(t,at);range.setEnd(t,at+word.length);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);node.focus();selection.removeAllRanges();selection.addRange(range);return true;}return false;},word);
 
+// Put the caret at the very end of the description editor. Control+End does this on Linux and Windows but not on a Mac.
+const toEnd=editor=>editor.evaluate(node=>{node.focus();const range=document.createRange();range.selectNodeContents(node);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);});
+
 test('a slot description is edited as formatted text and each change applies at once to every variant',async({page})=>{
  const data=await seed(page,fixture({components:true}));await select(page,data.master);await openEditor(page);
  const d=dialog(page),description=d.getByRole('textbox',{name:'Slot description',exact:true}),tool=name=>d.getByRole('button',{name,exact:true});
@@ -31,7 +34,7 @@ test('a slot description is edited as formatted text and each change applies at 
  expect(await pick(description,'Use')).toBe(true);await tool('Link').click();
  const address=d.getByLabel('Link address',{exact:true});await expect(address).toBeFocused();await address.fill('https://example.com/guide');await address.press('Enter');
  await expect(description.locator('a')).toHaveAttribute('href','https://example.com/guide');await expect(description.locator('a')).toHaveText('Use');
- await description.press('Control+End');await page.keyboard.press('Enter');await page.keyboard.type('Keep it short');await tool('Bulleted list').click();await expect(description.locator('ul li')).toHaveText(['Keep it short']);
+ await toEnd(description);await page.keyboard.press('Enter');await page.keyboard.type('Keep it short');await tool('Bulleted list').click();await expect(description.locator('ul li')).toHaveText(['Keep it short']);
  // A limit applies on change, as its own step.
  await d.getByLabel('Maximum layers',{exact:true}).fill('3');await d.getByLabel('Maximum layers',{exact:true}).press('Tab');
  await expect.poll(async()=>(await slots(page)).map(p=>[p.slot_settings.max_children,p.slot_settings.description.startsWith('[Use](https://example.com/guide) **one**'),p.slot_settings.description.endsWith('\n\n- Keep it short')])).toEqual([[3,true,true],[3,true,true]]);

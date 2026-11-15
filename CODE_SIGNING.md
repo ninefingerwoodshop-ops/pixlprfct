@@ -2,7 +2,7 @@
 
 ## Current status
 
-The Windows desktop previews are **unsigned** and intended for early testing. They are not represented as signed, independently audited, or production-ready. Download from this repository's [Releases page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases), inspect the source commit and build run, and compare SHA-256 checksums. Checksums detect changed files; they do not authenticate a publisher like a trusted signature does.
+The Windows desktop previews are **unsigned** and intended for early testing. The Mac download is signed and notarized (see below). Windows previews are not represented as signed, independently audited, or production-ready. Download from this repository's [Releases page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases), inspect the source commit and build run, and compare SHA-256 checksums. Checksums detect changed files; they do not authenticate a publisher like a trusted signature does.
 
 The earlier MIT / Apache 2.0 project applied to the SignPath Foundation
 open-source program. Approval has not been granted and Windows signing is not
@@ -10,7 +10,7 @@ active. Current source now uses a custom source-available license; eligibility
 must be reassessed with the provider before relying on that program. No
 provider endorsement, sponsorship, or signature is claimed.
 
-Signed direct-download Mac builds use James Gibbens's Developer ID Application identity. Signed but unnotarized local Mac packages are excluded from this Windows prerelease. Public Mac distribution requires Apple notarization; the Mac App Store uses a separate submission process.
+The Mac direct download, from v0.1.1-alpha.22, is signed with James Gibbens's Developer ID Application identity (team 2A3SEQCA66), notarized by Apple and stapled; `scripts/desktop/release-check.mjs` verifies each release bundle. Signed but unnotarized local Mac packages are never published. The Mac App Store uses a separate submission process.
 
 ## Responsibilities
 

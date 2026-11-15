@@ -8,6 +8,8 @@
 
 ## Desktop downloads
 
+The Mac **v0.1.1-alpha.22** release is signed with a Developer ID and notarized by Apple; it adds finer SVG path editing, prototype Smart animate with conditions, variables and sequenced actions, PDF export, grid track handles and live slot property editing. See [Beta exit criteria](docs/BETA_EXIT.md) for what remains before beta.
+
 The Windows **v0.1.1-alpha.21** preview adds open-path Pen and Pencil drawing, direct path editing, independent gradient animation, and detachable parent panels in both editors. It also includes the SVG animator, grouped keyframe editing and easing, precise selection timing, animation reuse and reversal, keyframe duplication, snapping and navigation, reliable Pause controls, canvas stretch and rotation handles, motion paths, morphing, and interactive SVG export, alongside the design editor and optional self-hosted team connections. Get the installer, ZIP, checksums, and build details from [the release page](https://github.com/ninefingerwoodshop-ops/pixlprfct/releases/tag/v0.1.1-alpha.21) or the [product website](https://ninefingerwoodshop-ops.github.io/pixlprfct/#downloads). This is an unsigned early-testing prerelease under the [Community License](LICENSE). Back up designs as `.pixl` files; this is not a production-stability promise or complete import compatibility.
 
 **Code signing policy:** [Signing status, maintainers, and release approvals](CODE_SIGNING.md). SignPath enrollment is pending; this prerelease has no Windows publisher signature. **Privacy:** [Data handling and network controls](PRIVACY.md). Online fonts are off by default in local desktop designs.
